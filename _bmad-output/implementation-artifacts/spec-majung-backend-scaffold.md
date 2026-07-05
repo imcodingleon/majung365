@@ -22,11 +22,11 @@ context:
 
 **Always:**
 - 보안 1번: 대화 영속화 금지, 로그·에러에 사용자 입력 원문 금지, API 키는 `infrastructure/config/settings.py`(Pydantic BaseSettings)+.env로만
-- KB 환각 금지: 제도 안내는 `knowledge/data/institutions.json` 항목만 인용, 매칭 없으면 "상담사 연결" 폴백
+- 정보 소스 2-tier: 제도·신청·서류(정확성 필수)=KB 카드만(`knowledge/data/institutions.json` 항목 인용, 환각 금지) / 일상 질문=네이티브 `web_search_20260209` 서버 툴 — `allowed_domains` 공공 도메인 한정, `max_uses` 상한, 검색 쿼리에 사용자 개인 상황 서술 배제(시스템 프롬프트 지시). 별도 검색 에이전트 구현 금지
 - 안내 형식: 제도명 명시 + 어디서·무슨 서류·다음 단계. demo-scenario.md 쉬운 말 톤(한 문장=한 지시, 판단·훈계 금지)
 - 헥사고날 규칙: Domain 순수 Python, Claude 호출은 `chat/adapter/outbound/external/claude_client.py`에서만, Router 비즈니스 로직 금지
 - `uv run ruff check .` + `uv run mypy app/` 에러 0
-- 모델: `claude-sonnet-4-6`
+- 모델: `claude-sonnet-5` (현행 Sonnet, `web_search_20260209` 지원). 민감 응답 경로는 `claude-opus-4-8` 승격 고려
 
 **Ask First:** 새 pip 의존성 추가(fastapi/uvicorn/pydantic-settings/anthropic/httpx/pytest/ruff/mypy 외), 엔드포인트 계약 변경, CORS 오리진 확대
 
@@ -40,7 +40,8 @@ context:
 | 멀티턴 | history에 이전 대화 동봉(클라이언트 보관) + 후속 질문 "그럼 서류는요?" | 맥락 이어진 답변. 서버는 history를 쓰고 즉시 폐기(저장 0) | N/A |
 | 프리셋 입력 | "잘 곳이 없어요" | triage 상위에 주거·긴급복지 포함 (demo-scenario 3종 전부) | N/A |
 | KB 밖 일상 대화 | "요즘 잠을 잘 못 자요" | 카드 없이 일반 대화 계속 (공감·자유 대화 — 제약은 카드에만) | 환각 제도명 생성 금지 |
-| KB 밖 제도 질문 | "주식 투자 지원 있어요?" | "정확한 정보가 없다" 정직 안내 + 도울 수 있는 것 제시. 카드 없음 | 환각 제도명 생성 금지 |
+| 일상 정보 질문 | "체크카드 재발급 어떻게 해요?" | `web_search` 서버 툴(공공 도메인 한정)로 검색 후 출처 기반 쉬운 말 답변 | 검색 실패 시 "정확한 정보 없음" 정직 안내 |
+| KB 밖 제도 질문 | "주식 투자 지원 있어요?" | 웹 검색으로도 근거 없으면 "정확한 정보가 없다" 정직 안내 + 도울 수 있는 것 제시. 카드 없음 | 환각 제도명 생성 금지 |
 | 상담사 연결 (좁게) | 위기 신호(자해·노숙 위험 등) / 사용자 직접 요청 / 동일 미해결 요구 반복 | 이때만 상담사 연결 문구 + 연락처 카드 | N/A |
 | Claude API 실패 | 업스트림 5xx/타임아웃 | SSE `error` 이벤트: 재시도 안내 문구(demo-scenario 리허설 항목) | 원문 로깅 없이 상태코드만 로그 |
 | 센터 목록 | GET /api/centers?category=법무보호공단 | centers.json 필터 결과(이름·주소·전화·운영시간·좌표) | 빈 카테고리→전체 |

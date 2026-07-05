@@ -19,7 +19,7 @@
 |---|---|---|
 | 프레임워크 | **FastAPI** (Python 3.12+, uv) | HailMary 백엔드 컨벤션 승계, 배성현(풀스택) 숙련 스택 |
 | 아키텍처 | 헥사고날 경량판 — `app/domains/{chat, knowledge, centers}` | 예선 YAGNI: DB 없음(대화 상태 클라이언트 보관, KB=JSON). 본선 DB 도입 시 구조가 수용 |
-| AI | Claude API — **키는 서버에만**, 클라이언트 노출 절대 금지 | HailMary Core Rule 승계 |
+| AI | Claude API, 모델 **`claude-sonnet-5`**(현행 Sonnet, `web_search_20260209` 동적필터·adaptive thinking) — **키는 서버에만**, 클라이언트 노출 절대 금지. 민감 응답은 `claude-opus-4-8` 승격 고려 | HailMary Core Rule 승계 · 모델은 상향 |
 | 품질 | ruff + mypy 에러 0 유지 | HailMary Core Rule 승계 |
 
 ## 배포 · 환경 (2026-07-06 수정)

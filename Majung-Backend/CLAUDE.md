@@ -65,5 +65,5 @@ app/
 - **정본 계약**: `../_bmad-output/specs/spec-majung-demo/` — SPEC.md(CAP·제약), demo-scenario.md(triage 기대 결과 = 테스트 픽스처)
 - **안내 응답 형식**: 제도명 명시 + 어디서·무슨 서류·다음 단계. 쉬운 말 톤 규칙(demo-scenario.md) 준수 — 한 문장 = 한 지시
 - **KB 밖 환각 금지**: 제도 안내는 `knowledge/data/` 내 항목만 인용. 없으면 "상담사 연결" 폴백
-- Claude 모델: `claude-sonnet-4-6` (HailMary와 동일) — 데모 시연 안정성 우선
+- Claude 모델: `claude-sonnet-5` — 현행 Sonnet(near-Opus 품질·저비용), `web_search_20260209` 동적필터 지원, adaptive thinking 기본. 가장 민감한 응답 경로는 `claude-opus-4-8` 승격 고려. (HailMary는 sonnet-4-6이지만 마중은 상향)
 - API 실패 시 재시도 안내 문구 반환 (demo-scenario 리허설 체크 항목)
