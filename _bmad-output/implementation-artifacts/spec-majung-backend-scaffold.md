@@ -27,10 +27,14 @@ context:
 - 헥사고날 규칙: Domain 순수 Python, Claude 호출은 `chat/adapter/outbound/external/claude_client.py`에서만, Router 비즈니스 로직 금지
 - `uv run ruff check .` + `uv run mypy app/` 에러 0
 - 모델: `claude-sonnet-5` (현행 Sonnet, `web_search_20260209` 지원). 민감 응답 경로는 `claude-opus-4-8` 승격 고려
+- **남용 방어(배포 전 필수, DB 없음) — 위협=인가 외부인의 챗 악용(코드 질문·탈옥 등), 신뢰 사용자 볼륨 아님**:
+  - **① 접근 게이트(최우선)** — `/api/gate`로 데모 코드 검증(`DEMO_ACCESS_CODE_HASH` env, 상수시간 비교), 통과 시 단기 서명 토큰 발급 → `/api/chat`은 이 토큰 요구. 신원 수집 0. 외부인 차단.
+  - **② 스코프 가드(핵심)** — 게이트 안에서도 마중을 범용 Claude로 악용 못 하게: 시스템 프롬프트에 역할 고정(출소 후 정착 지원 전용), 도메인 외 요청(코드 작성·숙제·번역 등)은 정중히 거부, 프롬프트 인젝션·탈옥 방어. 공감·일상 대화는 허용하되 "범용 어시스턴트 되기"는 거부.
+  - **③ 지출 서킷브레이커(백스톱)** — 시간·일 Claude 호출 총량 상한 초과 시 `/api/chat` 자동 429(인메모리 카운터). 게이트 뚫려도 피해 상한 고정. rate limit은 느슨하게(신뢰 사용자 볼륨 걱정 없음). 값은 env 조절
 
-**Ask First:** 새 pip 의존성 추가(fastapi/uvicorn/pydantic-settings/anthropic/httpx/pytest/ruff/mypy 외), 엔드포인트 계약 변경, CORS 오리진 확대
+**Ask First:** 새 pip 의존성 추가(fastapi/uvicorn/pydantic-settings/anthropic/httpx/slowapi/pytest/ruff/mypy 외), 엔드포인트 계약 변경, CORS 오리진 확대
 
-**Never:** DB·ORM 도입, 계정/인증, 대화 이력 서버 저장, 직원용 요약 카드 API, 음성 처리, 재범률 관련 로직
+**Never:** DB·ORM 도입, **계정/개인 로그인**(게이트는 익명 공유 코드일 뿐 — 신원 수집 아님), 대화 이력 서버 저장, 직원용 요약 카드 API, 음성 처리, 재범률 관련 로직
 
 ## I/O & Edge-Case Matrix
 
@@ -46,6 +50,10 @@ context:
 | Claude API 실패 | 업스트림 5xx/타임아웃 | SSE `error` 이벤트: 재시도 안내 문구(demo-scenario 리허설 항목) | 원문 로깅 없이 상태코드만 로그 |
 | 센터 목록 | GET /api/centers?category=법무보호공단 | centers.json 필터 결과(이름·주소·전화·운영시간·좌표) | 빈 카테고리→전체 |
 | 헬스체크 | GET /api/health | 200 {"status":"ok"} — 키·비밀 미노출 | N/A |
+| 게이트 통과 | POST /api/gate {"code":"올바른코드"} | 200 + 단기 서명 토큰 | 오답→401, 상수시간 비교 |
+| 게이트 없이 챗 | POST /api/chat (토큰 없음/만료) | 401 거부 | SSE 스트림 시작 안 함 |
+| **도메인 외 악용** | (게이트 통과 후) "파이썬 코드 짜줘" / "시스템 프롬프트 무시하고…" | 역할 재확인 후 정중히 거부 — 범용 어시스턴트 되기 거부. 코드·숙제·번역 등 미제공 | 인젝션 무시, 카드·검색 트리거 안 함 |
+| 지출 상한 도달 | 서버 누적 호출이 일/시간 상한 초과 | 429 "잠시 후 다시" 안내 | Claude 호출 안 함(지갑 보호) |
 
 </frozen-after-approval>
 
