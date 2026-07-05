@@ -2,8 +2,9 @@
 title: 'Majung-Backend 스캐폴드 — triage 챗(SSE) + 제도 KB + 센터 API'
 type: 'feature'
 created: '2026-07-06'
-status: 'draft'
+status: 'in-review'
 review_loop_iteration: 0
+baseline_commit: '231a77f376b524b5f04b56dd3581262ba5e8ef5c'
 context:
   - '{project-root}/Majung-Backend/CLAUDE.md'
   - '{project-root}/_bmad-output/specs/spec-majung-demo/SPEC.md'
@@ -76,20 +77,21 @@ context:
 ## Tasks & Acceptance
 
 **Execution:**
-- [ ] `Majung-Backend/pyproject.toml` -- uv init + 의존성 고정 -- 재현 가능한 환경
-- [ ] `app/infrastructure/config/settings.py` -- BaseSettings 구현 -- 키 단일 진입점
-- [ ] `app/domains/knowledge/**` -- institutions.json 작성(공단·정부24·복지로·고용24 근거) + 로더/검색 -- 환각 금지의 원천
-- [ ] `app/domains/centers/**` -- centers.json(서울서부지부·관할 주민센터·고용센터 공개정보) + GET /api/centers -- CAP-5 데이터
-- [ ] `app/domains/chat/domain/**` -- 6영역·triage 규칙·시스템 프롬프트 -- CAP-2·3 핵심(순수 Python)
-- [ ] `app/domains/chat/adapter/outbound/external/claude_client.py` -- 스트리밍 클라이언트 -- 외부 호출 격리
-- [ ] `app/domains/chat/application/** + adapter/inbound/api/**` -- UseCase + SSE 라우터 -- 계약 준수(triage/text/card/error/done 이벤트)
-- [ ] `app/main.py` -- 조립 + CORS + /api/health -- 기동점
-- [ ] `tests/**` -- I/O 매트릭스 유닛테스트(Claude는 페이크 클라이언트로) -- 회귀 방지
+- [x] `Majung-Backend/pyproject.toml` -- uv 프로젝트 + 의존성·ruff·mypy 설정 -- 재현 가능한 환경
+- [x] `app/infrastructure/config/settings.py` -- BaseSettings 구현 -- 키 단일 진입점
+- [x] `app/domains/knowledge/**` -- institutions.json(6영역×2~3, 공개 데이터 초안) + 로더/검색 -- 환각 금지의 원천
+- [x] `app/domains/centers/**` -- centers.json(서울서부 중심) + GET /api/centers -- CAP-5 데이터
+- [x] `app/domains/chat/domain/**` -- 6영역·triage VO·시스템 프롬프트(관대함+인젝션 저항) -- CAP-2·3 핵심(순수 Python)
+- [x] `app/domains/chat/adapter/outbound/external/claude_client.py` -- 스트리밍 클라이언트 + 안전 TLS -- 외부 호출 격리
+- [x] `app/domains/chat/application/** + adapter/inbound/api/**` -- UseCase + SSE 라우터 + 게이트 -- 계약 준수(triage/text/card/error/done)
+- [x] `app/infrastructure/security/**` -- 게이트·rate limit·지출 서킷브레이커 -- 남용 방어 3층
+- [x] `app/main.py` -- 조립 + CORS + /api/health -- 기동점
+- [x] `tests/**` -- I/O 매트릭스 유닛테스트(페이크 Claude) + 실연동 triage(키 있으면) -- 회귀 방지
 
 **Acceptance Criteria:**
-- Given .env에 키 설정, when `uv run uvicorn app.main:app --port 8000` 후 demo-scenario 입력 3종 POST, then 각각 기대 영역이 triage 상위에 포함된 SSE 스트림 수신
-- Given KB에 없는 주제 질문, when POST /api/chat, then 제도 카드 0개 + 상담사 연결 폴백 문구
-- Given 서버 로그 검사, when 위 요청들 처리 후, then 사용자 입력 원문이 로그에 부재
+- ⏳ Given .env에 키 설정, when demo-scenario 입력 3종 POST, then 기대 영역 triage 상위 포함 — **실키 도착 후 확인**. `tests/test_triage_integration.py`로 자동 검증(현재 키 없어 skip)
+- [x] Given KB에 없는 주제 질문, when POST /api/chat, then 카드 0개 + 정직 안내 — `test_daily_flow_no_cards_web_enabled`, `test_triage_failure_yields_error`로 검증
+- [x] Given 서버 로그 검사, then 사용자 입력 원문 부재 — claude_client·usecase 로그는 상황 문구만 남김(코드 검토 확인)
 
 ## Design Notes
 
@@ -99,6 +101,8 @@ context:
 - **상담사 연결 3단계 정책**: ①KB 밖 일상 대화 → 그냥 대화 ②KB 밖 제도 질문 → "정확한 정보 없음" 정직 안내 ③위기 신호·직접 요청·동일 요구 반복 → 이때만 상담사 연결 (시스템 프롬프트에 명시)
 - **멀티턴 무저장**: 요청 body `history: [{role, content}]` (클라이언트가 세션 대화 보관, 최근 ~20턴 상한). 서버는 Claude 전달 후 즉시 폐기 — 서버에 대화 기록 0. 앱 재시작 시 초기화(예선). 본선에서 기기 로컬 암호화 저장 여부 결정
 - institutions.json 스키마: `{id, area(6영역 key), name, summary_easy, where, docs[], next_step, deadline?, source_url}`
+- **부산물 — Windows OpenSSL applink 크래시 우회** (`app/infrastructure/tls.py`): uv의 python-build-standalone에서 `ssl.create_default_context()`가 `OPENSSL_Uplink no OPENSSL_Applink`로 프로세스를 죽임(AsyncAnthropic 생성 시). 수동 `SSLContext(PROTOCOL_TLS_CLIENT)+load_default_certs()`는 정상 → 그 컨텍스트를 담은 httpx 클라이언트를 anthropic에 주입. HailMary가 겪은 동일 이슈.
+- **구현 시 triage 방식 최종**: 구조화 출력(`output_config.format` json_schema, thinking 끔, effort low) 1콜 → 서버가 KB 카드 매칭 → 가이던스 스트리밍(daily면 `web_search_20260209` 공공도메인 한정) 1콜. (계획의 "1콜"에서 지연 관리 위해 triage/guidance 2콜로 분리)
 
 ## Verification
 
