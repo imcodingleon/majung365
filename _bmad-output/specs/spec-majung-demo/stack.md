@@ -22,11 +22,14 @@
 | AI | Claude API — **키는 서버에만**, 클라이언트 노출 절대 금지 | HailMary Core Rule 승계 |
 | 품질 | ruff + mypy 에러 0 유지 | HailMary Core Rule 승계 |
 
-## 배포 · 환경
+## 배포 · 환경 (2026-07-06 수정)
 
-- **Vercel** — 프론트(웹 export)·백엔드(FastAPI 네이티브 지원) 동일 플랫폼, 시연 URL 확보
+- **모노레포 1개** (private) — FE/BE 폴더 분리, SSOT(SPEC·memlog)가 코드와 함께 이동. 필요 시 본선 후 `git subtree split`으로 분리 가능
+- **FE: Vercel** — git 연동, Root Directory=`Majung-Frontend`, 폴더 무변경 커밋은 자동 빌드 스킵
+- **BE: AWS** (보안·팀 숙련 — HailMary EC2 패턴 재사용, 본선 DB 도입 대비) — GitHub Actions `paths: ['Majung-Backend/**']` 필터로 배포 워크플로 분리
 - 로컬 포트: BE 8000 / Expo dev 8081 (HailMary와 충돌 없음)
 - 지식베이스: 6영역 × 2~3개 제도 JSON — 클로드 초안 → 팀 검수 → 7/8 인터뷰 후 보강
+- 공개 전환 정책: private 시작하되 **비밀은 처음부터 커밋 금지**(.env ignore + .env.example) → 나중에 public 전환 시 무작업
 
 ## 외부 의존성 대기 목록
 
