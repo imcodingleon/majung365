@@ -11,7 +11,7 @@
 | 검증 | Pydantic v2 |
 | AI | Claude API (SSE 스트리밍) |
 | 저장소 | 예선: JSON 파일 지식베이스 (`app/domains/knowledge/data/`). DB 없음 — 본선에서 MySQL+SQLAlchemy 도입 |
-| 배포 | Vercel (FastAPI 네이티브 지원) |
+| 배포 | AWS (EC2, HailMary 패턴 재사용). GitHub Actions `paths` 필터 |
 
 ## Commands
 

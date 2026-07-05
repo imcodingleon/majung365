@@ -2,7 +2,7 @@
 title: 'Majung-Backend 스캐폴드 — triage 챗(SSE) + 제도 KB + 센터 API'
 type: 'feature'
 created: '2026-07-06'
-status: 'in-review'
+status: 'done'
 review_loop_iteration: 0
 baseline_commit: '231a77f376b524b5f04b56dd3581262ba5e8ef5c'
 context:
@@ -92,6 +92,19 @@ context:
 - ⏳ Given .env에 키 설정, when demo-scenario 입력 3종 POST, then 기대 영역 triage 상위 포함 — **실키 도착 후 확인**. `tests/test_triage_integration.py`로 자동 검증(현재 키 없어 skip)
 - [x] Given KB에 없는 주제 질문, when POST /api/chat, then 카드 0개 + 정직 안내 — `test_daily_flow_no_cards_web_enabled`, `test_triage_failure_yields_error`로 검증
 - [x] Given 서버 로그 검사, then 사용자 입력 원문 부재 — claude_client·usecase 로그는 상황 문구만 남김(코드 검토 확인)
+
+## Spec Change Log
+
+- **2026-07-06 코드리뷰(Blind Hunter) 후 보안 하드닝 패치** (루프백 없이 patch 처리 — 의도 명확, 코드 검증됨):
+  - #3 [High] 게이트 fail-open + 기본 SESSION_SECRET 위조 → `main._assert_gate_safe` 부팅 가드(활성인데 기본 시크릿이면 기동 거부, 비활성이면 큰 경고).
+  - #2 [High] `/api/gate` 무제한 대입 → `@limiter.limit(rate_limit_gate=10/min)` 적용.
+  - #4 [Med] spend가 요청당 카운트(실제 2+콜) → check()/record() 분리, ClaudeChatLlm이 호출마다 record. 이제 콜 단위.
+  - #5 [Med] rate-limit 키가 프록시 IP → `client_ip` key_func가 X-Forwarded-First 우선(ALB 뒤 정상).
+  - #6 [Med] 환각 방지가 카드만 → 시스템 프롬프트·no-info 컨텍스트에 "일상 답변에서도 제도명·기관·전화·기한 지어내지 말고 모르면 모른다" 명시.
+  - #7 [Low] verify_token이 BadData 미포착 → `except BadData`(itsdangerous 기반)로 확대, 500 방지.
+  - #1 [Low] CLAUDE.md 배포 오기(Vercel) → AWS로 정정. 멀티인스턴스 인메모리 카운터 한계는 deferred(본선 Redis).
+  - (내부 엣지) 공백-only 메시지 → strip 후 400 가드.
+  - 검증: ruff 0 / mypy 0(50파일) / pytest 21 passed + 3 skipped.
 
 ## Design Notes
 

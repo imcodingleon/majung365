@@ -15,12 +15,33 @@ from app.domains.chat.adapter.inbound.api.router import router as chat_router
 from app.domains.chat.adapter.outbound.external.claude_client import ClaudeChatLlm
 from app.domains.chat.application.usecase import ChatUseCase
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
-from app.infrastructure.config.settings import get_settings
+from app.infrastructure.config.settings import Settings, get_settings
 from app.infrastructure.security.gate import AccessGate
 from app.infrastructure.security.rate_limit import limiter
 from app.infrastructure.security.spend import SpendCircuitBreaker
 
 logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger("majung.boot")
+
+_DEFAULT_SESSION_SECRET = "dev-only-secret-change-me"
+
+
+def _assert_gate_safe(gate: AccessGate, settings: Settings) -> None:
+    """부팅 시 게이트 안전성 검증 — fail-open/위조 토큰 조합을 막는다.
+
+    - 게이트 활성인데 SESSION_SECRET이 공개 기본값이면: 토큰 위조 가능 → 기동 거부.
+    - 게이트 비활성(코드 해시 없음)이면: /api/chat 무방비 → 큰 경고(로컬 개발 전용).
+    """
+    if gate.enabled and settings.session_secret == _DEFAULT_SESSION_SECRET:
+        raise RuntimeError(
+            "SESSION_SECRET이 공개 기본값입니다 — 게이트가 켜져도 토큰을 위조할 수 있어요. "
+            ".env에 임의의 SESSION_SECRET을 설정하세요."
+        )
+    if not gate.enabled:
+        logger.warning(
+            "⚠️ 접근 게이트 비활성(DEMO_ACCESS_CODE_HASH 미설정) — /api/chat이 무방비입니다. "
+            "배포 전 반드시 설정하세요. (로컬 개발에서만 허용)"
+        )
 
 
 def create_app() -> FastAPI:
@@ -43,13 +64,18 @@ def create_app() -> FastAPI:
 
     # ── DI 와이어링 ──
     institutions = JsonInstitutionRepository()
-    llm = ClaudeChatLlm(settings)
-    app.state.chat_usecase = ChatUseCase(llm=llm, institutions=institutions)
-    app.state.gate = AccessGate(settings)
-    app.state.spend = SpendCircuitBreaker(
+    spend = SpendCircuitBreaker(
         max_per_hour=settings.spend_max_calls_per_hour,
         max_per_day=settings.spend_max_calls_per_day,
     )
+    # 실제 Claude 호출마다 지출 카운트(콜 단위). 라우터는 스트림 전 check()로 조기 차단.
+    llm = ClaudeChatLlm(settings, record_call=spend.record)
+    gate = AccessGate(settings)
+    _assert_gate_safe(gate, settings)
+
+    app.state.chat_usecase = ChatUseCase(llm=llm, institutions=institutions)
+    app.state.gate = gate
+    app.state.spend = spend
 
     # Routers
     app.include_router(chat_router)

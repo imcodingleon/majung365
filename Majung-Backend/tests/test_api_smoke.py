@@ -34,3 +34,9 @@ def test_gate_endpoint_exists() -> None:
     r = client.post("/api/gate", json={"code": "anything"})
     assert r.status_code == 200
     assert "token" in r.json()
+
+
+def test_chat_blank_message_rejected() -> None:
+    # 공백만 입력 → strip 후 빈 문자열 → 400 (Claude 호출 안 함)
+    r = client.post("/api/chat", json={"message": "   "})
+    assert r.status_code == 400

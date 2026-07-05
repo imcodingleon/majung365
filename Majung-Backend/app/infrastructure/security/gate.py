@@ -9,7 +9,7 @@ import hashlib
 import hmac
 import logging
 
-from itsdangerous import BadSignature, SignatureExpired, URLSafeTimedSerializer
+from itsdangerous import BadData, URLSafeTimedSerializer
 
 from app.infrastructure.config.settings import Settings
 
@@ -46,7 +46,6 @@ class AccessGate:
         try:
             self._serializer.loads(token, max_age=self._ttl)
             return True
-        except SignatureExpired:
-            return False
-        except BadSignature:
+        except BadData:
+            # SignatureExpired·BadSignature·BadPayload 등 모든 itsdangerous 오류의 기반 클래스
             return False

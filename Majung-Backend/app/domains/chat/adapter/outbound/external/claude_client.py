@@ -7,7 +7,7 @@
 
 import json
 import logging
-from collections.abc import AsyncIterator
+from collections.abc import AsyncIterator, Callable
 from typing import Any
 
 from anthropic import AsyncAnthropic
@@ -67,7 +67,11 @@ def _to_messages(history: list[Turn], message: str) -> list[dict[str, str]]:
 
 
 class ClaudeChatLlm:
-    def __init__(self, settings: Settings) -> None:
+    def __init__(
+        self,
+        settings: Settings,
+        record_call: Callable[[], None] | None = None,
+    ) -> None:
         self._settings = settings
         # Windows OpenSSL applink 크래시 우회를 위해 안전한 http 클라이언트 주입
         self._client = AsyncAnthropic(
@@ -75,8 +79,11 @@ class ClaudeChatLlm:
             http_client=make_async_http_client(),
         )
         self._model = settings.claude_model
+        # 실제 Claude 호출마다 지출 카운트 증가(콜 단위). 없으면 무시.
+        self._record_call = record_call or (lambda: None)
 
     async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+        self._record_call()
         # 외부 SDK(TypedDict) 경계 — dict 리터럴은 런타임엔 유효하나 strict 타입 매칭만 예외
         create_kwargs: dict[str, Any] = {
             "model": self._model,
@@ -115,6 +122,7 @@ class ClaudeChatLlm:
         context: str,
         allow_web_search: bool,
     ) -> AsyncIterator[str]:
+        self._record_call()
         system = build_system_prompt() + "\n\n" + context
         tools = None
         if allow_web_search:

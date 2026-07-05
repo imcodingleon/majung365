@@ -50,7 +50,9 @@ class ChatIn(BaseModel):
 
 
 @router.post("/gate", response_model=GateOut)
+@limiter.limit(get_settings().rate_limit_gate)
 def gate(body: GateIn, request: Request) -> GateOut:
+    # 게이트 코드 무한 대입 방지 — 이 엔드포인트 자체를 빡빡하게 제한
     access = request.app.state.gate
     if not access.verify_code(body.code):
         raise HTTPException(status_code=401, detail="접근 코드가 올바르지 않아요.")
@@ -87,13 +89,15 @@ async def chat(
     if not access.verify_token(_extract_token(body, authorization)):
         raise HTTPException(status_code=401, detail="먼저 접근 코드로 입장해 주세요.")
 
-    # ③ 지출 서킷브레이커 (스트림 시작 전 차단)
-    if not spend.allow():
+    # ③ 지출 서킷브레이커 (스트림 시작 전 조기 차단, 읽기 전용 판정)
+    if not spend.check():
         raise HTTPException(
             status_code=429, detail="지금 이용이 많아요. 잠시 후 다시 시도해 주세요."
         )
 
     command = _to_command(body)
+    if not command.message:  # 공백/개행만 입력 → strip 후 빈 문자열 방지
+        raise HTTPException(status_code=400, detail="메시지를 입력해 주세요.")
 
     async def event_stream() -> AsyncIterator[dict[str, str]]:
         async for ev in usecase.run(command):

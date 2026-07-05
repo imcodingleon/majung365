@@ -28,8 +28,9 @@ class Settings(BaseSettings):
     session_secret: str = "dev-only-secret-change-me"
     session_ttl_seconds: int = 60 * 60 * 6  # 6시간
 
-    # ── Rate limit (남용 방어 ②, 느슨하게) ──
-    rate_limit_chat: str = "20/minute"
+    # ── Rate limit (남용 방어 ②) ──
+    rate_limit_chat: str = "20/minute"  # 신뢰 사용자 볼륨 걱정 없어 느슨
+    rate_limit_gate: str = "10/minute"  # 게이트 코드 무한 대입 방지(빡빡)
 
     # ── 지출 서킷브레이커 (남용 방어 ③, 백스톱) ──
     spend_max_calls_per_hour: int = 300
