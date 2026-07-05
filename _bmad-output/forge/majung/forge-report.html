@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Forge Report — [마중] HARDENED</title>
+<style>
+  :root { --ink:#2b2620; --paper:#f6f1e7; --accent:#8b2f2f; --gold:#a67c2e; --ok:#3e6b3e; --dim:#7a715f; }
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { background:#e8e0d0; font-family:'Segoe UI','Malgun Gothic',sans-serif; color:var(--ink); padding:2rem 1rem; }
+  .sheet { max-width:860px; margin:0 auto; background:var(--paper); border:1px solid #d8cdb6; box-shadow:0 8px 40px rgba(60,45,20,.25); padding:3rem 3rem 4rem; position:relative; }
+  .sheet::before { content:""; position:absolute; inset:10px; border:2px double #c9b98f; pointer-events:none; }
+  header { text-align:center; margin-bottom:2rem; position:relative; }
+  .kicker { letter-spacing:.35em; font-size:.72rem; color:var(--dim); text-transform:uppercase; }
+  h1 { font-size:1.9rem; margin:.4rem 0 .2rem; }
+  .sub { color:var(--dim); font-size:.9rem; }
+  .seal { position:absolute; top:-12px; right:-6px; transform:rotate(12deg); }
+  h2 { font-size:1.05rem; margin:2rem 0 .8rem; padding-bottom:.35rem; border-bottom:1px solid #d8cdb6; letter-spacing:.06em; }
+  h2 .tag { font-size:.7rem; color:var(--gold); letter-spacing:.2em; margin-right:.5em; }
+  ul { list-style:none; }
+  li { padding:.45rem 0 .45rem 1.4rem; position:relative; font-size:.93rem; line-height:1.55; }
+  li::before { content:"◆"; position:absolute; left:.2rem; top:.5rem; font-size:.6rem; color:var(--gold); }
+  .kill li::before { content:"✕"; color:var(--accent); font-size:.8rem; top:.42rem; }
+  .warn li::before { content:"⚠"; color:#a3701c; font-size:.8rem; top:.42rem; }
+  .quote { font-style:italic; background:#efe7d5; border-left:3px solid var(--gold); padding:.7rem 1rem; margin:.8rem 0; font-size:.9rem; }
+  table.cast { width:100%; border-collapse:collapse; font-size:.88rem; margin-top:.4rem; }
+  .cast td { padding:.5rem .6rem; border-bottom:1px dashed #d8cdb6; vertical-align:top; }
+  .cast td:first-child { white-space:nowrap; font-weight:600; width:11.5rem; }
+  .cast .role { color:var(--dim); font-size:.78rem; display:block; }
+  .grid { display:grid; grid-template-columns:1fr 1fr; gap:.3rem 2rem; }
+  @media (max-width:640px){ .grid{grid-template-columns:1fr;} .sheet{padding:2rem 1.2rem 3rem;} .seal{transform:scale(.75) rotate(12deg); top:-20px;} }
+  footer { margin-top:2.5rem; text-align:center; color:var(--dim); font-size:.78rem; letter-spacing:.05em; }
+</style>
+</head>
+<body>
+<div class="sheet">
+  <header>
+    <div class="seal">
+      <svg width="150" height="150" viewBox="0 0 150 150">
+        <defs>
+          <radialGradient id="wax" cx="42%" cy="38%" r="65%">
+            <stop offset="0%" stop-color="#b84a3e"/><stop offset="55%" stop-color="#8b2f2f"/><stop offset="100%" stop-color="#5f1d1d"/>
+          </radialGradient>
+        </defs>
+        <path d="M75 8 C98 4 122 16 134 36 C146 56 144 82 133 101 C122 120 100 134 76 136 C52 138 28 128 16 108 C4 88 6 60 18 41 C30 22 52 12 75 8 Z" fill="url(#wax)"/>
+        <circle cx="75" cy="73" r="52" fill="none" stroke="#e9c9a8" stroke-width="2" stroke-dasharray="3 2" opacity=".85"/>
+        <circle cx="75" cy="73" r="44" fill="none" stroke="#e9c9a8" stroke-width="1" opacity=".6"/>
+        <text x="75" y="64" text-anchor="middle" font-family="Georgia,serif" font-size="15" font-weight="bold" fill="#f2ddc4" letter-spacing="2">HARDENED</text>
+        <text x="75" y="84" text-anchor="middle" font-family="'Malgun Gothic',sans-serif" font-size="13" fill="#f2ddc4">마 중</text>
+        <text x="75" y="101" text-anchor="middle" font-family="Georgia,serif" font-size="8" fill="#e9c9a8" letter-spacing="1">2026 · 07 · 05</text>
+      </svg>
+    </div>
+    <div class="kicker">BMad Forge · Idea Pressure-Test Report</div>
+    <h1>[마중] 출소자 재사회화 온보딩 네비게이터</h1>
+    <div class="sub">팀 여름아 부탁해 · KDT 해커톤 예선 D-5 · 세션 2026-07-05 · 의뢰 skwog</div>
+  </header>
+
+  <h2><span class="tag">VERDICT</span>단련 완료 — 4개 균열 전부 봉합</h2>
+  <p style="font-size:.93rem; line-height:1.6;">내부 합의 + 멘토 피드백만 있던 기획안을 4개 축(진입 경로 · 임팩트 논리 · 데모 정합성 · 지불 구조)에서 압박. 아이디어는 <b>"출소자 챗봇"에서 "공단 직원 업무 AX(출소자 온보딩을 front로 갖는)"로 무게중심을 옮기며 단단해짐.</b> 7/8 공단 인터뷰가 첫 외부 검증이며, 인터뷰 질문지가 확정 구조와 정합함을 확인.</p>
+
+  <h2><span class="tag">LOCKED</span>확정된 결정</h2>
+  <ul>
+    <li><b>본체 = 공단 직원 AX.</b> 반복 응대(계좌 재개설·휴대폰 재개통·제도 안내) 제거 + 상담 전 triage. 출소자 화면은 front, 직원 가치가 지불 논리.</li>
+    <li><b>피치 언어:</b> "앱뱅킹이 은행원을 없앤 게 아니라 창구 반복업무를 없앴다 — 마중은 공단의 앱뱅킹."</li>
+    <li><b>진입 = A 쐐기 → B 확장.</b> 공단 시설 내(재활 의지로 자기선별된 입소자)에서 시작, 출소 직후 오픈 챗봇은 확장 단계.</li>
+    <li><b>BM = 성과지표 3층.</b> 단기(응대시간 절감·AI 1차 처리율·triage 완료율)=과금 근거 / 중기(신청 전환율 등, 인터뷰로 공단 실제 지표명 확보)=갱신 근거 / 장기(재복역률 6% vs 29%)=서사.</li>
+    <li><b>예선 프로토타입 = 상황입력→급한일 정리→체크리스트→지도.</b> 직원측 요약 카드는 본선 고려 + 기획안 로드맵 한 줄 + 인터뷰용 종이 목업.</li>
+  </ul>
+
+  <h2><span class="tag">KILLED</span>기각된 것과 사유</h2>
+  <ul class="kill">
+    <li><b>재범률 연동 성과 지불</b> — 측정 3년+, 인과 귀속 불가, SIB급 계약 무게. 심사 신뢰 역효과.</li>
+    <li><b>B(오픈 챗봇) 우선 진입</b> — "출소자가 어떻게 알고 쓰죠?"에 답 없음. 배포 경로 부재.</li>
+    <li><b>직원 대시보드 예선 구현</b> — D-5 스코프 자멸. 본선 이월.</li>
+  </ul>
+
+  <h2><span class="tag">SURVIVED</span>살아남은 약점 — 제출 전 처리</h2>
+  <ul class="warn">
+    <li>가석방 통계(2024 약 48%) 1차 출처(교정통계연보) 미검증 — 확인 전 수치 단정 금지.</li>
+    <li>디지털 단절 역설(셀프서비스를 가장 못 쓰는 집단에 셀프서비스 제공) 방어 논리가 기획안에 흩어져 있음 — A 쐐기 환경 + 체크리스트 장치로 명시할 것.</li>
+    <li>기획안 ①②③ 기능 목록에 체크리스트 누락 / "출소 그다음 날부터" B 프레임 잔존 문구 — A 쐐기 기준 재작성.</li>
+  </ul>
+
+  <h2><span class="tag">CAST</span>압박에 참여한 목소리</h2>
+  <table class="cast">
+    <tr><td>📋 John <span class="role">Product Manager · BMad</span></td><td>진입점 문서 상충을 적발 — "이건 표현 차이가 아니라 완전히 다른 두 제품이다."</td></tr>
+    <tr><td>📊 Mary <span class="role">Business Analyst · BMad</span></td><td>팀이 인용한 통계(6% vs 29%)로 팀의 배포 전략을 역공. 재범률 지불의 측정 불가능성 대질.</td></tr>
+    <tr><td>💻 Amelia <span class="role">Senior Engineer · BMad</span></td><td>D-5 스코프 규율 집행 — "데모가 증명하지 않는 주장은 기획서의 문장일 뿐."</td></tr>
+    <tr><td>🏛️ 오세영 <span class="role">가상 · 공단 서울지부 사무국장</span></td><td>"우리한테 안 온 출소자가 그 챗봇을 무슨 수로 알게 됩니까?"</td></tr>
+    <tr><td>👤 김판수 <span class="role">가상 · 5년 복역 무연고 40대</span></td><td>"그럼 나 같은 사람은 언제 만나줍니까?"</td></tr>
+    <tr><td>🏢 정미숙 <span class="role">가상 · 공단 15년차 직원</span></td><td>"나를 대체하는 도구 말고, 나와 대상자 사이에 서주는 도구면 얘기가 달라요."</td></tr>
+    <tr><td>💼 한기범 <span class="role">가상 · SIB 운영기관 심사역</span></td><td>"공단이 다음 분기에 결재할 수 있는 숫자를 말해보세요."</td></tr>
+  </table>
+
+  <h2><span class="tag">TRAIL</span>산출물</h2>
+  <div class="grid">
+    <ul>
+      <li>증류본: <code>forged-idea.md</code> (→ bmad-prd / bmad-spec 입력 가능)</li>
+      <li>세션 원장: <code>.memlog.md</code> (lock 3 · decision 3 · crack 1 외)</li>
+    </ul>
+    <ul>
+      <li>상세 정리: Obsidian <code>출소자 지원 서비스/BM 성과지표 3층 구조.md</code></li>
+      <li>다음 관문: 7/8 공단 인터뷰(중기 지표명 확보) → 7/10 13:00 제출</li>
+    </ul>
+  </div>
+
+  <footer>BMad Forge · freedom_project · 이 문서는 세션 기록의 요약이며 정본은 memlog와 Obsidian 노트입니다</footer>
+</div>
+</body>
+</html>

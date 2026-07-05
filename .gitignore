@@ -1,0 +1,28 @@
+# ── 비밀 (절대 커밋 금지 — 커밋 #1부터) ──
+.env
+.env.*
+!.env.example
+
+# ── Node / Expo ──
+node_modules/
+.expo/
+dist/
+web-build/
+*.tsbuildinfo
+
+# ── Python ──
+__pycache__/
+.venv/
+*.pyc
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# ── 로컬 도구 상태 (기계별) ──
+.claude/settings.local.json
+.omc/
+*.log
+
+# ── OS ──
+.DS_Store
+Thumbs.db
