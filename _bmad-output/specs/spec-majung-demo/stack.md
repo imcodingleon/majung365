@@ -13,6 +13,8 @@
 | 지도 | **Google Maps** — 플랫폼 분기 단일 컴포넌트: `CenterMap.web.tsx`(Maps JS API) / `CenterMap.native.tsx`(react-native-maps, 본선) | 시안이 구글맵. ⚠️ API 키: 사용자가 카드 등록 후 제공 예정 — 그전까지 정적 폴백으로 개발 |
 | 채팅 | 커스텀 UI + SSE 스트리밍 | 시안이 커스텀 디자인 |
 
+> **실측 상향(2026-07-07):** `create-expo-app@latest` 기준 **Expo SDK 57**(RN 0.86·React 19.2·reanimated 4). 위 표 작성 시점은 SDK 54였으나, 그린필드+본선까지 가는 코드라 최신 유지. NativeWind는 **4.2 유지 + tailwindcss v3 핀**(v5 pre-release 회피). 웹 export 번들로 조합 실검증 완료. 구조는 Frontend DDD `src/features/[name]/{domain,hooks,views}` + `src/shared/{types,utils,state}`.
+
 ## 백엔드 — `Majung-Backend/`
 
 | 항목 | 선택 | 이유 |

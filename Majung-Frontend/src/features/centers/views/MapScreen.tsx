@@ -1,0 +1,147 @@
+// 지도 - 센터 찾기 (CAP-5). Figma 2:2464. Maps 키 도착 전까지 지도 영역은 폴백.
+import { useMemo, useState } from "react";
+import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { SafeAreaView } from "react-native-safe-area-context";
+
+import type { Center } from "@/shared/types";
+
+import { useCenters } from "../hooks/useCenters";
+import { CenterMap } from "./CenterMap";
+
+const CATEGORIES = ["전체", "법무보호공단", "주민센터", "고용센터"] as const;
+
+function SearchBar({ value, onChange }: { value: string; onChange: (t: string) => void }) {
+  return (
+    <View className="flex-row items-center gap-3 rounded-full border-2 border-brand bg-white px-6 py-3">
+      <TextInput
+        className="min-w-0 flex-1 text-base text-ink"
+        placeholder="찾으려는 센터를 검색하세요"
+        placeholderTextColor="#b4b4b4"
+        value={value}
+        onChangeText={onChange}
+        returnKeyType="search"
+      />
+      <Text className="text-lg text-ink-muted">🔍</Text>
+    </View>
+  );
+}
+
+function FilterChips({
+  selected,
+  onSelect,
+}: {
+  selected: string;
+  onSelect: (c: string) => void;
+}) {
+  return (
+    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2.5">
+      {CATEGORIES.map((c) => {
+        const active = c === selected;
+        return (
+          <Pressable
+            key={c}
+            className={`rounded-full border px-4 py-2 active:opacity-80 ${
+              active ? "border-brand bg-brand" : "border-[#b4b4b4] bg-white"
+            }`}
+            onPress={() => onSelect(c)}
+          >
+            <Text className={`text-base ${active ? "text-white" : "text-black"}`}>{c}</Text>
+          </Pressable>
+        );
+      })}
+    </ScrollView>
+  );
+}
+
+function CenterTag({ label, primary }: { label: string; primary: boolean }) {
+  return (
+    <View className={`rounded-md px-2 py-0.5 ${primary ? "bg-brand-soft" : "bg-[#e5e5e5]"}`}>
+      <Text className={`text-xs ${primary ? "text-brand" : "text-black"}`}>{label}</Text>
+    </View>
+  );
+}
+
+function CenterCard({ center }: { center: Center }) {
+  const [fav, setFav] = useState(false);
+  return (
+    <View className="gap-2 rounded-2xl border border-line bg-white p-4 shadow">
+      <View className="flex-row items-start justify-between gap-2">
+        <View className="flex-1 gap-1">
+          <Text className="text-base font-semibold text-[#1d1b20]">{center.name}</Text>
+          <Text className="text-sm text-[#494551]">운영시간 {center.hours}</Text>
+        </View>
+        <Pressable onPress={() => setFav((f) => !f)} hitSlop={8}>
+          <Text className={`text-xl ${fav ? "text-brand" : "text-ink-muted"}`}>{fav ? "★" : "☆"}</Text>
+        </Pressable>
+      </View>
+
+      <View className="flex-row flex-wrap gap-2">
+        {center.tags.map((t, i) => (
+          <CenterTag key={t} label={t} primary={i === 0} />
+        ))}
+      </View>
+
+      <View className="flex-row gap-3 pt-2">
+        <Pressable
+          className="flex-1 flex-row items-center justify-center gap-1 rounded-xl border border-brand py-3 active:opacity-80"
+          onPress={() => Linking.openURL(`tel:${center.phone}`)}
+        >
+          <Text className="text-sm font-medium text-brand">📞 전화</Text>
+        </Pressable>
+        <Pressable
+          className="flex-1 flex-row items-center justify-center gap-1 rounded-xl bg-brand py-3 active:opacity-80"
+          onPress={() =>
+            Linking.openURL(
+              `https://www.google.com/maps/search/?api=1&query=${center.lat},${center.lng}`,
+            )
+          }
+        >
+          <Text className="text-sm font-medium text-white">🧭 길찾기</Text>
+        </Pressable>
+      </View>
+    </View>
+  );
+}
+
+export function MapScreen() {
+  const [cat, setCat] = useState<string>("전체");
+  const [query, setQuery] = useState("");
+  const { centers, loading, usingFallback } = useCenters(cat === "전체" ? null : cat);
+
+  const shown = useMemo(() => {
+    const q = query.trim();
+    if (!q) return centers;
+    return centers.filter((c) => c.name.includes(q) || c.tags.some((t) => t.includes(q)));
+  }, [centers, query]);
+
+  return (
+    <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
+      <View className="border-b border-line bg-white px-5 py-4">
+        <Text className="text-xl text-ink-header">마중365</Text>
+      </View>
+
+      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
+        <SearchBar value={query} onChange={setQuery} />
+        <FilterChips selected={cat} onSelect={setCat} />
+        <CenterMap centers={shown} />
+
+        <View className="gap-1">
+          <Text className="text-xl font-bold text-[#1d1b20]">센터 위치 정보</Text>
+          {usingFallback ? (
+            <Text className="text-xs text-ink-muted">실시간 연결이 어려워 예시 정보를 보여드려요.</Text>
+          ) : null}
+        </View>
+
+        <View className="gap-4">
+          {loading ? (
+            <Text className="text-sm text-ink-muted">불러오는 중…</Text>
+          ) : shown.length === 0 ? (
+            <Text className="text-sm text-ink-muted">조건에 맞는 센터가 없어요.</Text>
+          ) : (
+            shown.map((c) => <CenterCard key={c.id} center={c} />)
+          )}
+        </View>
+      </ScrollView>
+    </SafeAreaView>
+  );
+}

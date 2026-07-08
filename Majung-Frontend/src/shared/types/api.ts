@@ -1,0 +1,78 @@
+// 백엔드(Majung-Backend) API 계약을 그대로 미러링한 타입.
+// 계약이 바뀌면 이 파일을 같은 커밋에서 갱신한다.
+
+/** triage 6영역 분류 결과 항목 (CAP-2). rank=1이 가장 급함. */
+export interface AreaOut {
+  /** identity | welfare | housing | employment | health | debt */
+  key: string;
+  /** "신분 재건", "긴급복지·생계" 등 표시 라벨 */
+  label: string;
+  /** 우선순위 (1이 가장 급함) */
+  rank: number;
+  /** 왜 급한지 쉬운 말 설명 */
+  reason: string;
+}
+
+/** 제도 안내 카드 (CAP-3, 지식베이스 매칭). KB 항목만 인용 — 환각 없음. */
+export interface CardData {
+  institution_id: string;
+  /** 제도명 */
+  name: string;
+  area_label: string;
+  /** 쉬운 말 요약 */
+  summary_easy: string;
+  /** 어디서 신청하는지 */
+  where: string;
+  /** 필요 서류 목록 */
+  docs: string[];
+  /** 다음 행동 1개 */
+  next_step: string;
+  /** 기한 경고 (없으면 null) */
+  deadline: string | null;
+  /** 근거 출처 URL */
+  source_url: string;
+}
+
+/** 지원기관 (CAP-5 지도). GET /api/centers 응답 항목. */
+export interface Center {
+  id: string;
+  /** 법무보호공단 | 주민센터 | 고용센터 */
+  category: string;
+  name: string;
+  address: string;
+  phone: string;
+  /** 운영시간 문구 */
+  hours: string;
+  lat: number;
+  lng: number;
+  tags: string[];
+}
+
+export type ChatRole = "user" | "assistant";
+
+/** 대화 히스토리 한 턴. */
+export interface Turn {
+  role: ChatRole;
+  content: string;
+}
+
+/** POST /api/chat 요청. token은 게이트 통과 후 발급. */
+export interface ChatRequest {
+  message: string;
+  history: Turn[];
+  token?: string | null;
+}
+
+/** SSE 스트림 이벤트를 소비하는 콜백 묶음. */
+export interface ChatStreamHandlers {
+  /** triage 결과(급한 영역 2~3개) 도착 */
+  onTriage?: (areas: AreaOut[]) => void;
+  /** 안내 텍스트 델타(스트리밍 조각) 도착 */
+  onText?: (delta: string) => void;
+  /** 제도 카드 도착 */
+  onCard?: (card: CardData) => void;
+  /** 서버가 보낸 사용자용 오류 문구 */
+  onError?: (message: string) => void;
+  /** 스트림 정상 종료 */
+  onDone?: () => void;
+}

@@ -1,0 +1,16 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/*
+ * RN-web 보정: 가로 ScrollView(예: 챗봇 프리셋 칩)의 콘텐츠 폭이 #root를 뷰포트 너머로
+ * 늘려 페이지가 가로로 밀리는 문제 방지. 루트를 뷰포트 폭으로 고정하면 stretch 캐스케이드로
+ * 하위 컨테이너가 전부 뷰포트 폭에 갇힌다(내부 ScrollView는 자체 overflow로 정상 스크롤).
+ */
+html,
+body,
+#root {
+  width: 100%;
+  max-width: 100vw;
+  overflow-x: hidden;
+}

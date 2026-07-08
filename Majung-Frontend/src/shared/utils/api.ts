@@ -1,0 +1,151 @@
+// 모든 백엔드 HTTP 호출의 단일 관문 (SSE 포함).
+// 비즈니스 로직 없음 — 요청 조립 / 응답 파싱 / 오류 정규화만.
+// 비밀 금지: 여기에 API 키를 넣지 않는다. AI 호출은 백엔드가 담당.
+
+import type {
+  AreaOut,
+  CardData,
+  Center,
+  ChatRequest,
+  ChatStreamHandlers,
+} from "../types";
+
+/** 노출 허용 변수만 사용(EXPO_PUBLIC_). 미설정 시 로컬 기본값. */
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+
+/** 서버가 준 사용자용 문구(detail)를 담는 오류. UI는 message를 그대로 보여줘도 됨. */
+export class ApiError extends Error {
+  readonly status: number;
+  constructor(status: number, message: string) {
+    super(message);
+    this.name = "ApiError";
+    this.status = status;
+  }
+}
+
+const DEFAULT_ERROR = "지금 잠시 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
+
+/** 응답 body(JSON detail)에서 사용자용 문구를 최대한 뽑아낸다. */
+async function errorMessage(res: Response): Promise<string> {
+  try {
+    const data = (await res.json()) as { detail?: unknown };
+    if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
+  } catch {
+    // JSON 아님 — 기본 문구로
+  }
+  return DEFAULT_ERROR;
+}
+
+/** POST /api/gate — 접근 코드로 입장, 세션 토큰 발급. */
+export async function postGate(code: string): Promise<string> {
+  const res = await fetch(`${API_BASE}/api/gate`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ code }),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  const data = (await res.json()) as { token: string };
+  return data.token;
+}
+
+/** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */
+export async function getCenters(category?: string): Promise<Center[]> {
+  const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+  const res = await fetch(`${API_BASE}/api/centers${qs}`);
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as Center[];
+}
+
+/**
+ * POST /api/chat (SSE) — triage → text(델타) → card → done 스트림을 소비한다.
+ *
+ * 예선은 웹(Vercel) 전제라 fetch + ReadableStream 리더로 파싱한다.
+ * ⚠️ 본선 네이티브: RN fetch는 body 스트리밍 미지원 → react-native-sse/XHR 전환 필요.
+ *
+ * @param signal 중단용 AbortSignal (화면 이탈 시 취소)
+ */
+export async function streamChat(
+  req: ChatRequest,
+  handlers: ChatStreamHandlers,
+  signal?: AbortSignal,
+): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/chat`, {
+    method: "POST",
+    headers: {
+      "Content-Type": "application/json",
+      ...(req.token ? { Authorization: `Bearer ${req.token}` } : {}),
+    },
+    body: JSON.stringify({ message: req.message, history: req.history }),
+    signal,
+  });
+
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  if (!res.body) {
+    // 웹이 아니거나 스트리밍 미지원 환경
+    throw new ApiError(0, "이 환경에서는 실시간 답변을 받을 수 없어요.");
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  try {
+    for (;;) {
+      const { done, value } = await reader.read();
+      if (done) break;
+      buffer += decoder.decode(value, { stream: true });
+      buffer = buffer.replace(/\r\n/g, "\n");
+
+      // 완성된 SSE 프레임(빈 줄 구분)만 처리
+      let sep: number;
+      while ((sep = buffer.indexOf("\n\n")) !== -1) {
+        const frame = buffer.slice(0, sep);
+        buffer = buffer.slice(sep + 2);
+        dispatchFrame(frame, handlers);
+      }
+    }
+  } finally {
+    reader.releaseLock();
+  }
+}
+
+/** SSE 프레임 한 개(event/data 라인들)를 파싱해 해당 핸들러로 보낸다. */
+function dispatchFrame(frame: string, handlers: ChatStreamHandlers): void {
+  let event = "message";
+  const dataLines: string[] = [];
+  for (const line of frame.split("\n")) {
+    if (line.startsWith(":")) continue; // 주석/핑
+    if (line.startsWith("event:")) event = line.slice(6).trim();
+    else if (line.startsWith("data:")) dataLines.push(line.slice(5).trim());
+  }
+  const data = dataLines.join("\n");
+  if (event === "done") {
+    handlers.onDone?.();
+    return;
+  }
+  if (!data) return;
+
+  let parsed: unknown;
+  try {
+    parsed = JSON.parse(data);
+  } catch {
+    return; // 깨진 프레임은 조용히 무시
+  }
+
+  switch (event) {
+    case "triage":
+      handlers.onTriage?.((parsed as { areas: AreaOut[] }).areas);
+      break;
+    case "text":
+      handlers.onText?.((parsed as { delta: string }).delta);
+      break;
+    case "card":
+      handlers.onCard?.(parsed as CardData);
+      break;
+    case "error":
+      handlers.onError?.((parsed as { message: string }).message);
+      break;
+    default:
+      break;
+  }
+}
