@@ -94,5 +94,10 @@ export function CenterMap({ centers }: { centers: Center[] }) {
   }, [centers]);
 
   if (!KEY) return <MapFallbackPanel />;
-  return <View ref={ref} className="h-44 overflow-hidden rounded-2xl border border-line bg-line" />;
+  return (
+    <View
+      ref={ref}
+      className="h-44 overflow-hidden rounded-2xl border border-line bg-line lg:h-[420px]"
+    />
+  );
 }

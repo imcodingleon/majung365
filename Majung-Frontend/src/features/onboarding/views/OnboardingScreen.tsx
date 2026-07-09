@@ -69,44 +69,49 @@ export function OnboardingScreen() {
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
-      <View className="border-b border-line bg-white px-5 py-4">
+      {/* 모바일 헤더 — 데스크톱에선 중앙 정렬 콘텐츠만(셸 밖 라우트) */}
+      <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
         <Text className="text-xl text-ink-header">마중365</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-8 px-4 pb-6 pt-5">
-        <ProgressSection step={step} total={total} />
+      <ScrollView className="flex-1" contentContainerClassName="px-4 pb-6 pt-5">
+        <View className="w-full gap-8 lg:max-w-[640px] lg:self-center lg:py-6">
+          <ProgressSection step={step} total={total} />
 
-        <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">{question.title}</Text>
+          <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">{question.title}</Text>
 
-        <View className="gap-4">
-          {question.options.map((opt) => (
-            <OptionButton
-              key={opt.id}
-              option={opt}
-              selected={selectedOptionId === opt.id}
-              onPress={() => select(opt.id)}
-            />
-          ))}
-        </View>
+          <View className="gap-4">
+            {question.options.map((opt) => (
+              <OptionButton
+                key={opt.id}
+                option={opt}
+                selected={selectedOptionId === opt.id}
+                onPress={() => select(opt.id)}
+              />
+            ))}
+          </View>
 
-        <View className="flex-row items-start gap-3 rounded-[20px] bg-line p-4">
-          <Text className="text-base">ℹ️</Text>
-          <Text className="flex-1 text-sm leading-5 text-[#7c7c7c]">
-            작성해주시는 모든 정보는 맞춤형 지원 정보를 제공하기 위해서만 사용되며, 철저히 보호됩니다.
-          </Text>
+          <View className="flex-row items-start gap-3 rounded-[20px] bg-line p-4">
+            <Text className="text-base">ℹ️</Text>
+            <Text className="flex-1 text-sm leading-5 text-[#7c7c7c]">
+              작성해주시는 모든 정보는 맞춤형 지원 정보를 제공하기 위해서만 사용되며, 철저히 보호됩니다.
+            </Text>
+          </View>
         </View>
       </ScrollView>
 
       <View className="border-t border-line bg-page px-4 pb-3 pt-3">
-        <Pressable
-          className={`items-center rounded-full py-4 active:opacity-90 ${
-            canProceed ? "bg-brand" : "bg-[#b4c7de]"
-          }`}
-          onPress={onProceed}
-          disabled={!canProceed}
-        >
-          <Text className="text-base font-semibold text-white">{isLast ? "완료" : "다음"}</Text>
-        </Pressable>
+        <View className="w-full lg:max-w-[640px] lg:self-center">
+          <Pressable
+            className={`items-center rounded-full py-4 active:opacity-90 ${
+              canProceed ? "bg-brand" : "bg-[#b4c7de]"
+            }`}
+            onPress={onProceed}
+            disabled={!canProceed}
+          >
+            <Text className="text-base font-semibold text-white">{isLast ? "완료" : "다음"}</Text>
+          </Pressable>
+        </View>
       </View>
     </SafeAreaView>
   );

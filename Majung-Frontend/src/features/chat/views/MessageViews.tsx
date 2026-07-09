@@ -25,7 +25,7 @@ function BotTextBubble({ text, at }: { text: string; at: string }) {
   return (
     <View className="w-full flex-row items-start gap-3">
       <BotAvatar />
-      <View className="max-w-[262px] flex-shrink gap-1.5">
+      <View className="max-w-[262px] flex-shrink gap-1.5 lg:max-w-[68%]">
         <View className="rounded-2xl rounded-tl-none bg-white px-4 py-4 shadow">
           <Text className="text-base leading-6 text-ink">{text}</Text>
         </View>
@@ -38,7 +38,7 @@ function BotTextBubble({ text, at }: { text: string; at: string }) {
 function UserTextBubble({ text, at }: { text: string; at: string }) {
   return (
     <View className="w-full items-end gap-2">
-      <View className="max-w-[304px] rounded-2xl rounded-tr-none bg-brand px-4 py-4 shadow">
+      <View className="max-w-[304px] rounded-2xl rounded-tr-none bg-brand px-4 py-4 shadow lg:max-w-[68%]">
         <Text className="text-base font-medium leading-6 text-white">{text}</Text>
       </View>
       <Timestamp at={at} align="right" />
@@ -52,7 +52,7 @@ function TriageBanner({ areas, at }: { areas: AreaOut[]; at: string }) {
   return (
     <View className="w-full flex-row items-start gap-3">
       <BotAvatar />
-      <View className="max-w-[262px] flex-shrink gap-1.5">
+      <View className="max-w-[262px] flex-shrink gap-1.5 lg:max-w-[68%]">
         <View className="gap-3 rounded-2xl rounded-tl-none border border-line bg-white px-4 py-4 shadow">
           <Text className="text-base font-bold text-brand">지금 가장 급한 일이에요</Text>
           {ranked.map((area) => (
@@ -87,7 +87,7 @@ function SupportCard({ card, onAddToRoadmap }: { card: CardData; onAddToRoadmap:
   return (
     <View className="w-full flex-row items-start gap-3">
       <BotAvatar />
-      <View className="w-[262px] overflow-hidden rounded-xl border border-line bg-white shadow">
+      <View className="w-[262px] overflow-hidden rounded-xl border border-line bg-white shadow lg:w-[380px]">
         {/* 제목 */}
         <View className="flex-row items-center justify-between border-b border-line px-4 py-4">
           <Text className="flex-1 text-base font-bold text-brand">{card.name}</Text>

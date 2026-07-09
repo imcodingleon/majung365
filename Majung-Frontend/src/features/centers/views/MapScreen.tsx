@@ -3,6 +3,7 @@ import { useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import type { Center } from "@/shared/types";
 
 import { useCenters } from "../hooks/useCenters";
@@ -34,7 +35,12 @@ function FilterChips({
   onSelect: (c: string) => void;
 }) {
   return (
-    <ScrollView horizontal showsHorizontalScrollIndicator={false} contentContainerClassName="gap-2.5">
+    <ScrollView
+      horizontal
+      showsHorizontalScrollIndicator={false}
+      className="grow-0"
+      contentContainerClassName="items-center gap-2.5"
+    >
       {CATEGORIES.map((c) => {
         const active = c === selected;
         return (
@@ -103,10 +109,42 @@ function CenterCard({ center }: { center: Center }) {
   );
 }
 
+function CenterList({
+  loading,
+  shown,
+}: {
+  loading: boolean;
+  shown: Center[];
+}) {
+  return (
+    <View className="gap-4">
+      {loading ? (
+        <Text className="text-sm text-ink-muted">불러오는 중…</Text>
+      ) : shown.length === 0 ? (
+        <Text className="text-sm text-ink-muted">조건에 맞는 센터가 없어요.</Text>
+      ) : (
+        shown.map((c) => <CenterCard key={c.id} center={c} />)
+      )}
+    </View>
+  );
+}
+
+function ListHeading({ usingFallback }: { usingFallback: boolean }) {
+  return (
+    <View className="gap-1">
+      <Text className="text-xl font-bold text-[#1d1b20]">센터 위치 정보</Text>
+      {usingFallback ? (
+        <Text className="text-xs text-ink-muted">실시간 연결이 어려워 예시 정보를 보여드려요.</Text>
+      ) : null}
+    </View>
+  );
+}
+
 export function MapScreen() {
   const [cat, setCat] = useState<string>("전체");
   const [query, setQuery] = useState("");
   const { centers, loading, usingFallback } = useCenters(cat === "전체" ? null : cat);
+  const isDesktop = useIsDesktop();
 
   const shown = useMemo(() => {
     const q = query.trim();
@@ -116,32 +154,35 @@ export function MapScreen() {
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
-      <View className="border-b border-line bg-white px-5 py-4">
+      {/* 모바일 헤더 — 데스크톱에선 셸 navbar가 대체 */}
+      <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
         <Text className="text-xl text-ink-header">마중365</Text>
       </View>
 
-      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
-        <SearchBar value={query} onChange={setQuery} />
-        <FilterChips selected={cat} onSelect={setCat} />
-        <CenterMap centers={shown} />
-
-        <View className="gap-1">
-          <Text className="text-xl font-bold text-[#1d1b20]">센터 위치 정보</Text>
-          {usingFallback ? (
-            <Text className="text-xs text-ink-muted">실시간 연결이 어려워 예시 정보를 보여드려요.</Text>
-          ) : null}
+      {isDesktop ? (
+        // 데스크톱 2열 (majung365_web_v2 .map-layout): 좌=검색·칩·지도(유동) / 우=리스트 340px 자체 스크롤
+        <View className="w-full max-w-[860px] flex-1 flex-row gap-5 self-center px-4 py-6">
+          <View className="flex-1 gap-5">
+            <SearchBar value={query} onChange={setQuery} />
+            <FilterChips selected={cat} onSelect={setCat} />
+            <CenterMap centers={shown} />
+          </View>
+          <View className="w-[340px] gap-3">
+            <ListHeading usingFallback={usingFallback} />
+            <ScrollView className="flex-1" contentContainerClassName="gap-4 pb-6 pr-1">
+              <CenterList loading={loading} shown={shown} />
+            </ScrollView>
+          </View>
         </View>
-
-        <View className="gap-4">
-          {loading ? (
-            <Text className="text-sm text-ink-muted">불러오는 중…</Text>
-          ) : shown.length === 0 ? (
-            <Text className="text-sm text-ink-muted">조건에 맞는 센터가 없어요.</Text>
-          ) : (
-            shown.map((c) => <CenterCard key={c.id} center={c} />)
-          )}
-        </View>
-      </ScrollView>
+      ) : (
+        <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
+          <SearchBar value={query} onChange={setQuery} />
+          <FilterChips selected={cat} onSelect={setCat} />
+          <CenterMap centers={shown} />
+          <ListHeading usingFallback={usingFallback} />
+          <CenterList loading={loading} shown={shown} />
+        </ScrollView>
+      )}
     </SafeAreaView>
   );
 }

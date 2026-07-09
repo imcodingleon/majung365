@@ -65,26 +65,30 @@ export function RoadmapScreen() {
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
-      <View className="border-b border-line bg-white px-5 py-4">
+      {/* 모바일 헤더 — 데스크톱에선 셸 navbar가 대체 */}
+      <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
         <Text className="text-xl text-ink-header">마중365</Text>
       </View>
-      <ScrollView className="flex-1" contentContainerClassName="gap-8 px-5 pb-10 pt-5">
-        <ProgressSection total={tasks.length} />
+      {/* 반응형 클래스는 일반 View 래퍼에만(contentContainer에 lg: 금지 — NativeWind 제약) */}
+      <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-5">
+        <View className="w-full gap-8 lg:max-w-[860px] lg:self-center lg:px-4 lg:py-4">
+          <ProgressSection total={tasks.length} />
 
-        <View className="gap-2">
-          <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">
-            오늘 가장 먼저{"\n"}해결해야 할 일들입니다.
-          </Text>
-          <Text className="text-base leading-6 text-[#7c7c7c]">
-            어려운 상황에서도 한 걸음씩 나아갈 수 있도록 핵심 할 일을 정리했습니다.
-          </Text>
-        </View>
+          <View className="gap-2">
+            <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">
+              오늘 가장 먼저{"\n"}해결해야 할 일들입니다.
+            </Text>
+            <Text className="text-base leading-6 text-[#7c7c7c]">
+              어려운 상황에서도 한 걸음씩 나아갈 수 있도록 핵심 할 일을 정리했습니다.
+            </Text>
+          </View>
 
-        <View className="gap-4">
-          {deadlineTask?.deadline ? <DeadlineBanner deadline={deadlineTask.deadline} /> : null}
-          {tasks.map((task) => (
-            <TaskCard key={task.id} task={task} />
-          ))}
+          <View className="gap-4">
+            {deadlineTask?.deadline ? <DeadlineBanner deadline={deadlineTask.deadline} /> : null}
+            {tasks.map((task) => (
+              <TaskCard key={task.id} task={task} />
+            ))}
+          </View>
         </View>
       </ScrollView>
     </SafeAreaView>
