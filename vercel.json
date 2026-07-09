@@ -1,0 +1,7 @@
+{
+  "$schema": "https://openapi.vercel.sh/vercel.json",
+  "installCommand": "cd Majung-Frontend && npm install",
+  "buildCommand": "cd Majung-Frontend && npx expo export -p web",
+  "outputDirectory": "Majung-Frontend/dist",
+  "cleanUrls": true
+}
