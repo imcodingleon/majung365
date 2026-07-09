@@ -15,6 +15,8 @@ class Settings(BaseSettings):
     # ── Claude API ──
     anthropic_api_key: str = ""
     claude_model: str = "claude-sonnet-5"
+    # Mock LLM 강제 사용(무비용 데모). 미설정이어도 키가 없으면 자동으로 Mock 사용.
+    use_mock_llm: bool = False
     # 웹 검색 허용 도메인 (일상 질문용, 공공 도메인만). 쉼표 구분.
     web_search_allowed_domains: str = (
         "gov.kr,korea.kr,bokjiro.go.kr,work24.go.kr,koreha.or.kr,mohw.go.kr,moel.go.kr"
