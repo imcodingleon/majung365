@@ -57,7 +57,7 @@ function OptionButton({
 }
 
 export function OnboardingScreen() {
-  const { step, total, question, selectedOptionId, canProceed, isLast, select, goNext } =
+  const { step, total, question, selectedOptionId, canProceed, isLast, select, goNext, goPrev } =
     useOnboarding();
 
   const onProceed = (): void => {
@@ -67,10 +67,26 @@ export function OnboardingScreen() {
     }
   };
 
+  const onBack = (): void => {
+    // 단계가 남아있으면 이전 단계로, 첫 단계면 온보딩을 빠져나간다.
+    if (goPrev()) return;
+    if (router.canGoBack()) router.back();
+    else router.replace("/chat");
+  };
+
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
-      {/* 모바일 헤더 — 데스크톱에선 중앙 정렬 콘텐츠만(셸 밖 라우트) */}
-      <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
+      {/* 헤더 — 온보딩은 탭 셸 밖 라우트라 데스크톱에도 navbar/탭바가 없다.
+          되돌아갈 길을 위해 뒤로가기 버튼을 전 화면폭에서 노출한다. */}
+      <View className="flex-row items-center gap-3 border-b border-line bg-white px-5 py-4">
+        <Pressable
+          onPress={onBack}
+          hitSlop={10}
+          className="size-9 items-center justify-center rounded-full active:bg-line"
+          accessibilityLabel="뒤로 가기"
+        >
+          <Text className="text-2xl leading-none text-ink-header">←</Text>
+        </Pressable>
         <Text className="text-xl text-ink-header">마중365</Text>
       </View>
 
