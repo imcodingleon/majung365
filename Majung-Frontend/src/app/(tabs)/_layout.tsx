@@ -35,7 +35,7 @@ const NAV_ICONS = {
     off: require("../../../assets/images/nav/profile_off.png") as ImageSourcePropType,
   },
 };
-const FAB = require("../../../assets/images/nav/chat.png") as ImageSourcePropType;
+const CHAT_GLYPH = require("../../../assets/images/nav/chat_glyph.png") as ImageSourcePropType;
 
 type IconPair = { on: ImageSourcePropType; off: ImageSourcePropType };
 
@@ -49,7 +49,8 @@ function TabIcon({ icon, focused }: { icon: IconPair; focused: boolean }) {
   );
 }
 
-// 상담(센터) — 파란 원형 FAB를 탭바 위로 띄워 강조(Figma 하단 네비). 커스텀 버튼으로 슬롯 제약을 벗어난다.
+// 상담(센터) — Figma 하단 네비처럼 파란 원을 바 위로 자연스럽게 띄운다(흰 링 + 그림자 + 흰 챗 글리프).
+// 커스텀 tabBarButton으로 아이콘 슬롯 제약을 벗어나 원을 크게/위로 배치.
 function ChatFabButton({ onPress }: { onPress?: (e: GestureResponderEvent) => void }) {
   return (
     <Pressable
@@ -58,12 +59,27 @@ function ChatFabButton({ onPress }: { onPress?: (e: GestureResponderEvent) => vo
       accessibilityLabel="상담"
       style={{ flex: 1, alignItems: "center", justifyContent: "flex-start" }}
     >
-      <Image
-        source={FAB}
-        resizeMode="contain"
-        style={{ width: 58, height: 58, marginTop: -24 }}
-      />
-      <Text style={{ fontSize: 12, color: "#9AA0A6", marginTop: -2 }}>상담</Text>
+      <View
+        style={{
+          width: 58,
+          height: 58,
+          borderRadius: 29,
+          marginTop: -26,
+          backgroundColor: "#024f9f",
+          alignItems: "center",
+          justifyContent: "center",
+          borderWidth: 4,
+          borderColor: "#ffffff",
+          shadowColor: "#024f9f",
+          shadowOpacity: 0.3,
+          shadowRadius: 6,
+          shadowOffset: { width: 0, height: 3 },
+          elevation: 6,
+        }}
+      >
+        <Image source={CHAT_GLYPH} resizeMode="contain" style={{ width: 26, height: 26 }} />
+      </View>
+      <Text style={{ fontSize: 12, color: "#9AA0A6", marginTop: 5 }}>상담</Text>
     </Pressable>
   );
 }
@@ -91,8 +107,8 @@ export default function TabsLayout() {
               tabBarInactiveTintColor: "#9AA0A6",
               tabBarStyle: isDesktop
                 ? { display: "none" }
-                : { height: 66, paddingBottom: 8, paddingTop: 6, overflow: "visible" },
-              tabBarLabelStyle: { fontSize: 12 },
+                : { height: 74, paddingBottom: 12, paddingTop: 8, overflow: "visible" },
+              tabBarLabelStyle: { fontSize: 11, marginTop: 2 },
             }}
           >
             <Tabs.Screen

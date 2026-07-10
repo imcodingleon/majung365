@@ -1,4 +1,5 @@
 // 지도 - 센터 찾기 (CAP-5). Figma 2:2464. Maps 키 도착 전까지 지도 영역은 폴백.
+import { Image } from "expo-image";
 import { useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -8,6 +9,15 @@ import type { Center } from "@/shared/types";
 
 import { useCenters } from "../hooks/useCenters";
 import { CenterMap } from "./CenterMap";
+
+// Figma 원본 아이콘(2:2464) — 배경 투명 색칠본. 이모지 대체.
+const MAP_ICONS = {
+  search: require("../../../../assets/images/map/search_c.png"),
+  phone: require("../../../../assets/images/map/phone_c.png"),
+  directions: require("../../../../assets/images/map/directions_c.png"),
+  starOn: require("../../../../assets/images/map/star_on.png"),
+  starOff: require("../../../../assets/images/map/star_off.png"),
+};
 
 const CATEGORIES = ["전체", "법무보호공단", "주민센터", "고용센터"] as const;
 
@@ -22,7 +32,7 @@ function SearchBar({ value, onChange }: { value: string; onChange: (t: string) =
         onChangeText={onChange}
         returnKeyType="search"
       />
-      <Text className="text-lg text-ink-muted">🔍</Text>
+      <Image source={MAP_ICONS.search} style={{ width: 20, height: 20 }} contentFit="contain" />
     </View>
   );
 }
@@ -77,7 +87,11 @@ function CenterCard({ center }: { center: Center }) {
           <Text className="text-sm text-[#494551]">운영시간 {center.hours}</Text>
         </View>
         <Pressable onPress={() => setFav((f) => !f)} hitSlop={8}>
-          <Text className={`text-xl ${fav ? "text-brand" : "text-ink-muted"}`}>{fav ? "★" : "☆"}</Text>
+          <Image
+            source={fav ? MAP_ICONS.starOn : MAP_ICONS.starOff}
+            style={{ width: 22, height: 22 }}
+            contentFit="contain"
+          />
         </Pressable>
       </View>
 
@@ -92,7 +106,8 @@ function CenterCard({ center }: { center: Center }) {
           className="flex-1 flex-row items-center justify-center gap-1 rounded-xl border border-brand py-3 active:opacity-80"
           onPress={() => Linking.openURL(`tel:${center.phone}`)}
         >
-          <Text className="text-sm font-medium text-brand">📞 전화</Text>
+          <Image source={MAP_ICONS.phone} style={{ width: 15, height: 15 }} contentFit="contain" />
+          <Text className="text-sm font-medium text-brand">전화</Text>
         </Pressable>
         <Pressable
           className="flex-1 flex-row items-center justify-center gap-1 rounded-xl bg-brand py-3 active:opacity-80"
@@ -102,7 +117,8 @@ function CenterCard({ center }: { center: Center }) {
             )
           }
         >
-          <Text className="text-sm font-medium text-white">🧭 길찾기</Text>
+          <Image source={MAP_ICONS.directions} style={{ width: 15, height: 15 }} contentFit="contain" />
+          <Text className="text-sm font-medium text-white">길찾기</Text>
         </Pressable>
       </View>
     </View>

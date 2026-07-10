@@ -8,6 +8,16 @@ import type { RoadmapTask } from "../types/roadmap";
 let seq = 0;
 const nid = (): string => `t${(seq += 1)}`;
 
+// 카드 영역 라벨 → 아이콘 키(6영역). 로드맵 화면이 실 아이콘으로 해석한다.
+const AREA_KEY_BY_LABEL: Record<string, string> = {
+  "신분 재건": "identity",
+  "긴급복지·생계": "welfare",
+  주거: "housing",
+  취업: "employment",
+  "의료·마음": "health",
+  채무: "debt",
+};
+
 // 데모 시드 (김판수 시나리오 · Figma 2:1614). 7/8 인터뷰 후 실데이터로 교체.
 const SEED: RoadmapTask[] = [
   {
@@ -17,7 +27,7 @@ const SEED: RoadmapTask[] = [
     urgency: "high",
     deadline: "오늘 오후 6시",
     linkUrl: null,
-    icon: "🏠",
+    icon: "housing",
   },
   {
     id: nid(),
@@ -26,7 +36,7 @@ const SEED: RoadmapTask[] = [
     urgency: "normal",
     deadline: null,
     linkUrl: null,
-    icon: "💰",
+    icon: "welfare",
   },
 ];
 
@@ -54,7 +64,7 @@ export function RoadmapProvider({ children }: { children: ReactNode }) {
               urgency: card.deadline ? "high" : "normal",
               deadline: card.deadline,
               linkUrl: card.source_url || null,
-              icon: "📋",
+              icon: AREA_KEY_BY_LABEL[card.area_label] ?? "welfare",
             },
           ],
     );

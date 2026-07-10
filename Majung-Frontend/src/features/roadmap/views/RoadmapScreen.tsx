@@ -1,9 +1,21 @@
 // 로드맵 화면 (CAP-4 표시형 체크리스트). Figma 2:1614 — 네비 정본.
-import { Linking, Pressable, ScrollView, Text, View } from "react-native";
+import { Image } from "expo-image";
+import { type ImageSourcePropType, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useRoadmap } from "@/shared/state/roadmap";
 import type { RoadmapTask } from "@/shared/types";
+
+// Figma 원본 아이콘 — 배경 투명 색칠본. 이모지 대체.
+const ALARM = require("../../../../assets/images/roadmap/alarm_c.png");
+const TASK_ICONS: Record<string, ImageSourcePropType> = {
+  identity: require("../../../../assets/images/roadmap/task/identity.png"),
+  housing: require("../../../../assets/images/roadmap/task/housing.png"),
+  welfare: require("../../../../assets/images/roadmap/task/welfare.png"),
+  employment: require("../../../../assets/images/roadmap/task/employment.png"),
+  health: require("../../../../assets/images/roadmap/task/health.png"),
+  debt: require("../../../../assets/images/roadmap/task/debt.png"),
+};
 
 function ProgressSection({ total }: { total: number }) {
   return (
@@ -23,7 +35,7 @@ function ProgressSection({ total }: { total: number }) {
 function DeadlineBanner({ deadline }: { deadline: string }) {
   return (
     <View className="flex-row items-center gap-4 rounded-[20px] border border-dashed border-[#fa8504] bg-chip p-6">
-      <Text className="text-xl">⏰</Text>
+      <Image source={ALARM} style={{ width: 26, height: 26 }} contentFit="contain" />
       <Text className="flex-1 text-base leading-6 text-chip-ink">
         가장 급한 일은 <Text className="font-bold text-chip-ink">{deadline}</Text> 전에 관할 주민센터를
         방문하시거나 온라인으로 신청하셔야 빠르게 처리돼요.
@@ -37,7 +49,11 @@ function TaskCard({ task }: { task: RoadmapTask }) {
     <View className="gap-4 rounded-[20px] border border-[#f8f9fc] bg-white p-6 shadow">
       <View className="flex-row items-start justify-between">
         <View className="size-[38px] items-center justify-center rounded-xl bg-brand-soft">
-          <Text className="text-lg">{task.icon ?? "📋"}</Text>
+          <Image
+            source={(task.icon && TASK_ICONS[task.icon]) || TASK_ICONS.welfare}
+            style={{ width: 22, height: 22 }}
+            contentFit="contain"
+          />
         </View>
         {task.urgency === "high" ? (
           <View className="rounded-full bg-[#ffdad6] px-2 py-1">
