@@ -1,7 +1,5 @@
-import { Image } from "expo-image";
 import { type Href, router, Tabs, usePathname } from "expo-router";
-import type { ImageSourcePropType } from "react-native";
-import { View } from "react-native";
+import { Image, type ImageSourcePropType, View } from "react-native";
 
 import {
   DesktopNavbar,
@@ -21,19 +19,19 @@ const NAV_ICONS = {
 };
 
 function TabIcon({ source, focused }: { source: ImageSourcePropType; focused: boolean }) {
+  // RN Image의 style.tintColor는 웹에서 mask 방식이라 글리프만 색칠(expo-image 버그 회피).
   return (
     <Image
       source={source}
-      style={{ width: 24, height: 24 }}
-      contentFit="contain"
-      tintColor={focused ? "#208AEF" : "#9AA0A6"}
+      resizeMode="contain"
+      style={{ width: 24, height: 24, tintColor: focused ? "#024f9f" : "#9AA0A6" }}
     />
   );
 }
 
 function CenterTabIcon({ source }: { source: ImageSourcePropType }) {
-  // 상담(센터) — 컬러 FAB 아이콘, 틴트 없이 살짝 크게 표시해 강조.
-  return <Image source={source} style={{ width: 34, height: 34 }} contentFit="contain" />;
+  // 상담(센터) — 파란 원형 FAB를 탭바 위로 띄워 강조(Figma 하단 네비 원본). 풀컬러라 tint 없음.
+  return <Image source={source} resizeMode="contain" style={{ width: 56, height: 56, marginTop: -22 }} />;
 }
 
 export default function TabsLayout() {
@@ -55,11 +53,11 @@ export default function TabsLayout() {
           <Tabs
             screenOptions={{
               headerShown: false,
-              tabBarActiveTintColor: "#208AEF",
+              tabBarActiveTintColor: "#024f9f",
               tabBarInactiveTintColor: "#9AA0A6",
               tabBarStyle: isDesktop
                 ? { display: "none" }
-                : { height: 64, paddingBottom: 8, paddingTop: 6 },
+                : { height: 64, paddingBottom: 8, paddingTop: 6, overflow: "visible" },
               tabBarLabelStyle: { fontSize: 12 },
             }}
           >
