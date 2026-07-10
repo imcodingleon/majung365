@@ -1,5 +1,12 @@
 import { type Href, router, Tabs, usePathname } from "expo-router";
-import { Image, type ImageSourcePropType, View } from "react-native";
+import {
+  type GestureResponderEvent,
+  Image,
+  type ImageSourcePropType,
+  Pressable,
+  Text,
+  View,
+} from "react-native";
 
 import {
   DesktopNavbar,
@@ -8,30 +15,57 @@ import {
 } from "@/shared/components/DesktopShell";
 import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 
-// 하단 5탭 — 홈 / 로드맵 / 상담 / 지도 / 내 정보 (design-map: 로드맵 화면 2:1614이 네비 정본).
-// 아이콘은 Figma 원본(2:428 하단 네비). 라인 아이콘은 tintColor로 활성/비활성, 상담은 컬러 FAB 그대로.
+// 하단 5탭 — Figma 원본 아이콘(2:428 하단 네비). 배경 투명 + 활성(남색)/비활성(회색) 사전 색칠본을
+// 그대로 렌더(웹 tintColor 마스크 버그 회피 — 순수 이미지가 확실).
 const NAV_ICONS = {
-  home: require("../../../assets/images/nav/home.png") as ImageSourcePropType,
-  roadmap: require("../../../assets/images/nav/roadmap.png") as ImageSourcePropType,
-  chat: require("../../../assets/images/nav/chat.png") as ImageSourcePropType,
-  map: require("../../../assets/images/nav/map.png") as ImageSourcePropType,
-  profile: require("../../../assets/images/nav/profile.png") as ImageSourcePropType,
+  home: {
+    on: require("../../../assets/images/nav/home_on.png") as ImageSourcePropType,
+    off: require("../../../assets/images/nav/home_off.png") as ImageSourcePropType,
+  },
+  roadmap: {
+    on: require("../../../assets/images/nav/roadmap_on.png") as ImageSourcePropType,
+    off: require("../../../assets/images/nav/roadmap_off.png") as ImageSourcePropType,
+  },
+  map: {
+    on: require("../../../assets/images/nav/map_on.png") as ImageSourcePropType,
+    off: require("../../../assets/images/nav/map_off.png") as ImageSourcePropType,
+  },
+  profile: {
+    on: require("../../../assets/images/nav/profile_on.png") as ImageSourcePropType,
+    off: require("../../../assets/images/nav/profile_off.png") as ImageSourcePropType,
+  },
 };
+const FAB = require("../../../assets/images/nav/chat.png") as ImageSourcePropType;
 
-function TabIcon({ source, focused }: { source: ImageSourcePropType; focused: boolean }) {
-  // RN Image의 style.tintColor는 웹에서 mask 방식이라 글리프만 색칠(expo-image 버그 회피).
+type IconPair = { on: ImageSourcePropType; off: ImageSourcePropType };
+
+function TabIcon({ icon, focused }: { icon: IconPair; focused: boolean }) {
   return (
     <Image
-      source={source}
+      source={focused ? icon.on : icon.off}
       resizeMode="contain"
-      style={{ width: 24, height: 24, tintColor: focused ? "#024f9f" : "#9AA0A6" }}
+      style={{ width: 24, height: 24 }}
     />
   );
 }
 
-function CenterTabIcon({ source }: { source: ImageSourcePropType }) {
-  // 상담(센터) — 파란 원형 FAB를 탭바 위로 띄워 강조(Figma 하단 네비 원본). 풀컬러라 tint 없음.
-  return <Image source={source} resizeMode="contain" style={{ width: 56, height: 56, marginTop: -22 }} />;
+// 상담(센터) — 파란 원형 FAB를 탭바 위로 띄워 강조(Figma 하단 네비). 커스텀 버튼으로 슬롯 제약을 벗어난다.
+function ChatFabButton({ onPress }: { onPress?: (e: GestureResponderEvent) => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="상담"
+      style={{ flex: 1, alignItems: "center", justifyContent: "flex-start" }}
+    >
+      <Image
+        source={FAB}
+        resizeMode="contain"
+        style={{ width: 58, height: 58, marginTop: -24 }}
+      />
+      <Text style={{ fontSize: 12, color: "#9AA0A6", marginTop: -2 }}>상담</Text>
+    </Pressable>
+  );
 }
 
 export default function TabsLayout() {
@@ -57,7 +91,7 @@ export default function TabsLayout() {
               tabBarInactiveTintColor: "#9AA0A6",
               tabBarStyle: isDesktop
                 ? { display: "none" }
-                : { height: 64, paddingBottom: 8, paddingTop: 6, overflow: "visible" },
+                : { height: 66, paddingBottom: 8, paddingTop: 6, overflow: "visible" },
               tabBarLabelStyle: { fontSize: 12 },
             }}
           >
@@ -65,7 +99,7 @@ export default function TabsLayout() {
               name="index"
               options={{
                 title: "홈",
-                tabBarIcon: ({ focused }) => <TabIcon source={NAV_ICONS.home} focused={focused} />,
+                tabBarIcon: ({ focused }) => <TabIcon icon={NAV_ICONS.home} focused={focused} />,
               }}
             />
             <Tabs.Screen
@@ -73,7 +107,7 @@ export default function TabsLayout() {
               options={{
                 title: "로드맵",
                 tabBarIcon: ({ focused }) => (
-                  <TabIcon source={NAV_ICONS.roadmap} focused={focused} />
+                  <TabIcon icon={NAV_ICONS.roadmap} focused={focused} />
                 ),
               }}
             />
@@ -81,14 +115,14 @@ export default function TabsLayout() {
               name="chat"
               options={{
                 title: "상담",
-                tabBarIcon: () => <CenterTabIcon source={NAV_ICONS.chat} />,
+                tabBarButton: (props) => <ChatFabButton onPress={props.onPress} />,
               }}
             />
             <Tabs.Screen
               name="map"
               options={{
                 title: "지도",
-                tabBarIcon: ({ focused }) => <TabIcon source={NAV_ICONS.map} focused={focused} />,
+                tabBarIcon: ({ focused }) => <TabIcon icon={NAV_ICONS.map} focused={focused} />,
               }}
             />
             <Tabs.Screen
@@ -96,7 +130,7 @@ export default function TabsLayout() {
               options={{
                 title: "내 정보",
                 tabBarIcon: ({ focused }) => (
-                  <TabIcon source={NAV_ICONS.profile} focused={focused} />
+                  <TabIcon icon={NAV_ICONS.profile} focused={focused} />
                 ),
               }}
             />

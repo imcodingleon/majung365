@@ -1,16 +1,16 @@
 // 대화 항목 렌더링(뷰 전용). 비즈니스 로직 없음 — props-driven.
+import { Image } from "expo-image";
 import { Linking, Pressable, Text, View } from "react-native";
 
 import type { AreaOut, CardData } from "@/shared/types";
 
 import type { ChatMessage } from "../domain/message";
 
+// Figma 원본 AI 아바타(남색 원 + 흰 로봇). 풀컬러 이미지라 tint 없이 그대로.
+const AI_AVATAR = require("../../../../assets/images/chat/ai-avatar.png");
+
 function BotAvatar() {
-  return (
-    <View className="size-10 items-center justify-center rounded-full bg-brand shadow">
-      <Text className="text-lg">🤖</Text>
-    </View>
-  );
+  return <Image source={AI_AVATAR} style={{ width: 40, height: 40 }} contentFit="contain" />;
 }
 
 function Timestamp({ at, align }: { at: string; align: "left" | "right" }) {
