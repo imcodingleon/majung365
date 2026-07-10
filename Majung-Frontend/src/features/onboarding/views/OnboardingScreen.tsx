@@ -3,6 +3,8 @@ import { router } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Logo } from "@/shared/components/Logo";
+
 import type { OnboardingOption } from "../domain/questions";
 import { useOnboarding } from "../hooks/useOnboarding";
 
@@ -87,7 +89,7 @@ export function OnboardingScreen() {
         >
           <Text className="text-2xl leading-none text-ink-header">←</Text>
         </Pressable>
-        <Text className="text-xl text-ink-header">마중365</Text>
+        <Logo height={26} />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-4 pb-6 pt-5">

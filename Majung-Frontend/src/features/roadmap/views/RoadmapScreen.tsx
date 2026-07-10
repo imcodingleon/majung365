@@ -3,6 +3,7 @@ import { Image } from "expo-image";
 import { type ImageSourcePropType, Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Logo } from "@/shared/components/Logo";
 import { useRoadmap } from "@/shared/state/roadmap";
 import type { RoadmapTask } from "@/shared/types";
 
@@ -83,7 +84,7 @@ export function RoadmapScreen() {
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
       {/* 모바일 헤더 — 데스크톱에선 셸 navbar가 대체 */}
       <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
-        <Text className="text-xl text-ink-header">마중365</Text>
+        <Logo height={26} />
       </View>
       {/* 반응형 클래스는 일반 View 래퍼에만(contentContainer에 lg: 금지 — NativeWind 제약) */}
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-5">

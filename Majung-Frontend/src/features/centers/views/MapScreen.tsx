@@ -4,6 +4,7 @@ import { useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Logo } from "@/shared/components/Logo";
 import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import type { Center } from "@/shared/types";
 
@@ -172,7 +173,7 @@ export function MapScreen() {
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
       {/* 모바일 헤더 — 데스크톱에선 셸 navbar가 대체 */}
       <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
-        <Text className="text-xl text-ink-header">마중365</Text>
+        <Logo height={26} />
       </View>
 
       {isDesktop ? (

@@ -66,8 +66,10 @@ _GUIDE: dict[Area, str] = {
     Area.DEBT: "빚은 신용회복위원회 상담으로 갚는 방법을 새로 짤 수 있어요.",
 }
 
-# 스트리밍 흉내 — 청크 사이 짧은 지연(데모용, 프론트 스트리밍 UI가 살아있게)
-_CHUNK_DELAY_SECONDS = 0.03
+# 실 LLM처럼 보이게 하는 타이밍(데모 현실감).
+# triage 전 '생각하는 척' 지연 → 프론트 타이핑 인디케이터가 보인다. 안내는 어절 단위로 흘린다.
+_THINK_DELAY_SECONDS = 0.7
+_WORD_DELAY_SECONDS = 0.05
 
 
 def _detect(message: str) -> tuple[QuestionType, tuple[Area, ...]]:
@@ -114,6 +116,7 @@ class MockChatLlm:
     """실 Claude 없이 동작하는 ChatLlm 구현(무비용 데모). 외부 호출 없음."""
 
     async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+        await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 타이핑 인디케이터 노출
         qtype, areas = _detect(message)
         priorities = tuple(AreaPriority(area=a, reason=_REASONS[a]) for a in areas)
         return TriageResult(question_type=qtype, priorities=priorities)
@@ -127,6 +130,14 @@ class MockChatLlm:
         allow_web_search: bool,
     ) -> AsyncIterator[str]:
         qtype, areas = _detect(message)
-        for chunk in _compose(qtype, areas):
-            yield chunk
-            await asyncio.sleep(_CHUNK_DELAY_SECONDS)
+        text = "".join(_compose(qtype, areas))
+        # 어절(공백/줄바꿈) 단위로 흘려 실 LLM 토큰 스트림처럼 보이게.
+        buf = ""
+        for ch in text:
+            buf += ch
+            if ch in (" ", "\n"):
+                yield buf
+                buf = ""
+                await asyncio.sleep(_WORD_DELAY_SECONDS)
+        if buf:
+            yield buf

@@ -5,6 +5,9 @@ import { type Href, router } from "expo-router";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Logo } from "@/shared/components/Logo";
+import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
+
 import { HOME_SERVICES, type HomeService } from "../domain/services";
 
 const BELL = require("../../../../assets/images/home/bell.png");
@@ -32,24 +35,37 @@ function ServiceCard({ service }: { service: HomeService }) {
 }
 
 export function HomeScreen() {
+  const isDesktop = useIsDesktop();
   return (
     <SafeAreaView className="flex-1 bg-[#f9fbff]" edges={["top"]}>
       {/* 모바일 헤더 — 데스크톱은 셸 navbar가 대체 */}
       <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4 lg:hidden">
-        <Text className="text-xl text-[#838383]">마중365</Text>
+        <Logo height={26} />
         <Image source={BELL} style={{ width: 18, height: 22 }} contentFit="contain" />
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-5">
         <View className="w-full gap-6 lg:max-w-[860px] lg:self-center">
-          {/* 히어로 */}
-          <View className="overflow-hidden rounded-[20px] bg-[#024f9f] p-8">
-            <Text className="text-2xl font-semibold leading-[32px] text-white">
-              환영합니다.{"\n"}사회로의 첫걸음,{"\n"}마중365가 함께합니다.
-            </Text>
-            <Text className="mt-4 text-base leading-7 text-[#efefef]">
-              지금 가장 막막하거나 도움이 필요한 부분은 무엇인가요? 당신의 곁에서 차근차근 도와드릴게요.
-            </Text>
+          {/* 히어로 (Figma 2:582) */}
+          <View className="overflow-hidden rounded-[20px] bg-[#024f9f] px-[22px] py-8 lg:px-8">
+            {/* 데코 원 (2:583) — 우하단 연한 파랑, 살짝만 보이게 */}
+            <View
+              className="absolute rounded-full bg-[#91c9f8]"
+              style={{ width: 192, height: 192, right: -48, bottom: -48, opacity: 0.2 }}
+            />
+            <View style={{ gap: 16 }}>
+              <Text className="text-2xl font-semibold text-white" style={{ lineHeight: 34 }}>
+                환영합니다.{"\n"}사회로의 첫걸음,{"\n"}마중365가 함께합니다.
+              </Text>
+              <Text
+                className="text-base font-medium text-[#efefef]"
+                style={{ lineHeight: 29, opacity: 0.9 }}
+              >
+                {isDesktop
+                  ? "지금 가장 막막하거나 도움이 필요한 부분은 무엇인가요? 당신의 곁에서 차근차근 도와드릴게요."
+                  : "지금 가장 막막하거나 도움이 필요한 부분은\n무엇인가요?\n당신의 곁에서 차근차근 도와드릴게요."}
+              </Text>
+            </View>
           </View>
 
           <Text className="text-xl font-bold text-[#1d1b20]">자주 찾는 서비스</Text>

@@ -91,6 +91,9 @@ export default function TabsLayout() {
   const pathname = usePathname();
   // typedRoutes 엄격 Href 캐스트는 이 1곳에만 집중.
   const go = (href: string): void => router.push(href as Href);
+  // 사이드바 서비스 클릭 → 관련 질문으로 챗 이동(모바일 홈 타일과 동일).
+  const goChat = (q: string): void =>
+    router.push({ pathname: "/chat", params: { q } } as Href);
 
   // 데스크톱(≥1024): navbar + 탭스트립 + 사이드바 셸(majung365_web_v2 시안). 미만: 기존 하단 탭바.
   // <Tabs>는 항상 같은 트리 위치(단일 인스턴스 + null 형제) — 브레이크포인트 교차 시
@@ -100,7 +103,9 @@ export default function TabsLayout() {
       {isDesktop ? <DesktopNavbar pathname={pathname} onNavigate={go} /> : null}
       {isDesktop ? <DesktopTabStrip pathname={pathname} onNavigate={go} /> : null}
       <View className="flex-1 flex-row">
-        {isDesktop ? <DesktopSidebar pathname={pathname} onNavigate={go} /> : null}
+        {isDesktop ? (
+          <DesktopSidebar pathname={pathname} onNavigate={go} onService={goChat} />
+        ) : null}
         <View className="flex-1">
           <Tabs
             screenOptions={{
