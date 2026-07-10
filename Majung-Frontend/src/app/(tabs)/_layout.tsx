@@ -35,6 +35,7 @@ const NAV_ICONS = {
     off: require("../../../assets/images/nav/profile_off.png") as ImageSourcePropType,
   },
 };
+// 상담 FAB 글리프 — chat.png에서 흰 말풍선만 추출(투명 배경). 원/링은 코드로 구성.
 const CHAT_GLYPH = require("../../../assets/images/nav/chat_glyph.png") as ImageSourcePropType;
 
 type IconPair = { on: ImageSourcePropType; off: ImageSourcePropType };
@@ -49,37 +50,38 @@ function TabIcon({ icon, focused }: { icon: IconPair; focused: boolean }) {
   );
 }
 
-// 상담(센터) — Figma 하단 네비처럼 파란 원을 바 위로 자연스럽게 띄운다(흰 링 + 그림자 + 흰 챗 글리프).
-// 커스텀 tabBarButton으로 아이콘 슬롯 제약을 벗어나 원을 크게/위로 배치.
+// 상담(센터) — Figma 하단 네비처럼 파란 원을 바 위로 띄운다(흰 링 + 그림자 + 흰 챗 글리프).
+// position:absolute로 슬롯을 벗어나 원을 바 상단 위로 올린다(overflow visible 필요).
 function ChatFabButton({ onPress }: { onPress?: (e: GestureResponderEvent) => void }) {
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel="상담"
-      style={{ flex: 1, alignItems: "center", justifyContent: "flex-start" }}
+      style={{ flex: 1, alignItems: "center", justifyContent: "flex-end", paddingBottom: 2 }}
     >
       <View
         style={{
-          width: 58,
-          height: 58,
-          borderRadius: 29,
-          marginTop: -26,
+          position: "absolute",
+          top: -34,
+          width: 66,
+          height: 66,
+          borderRadius: 33,
           backgroundColor: "#024f9f",
+          borderWidth: 5,
+          borderColor: "#fafafa",
           alignItems: "center",
           justifyContent: "center",
-          borderWidth: 4,
-          borderColor: "#ffffff",
-          shadowColor: "#024f9f",
-          shadowOpacity: 0.3,
-          shadowRadius: 6,
-          shadowOffset: { width: 0, height: 3 },
-          elevation: 6,
+          shadowColor: "#000000",
+          shadowOpacity: 0.18,
+          shadowRadius: 5,
+          shadowOffset: { width: 0, height: 2 },
+          elevation: 8,
         }}
       >
-        <Image source={CHAT_GLYPH} resizeMode="contain" style={{ width: 26, height: 26 }} />
+        <Image source={CHAT_GLYPH} resizeMode="contain" style={{ width: 29, height: 29 }} />
       </View>
-      <Text style={{ fontSize: 12, color: "#9AA0A6", marginTop: 5 }}>상담</Text>
+      <Text style={{ fontSize: 11, color: "#9AA0A6", fontWeight: "600" }}>상담</Text>
     </Pressable>
   );
 }
@@ -108,7 +110,7 @@ export default function TabsLayout() {
               tabBarStyle: isDesktop
                 ? { display: "none" }
                 : { height: 74, paddingBottom: 12, paddingTop: 8, overflow: "visible" },
-              tabBarLabelStyle: { fontSize: 11, marginTop: 2 },
+              tabBarLabelStyle: { fontSize: 11, marginTop: 2, fontWeight: "600" },
             }}
           >
             <Tabs.Screen
