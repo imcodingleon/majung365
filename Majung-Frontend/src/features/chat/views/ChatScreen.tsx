@@ -1,5 +1,6 @@
 // 챗봇 화면 조립 (CAP-1/2/3). Figma 2:1790. 데모 메인 진입 화면.
-import { useCallback, useRef } from "react";
+import { useLocalSearchParams } from "expo-router";
+import { useCallback, useEffect, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -39,6 +40,17 @@ export function ChatScreen() {
   const { addFromCard } = useRoadmap();
   const isDesktop = useIsDesktop();
   const scrollRef = useRef<ScrollView>(null);
+
+  // 홈 서비스 타일 진입 — params.q를 자동 전송. 탭은 리마운트되지 않으므로
+  // q '값 변화'를 기준으로(불리언 아님) 다른 타일마다 새 질문이 전송되게 한다.
+  const { q } = useLocalSearchParams<{ q?: string }>();
+  const lastSentQRef = useRef<string | undefined>(undefined);
+  useEffect(() => {
+    if (q && q !== lastSentQRef.current) {
+      lastSentQRef.current = q;
+      send(q);
+    }
+  }, [q, send]);
 
   // CAP-3→CAP-4 seam: 제도 카드를 로드맵 '오늘의 할일'에 추가.
   const onAddToRoadmap = useCallback((card: CardData) => addFromCard(card), [addFromCard]);
