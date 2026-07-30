@@ -1,7 +1,7 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "cd Majung-Frontend && npm install",
-  "buildCommand": "cd Majung-Frontend && EXPO_PUBLIC_API_URL=https://3-34-251-223.sslip.io EXPO_PUBLIC_GOOGLE_MAPS_KEY=AIzaSyBFOmkuSa2emCCh9HYzdDIEuImmb64AuZs npx expo export -p web",
+  "buildCommand": "cd Majung-Frontend && EXPO_PUBLIC_API_URL=https://3-34-251-223.sslip.io EXPO_PUBLIC_GOOGLE_MAPS_KEY=AIzaSyBFOmkuSa2emCCh9HYzdDIEuImmb64AuZs EXPO_PUBLIC_SER_URL=https://years-lamb-soonest-gaming.trycloudflare.com npx expo export -p web",
   "outputDirectory": "Majung-Frontend/dist",
   "cleanUrls": true
 }

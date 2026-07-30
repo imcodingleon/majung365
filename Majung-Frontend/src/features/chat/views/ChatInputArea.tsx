@@ -7,9 +7,12 @@ import { PRESET_CHIPS } from "../domain/message";
 export function ChatInputArea({
   onSend,
   disabled,
+  onMic,
 }: {
   onSend: (text: string) => void;
   disabled: boolean;
+  /** 음성 상담(베타)으로 이동. 제공 시 마이크 버튼 노출. */
+  onMic?: () => void;
 }) {
   const [text, setText] = useState("");
 
@@ -42,6 +45,15 @@ export function ChatInputArea({
 
       {/* 입력 바 — 입력창을 flex 컨테이너로 감싸야(min-w-0) 웹에서 정상 축소되어 전송 버튼이 밀려나지 않음 */}
       <View className="flex-row items-center gap-3">
+        {onMic ? (
+          <Pressable
+            className="size-12 shrink-0 items-center justify-center rounded-full bg-brand-soft active:opacity-80"
+            onPress={onMic}
+            accessibilityLabel="음성으로 말하기"
+          >
+            <Text className="text-lg">🎤</Text>
+          </Pressable>
+        ) : null}
         <View className="min-w-0 flex-1">
           <TextInput
             className="h-12 w-full rounded-full bg-line px-6 text-base text-ink"

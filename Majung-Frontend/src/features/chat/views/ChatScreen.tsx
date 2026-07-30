@@ -1,5 +1,5 @@
 // 챗봇 화면 조립 (CAP-1/2/3). Figma 2:1790. 데모 메인 진입 화면.
-import { useLocalSearchParams } from "expo-router";
+import { type Href, useLocalSearchParams, useRouter } from "expo-router";
 import { useCallback, useEffect, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -39,6 +39,7 @@ export function ChatScreen() {
   const { messages, streaming, error, send } = useChat();
   const { addFromCard } = useRoadmap();
   const isDesktop = useIsDesktop();
+  const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
 
   // 홈 서비스 타일 진입 — params.q를 자동 전송. 탭은 리마운트되지 않으므로
@@ -82,7 +83,11 @@ export function ChatScreen() {
               </View>
             ) : null}
           </ScrollView>
-          <ChatInputArea onSend={send} disabled={streaming} />
+          <ChatInputArea
+            onSend={send}
+            disabled={streaming}
+            onMic={() => router.push("/voice" as Href)}
+          />
         </View>
       </View>
     </SafeAreaView>
