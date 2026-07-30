@@ -56,6 +56,8 @@ export interface VoiceEmotion {
   score: number;
   /** negative | calm */
   group: string;
+  /** 격앙·고통 점수(부정 합 + 고각성 절반). group 판정 근거 */
+  distress: number;
   /** 전체 감정 점수 맵 */
   scores: Record<string, number>;
 }

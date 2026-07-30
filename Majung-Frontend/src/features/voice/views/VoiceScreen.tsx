@@ -6,11 +6,13 @@ import { ActivityIndicator, Pressable, ScrollView, Text, View } from "react-nati
 import type { VoiceResult } from "../../../shared/types";
 import { useVoiceCapture } from "../hooks/useVoiceCapture";
 
-/** 감정 그룹 → 사람이 읽는 라벨/이모지. */
-function emotionLabel(group: string): { emoji: string; text: string } {
-  return group === "negative"
-    ? { emoji: "😟", text: "많이 힘든 마음" }
-    : { emoji: "🙂", text: "차분한 상태" };
+/** 감정 그룹 → 사람이 읽는 라벨/이모지. 격앙(고각성)과 침울을 구분해 보여준다. */
+function emotionLabel(group: string, top: string): { emoji: string; text: string } {
+  if (group !== "negative") return { emoji: "🙂", text: "차분한 상태" };
+  if (top === "surprised" || top === "angry" || top === "disgusted") {
+    return { emoji: "😤", text: "답답하고 급한 마음" };
+  }
+  return { emoji: "😟", text: "많이 힘든 마음" };
 }
 
 function specLabel(spec: string): string {
@@ -30,7 +32,7 @@ function topNegatives(scores: Record<string, number>): string {
 }
 
 function ResultCard({ r }: { r: VoiceResult }) {
-  const emo = emotionLabel(r.emotion.group);
+  const emo = emotionLabel(r.emotion.group, r.emotion.top);
   const loc = r.location;
   return (
     <View className="w-full gap-4">
@@ -54,8 +56,9 @@ function ResultCard({ r }: { r: VoiceResult }) {
         </View>
         {/* 분석 근거(데모·튜닝용) — 음향 모델이 실제로 낸 라벨·점수 */}
         <Text className="text-[12px] text-[#9a9a9a]">
-          음향 분석: {r.emotion.top} {Math.round(r.emotion.score * 100)}% · 정책 {r.policy}
-          {topNegatives(r.emotion.scores) ? ` · 부정신호 ${topNegatives(r.emotion.scores)}` : ""}
+          음향 분석: {r.emotion.top} {Math.round(r.emotion.score * 100)}% · 격앙도{" "}
+          {Math.round((r.emotion.distress ?? 0) * 100)}% · 정책 {r.policy}
+          {topNegatives(r.emotion.scores) ? ` · ${topNegatives(r.emotion.scores)}` : ""}
         </Text>
       </View>
 
