@@ -80,7 +80,16 @@ export function useVoiceCapture() {
       // 위치는 병렬로 미리 요청(녹음 끝날 때쯤 준비됨). 거부돼도 진행.
       void getCoords().then((c) => (coordsRef.current = c));
 
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      // 🔊 감정 인식은 억양·성량 변화(prosody)를 본다. 브라우저 기본 오디오 처리
+      //    (AGC·노이즈억제·에코제거)는 목소리를 평탄하게 정규화해 그 신호를 깎아낸다.
+      //    → 전부 끄고 원본에 가까운 음성을 얻는다.
+      const stream = await navigator.mediaDevices.getUserMedia({
+        audio: {
+          echoCancellation: false,
+          noiseSuppression: false,
+          autoGainControl: false,
+        },
+      });
       streamRef.current = stream;
       const mime = pickMime();
       const rec = mime ? new MediaRecorder(stream, { mimeType: mime }) : new MediaRecorder(stream);

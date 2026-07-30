@@ -17,6 +17,18 @@ function specLabel(spec: string): string {
   return spec === "vague" ? "두루뭉술하게" : "구체적으로";
 }
 
+const NEGATIVE_KEYS = ["angry", "disgusted", "fearful", "sad"];
+
+/** 부정 감정 신호를 "disgusted 45%, sad 12%"처럼 요약(0%는 생략). 튜닝 근거 확인용. */
+function topNegatives(scores: Record<string, number>): string {
+  return NEGATIVE_KEYS.map((k) => ({ k, v: scores[k] ?? 0 }))
+    .filter((e) => e.v >= 0.01)
+    .sort((a, b) => b.v - a.v)
+    .slice(0, 2)
+    .map((e) => `${e.k} ${Math.round(e.v * 100)}%`)
+    .join(", ");
+}
+
 function ResultCard({ r }: { r: VoiceResult }) {
   const emo = emotionLabel(r.emotion.group);
   const loc = r.location;
@@ -29,15 +41,22 @@ function ResultCard({ r }: { r: VoiceResult }) {
       </View>
 
       {/* 감정 × 말투 (적응 로직 시각화) */}
-      <View className="flex-row flex-wrap gap-2">
-        <View className="rounded-full bg-chip px-4 py-2">
-          <Text className="text-[14px] text-chip-ink">
-            {emo.emoji} {emo.text}
-          </Text>
+      <View className="gap-2">
+        <View className="flex-row flex-wrap gap-2">
+          <View className="rounded-full bg-chip px-4 py-2">
+            <Text className="text-[14px] text-chip-ink">
+              {emo.emoji} {emo.text}
+            </Text>
+          </View>
+          <View className="rounded-full bg-chip px-4 py-2">
+            <Text className="text-[14px] text-chip-ink">💬 {specLabel(r.specificity)} 말했어요</Text>
+          </View>
         </View>
-        <View className="rounded-full bg-chip px-4 py-2">
-          <Text className="text-[14px] text-chip-ink">💬 {specLabel(r.specificity)} 말했어요</Text>
-        </View>
+        {/* 분석 근거(데모·튜닝용) — 음향 모델이 실제로 낸 라벨·점수 */}
+        <Text className="text-[12px] text-[#9a9a9a]">
+          음향 분석: {r.emotion.top} {Math.round(r.emotion.score * 100)}% · 정책 {r.policy}
+          {topNegatives(r.emotion.scores) ? ` · 부정신호 ${topNegatives(r.emotion.scores)}` : ""}
+        </Text>
       </View>
 
       {/* 적응형 응답 */}
