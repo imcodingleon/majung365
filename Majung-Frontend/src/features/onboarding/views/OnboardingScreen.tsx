@@ -1,12 +1,14 @@
-// 온보딩 - 상황 체크 (CAP-1a). Figma 2:726. 선택지 탭만으로 완주 가능.
-import { router } from "expo-router";
-import { Pressable, ScrollView, Text, View } from "react-native";
+// 온보딩 - 상황 체크 (CAP-1a). Figma 2:726 기반, 그래프 코어 9노드로 재설계.
+// 선택지 탭 + "기타" 선택 시 자유텍스트로 완주. 완료하면 분석을 시작하고 로딩 화면으로 이동.
+import { type Href, router } from "expo-router";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Logo } from "@/shared/components/Logo";
 
-import type { OnboardingOption } from "../domain/questions";
+import { OTHER_OPTION_ID, type OnboardingOption } from "../domain/questions";
 import { useOnboarding } from "../hooks/useOnboarding";
+import { useOnboardingAnalysis } from "../state/analysis";
 
 function ProgressSection({ step, total }: { step: number; total: number }) {
   const pct = Math.round(((step + 1) / total) * 100);
@@ -59,13 +61,28 @@ function OptionButton({
 }
 
 export function OnboardingScreen() {
-  const { step, total, question, selectedOptionId, canProceed, isLast, select, goNext, goPrev } =
-    useOnboarding();
+  const {
+    step,
+    total,
+    question,
+    selectedOptionId,
+    isOtherSelected,
+    otherText,
+    setOtherText,
+    canProceed,
+    isLast,
+    select,
+    goNext,
+    goPrev,
+    toAnswers,
+  } = useOnboarding();
+  const { start } = useOnboardingAnalysis();
 
   const onProceed = (): void => {
     if (!goNext()) {
-      // 마지막 단계 완료 → 데모 메인(상담)으로. (답변→triage 연동은 후속)
-      router.replace("/chat");
+      // 마지막 단계 완료 → 분석 시작(백엔드 C6+C7) + 로딩 화면으로 이동
+      start(toAnswers());
+      router.replace("/onboarding/analyzing" as Href);
     }
   };
 
@@ -107,6 +124,17 @@ export function OnboardingScreen() {
                 onPress={() => select(opt.id)}
               />
             ))}
+            {isOtherSelected ? (
+              <TextInput
+                className="rounded-[16px] border border-brand bg-white p-4 text-base text-[#1d1b20]"
+                placeholder="편하게 말씀해 주세요"
+                placeholderTextColor="#9c9c9c"
+                value={otherText}
+                onChangeText={setOtherText}
+                multiline
+                autoFocus
+              />
+            ) : null}
           </View>
 
           <View className="flex-row items-start gap-3 rounded-[20px] bg-line p-4">

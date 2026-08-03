@@ -16,6 +16,9 @@ from app.domains.chat.adapter.outbound.external.claude_client import ClaudeChatL
 from app.domains.chat.adapter.outbound.external.mock_client import MockChatLlm
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.application.usecase import ChatUseCase
+from app.domains.knowledge.adapter.inbound.api.router import router as onboarding_router
+from app.domains.knowledge.application.usecase import AnalyzeUseCase
+from app.domains.knowledge.infrastructure.graph_repository import JsonGraphRepository
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
 from app.infrastructure.config.settings import Settings, get_settings
 from app.infrastructure.security.gate import AccessGate
@@ -85,12 +88,17 @@ def create_app() -> FastAPI:
     _assert_gate_safe(gate, settings)
 
     app.state.chat_usecase = ChatUseCase(llm=llm, institutions=institutions)
+    # llm은 StateExtractorLlm(C6)도 구조적으로 만족한다(extract_node_state 메서드 보유)
+    app.state.analyze_usecase = AnalyzeUseCase(
+        llm=llm, institutions=institutions, graph_nodes=JsonGraphRepository().nodes()
+    )
     app.state.gate = gate
     app.state.spend = spend
 
     # Routers
     app.include_router(chat_router)
     app.include_router(centers_router)
+    app.include_router(onboarding_router)
 
     @app.get("/api/health")
     def health() -> dict[str, str]:

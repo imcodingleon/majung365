@@ -83,7 +83,7 @@ function CardRow({ label, value }: { label: string; value: string }) {
 }
 
 /** 제도 안내 카드(CAP-3). KB 매칭 결과 — 제도명·어디서·서류·다음 단계 + 기한 경고. */
-function SupportCard({ card, onAddToRoadmap }: { card: CardData; onAddToRoadmap: (card: CardData) => void }) {
+function SupportCard({ card }: { card: CardData }) {
   return (
     <View className="w-full flex-row items-start gap-3">
       <BotAvatar />
@@ -107,31 +107,19 @@ function SupportCard({ card, onAddToRoadmap }: { card: CardData; onAddToRoadmap:
           ) : null}
         </View>
 
-        {/* CTA: 바로가기 + 오늘의 할일에 추가(CAP-3→CAP-4 seam) */}
+        {/* CTA: 바로가기 */}
         <Pressable
           className="items-center border-t border-line bg-brand-soft py-3 active:opacity-80"
           onPress={() => card.source_url && Linking.openURL(card.source_url)}
         >
           <Text className="text-[14px] font-semibold text-brand">바로가기</Text>
         </Pressable>
-        <Pressable
-          className="flex-row items-center justify-center gap-1 border-t border-line bg-brand py-3 active:opacity-80"
-          onPress={() => onAddToRoadmap(card)}
-        >
-          <Text className="text-[14px] font-semibold text-white">＋ 오늘의 할일에 추가</Text>
-        </Pressable>
       </View>
     </View>
   );
 }
 
-export function MessageItem({
-  message,
-  onAddToRoadmap,
-}: {
-  message: ChatMessage;
-  onAddToRoadmap: (card: CardData) => void;
-}) {
+export function MessageItem({ message }: { message: ChatMessage }) {
   switch (message.kind) {
     case "text":
       return message.author === "user" ? (
@@ -142,7 +130,7 @@ export function MessageItem({
     case "triage":
       return <TriageBanner areas={message.areas} at={message.at} />;
     case "card":
-      return <SupportCard card={message.card} onAddToRoadmap={onAddToRoadmap} />;
+      return <SupportCard card={message.card} />;
     default:
       return null;
   }

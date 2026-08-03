@@ -1,7 +1,9 @@
-"""Anthropic 구현 — ChatLlm 포트. anthropic import는 이 파일에서만.
+"""Anthropic 구현 — ChatLlm 포트 + StateExtractorLlm 포트(C6). anthropic import는 이 파일에서만.
 
 - triage: 구조화 출력(json_schema)으로 6영역 분류. 빠르게(thinking 끔).
 - stream_guidance: 스트리밍으로 쉬운 말 안내. daily 질문이면 공공 도메인 웹 검색 허용.
+- extract_node_state: 온보딩 "기타(직접입력)" 자유텍스트 1건 → 그래프 노드 상태(O/X/BLOCKED) 판정.
+  knowledge 도메인이 쓰지만, "Claude 호출은 claude_client.py에서만" 규칙 때문에 여기 둔다.
 보안: 사용자 입력 원문을 로그에 남기지 않는다. API 키는 settings 경유.
 """
 
@@ -22,11 +24,29 @@ from app.domains.chat.domain.triage import (
     QuestionType,
     TriageResult,
 )
+from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.areas import Area
 from app.infrastructure.config.settings import Settings
 from app.infrastructure.tls import make_async_http_client
 
 logger = logging.getLogger("majung.claude")
+
+_STATE_EXTRACT_SCHEMA = {
+    "type": "object",
+    "properties": {
+        "state": {"type": "string", "enum": ["O", "X", "BLOCKED"]},
+    },
+    "required": ["state"],
+    "additionalProperties": False,
+}
+
+_STATE_EXTRACT_SYSTEM_TEMPLATE = """당신은 마중365의 상태 판정기입니다. 사용자가 '{node_name}'에 대해 자유롭게 설명한 내용을 읽고, 지금 이걸 가지고 있는지 판정하세요.
+
+- O: 있고 정상적으로 쓸 수 있다
+- X: 없다
+- BLOCKED: 있기는 한데 정지·분실·만료 등으로 지금 못 쓴다
+
+판단이 애매하면 X로 판정하세요. 사용자의 실제 말에 근거해서만 판정하고, 훈계·되묻기 없이 판정만 하세요."""  # noqa: E501
 
 _TRIAGE_SCHEMA = {
     "type": "object",
@@ -147,3 +167,29 @@ class ClaudeChatLlm:
         async with self._client.messages.stream(**kwargs) as stream:
             async for text in stream.text_stream:
                 yield text
+
+    async def extract_node_state(self, node_name: str, free_text: str) -> NodeState:
+        self._record_call()
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": 256,
+            "thinking": {"type": "disabled"},
+            "output_config": {
+                "effort": "low",
+                "format": {"type": "json_schema", "schema": _STATE_EXTRACT_SCHEMA},
+            },
+            "system": _STATE_EXTRACT_SYSTEM_TEMPLATE.format(node_name=node_name),
+            "messages": [{"role": "user", "content": free_text}],
+        }
+        resp = await self._client.messages.create(**create_kwargs)
+        text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
+        return self._parse_state(text)
+
+    def _parse_state(self, text: str) -> NodeState:
+        try:
+            data = json.loads(text)
+            return NodeState(data["state"])
+        except Exception:
+            # 상태 판정 실패 시 UNKNOWN 취급 — 그래프 엔진이 이어서 처리(SSOT §9 폴백①)
+            logger.warning("상태 판정 파싱 실패 — UNKNOWN 폴백")
+            return NodeState.UNKNOWN

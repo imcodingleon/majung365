@@ -1,12 +1,15 @@
 // 홈 화면 (Figma 2:428). 히어로 + '자주 찾는 서비스' 6타일 + 상담 CTA.
 // 타일 탭 → 챗으로 이동하며 관련 질문 자동 전송(params.q). 아이콘은 Figma 원본(PNG).
+// 첫 방문(온보딩 미완료, 기기당 판별)이면 홈 대신 온보딩으로 안내한다.
 import { Image } from "expo-image";
 import { type Href, router } from "expo-router";
+import { useEffect } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Logo } from "@/shared/components/Logo";
 import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
+import { getOnboardingResult } from "@/shared/utils/storage";
 
 import { HOME_SERVICES, type HomeService } from "../domain/services";
 
@@ -36,6 +39,13 @@ function ServiceCard({ service }: { service: HomeService }) {
 
 export function HomeScreen() {
   const isDesktop = useIsDesktop();
+
+  useEffect(() => {
+    if (!getOnboardingResult()) {
+      router.replace("/onboarding" as Href);
+    }
+  }, []);
+
   return (
     <SafeAreaView className="flex-1 bg-[#f9fbff]" edges={["top"]}>
       {/* 모바일 헤더 — 데스크톱은 셸 navbar가 대체 */}

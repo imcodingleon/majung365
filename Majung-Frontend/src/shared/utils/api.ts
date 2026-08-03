@@ -3,11 +3,13 @@
 // 비밀 금지: 여기에 API 키를 넣지 않는다. AI 호출은 백엔드가 담당.
 
 import type {
+  AnalyzeRequest,
   AreaOut,
   CardData,
   Center,
   ChatRequest,
   ChatStreamHandlers,
+  TaskCard,
   VoiceResult,
 } from "../types";
 
@@ -90,6 +92,17 @@ export async function getCenters(category?: string): Promise<Center[]> {
   const res = await fetch(`${API_BASE}/api/centers${qs}`);
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as Center[];
+}
+
+/** POST /api/onboarding/analyze — 온보딩 답변(코어 9노드) → 오늘의 과제 카드 1개(C6+C7). */
+export async function postAnalyze(req: AnalyzeRequest): Promise<TaskCard> {
+  const res = await fetch(`${API_BASE}/api/onboarding/analyze`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as TaskCard;
 }
 
 /**

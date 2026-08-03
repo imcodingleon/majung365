@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>마중365 요청 처리 흐름</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600;700&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fafafa; --ink:#1c1c1c; --muted:#4a5a6b; --soft:#7d8794; --rule:rgba(28,28,28,0.16);
+    --accent:#024f9f; --accent-tint:#e1eefa;
+    --sans:'Geist','Noto Sans KR',sans-serif;
+    --serif:'Instrument Serif','Noto Serif KR',serif;
+    --mono:'Geist Mono','Noto Sans KR',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+       padding:48px 40px 64px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:900px;margin:0 auto}
+  /* A4 삽입 기준: viewBox 폭 680 → 본문 약 150mm. 문서에는 반드시 폭 100%로 넣을 것.
+     고해상도 추출: .wrap 1360px + svg max-width 1360px로 올린 뒤 SVG만 캡처 → 2배 래스터 */
+  svg{display:block;width:100%;max-width:680px;height:auto;overflow:visible;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:8px;font-weight:500;letter-spacing:0.18em;
+           text-transform:uppercase;color:var(--soft);margin:0 0 8px}
+  h1{font-family:var(--serif);font-size:1.6rem;font-weight:400;margin:0 0 8px;letter-spacing:-0.01em}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 32px;line-height:1.6;max-width:680px}
+  footer{margin-top:32px;padding-top:16px;border-top:1px solid var(--rule);
+         font-family:var(--mono);font-size:9px;color:var(--soft);letter-spacing:0.06em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Flowchart · Request Lifecycle</p>
+  <h1>마중365 요청 처리 흐름</h1>
+  <p class="sub">
+    타원은 경계(시작·끝), 사각은 처리 단계다. 색은 딱 하나 — 그래프 엔진에만 쓴다.
+    이 흐름에서 유일하게 <strong>LLM이 관여하지 않는</strong> 단계이기 때문이다.
+  </p>
+
+  <svg viewBox="0 0 680 900" role="img" aria-label="마중365 요청 처리 흐름 — 플로우차트">
+    <defs>
+      <marker id="arrow" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+        <polygon points="0 0, 9 3.5, 0 7" fill="#7d8794"/>
+      </marker>
+      <marker id="arrow-accent" markerWidth="9" markerHeight="7" refX="8" refY="3.5" orient="auto">
+        <polygon points="0 0, 9 3.5, 0 7" fill="#024f9f"/>
+      </marker>
+    </defs>
+
+    <rect width="680" height="900" fill="#fafafa"/>
+
+    <!-- ═══ ARROWS (노드보다 먼저) ═══ -->
+    <line x1="340" y1="120" x2="340" y2="150" stroke="#7d8794" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="340" y1="238" x2="340" y2="268" stroke="#7d8794" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="340" y1="356" x2="340" y2="386" stroke="#024f9f" stroke-width="2" marker-end="url(#arrow-accent)"/>
+    <line x1="340" y1="486" x2="340" y2="516" stroke="#024f9f" stroke-width="2" marker-end="url(#arrow-accent)"/>
+    <line x1="340" y1="604" x2="340" y2="634" stroke="#7d8794" stroke-width="1.6" marker-end="url(#arrow)"/>
+    <line x1="340" y1="722" x2="340" y2="752" stroke="#7d8794" stroke-width="1.6" marker-end="url(#arrow)"/>
+
+    <!-- 루프: 끝(oval) → 시작(oval), 완료 시 재계산 -->
+    <path d="M 530,792 H 650 V 80 H 440" fill="none" stroke="#7d8794" stroke-width="1.6" stroke-dasharray="5,4" marker-end="url(#arrow)"/>
+    <text x="666" y="430" fill="#7d8794" font-size="13" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle" transform="rotate(-90 666 430)">완료 → 재계산</text>
+
+    <!-- ═══ START (oval) ═══ -->
+    <rect x="180" y="40" width="320" height="80" rx="40" fill="white" stroke="#1c1c1c" stroke-width="1.4"/>
+    <text x="340" y="76" fill="#1c1c1c" font-size="21" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">사용자 요청</text>
+    <text x="340" y="100" fill="#4a5a6b" font-size="14" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">발화 · 버튼 · 음성</text>
+
+    <!-- ═══ STEP · REST 엔드포인트 ═══ -->
+    <rect x="180" y="150" width="320" height="88" rx="6" fill="white" stroke="rgba(28,28,28,0.35)" stroke-width="1.2"/>
+    <text x="340" y="188" fill="#1c1c1c" font-size="20" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">REST 엔드포인트</text>
+    <text x="340" y="212" fill="#4a5a6b" font-size="14" font-family="'Geist Mono','Noto Sans KR',monospace" text-anchor="middle">POST /api/chat · SSE</text>
+
+    <!-- ═══ STEP · LLM 1차 호출 ═══ -->
+    <rect x="180" y="268" width="320" height="88" rx="6" fill="white" stroke="rgba(28,28,28,0.35)" stroke-width="1.2"/>
+    <text x="340" y="306" fill="#1c1c1c" font-size="20" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">LLM 1차 호출</text>
+    <text x="340" y="330" fill="#4a5a6b" font-size="14" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">자유 발화 → 구조화 JSON</text>
+
+    <!-- ═══ STEP · 그래프 엔진 (FOCAL — 유일한 강조) ═══ -->
+    <rect x="172" y="386" width="336" height="100" rx="8" fill="#e1eefa" stroke="#024f9f" stroke-width="2"/>
+    <text x="340" y="426" fill="#024f9f" font-size="22" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">그래프 엔진</text>
+    <text x="340" y="450" fill="#024f9f" font-size="14" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">LLM 미사용</text>
+    <text x="340" y="470" fill="#024f9f" font-size="13" font-family="'Geist Mono','Noto Sans KR',monospace" text-anchor="middle" opacity="0.8">위상 정렬(Kahn) · O(V+E)</text>
+
+    <!-- 콜아웃 (italic, 1개, 좌측 여백) -->
+    <line x1="106" y1="420" x2="172" y2="436" stroke="rgba(2,79,159,0.35)" stroke-width="0.8"/>
+    <text x="100" y="380" fill="#024f9f" font-size="14" font-style="italic" font-family="'Instrument Serif','Noto Serif KR',serif" text-anchor="end">이 흐름에서</text>
+    <text x="100" y="398" fill="#024f9f" font-size="14" font-style="italic" font-family="'Instrument Serif','Noto Serif KR',serif" text-anchor="end">유일하게 코드가</text>
+    <text x="100" y="416" fill="#024f9f" font-size="14" font-style="italic" font-family="'Instrument Serif','Noto Serif KR',serif" text-anchor="end">순서를 정하는 곳.</text>
+
+    <!-- ═══ STEP · 지식베이스 검색 ═══ -->
+    <rect x="180" y="516" width="320" height="88" rx="6" fill="white" stroke="rgba(28,28,28,0.35)" stroke-width="1.2"/>
+    <text x="340" y="554" fill="#1c1c1c" font-size="20" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">지식베이스 검색</text>
+    <text x="340" y="578" fill="#4a5a6b" font-size="14" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">BM25 + 벡터 하이브리드</text>
+
+    <!-- ═══ STEP · LLM 2차 호출 ═══ -->
+    <rect x="180" y="634" width="320" height="88" rx="6" fill="white" stroke="rgba(28,28,28,0.35)" stroke-width="1.2"/>
+    <text x="340" y="672" fill="#1c1c1c" font-size="20" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">LLM 2차 호출</text>
+    <text x="340" y="696" fill="#4a5a6b" font-size="14" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">RAG · 쉬운 말 응답</text>
+
+    <!-- ═══ END (oval) ═══ -->
+    <rect x="180" y="752" width="320" height="80" rx="40" fill="white" stroke="#1c1c1c" stroke-width="1.4"/>
+    <text x="340" y="788" fill="#1c1c1c" font-size="21" font-weight="700" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">SSE 스트리밍 응답</text>
+    <text x="340" y="812" fill="#4a5a6b" font-size="14" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">상태 → 텍스트 → 카드 → 완료</text>
+
+    <!-- ═══ LEGEND ═══ -->
+    <line x1="180" y1="856" x2="500" y2="856" stroke="rgba(28,28,28,0.14)" stroke-width="1"/>
+    <rect x="180" y="866" width="30" height="16" rx="8" fill="white" stroke="#1c1c1c" stroke-width="1"/>
+    <text x="218" y="878" fill="#4a5a6b" font-size="13" font-family="'Geist','Noto Sans KR',sans-serif">시작·끝</text>
+    <rect x="294" y="866" width="30" height="16" rx="4" fill="white" stroke="rgba(28,28,28,0.35)" stroke-width="1"/>
+    <text x="332" y="878" fill="#4a5a6b" font-size="13" font-family="'Geist','Noto Sans KR',sans-serif">처리 단계</text>
+    <rect x="416" y="866" width="30" height="16" rx="4" fill="#e1eefa" stroke="#024f9f" stroke-width="1.4"/>
+    <text x="454" y="878" fill="#4a5a6b" font-size="13" font-family="'Geist','Noto Sans KR',sans-serif">LLM 미사용</text>
+  </svg>
+
+  <footer>근거 · SSOT.md §6 선행조건 그래프 해결 · graph-design.md 노드 14 · 엣지 19 · 2026-08-02</footer>
+</div>
+</body>
+</html>

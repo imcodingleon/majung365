@@ -35,3 +35,6 @@ class JsonInstitutionRepository:
 
     def by_area(self, area: Area) -> list[Institution]:
         return [i for i in self._items if i.area == area]
+
+    def by_id(self, institution_id: str) -> Institution | None:
+        return next((i for i in self._items if i.id == institution_id), None)

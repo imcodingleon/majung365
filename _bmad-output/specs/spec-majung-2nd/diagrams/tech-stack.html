@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<title>마중365 활용 기술</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=Geist:wght@400;500;600&family=Geist+Mono:wght@400;500;600&family=Noto+Sans+KR:wght@400;500;700&family=Noto+Serif+KR:wght@400;600&display=swap" rel="stylesheet">
+<style>
+  :root{
+    --paper:#fafafa; --paper-2:#f1f1f1; --ink:#1c1c1c; --muted:#4a5a6b; --soft:#7d8794;
+    --rule:rgba(28,28,28,0.12); --rule-solid:#d8d8d8; --accent:#024f9f; --accent-tint:#e1eefa;
+    --link:#874700; --guard:#b85450;
+    --sans:'Geist','Noto Sans KR',sans-serif;
+    --serif:'Instrument Serif','Noto Serif KR',serif;
+    --mono:'Geist Mono','Noto Sans KR',monospace;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:var(--sans);
+       padding:48px 40px 64px;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1000px;margin:0 auto}
+  /* A4 삽입 기준: viewBox 폭 720 → 본문 160mm. 문서에는 반드시 폭 100%로 넣을 것.
+     고해상도 추출: .wrap 1500px + svg max-width 1440px로 올린 뒤 SVG만 캡처 → 2배 래스터 */
+  svg{display:block;width:100%;max-width:720px;height:auto;overflow:visible;margin:0 auto}
+  .eyebrow{font-family:var(--mono);font-size:8px;font-weight:500;letter-spacing:0.18em;
+           text-transform:uppercase;color:var(--soft);margin:0 0 8px}
+  h1{font-family:var(--serif);font-size:1.75rem;font-weight:400;margin:0 0 8px;letter-spacing:-0.01em}
+  .sub{font-size:13px;color:var(--muted);margin:0 0 32px;line-height:1.6;max-width:720px}
+  .grid{display:grid;grid-template-columns:1.1fr 1fr 0.9fr;gap:20px;margin-top:40px}
+  .card{background:#fff;border:1px solid var(--rule);border-radius:6px;padding:20px}
+  .card h3{font-size:13px;font-weight:600;margin:0 0 10px;display:flex;align-items:center;gap:8px}
+  .dot{width:7px;height:7px;border-radius:50%;flex:none}
+  .dot.accent{background:var(--accent)} .dot.ink{background:var(--ink)} .dot.guard{background:var(--guard)}
+  .card p{margin:0;font-size:12px;line-height:1.75;color:var(--muted)}
+  footer{margin-top:40px;padding-top:16px;border-top:1px solid var(--rule);
+         font-family:var(--mono);font-size:9px;color:var(--soft);letter-spacing:0.06em}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <p class="eyebrow">Technology Stack</p>
+  <h1>마중365 활용 기술</h1>
+  <p class="sub">
+    LLM은 <strong>양 끝에서 두 번</strong>만 부른다 — 말을 데이터로 바꿀 때, 데이터를 말로 바꿀 때.
+    그 사이에서 <strong>무엇을 먼저 할지 정하는 일은 코드가 한다.</strong> 같은 입력이면 항상 같은 답이 나와야 하기 때문이다.
+  </p>
+
+  <svg viewBox="0 6 720 850" role="img" aria-label="마중365 활용 기술 세로형 다이어그램">
+    <defs>
+      <marker id="arrow" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#4a5a6b"/>
+      </marker>
+      <marker id="arrow-accent" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#024f9f"/>
+      </marker>
+      <marker id="arrow-dim" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="rgba(28,28,28,0.45)"/>
+      </marker>
+      <marker id="arrow-guard" markerWidth="8" markerHeight="6" refX="7" refY="3" orient="auto">
+        <polygon points="0 0, 8 3, 0 6" fill="#b85450"/>
+      </marker>
+    </defs>
+
+    <rect width="720" height="860" fill="#fafafa"/>
+
+    <!-- 예시 발화 -->
+    <text x="34" y="24" font-family="'Geist','Noto Sans KR',sans-serif"><tspan fill="#7d8794" font-size="12">예시 · 이렇게 말했다면</tspan><tspan fill="#1c1c1c" font-size="13" dx="10">“통장이 정지됐어요. 신분증은 있는데 집이 없어요.”</tspan></text>
+
+    <!-- ═══ ZONE 1 · 사용자 기기 ═══ -->
+    <rect x="32" y="48" width="656" height="104" rx="8" fill="rgba(28,28,28,0.02)"
+          stroke="rgba(28,28,28,0.22)" stroke-width="1" stroke-dasharray="6,3"/>
+    <rect x="44" y="41" width="228" height="16" rx="2" fill="#fafafa"/>
+    <text x="52" y="53" fill="rgba(28,28,28,0.45)" font-size="11" font-family="'Geist Mono','Noto Sans KR',monospace" letter-spacing="0.12em">USER DEVICE · 사용자 기기</text>
+
+    <!-- ═══ ZONE 2 · 자체 호스팅 서버 ═══ -->
+    <rect x="32" y="184" width="656" height="472" rx="8" fill="rgba(28,28,28,0.02)"
+          stroke="rgba(28,28,28,0.20)" stroke-width="1.4"/>
+    <rect x="44" y="177" width="264" height="16" rx="2" fill="#fafafa"/>
+    <text x="52" y="189" fill="rgba(28,28,28,0.45)" font-size="11" font-family="'Geist Mono','Noto Sans KR',monospace" letter-spacing="0.12em">SELF-HOSTED · 자체 호스팅 서버</text>
+
+    <!-- ═══ ARROWS ═══ -->
+    <line x1="200" y1="140" x2="200" y2="212" stroke="#4a5a6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <path d="M 520,140 V 164 Q 520,172 512,172 H 448 Q 440,172 440,180 V 212"
+          fill="none" stroke="#4a5a6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <line x1="280" y1="284" x2="280" y2="316" stroke="#4a5a6b" stroke-width="1.2" marker-end="url(#arrow)"/>
+    <line x1="280" y1="388" x2="280" y2="420" stroke="#024f9f" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+    <line x1="512" y1="464" x2="540" y2="464" stroke="rgba(28,28,28,0.35)" stroke-width="1.2" stroke-dasharray="4,3" marker-end="url(#arrow-dim)"/>
+    <line x1="280" y1="508" x2="280" y2="540" stroke="#024f9f" stroke-width="1.6" marker-end="url(#arrow-accent)"/>
+    <line x1="360" y1="656" x2="360" y2="696" stroke="#b85450" stroke-width="1.4" marker-end="url(#arrow-guard)"/>
+    <line x1="360" y1="752" x2="360" y2="784" stroke="#b85450" stroke-width="1.4" stroke-dasharray="4,3" marker-end="url(#arrow-guard)"/>
+
+    <!-- ═══ 페이로드 칩 ═══ -->
+    <rect x="300" y="290" width="60" height="20" rx="3" fill="#f6f6f6"/>
+    <text x="308" y="304" fill="#4a5a6b" font-size="12" font-family="'Geist Mono',monospace">text</text>
+
+    <rect x="300" y="394" width="336" height="20" rx="3" fill="#f6f6f6"/>
+    <text x="308" y="408" fill="#1c1c1c" font-size="12" font-family="'Geist Mono',monospace">{ id_card:"OK", bank:"BLOCKED", housing:"NONE" }</text>
+
+    <rect x="300" y="514" width="180" height="20" rx="3" fill="#f6f6f6"/>
+    <text x="308" y="528" fill="#1c1c1c" font-size="12" font-family="'Geist Mono',monospace">next = "bank.unblock"</text>
+
+    <text x="376" y="676" fill="#b85450" font-size="12" font-family="'Geist','Noto Sans KR',sans-serif">외부 호출 2회</text>
+    <text x="376" y="772" fill="#b85450" font-size="12" font-family="'Geist','Noto Sans KR',sans-serif">지운 뒤에만 전송</text>
+
+    <!-- ═══ 입력 노드 2개 ═══ -->
+    <rect x="48" y="76" width="304" height="64" rx="6" fill="white" stroke="rgba(28,28,28,0.25)" stroke-width="1"/>
+    <svg x="68" y="96" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="9" y="3" width="6" height="11" rx="3"/><path d="M5 11a7 7 0 0 0 14 0"/><path d="M12 18v3"/>
+    </svg>
+    <text x="104" y="113"><tspan fill="#1c1c1c" font-size="16" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">말로 하기</tspan><tspan fill="#4a5a6b" font-size="12" font-family="'Geist Mono',monospace" dx="8">MediaRecorder</tspan></text>
+
+    <rect x="368" y="76" width="304" height="64" rx="6" fill="white" stroke="rgba(28,28,28,0.25)" stroke-width="1"/>
+    <svg x="388" y="96" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 20l-4-3H6a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2h12a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-4z"/><path d="M8 9h8M8 13h5"/>
+    </svg>
+    <text x="424" y="113"><tspan fill="#1c1c1c" font-size="16" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">글·버튼으로 하기</tspan><tspan fill="#4a5a6b" font-size="12" font-family="'Geist Mono',monospace" dx="8">Expo</tspan></text>
+
+    <!-- ═══ ① 음성을 글로 ═══ -->
+    <rect x="48" y="212" width="464" height="72" rx="6" fill="white" stroke="rgba(28,28,28,0.25)" stroke-width="1"/>
+    <text x="68" y="246" fill="#1c1c1c" font-size="16" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">음성을 글로 바꾼다</text>
+    <text x="68" y="266" fill="#4a5a6b" font-size="12" font-family="'Geist Mono',monospace">SenseVoiceSmall · 우리 서버에서 실행</text>
+    <rect x="416" y="238" width="80" height="20" rx="3" fill="rgba(28,28,28,0.06)" stroke="rgba(28,28,28,0.25)" stroke-width="0.8"/>
+    <text x="456" y="252" fill="#4a5a6b" font-size="11" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">외부 전송 없음</text>
+
+    <!-- ═══ ② 상태 뽑기 ═══ -->
+    <rect x="48" y="316" width="464" height="72" rx="6" fill="white" stroke="rgba(28,28,28,0.25)" stroke-width="1"/>
+    <text x="68" y="350" fill="#1c1c1c" font-size="16" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">말에서 “뭘 가졌는지”를 뽑아낸다</text>
+    <text x="68" y="370" fill="#4a5a6b" font-size="12" font-family="'Geist Mono',monospace">Claude API · structured output</text>
+    <rect x="432" y="342" width="64" height="20" rx="3" fill="rgba(28,28,28,0.06)" stroke="rgba(28,28,28,0.25)" stroke-width="0.8"/>
+    <text x="464" y="356" fill="#4a5a6b" font-size="11" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">LLM 1회</text>
+
+    <!-- ═══ ③ 계산 · FOCAL ═══ -->
+    <rect x="48" y="420" width="464" height="88" rx="8" fill="rgba(2,79,159,0.08)" stroke="#024f9f" stroke-width="1.6"/>
+    <text x="68" y="452" fill="#024f9f" font-size="18" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">지금 할 수 있는 일 하나를 고른다</text>
+    <text x="68" y="474" fill="#024f9f" font-size="12" font-family="'Geist Mono',monospace" opacity="0.85">Python · topological sort (Kahn) · O(V+E)</text>
+    <text x="68" y="494" fill="#024f9f" font-size="12" font-family="'Geist','Noto Sans KR',sans-serif" opacity="0.85">거처·주소는 아직 못 한다 — 순서가 뒤에 있다</text>
+    <rect x="408" y="440" width="88" height="20" rx="3" fill="rgba(2,79,159,0.14)" stroke="rgba(2,79,159,0.55)" stroke-width="0.8"/>
+    <text x="452" y="454" fill="#024f9f" font-size="11" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">LLM 안 씀</text>
+
+    <!-- ═══ 제도 그래프 (데이터) ═══ -->
+    <rect x="540" y="420" width="132" height="88" rx="6" fill="rgba(28,28,28,0.05)" stroke="rgba(28,28,28,0.28)" stroke-width="1"/>
+    <svg x="594" y="434" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#1c1c1c" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M4 6a8 3 0 1 0 16 0a8 3 0 1 0 -16 0"/><path d="M4 6v6a8 3 0 0 0 16 0v-6"/><path d="M4 12v6a8 3 0 0 0 16 0v-6"/>
+    </svg>
+    <text x="606" y="478" fill="#1c1c1c" font-size="14" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">제도 그래프</text>
+    <text x="606" y="494" fill="#4a5a6b" font-size="11" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">제도 14 · 선행조건 19</text>
+
+    <!-- ═══ ④ 쉬운 말 ═══ -->
+    <rect x="48" y="540" width="464" height="72" rx="6" fill="white" stroke="rgba(28,28,28,0.25)" stroke-width="1"/>
+    <text x="68" y="574" fill="#1c1c1c" font-size="16" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">쉬운 말 한 문장으로 바꾼다</text>
+    <text x="68" y="594" fill="#4a5a6b" font-size="12" font-family="'Geist Mono',monospace">Claude API · 낙인 어휘 필터</text>
+    <rect x="432" y="566" width="64" height="20" rx="3" fill="rgba(28,28,28,0.06)" stroke="rgba(28,28,28,0.25)" stroke-width="0.8"/>
+    <text x="464" y="580" fill="#4a5a6b" font-size="11" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="middle">LLM 1회</text>
+
+    <!-- 결과 문장 -->
+    <text x="48" y="638" font-family="'Geist','Noto Sans KR',sans-serif"><tspan fill="#7d8794" font-size="12">화면에 뜨는 것</tspan><tspan fill="#1c1c1c" font-size="13" dx="10">“은행에 가서 통장 정지를 풀어 주세요. 신분증만 있으면 됩니다.”</tspan></text>
+
+    <!-- ═══ 마스킹 ═══ -->
+    <rect x="32" y="700" width="656" height="52" rx="6" fill="rgba(184,84,80,0.07)" stroke="rgba(184,84,80,0.45)" stroke-width="1.2"/>
+    <svg x="52" y="714" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#b85450" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 3l7 3v6c0 4.5-3 7.5-7 9-4-1.5-7-4.5-7-9V6z"/><path d="M9.5 12l1.8 1.8 3.4-3.4"/>
+    </svg>
+    <text x="88" y="722" fill="#b85450" font-size="15" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">나가기 전에 개인정보를 지운다</text>
+    <text x="88" y="740" fill="#4a5a6b" font-size="11" font-family="'Geist','Noto Sans KR',sans-serif">음성 파일과 대화 원문은 서버 밖으로 아예 나가지 않는다</text>
+
+    <!-- ═══ 외부 API ═══ -->
+    <rect x="32" y="788" width="656" height="52" rx="6" fill="rgba(28,28,28,0.04)" stroke="rgba(28,28,28,0.30)" stroke-width="1"/>
+    <svg x="52" y="802" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="#4a5a6b" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M7 18a4 4 0 1 1 .8-7.9A5.5 5.5 0 0 1 18 11a3.5 3.5 0 0 1 0 7z"/>
+    </svg>
+    <text x="88" y="810" fill="#1c1c1c" font-size="15" font-weight="600" font-family="'Geist','Noto Sans KR',sans-serif">외부 API</text>
+    <text x="88" y="828" fill="#4a5a6b" font-size="11" font-family="'Geist Mono',monospace">Claude API · Google Maps</text>
+    <text x="672" y="820" fill="#4a5a6b" font-size="12" font-family="'Geist','Noto Sans KR',sans-serif" text-anchor="end">요청당 2회 · 그 외엔 부르지 않는다</text>
+  </svg>
+
+  <div class="grid">
+    <div class="card">
+      <h3><span class="dot accent"></span>왜 가운데를 LLM으로 안 하나</h3>
+      <p>“무엇을 먼저 해야 하는가”는 답이 정해져 있는 문제다. 통장을 만들려면 신분증이 있어야 하고, 신분증을 만들려면 주소지가 있어야 한다.
+         LLM에 맡기면 같은 사람에게 물을 때마다 순서가 달라지고, 잘못된 순서는 사용자를 헛걸음시킨다.
+         제도 사이의 선행조건을 그래프로 만들어 두고 위상 정렬로 “지금 막힌 게 없는 항목”을 뽑는다. O(V+E)라 제도가 늘어도 느려지지 않는다.</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot ink"></span>왜 음성을 직접 돌리나</h3>
+      <p>출소 사실은 새어 나가면 사회 복귀 자체가 무너지는 정보다. 음성 파일을 외부 STT에 올리지 않고 서버에서 직접 처리하고,
+         끝나면 바로 지운다. 음성은 기능이 아니라 접근성 수단이다 — 말하면 입력창에 글로 적히고, 사용자가 고쳐서 보낸다.</p>
+    </div>
+    <div class="card">
+      <h3><span class="dot guard"></span>한 번에 하나만 주는 이유</h3>
+      <p>할 일 목록을 다 주면 어디부터인지 몰라 다시 막힌다. 실행 가능한 항목이 여럿이면
+         기한이 급한 것 → 완료 시 열리는 게 많은 것 순으로 하나만 고른다. 완료하면 다음이 열린다.</p>
+    </div>
+  </div>
+
+  <footer>근거 · SSOT.md §6 선행조건 그래프 해결 · graph-design.md 노드 14 · 엣지 19 · 2026-08-01</footer>
+</div>
+</body>
+</html>

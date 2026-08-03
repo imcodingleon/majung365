@@ -16,7 +16,13 @@ from app.domains.chat.domain.triage import (
     QuestionType,
     TriageResult,
 )
+from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.areas import Area
+
+# 온보딩 "기타(직접입력)" 상태 판정 목업 — 우선순위: BLOCKED > X > O > UNKNOWN(판단불가)
+_BLOCKED_KEYWORDS = ("정지", "막혔", "막혀", "잠겼", "분실", "못 써", "못써", "끊겼", "끊김", "만료")  # noqa: E501
+_NONE_KEYWORDS = ("없어요", "없습니다", "없음", "없고", "안 가지고", "못 받", "아직")
+_HAVE_KEYWORDS = ("있어요", "있습니다", "가지고 있", "있음", "있고", "받았")
 
 # 영역별 키워드(쉬운 말·구어 포함). 튜플 순서 = 탐지 우선순위(급한 것부터).
 # WELFARE는 보통 동반 영역이라 맨 뒤 — 다른 영역이 있으면 그 뒤로 붙는다.
@@ -141,3 +147,13 @@ class MockChatLlm:
                 await asyncio.sleep(_WORD_DELAY_SECONDS)
         if buf:
             yield buf
+
+    async def extract_node_state(self, node_name: str, free_text: str) -> NodeState:
+        await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 분석 로딩 화면이 자연스레 보인다
+        if any(k in free_text for k in _BLOCKED_KEYWORDS):
+            return NodeState.BLOCKED
+        if any(k in free_text for k in _NONE_KEYWORDS):
+            return NodeState.X
+        if any(k in free_text for k in _HAVE_KEYWORDS):
+            return NodeState.O
+        return NodeState.UNKNOWN

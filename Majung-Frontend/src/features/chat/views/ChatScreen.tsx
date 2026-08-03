@@ -1,12 +1,10 @@
 // 챗봇 화면 조립 (CAP-1/2/3). Figma 2:1790. 데모 메인 진입 화면.
 import { type Href, useLocalSearchParams, useRouter } from "expo-router";
-import { useCallback, useEffect, useRef } from "react";
+import { useEffect, useRef } from "react";
 import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
-import { useRoadmap } from "@/shared/state/roadmap";
-import type { CardData } from "@/shared/types";
 
 import { useChat } from "../hooks/useChat";
 import { ChatInputArea } from "./ChatInputArea";
@@ -37,7 +35,6 @@ function TypingIndicator() {
 
 export function ChatScreen() {
   const { messages, streaming, error, send } = useChat();
-  const { addFromCard } = useRoadmap();
   const isDesktop = useIsDesktop();
   const router = useRouter();
   const scrollRef = useRef<ScrollView>(null);
@@ -52,9 +49,6 @@ export function ChatScreen() {
       send(q);
     }
   }, [q, send]);
-
-  // CAP-3→CAP-4 seam: 제도 카드를 로드맵 '오늘의 할일'에 추가.
-  const onAddToRoadmap = useCallback((card: CardData) => addFromCard(card), [addFromCard]);
 
   const last = messages[messages.length - 1];
   const waitingFirstReply = streaming && last?.author === "user";
@@ -74,7 +68,7 @@ export function ChatScreen() {
             keyboardShouldPersistTaps="handled"
           >
             {messages.map((m) => (
-              <MessageItem key={m.id} message={m} onAddToRoadmap={onAddToRoadmap} />
+              <MessageItem key={m.id} message={m} />
             ))}
             {waitingFirstReply ? <TypingIndicator /> : null}
             {error ? (

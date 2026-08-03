@@ -106,6 +106,39 @@ export interface ChatRequest {
   token?: string | null;
 }
 
+/** 온보딩 그래프 노드 상태값(백엔드 NodeState와 동일). */
+export type NodeStateValue = "O" | "X" | "BLOCKED" | "UNKNOWN";
+
+/** POST /api/onboarding/analyze 요청 — 노드별 답변 1건. */
+export interface NodeAnswerInput {
+  node_id: string;
+  /** 버튼 선택 시 상태값. "기타(직접입력)"로 답했으면 생략하고 free_text만 채운다. */
+  state?: NodeStateValue;
+  free_text?: string;
+}
+
+/** POST /api/onboarding/analyze 요청 바디. */
+export interface AnalyzeRequest {
+  answers: NodeAnswerInput[];
+}
+
+/** POST /api/onboarding/analyze 응답 — 오늘의 과제 카드 1개(C6+C7 결과). */
+export interface TaskCard {
+  node_id: string;
+  node_name: string;
+  summary_easy: string;
+  where: string;
+  docs: string[];
+  next_step: string;
+  deadline: string | null;
+  source_url: string;
+  /** 왜 이걸 먼저 하는지 한 줄(기한 임박/해금 수/기본 안내). */
+  priority_reason: string;
+  duration_days: number;
+  /** 순환 해소 불가로 진입점(수용증명서)에 폴백했는지 여부. */
+  is_fallback: boolean;
+}
+
 /** SSE 스트림 이벤트를 소비하는 콜백 묶음. */
 export interface ChatStreamHandlers {
   /** triage 결과(급한 영역 2~3개) 도착 */
