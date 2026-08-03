@@ -31,3 +31,6 @@ class TaskCard:
     priority_reason: str
     duration_days: int
     is_fallback: bool
+    # 이번 계산에 쓰인 14노드 전체 상태 스냅샷. "완료 처리" 시 프론트가 이 노드만 O로 바꿔
+    # 그대로 재전송하면 재계산이 된다 — LLM(C6) 재호출 없이 다음 과제를 구할 수 있다.
+    resolved_states: dict[str, NodeState]

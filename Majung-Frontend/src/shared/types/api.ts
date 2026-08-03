@@ -137,6 +137,8 @@ export interface TaskCard {
   duration_days: number;
   /** 순환 해소 불가로 진입점(수용증명서)에 폴백했는지 여부. */
   is_fallback: boolean;
+  /** 이번 계산에 쓰인 14노드 전체 상태 스냅샷 — "완료 처리" 재계산에 그대로 되돌려보낸다. */
+  resolved_states: Record<string, NodeStateValue>;
 }
 
 /** SSE 스트림 이벤트를 소비하는 콜백 묶음. */

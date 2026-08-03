@@ -36,7 +36,7 @@ class AnalyzeUseCase:
             states.setdefault(node_id, NodeState.X)
 
         task = compute_starting_task(self._nodes, states)
-        return self._to_card(task)
+        return self._to_card(task, states)
 
     async def _resolve_states(self, answers: tuple[NodeAnswer, ...]) -> dict[str, NodeState]:
         states: dict[str, NodeState] = {}
@@ -60,7 +60,7 @@ class AnalyzeUseCase:
                 states[answer.node_id] = NodeState.UNKNOWN
         return states
 
-    def _to_card(self, task: StartingTask) -> TaskCard:
+    def _to_card(self, task: StartingTask, states: dict[str, NodeState]) -> TaskCard:
         inst = self._institutions.by_id(task.kb_ref)
         if inst is None:
             # 환각 차단 — KB 미매칭이면 사실 문장(요약·서류·다음단계·출처)을 비운다
@@ -77,6 +77,7 @@ class AnalyzeUseCase:
                 priority_reason=task.priority_reason,
                 duration_days=task.duration_days,
                 is_fallback=task.is_fallback,
+                resolved_states=dict(states),
             )
         return TaskCard(
             node_id=task.node_id,
@@ -90,4 +91,5 @@ class AnalyzeUseCase:
             priority_reason=task.priority_reason,
             duration_days=task.duration_days,
             is_fallback=task.is_fallback,
+            resolved_states=dict(states),
         )

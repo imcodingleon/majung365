@@ -16,7 +16,9 @@ router = APIRouter(prefix="/api", tags=["onboarding"])
 
 _VALID_STATES = {s.value for s in NodeState}
 _MAX_FREE_TEXT_LEN = 500
-_MAX_ANSWERS = 9
+# 온보딩은 코어 9노드만 답하지만, "완료 처리" 재계산 시엔 이전 응답의 resolved_states
+# 14개(그래프 전체 노드 수) 전부를 그대로 되돌려보낸다 — 그 한도까지 허용한다.
+_MAX_ANSWERS = 14
 
 
 class NodeAnswerIn(BaseModel):
@@ -42,6 +44,7 @@ class TaskCardOut(BaseModel):
     priority_reason: str
     duration_days: int
     is_fallback: bool
+    resolved_states: dict[str, str]
 
 
 def _to_command(body: AnalyzeIn) -> AnalyzeCommand:
@@ -84,4 +87,5 @@ async def analyze(body: AnalyzeIn, request: Request) -> TaskCardOut:
         priority_reason=card.priority_reason,
         duration_days=card.duration_days,
         is_fallback=card.is_fallback,
+        resolved_states={nid: st.value for nid, st in card.resolved_states.items()},
     )

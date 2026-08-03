@@ -7,8 +7,11 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Logo } from "@/shared/components/Logo";
 import { TaskCardView } from "@/shared/components/TaskCardView";
-import type { TaskCard } from "@/shared/types";
-import { clearOnboardingResult, getOnboardingResult } from "@/shared/utils/storage";
+import type { NodeAnswerInput, TaskCard } from "@/shared/types";
+import { ApiError, postAnalyze } from "@/shared/utils/api";
+import { clearOnboardingResult, getOnboardingResult, saveOnboardingResult } from "@/shared/utils/storage";
+
+const GENERIC_ERROR = "지금 잠시 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
 
 function EmptyState() {
   return (
@@ -31,6 +34,8 @@ function EmptyState() {
 
 export function RoadmapScreen() {
   const [task, setTask] = useState<TaskCard | null>(null);
+  const [completing, setCompleting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useFocusEffect(
     useCallback(() => {
@@ -44,6 +49,24 @@ export function RoadmapScreen() {
       pathname: "/chat",
       params: { q: `${task.node_name}, 지금 어떻게 하면 되나요?` },
     });
+  };
+
+  const onComplete = (): void => {
+    if (!task || completing) return;
+    setError(null);
+    setCompleting(true);
+    const nextStates = { ...task.resolved_states, [task.node_id]: "O" as const };
+    const answers: NodeAnswerInput[] = Object.entries(nextStates).map(([node_id, state]) => ({
+      node_id,
+      state,
+    }));
+    postAnalyze({ answers })
+      .then((next) => {
+        saveOnboardingResult(next);
+        setTask(next);
+      })
+      .catch((e: unknown) => setError(e instanceof ApiError ? e.message : GENERIC_ERROR))
+      .finally(() => setCompleting(false));
   };
 
   const onRecheck = (): void => {
@@ -61,13 +84,25 @@ export function RoadmapScreen() {
         <View className="w-full gap-6 lg:max-w-[640px] lg:self-center lg:px-4 lg:py-4">
           {task ? (
             <>
-              <TaskCardView task={task} onAskChat={onAskChat} />
-              <Text
-                className="text-center text-sm font-medium text-[#7c7c7c] underline"
-                onPress={onRecheck}
-              >
-                상황이 바뀌었나요? 다시 체크하기
-              </Text>
+              <TaskCardView
+                task={task}
+                onAskChat={onAskChat}
+                onComplete={onComplete}
+                isCompleting={completing}
+              />
+              {error ? (
+                <Text className="text-center text-sm text-[#c0392b]">{error}</Text>
+              ) : null}
+
+              {/* 실수로 누르지 않도록 완료 버튼과 확실히 떨어뜨려 맨 아래에 둔다 */}
+              <View className="mt-10 items-center">
+                <Text
+                  className="text-sm font-medium text-[#a3a3a3] underline"
+                  onPress={onRecheck}
+                >
+                  상황이 바뀌었나요? 다시 체크하기
+                </Text>
+              </View>
             </>
           ) : (
             <EmptyState />

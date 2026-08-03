@@ -13,7 +13,18 @@ function InfoRow({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function TaskCardView({ task, onAskChat }: { task: TaskCard; onAskChat: () => void }) {
+export function TaskCardView({
+  task,
+  onAskChat,
+  onComplete,
+  isCompleting,
+}: {
+  task: TaskCard;
+  onAskChat: () => void;
+  /** 완료 버튼 — 없으면 버튼 자체를 숨긴다. */
+  onComplete?: () => void;
+  isCompleting?: boolean;
+}) {
   return (
     <View className="gap-6">
       <View className="gap-2">
@@ -51,6 +62,18 @@ export function TaskCardView({ task, onAskChat }: { task: TaskCard; onAskChat: (
       >
         <Text className="text-base font-semibold text-white">이 일 물어보기</Text>
       </Pressable>
+
+      {onComplete ? (
+        <Pressable
+          className="items-center rounded-full border border-brand py-4 active:opacity-70 disabled:opacity-50"
+          onPress={onComplete}
+          disabled={isCompleting}
+        >
+          <Text className="text-base font-semibold text-brand">
+            {isCompleting ? "다음 할 일을 찾는 중..." : "완료"}
+          </Text>
+        </Pressable>
+      ) : null}
     </View>
   );
 }
