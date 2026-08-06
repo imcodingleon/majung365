@@ -11,6 +11,9 @@ from app.domains.knowledge.domain.graph_engine import NodeState
 
 
 class StateExtractorLlm(Protocol):
-    async def extract_node_state(self, node_name: str, free_text: str) -> NodeState:
-        """자유 텍스트 1건을 읽고 해당 노드의 상태(O/X/BLOCKED)를 판정한다. 애매하면 X."""
+    async def extract_narrative_states(
+        self, nodes: dict[str, str], narrative: str
+    ) -> dict[str, NodeState]:
+        """자유 서술 1건을 읽고, 언급된 노드들의 상태(O/X/BLOCKED)만 판정해 돌려준다.
+        언급되지 않은 노드는 결과에 포함하지 않는다."""
         ...

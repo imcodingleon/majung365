@@ -8,6 +8,7 @@
 """
 
 import asyncio
+import re
 from collections.abc import AsyncIterator
 
 from app.domains.chat.application.dto import Turn
@@ -19,10 +20,28 @@ from app.domains.chat.domain.triage import (
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.areas import Area
 
-# 온보딩 "기타(직접입력)" 상태 판정 목업 — 우선순위: BLOCKED > X > O > UNKNOWN(판단불가)
+# 온보딩 마지막 자유서술 상태 판정 목업 — 우선순위: BLOCKED > X > O > (언급 없으면 제외)
+# 문장 단위로 끊어서 판정한다(전체 훑기는 한 문장의 키워드가 다른 노드까지 오염시킴).
+# 쉼표로 이어진 한 문장 안에 서로 다른 항목이 같이 나오면 목업은 구분 못 함 — 실제 Claude는
+# 구조화 출력이라 이 한계가 없다. 데모용 근사치임을 인지하고 쓴다.
+_SENTENCE_SPLIT = re.compile(r"(?<=[.!?])\s+")
+_NAME_PARTS = re.compile(r"^([^(]*)(?:\(([^)]*)\))?(.*)$")
 _BLOCKED_KEYWORDS = ("정지", "막혔", "막혀", "잠겼", "분실", "못 써", "못써", "끊겼", "끊김", "만료")  # noqa: E501
 _NONE_KEYWORDS = ("없어요", "없습니다", "없음", "없고", "안 가지고", "못 받", "아직")
 _HAVE_KEYWORDS = ("있어요", "있습니다", "가지고 있", "있음", "있고", "받았")
+
+
+def _keywords_for(node_name: str) -> list[str]:
+    """노드 이름에서 매칭용 키워드 후보를 뽑는다(데모용 근사치).
+    "수용(출소)증명서" → 괄호 안이 동의어인 경우가 많아 ["수용증명서", "출소증명서"] 둘 다 후보로,
+    "본인 명의 통장" → 축약형 "통장"도 후보로(사용자는 보통 줄여서 말한다)."""
+    m = _NAME_PARTS.match(node_name)
+    prefix, paren, suffix = (m.group(1), m.group(2) or "", m.group(3)) if m else (node_name, "", "")
+    candidates = [f"{prefix}{suffix}".strip()]
+    if paren:
+        candidates.append(f"{paren}{suffix}".strip())
+    candidates += [c.replace("본인 명의 ", "").strip() for c in list(candidates)]
+    return [k for k in dict.fromkeys(candidates) if k]
 
 # 영역별 키워드(쉬운 말·구어 포함). 튜플 순서 = 탐지 우선순위(급한 것부터).
 # WELFARE는 보통 동반 영역이라 맨 뒤 — 다른 영역이 있으면 그 뒤로 붙는다.
@@ -148,12 +167,23 @@ class MockChatLlm:
         if buf:
             yield buf
 
-    async def extract_node_state(self, node_name: str, free_text: str) -> NodeState:
+    async def extract_narrative_states(
+        self, nodes: dict[str, str], narrative: str
+    ) -> dict[str, NodeState]:
         await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 분석 로딩 화면이 자연스레 보인다
-        if any(k in free_text for k in _BLOCKED_KEYWORDS):
-            return NodeState.BLOCKED
-        if any(k in free_text for k in _NONE_KEYWORDS):
-            return NodeState.X
-        if any(k in free_text for k in _HAVE_KEYWORDS):
-            return NodeState.O
-        return NodeState.UNKNOWN
+        sentences = _SENTENCE_SPLIT.split(narrative)
+        result: dict[str, NodeState] = {}
+        for node_id, name in nodes.items():
+            keywords = _keywords_for(name)
+            sentence = next(
+                (s for s in sentences if any(k in s for k in keywords)), None
+            )
+            if sentence is None:
+                continue
+            if any(k in sentence for k in _BLOCKED_KEYWORDS):
+                result[node_id] = NodeState.BLOCKED
+            elif any(k in sentence for k in _NONE_KEYWORDS):
+                result[node_id] = NodeState.X
+            elif any(k in sentence for k in _HAVE_KEYWORDS):
+                result[node_id] = NodeState.O
+        return result

@@ -109,17 +109,17 @@ export interface ChatRequest {
 /** 온보딩 그래프 노드 상태값(백엔드 NodeState와 동일). */
 export type NodeStateValue = "O" | "X" | "BLOCKED" | "UNKNOWN";
 
-/** POST /api/onboarding/analyze 요청 — 노드별 답변 1건. */
+/** POST /api/onboarding/analyze 요청 — 노드별 버튼 답변 1건. */
 export interface NodeAnswerInput {
   node_id: string;
-  /** 버튼 선택 시 상태값. "기타(직접입력)"로 답했으면 생략하고 free_text만 채운다. */
-  state?: NodeStateValue;
-  free_text?: string;
+  state: NodeStateValue;
 }
 
 /** POST /api/onboarding/analyze 요청 바디. */
 export interface AnalyzeRequest {
   answers: NodeAnswerInput[];
+  /** 마지막 자유서술(선택) — 있으면 C6이 14노드를 다시 훑어 버튼 답변 위에 덮어쓴다. */
+  narrative?: string;
 }
 
 /** POST /api/onboarding/analyze 응답 — 오늘의 과제 카드 1개(C6+C7 결과). */

@@ -14,7 +14,7 @@ interface AnalysisContextValue {
   task: TaskCard | null;
   error: string | null;
   /** 마지막 질문 완료 시 호출 — 분석을 시작한다(비동기, 결과는 status/task로 반영). */
-  start: (answers: NodeAnswerInput[]) => void;
+  start: (answers: NodeAnswerInput[], narrative?: string) => void;
   /** 실패 후 같은 답변으로 재시도할 때 쓰려면 answers를 보관해 뒀다가 다시 start() 호출 */
   reset: () => void;
 }
@@ -26,10 +26,10 @@ export function OnboardingAnalysisProvider({ children }: { children: ReactNode }
   const [task, setTask] = useState<TaskCard | null>(null);
   const [error, setError] = useState<string | null>(null);
 
-  const start = useCallback((answers: NodeAnswerInput[]) => {
+  const start = useCallback((answers: NodeAnswerInput[], narrative?: string) => {
     setStatus("loading");
     setError(null);
-    postAnalyze({ answers })
+    postAnalyze({ answers, narrative })
       .then((result) => {
         setTask(result);
         setStatus("done");

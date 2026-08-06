@@ -2,8 +2,11 @@
 // 그래프 코어 9노드(_bmad-output/specs/spec-majung-2nd/graph-design.md) 기준 재설계.
 // nodeId는 백엔드 graph.json의 노드 id와 정확히 일치해야 한다(계약).
 // ⚠️ 문구는 초안 — 공단 인터뷰 후 확정. 판단하지 않는 톤·쉬운 말 유지.
+//
+// 각 질문은 O/X/△ 버튼만 받는다("기타" 개별 입력 없음) — 버튼으로 담기 어려운 사정은
+// 9문항이 끝난 뒤 자유서술 단계 1개에서 한 번에 받는다(useOnboarding의 narrative 단계).
 
-/** 그래프 노드 상태값. "기타(직접입력)" 선택 시엔 undefined로 두고 자유텍스트를 받는다. */
+/** 그래프 노드 상태값. */
 export type NodeStateValue = "O" | "X" | "BLOCKED" | "UNKNOWN";
 
 export interface OnboardingOption {
@@ -11,8 +14,8 @@ export interface OnboardingOption {
   label: string;
   /** 보조 설명(선택). */
   hint?: string;
-  /** 이 옵션을 고르면 확정되는 그래프 상태. "기타" 옵션은 생략(자유텍스트 입력으로 대체). */
-  state?: NodeStateValue;
+  /** 이 옵션을 고르면 확정되는 그래프 상태. */
+  state: NodeStateValue;
 }
 
 export interface OnboardingQuestion {
@@ -22,14 +25,6 @@ export interface OnboardingQuestion {
   options: OnboardingOption[];
 }
 
-/** "기타(직접입력)" 옵션 — 모든 질문 공통. 선택 시 텍스트 입력 필드가 열린다. */
-export const OTHER_OPTION_ID = "other";
-
-const OTHER_OPTION: OnboardingOption = {
-  id: OTHER_OPTION_ID,
-  label: "기타 (직접 말씀해 주세요)",
-};
-
 export const QUESTIONS: OnboardingQuestion[] = [
   {
     nodeId: "proof_of_release",
@@ -37,7 +32,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 있어요", state: "O" },
       { id: "no", label: "아니요, 아직 없어요", state: "X" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -46,7 +40,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 있어요", state: "O" },
       { id: "no", label: "아니요, 없어요", state: "X", hint: "잘 곳부터 함께 찾아드려요." },
-      OTHER_OPTION,
     ],
   },
   {
@@ -55,7 +48,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 등록돼 있어요", state: "O" },
       { id: "no", label: "아니요, 안 돼 있어요", state: "X" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -64,7 +56,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 있어요", state: "O" },
       { id: "no", label: "아니요, 없어요", state: "X" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -74,7 +65,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
       { id: "yes", label: "네, 쓸 수 있어요", state: "O" },
       { id: "no", label: "아니요, 없어요", state: "X" },
       { id: "blocked", label: "있는데 정지됐어요", state: "BLOCKED", hint: "압류·분실 등으로 못 쓰는 경우" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -84,7 +74,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
       { id: "yes", label: "네, 쓸 수 있어요", state: "O" },
       { id: "no", label: "아니요, 없어요", state: "X" },
       { id: "blocked", label: "있는데 정지됐어요", state: "BLOCKED", hint: "요금 미납 등으로 못 쓰는 경우" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -93,7 +82,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 받고 있어요", state: "O" },
       { id: "no", label: "아니요, 아직이에요", state: "X" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -102,7 +90,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 받고 있어요", state: "O" },
       { id: "no", label: "아니요, 아직이에요", state: "X" },
-      OTHER_OPTION,
     ],
   },
   {
@@ -111,7 +98,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
     options: [
       { id: "yes", label: "네, 쓸 수 있어요", state: "O" },
       { id: "no", label: "아니요, 안 돼요", state: "X" },
-      OTHER_OPTION,
     ],
   },
 ];

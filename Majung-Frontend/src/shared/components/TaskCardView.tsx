@@ -60,7 +60,7 @@ export function TaskCardView({
         className="items-center rounded-full bg-brand py-4 active:opacity-90"
         onPress={onAskChat}
       >
-        <Text className="text-base font-semibold text-white">이 일 물어보기</Text>
+        <Text className="text-base font-semibold text-white">AI에게 물어보기</Text>
       </Pressable>
 
       {onComplete ? (

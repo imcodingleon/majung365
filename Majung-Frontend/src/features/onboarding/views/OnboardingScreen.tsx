@@ -1,12 +1,12 @@
 // 온보딩 - 상황 체크 (CAP-1a). Figma 2:726 기반, 그래프 코어 9노드로 재설계.
-// 선택지 탭 + "기타" 선택 시 자유텍스트로 완주. 완료하면 분석을 시작하고 로딩 화면으로 이동.
+// 9문항(O/X/△ 버튼) + 마지막 자유서술 단계 1개로 완주. 완료하면 분석을 시작하고 로딩 화면으로 이동.
 import { type Href, router } from "expo-router";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Logo } from "@/shared/components/Logo";
 
-import { OTHER_OPTION_ID, type OnboardingOption } from "../domain/questions";
+import type { OnboardingOption } from "../domain/questions";
 import { useOnboarding } from "../hooks/useOnboarding";
 import { useOnboardingAnalysis } from "../state/analysis";
 
@@ -65,23 +65,24 @@ export function OnboardingScreen() {
     step,
     total,
     question,
+    isNarrativeStep,
     selectedOptionId,
-    isOtherSelected,
-    otherText,
-    setOtherText,
+    narrative,
+    setNarrative,
     canProceed,
     isLast,
     select,
     goNext,
     goPrev,
     toAnswers,
+    toNarrative,
   } = useOnboarding();
   const { start } = useOnboardingAnalysis();
 
   const onProceed = (): void => {
     if (!goNext()) {
-      // 마지막 단계 완료 → 분석 시작(백엔드 C6+C7) + 로딩 화면으로 이동
-      start(toAnswers());
+      // 자유서술 단계까지 완료 → 분석 시작(백엔드 C6+C7) + 로딩 화면으로 이동
+      start(toAnswers(), toNarrative());
       router.replace("/onboarding/analyzing" as Href);
     }
   };
@@ -113,29 +114,41 @@ export function OnboardingScreen() {
         <View className="w-full gap-8 lg:max-w-[640px] lg:self-center lg:py-6">
           <ProgressSection step={step} total={total} />
 
-          <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">{question.title}</Text>
-
-          <View className="gap-4">
-            {question.options.map((opt) => (
-              <OptionButton
-                key={opt.id}
-                option={opt}
-                selected={selectedOptionId === opt.id}
-                onPress={() => select(opt.id)}
-              />
-            ))}
-            {isOtherSelected ? (
+          {isNarrativeStep ? (
+            <>
+              <View className="gap-2">
+                <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">
+                  그 밖에 하고 싶은 말이 있다면{"\n"}자유롭게 적어주세요
+                </Text>
+                <Text className="text-sm text-[#7c7c7c]">
+                  선택 항목이에요. 비워 두고 완료하셔도 돼요.
+                </Text>
+              </View>
               <TextInput
-                className="rounded-[16px] border border-brand bg-white p-4 text-base text-[#1d1b20]"
-                placeholder="편하게 말씀해 주세요"
+                className="min-h-[160px] rounded-[20px] border border-[#d3d3d3] bg-white p-5 text-base leading-6 text-[#1d1b20]"
+                placeholder="예) 신분증은 있는데 통장은 아직 없어요. 마음이 좀 힘들어요."
                 placeholderTextColor="#9c9c9c"
-                value={otherText}
-                onChangeText={setOtherText}
+                value={narrative}
+                onChangeText={setNarrative}
                 multiline
-                autoFocus
+                textAlignVertical="top"
               />
-            ) : null}
-          </View>
+            </>
+          ) : question ? (
+            <>
+              <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">{question.title}</Text>
+              <View className="gap-4">
+                {question.options.map((opt) => (
+                  <OptionButton
+                    key={opt.id}
+                    option={opt}
+                    selected={selectedOptionId === opt.id}
+                    onPress={() => select(opt.id)}
+                  />
+                ))}
+              </View>
+            </>
+          ) : null}
 
           <View className="flex-row items-start gap-3 rounded-[20px] bg-line p-4">
             <Text className="text-base">ℹ️</Text>

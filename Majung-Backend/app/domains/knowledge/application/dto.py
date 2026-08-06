@@ -8,14 +8,15 @@ from app.domains.knowledge.domain.graph_engine import NodeState
 @dataclass(frozen=True)
 class NodeAnswer:
     node_id: str
-    # 버튼 선택이면 O/X/BLOCKED/UNKNOWN, "기타(직접입력)"면 None(free_text를 대신 본다)
-    state: NodeState | None
-    free_text: str | None = None
+    state: NodeState
 
 
 @dataclass(frozen=True)
 class AnalyzeCommand:
     answers: tuple[NodeAnswer, ...]
+    # 온보딩 마지막 자유서술(선택). 있으면 C6이 14노드 전체를 다시 검토해
+    # 언급된 항목의 상태를 버튼 답변보다 우선 적용한다.
+    narrative: str | None = None
 
 
 @dataclass(frozen=True)
