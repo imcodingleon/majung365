@@ -16,6 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { ChatMessage } from "../domain/chatMessage";
@@ -66,9 +67,7 @@ function Bubble({ message }: { message: ChatMessage }) {
   if (message.role === "search-notice") {
     // 사전 고지는 답변이 아니다. 말풍선과 다른 모양으로 두어 정보로 읽히지 않게 한다.
     return (
-      <View className="mb-3 self-stretch rounded-xl border border-note-warn-line bg-note-warn px-4 py-3">
-        <Text className="text-caption font-semibold text-note-warn-ink">{message.text}</Text>
-      </View>
+      <NoteBox tone="warn" className="mb-3 self-stretch">{message.text}</NoteBox>
     );
   }
 
@@ -86,11 +85,7 @@ function Bubble({ message }: { message: ChatMessage }) {
       <Text className="text-body text-ink-strong">{message.text}</Text>
 
       {message.desk ? (
-        <View className="mt-3 rounded-lg border border-note-info-line bg-note-info px-3 py-3">
-          <Text className="text-caption font-bold text-note-info-ink">
-            {message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.
-          </Text>
-        </View>
+        <NoteBox tone="info" className="mt-3">{message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.</NoteBox>
       ) : null}
 
       {message.evidence ? <EvidenceBadge evidence={message.evidence} /> : null}

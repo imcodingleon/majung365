@@ -19,6 +19,7 @@ import { limitMessage } from "@/features/visit/domain/request";
 import { useVisitRequests } from "@/features/visit/hooks/useVisitRequests";
 import { RequestStatusStrip } from "@/features/visit/views/RequestStatusStrip";
 import { VisitRequestSheet } from "@/features/visit/views/VisitRequestSheet";
+import { NoteBox } from "@/shared/components/NoteBox";
 import { getSession } from "@/shared/utils/session";
 
 export default function TodayRoute() {
@@ -77,9 +78,7 @@ export default function TodayRoute() {
       />
 
       {server.error ? (
-        <View className="absolute inset-x-4 bottom-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
-          <Text className="text-caption text-note-warn-ink">{server.error}</Text>
-        </View>
+        <NoteBox tone="warn" className="absolute inset-x-4 bottom-6">{server.error}</NoteBox>
       ) : null}
 
       {chatTask ? (

@@ -5,6 +5,7 @@ import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { COUNSEL_LINES, EMERGENCY_LINES, type HelpLine } from "../domain/contacts";
@@ -94,12 +95,8 @@ export function HelpScreen({ onClose }: Props) {
         </View>
 
         {failedLabel ? (
-          <View className="mt-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
-            <Text className="text-caption font-semibold text-note-warn-ink">
-              이 기기에서는 전화 앱이 열리지 않았어요.{"\n"}
-              다른 전화기로 {failedLabel}번을 눌러 주세요.
-            </Text>
-          </View>
+          <NoteBox tone="warn" className="mt-6">이 기기에서는 전화 앱이 열리지 않았어요.{"\n"}
+              다른 전화기로 {failedLabel}번을 눌러 주세요.</NoteBox>
         ) : null}
       </ScrollView>
     </SafeAreaView>

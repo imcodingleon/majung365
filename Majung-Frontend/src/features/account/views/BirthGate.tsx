@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { birthMatches } from "../domain/account";
@@ -96,11 +97,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
         </View>
 
         {failed ? (
-          <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-4">
-            <Text className="text-body text-alert-ink">
-              가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.
-            </Text>
-          </View>
+          <NoteBox tone="alert" className="mt-4">가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.</NoteBox>
         ) : null}
 
         <Pressable

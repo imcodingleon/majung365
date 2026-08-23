@@ -4,6 +4,7 @@
 // 카드 머리(제목·번호·기관)는 TaskRow가 그린다. 여기는 그 아래 내용만 맡는다.
 import { Pressable, Text, View } from "react-native";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { Task } from "../domain/task";
@@ -104,11 +105,7 @@ export function TaskCard({
 
       {/* 갈 곳이 하나로 정해지는 항목은 전화번호보다 창구 안내가 먼저 온다 (§6.4). */}
       {task.desk ? (
-        <View className="mb-4 rounded-xl border border-note-info-line bg-note-info px-4 py-3">
-          <Text className="text-body font-bold text-note-info-ink">
-            {task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.
-          </Text>
-        </View>
+        <NoteBox tone="info" className="mb-4">{task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.</NoteBox>
       ) : null}
 
       {/* 시안의 회색 안내 상자. 창구 안내(파랑)와 층이 갈리게 색을 낮춘다 —

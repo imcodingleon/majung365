@@ -5,6 +5,7 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 import { orgKindLabel, type StaffOrgKind } from "@/shared/types";
 import type { VisitStatus } from "@/shared/types/visit";
@@ -72,11 +73,7 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
 
         {/* 목록은 아직 화면 안의 예시다. 로그인은 서버가 확인하지만 요청 목록 API가
             아직 붙지 않았다 — 그 사실을 화면이 숨기지 않는다 */}
-        <View className="mt-3 rounded-lg border border-alert-line bg-alert-soft px-3 py-2">
-          <Text className="text-caption font-bold text-alert">
-            아래 목록은 예시입니다 · 실제 요청이 아닙니다
-          </Text>
-        </View>
+        <NoteBox tone="alert" className="mt-3">아래 목록은 예시입니다 · 실제 요청이 아닙니다</NoteBox>
 
         {/* 다른 기관 요청은 서버가 걸러 아예 오지 않는다. 화면이 거르는 것이 아니라는
             사실을 담당자가 알아야 목록을 믿을 수 있다 */}

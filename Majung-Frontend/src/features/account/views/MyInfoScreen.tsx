@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 import { CRIME_CATEGORIES, type CrimeCategoryId } from "@/shared/types/crime";
 
@@ -110,11 +111,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
           </View>
         ) : null}
 
-        <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
-          <Text className="text-caption text-note-info-ink">
-            마지막으로 앱을 쓰신 날부터 1년이 지나면 저절로 지워져요.
-          </Text>
-        </View>
+        <NoteBox tone="info" className="mt-6">마지막으로 앱을 쓰신 날부터 1년이 지나면 저절로 지워져요.</NoteBox>
 
         <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">정보 지우기</Text>
 

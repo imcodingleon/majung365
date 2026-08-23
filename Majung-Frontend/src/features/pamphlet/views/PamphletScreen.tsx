@@ -9,6 +9,7 @@
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { STORE_LINKS, type StoreLink } from "../domain/storeLinks";
@@ -55,11 +56,9 @@ export function PamphletScreen({ onClose }: Props) {
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-6">
         {/* 심사·시연용 화면이라는 것을 화면에서도 밝힌다. 실사용 경로로 오해하지 않게 한다. */}
-        <View className="mb-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3">
-          <Text className="text-caption text-note-warn-ink">
-            실제로는 종이 팜플렛으로 나가요. 이 화면은 어떤 모양인지 보여주는 자리예요.
-          </Text>
-        </View>
+        <NoteBox tone="warn" className="mb-6">
+          실제로는 종이 팜플렛으로 나가요. 이 화면은 어떤 모양인지 보여주는 자리예요.
+        </NoteBox>
 
         <Text className="text-display font-extrabold text-ink-strong">
           나가시는 길에{"\n"}
@@ -89,14 +88,9 @@ export function PamphletScreen({ onClose }: Props) {
           ))}
         </View>
 
-        <View className="mt-8 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
-          <Text className="text-body font-extrabold text-note-info-ink">
-            선불폰으로도 받으실 수 있어요
-          </Text>
-          <Text className="mt-2 text-caption text-note-info-ink">
-            자세한 방법은 팜플렛 뒷면에 적혀 있어요.
-          </Text>
-        </View>
+        <NoteBox tone="info" title="선불폰으로도 받으실 수 있어요" className="mt-8">
+          <NoteLine tone="info">자세한 방법은 팜플렛 뒷면에 적혀 있어요.</NoteLine>
+        </NoteBox>
       </ScrollView>
     </SafeAreaView>
   );

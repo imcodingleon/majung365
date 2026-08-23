@@ -9,6 +9,7 @@ import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { kindLabel, type Institution, type RegionInstitutions } from "../domain/institution";
@@ -101,14 +102,12 @@ export function NearbyScreen({
 
             {/* 좌표를 서버로 보내지 않는다는 것을 화면에서 밝힌다. 위치를 켜는 일은
                 이 사용자층에게 부담이 큰 결정이라 무엇이 일어나는지 알아야 한다. */}
-            <View className="mb-6 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
-              <Text className="text-caption text-note-info-ink">
-                지금 계신 곳이 어느 시·군·구인지만 써요.
-              </Text>
-              <Text className="mt-1 text-caption text-note-info-ink">
+            <NoteBox tone="info" className="mb-6">
+              <NoteLine tone="info">지금 계신 곳이 어느 시·군·구인지만 써요.</NoteLine>
+              <NoteLine tone="info" className="mt-1">
                 정확한 위치는 저장하지도, 어디로 보내지도 않아요.
-              </Text>
-            </View>
+              </NoteLine>
+            </NoteBox>
 
             <Pressable
               onPress={onLocate}
@@ -144,9 +143,9 @@ export function NearbyScreen({
               </Text>
             ) : null}
             {state.status === "failed" ? (
-              <View className="mb-5 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
-                <Text className="text-caption text-note-warn-ink">{state.reason}</Text>
-              </View>
+              <NoteBox tone="warn" className="mb-5">
+                {state.reason}
+              </NoteBox>
             ) : null}
             <RegionPicker onPick={onPick} />
           </View>

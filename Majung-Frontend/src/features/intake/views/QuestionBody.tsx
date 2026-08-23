@@ -6,6 +6,7 @@ import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { DateField } from "@/shared/components/DateField";
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 import type { DateParts } from "@/shared/types/date";
 
@@ -170,9 +171,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
       ) : null}
 
       {note ? (
-        <View className="mt-4 rounded-2xl border border-note-info-line bg-note-info px-4 py-4">
-          <Text className="text-body font-semibold text-note-info-ink">{note}</Text>
-        </View>
+        <NoteBox tone="info" className="mt-4">{note}</NoteBox>
       ) : null}
 
       <View className="mt-5">

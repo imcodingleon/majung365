@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import {
@@ -145,11 +146,7 @@ export function RequestDetailScreen({
         </View>
 
         {missing.length > 0 ? (
-          <View className="mt-3 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
-            <Text className="text-caption text-note-warn-ink">
-              {missing.join(" · ")}을(를) 안 가져오십니다. 미리 안내가 필요합니다.
-            </Text>
-          </View>
+          <NoteBox tone="warn" className="mt-3">{missing.join(" · ")}을(를) 안 가져오십니다. 미리 안내가 필요합니다.</NoteBox>
         ) : null}
 
         <View className="mt-8">
