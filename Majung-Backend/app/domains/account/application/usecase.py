@@ -20,6 +20,7 @@ from app.domains.account.domain.repository import (
 )
 from app.domains.knowledge.application.dto import IntakeTask
 from app.domains.knowledge.application.intake_usecase import IntakeUseCase
+from app.domains.knowledge.domain.state import IntakeStateRepository
 
 logger = logging.getLogger("majung.account")
 
@@ -53,11 +54,14 @@ class SignupUseCase:
         crimes: CrimeRepository,
         sessions: SessionRepository,
         intake: IntakeUseCase,
+        states: IntakeStateRepository | None = None,
     ) -> None:
         self._accounts = accounts
         self._crimes = crimes
         self._sessions = sessions
         self._intake = intake
+        # **없어도 가입은 된다.** 저장이 꺼진 로컬·데모에서는 None으로 온다.
+        self._states = states
 
     def run(self, cmd: SignupCommand) -> SignupResult:
         account = self._accounts.create(
@@ -77,5 +81,13 @@ class SignupUseCase:
                 logger.warning("죄목 저장 실패 — 그 정보 없이 진행한다")
 
         token = self._sessions.issue(account.id)
-        tasks = self._intake.run(cmd.answers)
+
+        # **판정만 남긴다** (§9.1 · 0008 마이그레이션). 답변 원문은 저장하지 않되,
+        # 세션이 끊겼을 때 같은 할 일 목록을 다시 만들 수 있어야 한다. 그 둘을
+        # 함께 만족시키는 것이 판정이다.
+        verdicts = self._intake.judge_only(cmd.answers)
+        if self._states is not None:
+            self._states.save(account.id, verdicts)
+
+        tasks = self._intake.from_verdicts(verdicts)
         return SignupResult(account=account, session_token=token, tasks=tasks)

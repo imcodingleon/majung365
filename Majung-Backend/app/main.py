@@ -42,6 +42,9 @@ from app.domains.knowledge.infrastructure.graph_repository import JsonGraphRepos
 from app.domains.knowledge.infrastructure.intake_rules_repository import (
     JsonIntakeRuleRepository,
 )
+from app.domains.knowledge.infrastructure.intake_state_repository import (
+    SupabaseIntakeStateRepository,
+)
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
 from app.domains.knowledge.infrastructure.rag_repository import JsonRagRepository
 from app.domains.staff.adapter.inbound.api.router import router as staff_router
@@ -203,11 +206,15 @@ def create_app() -> FastAPI:
             visits=app.state.visit_repo,
             messages=SupabaseVisitMessageRepository(supabase, cipher),
         )
+        # 세션이 끊겨도 할 일을 이어서 보려면 판정이 남아야 한다 (§5.2 · 0008).
+        # **답변 원문은 담지 않는다** — 저장하는 것은 판정뿐이다 (§9.1).
+        app.state.intake_state_repo = SupabaseIntakeStateRepository(supabase, cipher)
         app.state.signup_usecase = SignupUseCase(
             accounts=app.state.account_repo,
             crimes=app.state.crime_repo,
             sessions=app.state.session_repo,
             intake=app.state.intake_usecase,
+            states=app.state.intake_state_repo,
         )
         logger.info("💾 저장 기능 켜짐 — 가입 정보는 암호화해 저장한다")
 

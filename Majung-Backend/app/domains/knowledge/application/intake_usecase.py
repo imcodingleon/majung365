@@ -119,12 +119,31 @@ class IntakeUseCase:
             found.update(rule.lead_by_option.values())
         return frozenset(found)
 
+    def judge_only(self, answers: dict[str, object]) -> tuple[IntakeVerdict, ...]:
+        """답변을 판정까지만 한다. 카드는 만들지 않는다.
+
+        **저장하는 것은 이 결과뿐이다** (§9.1). 답변 원문을 서버에 남기지 않으면서도
+        나중에 같은 할 일 목록을 다시 만들 수 있게 하는 것이 이 판정이다.
+        """
+        return judge(answers, self._rules, self._blocking_routes)
+
     def run(
         self,
         answers: dict[str, object],
         completed: frozenset[RouteId] = frozenset(),
     ) -> tuple[IntakeTask, ...]:
-        verdicts = judge(answers, self._rules, self._blocking_routes)
+        return self.from_verdicts(self.judge_only(answers), completed)
+
+    def from_verdicts(
+        self,
+        verdicts: tuple[IntakeVerdict, ...],
+        completed: frozenset[RouteId] = frozenset(),
+    ) -> tuple[IntakeTask, ...]:
+        """판정으로 할 일 카드를 만든다.
+
+        **카드 본문은 여기서 새로 만들어진다.** 저장된 것은 판정뿐이라, 지식 베이스가
+        갱신되면 복원된 화면도 최신 안내를 받는다 — 옛 카드가 굳어 남지 않는다.
+        """
         return tuple(
             IntakeTask(
                 route_id=v.route_id.value,

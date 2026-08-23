@@ -21,13 +21,13 @@ from app.domains.account.domain.entity import (
     CONSENT_KINDS,
     CRIME_CATEGORIES,
     CRIME_CONSENT_KIND,
+    PRIVACY_CONSENT_KIND,
     Account,
     Consent,
-    PRIVACY_CONSENT_KIND,
 )
 from app.domains.account.domain.tokens import utcnow
-from app.domains.shared.clock import today_kst
 from app.domains.knowledge.adapter.inbound.api.router import IntakeTaskOut, to_task_out
+from app.domains.shared.clock import today_kst
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
 
@@ -204,6 +204,76 @@ def read_me(request: Request, account: CurrentAccount) -> MeOut:
         days_since_release=account.days_since_release(today_kst()),
         has_crime_category=has_crime,
     )
+
+
+class TasksOut(BaseModel):
+    """세션을 되살렸을 때 돌려주는 것. 가입 응답의 `tasks`와 같은 모양이다."""
+
+    name: str
+    tasks: list[IntakeTaskOut]
+    completed: list[str]
+
+
+class CompletedIn(BaseModel):
+    """마친 항목 **전체 목록**을 받는다.
+
+    더하기만 받으면 되돌리기를 표현할 수 없다. 실수로 완료를 누른 사람이 그것을
+    되돌리는 길이 있어야 하고(§5.2), 그러면 목록을 통째로 주고받는 편이 단순하다.
+    """
+
+    completed: list[str] = Field(default_factory=list, max_length=20)
+
+
+@router.get("/tasks", response_model=TasksOut)
+def read_tasks(request: Request, account: CurrentAccount) -> TasksOut:
+    """세션 토큰만으로 할 일을 되살린다 (§5.2).
+
+    **왜 필요한가.** 앱을 닫거나 새로고침하면 진단 답변도 할 일도 사라져 가입
+    화면부터 다시 시작하게 된다. 27문항을 다시 답하게 하는 것은 이 사용자층에게
+    특히 무거운 요구다.
+
+    **답변 원문은 서버에 없다.** 저장된 것은 판정뿐이고(§9.1 · 0008), 카드 본문은
+    지식 베이스에서 지금 다시 만들어진다 — 그래서 복원된 화면도 최신 안내를 받는다.
+    """
+    states = getattr(request.app.state, "intake_state_repo", None)
+    if states is None:
+        raise HTTPException(
+            status_code=503, detail="지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요."
+        )
+
+    state = states.by_user(account.id)
+    if state is None:
+        # 저장이 꺼져 있던 때 가입했거나 판정을 못 읽은 경우다. 빈 목록을 주고
+        # 화면이 "다시 가입" 쪽으로 안내하게 둔다 — 없는 것을 있는 척하지 않는다.
+        raise HTTPException(status_code=404, detail="이어서 볼 내용을 찾지 못했어요.")
+
+    intake = request.app.state.intake_usecase
+    tasks = intake.from_verdicts(state.verdicts)
+    return TasksOut(
+        name=account.name,
+        tasks=[to_task_out(t) for t in tasks],
+        completed=sorted(state.completed),
+    )
+
+
+@router.put("/tasks/completed", response_model=TasksOut)
+def update_completed(
+    body: CompletedIn,
+    request: Request,
+    account: CurrentAccount,
+) -> TasksOut:
+    """마친 항목을 서버에 남긴다.
+
+    **여기서 목록을 줄이지 않는다.** 마친 것도 화면에 남아야 하기 때문이다
+    (§5.2 — "1번 탭이 닫히면서 색이 바뀌고"). 무엇을 마쳤는지는 `completed`가 말한다.
+    """
+    states = getattr(request.app.state, "intake_state_repo", None)
+    if states is None:
+        raise HTTPException(
+            status_code=503, detail="지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요."
+        )
+    states.set_completed(account.id, frozenset(body.completed))
+    return read_tasks(request, account)
 
 
 @router.patch("/me", response_model=MeOut)
