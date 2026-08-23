@@ -27,6 +27,7 @@ from app.domains.chat.domain.triage import (
     QuestionType,
     RoutePriority,
     TriageResult,
+    UserRegion,
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
@@ -92,6 +93,17 @@ _TRIAGE_SCHEMA = {
                 "additionalProperties": False,
             },
         },
+        "region": {
+            "type": "object",
+            "description": "사용자가 자기 입으로 말한 지역. 말한 것만 채운다.",
+            "properties": {
+                "sido": {"type": "string"},
+                "sigungu": {"type": "string"},
+                "dong": {"type": "string"},
+            },
+            "required": ["sido", "sigungu", "dong"],
+            "additionalProperties": False,
+        },
     },
     "required": ["question_type", "priorities"],
     "additionalProperties": False,
@@ -119,6 +131,17 @@ def _to_messages(
     for m in msgs:
         assert_masked(m["content"])  # 전송 직전 안전망 — 새 경로가 마스킹을 건너뛰면 여기서 막힌다
     return msgs
+
+
+def _region_of(raw: object) -> UserRegion:
+    """모델이 낸 지역. **짐작해서 채우지 않는다** — 없으면 빈 값이다."""
+    if not isinstance(raw, dict):
+        return UserRegion()
+    return UserRegion(
+        sido=str(raw.get("sido", "") or "").strip(),
+        sigungu=str(raw.get("sigungu", "") or "").strip(),
+        dong=str(raw.get("dong", "") or "").strip(),
+    )
 
 
 def _state_of(raw: object) -> NodeState:
@@ -174,7 +197,11 @@ class ClaudeChatLlm:
                 )
                 for p in data.get("priorities", [])
             )
-            return TriageResult(question_type=qtype, priorities=priorities)
+            return TriageResult(
+                question_type=qtype,
+                priorities=priorities,
+                region=_region_of(data.get("region")),
+            )
         except Exception:
             # triage 파싱 실패 시 일반 대화로 폴백 — 챗은 계속 답한다
             logger.warning("triage 파싱 실패 — daily 폴백")

@@ -30,6 +30,7 @@ from app.domains.chat.domain.triage import (
     QuestionType,
     RoutePriority,
     TriageResult,
+    UserRegion,
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
@@ -126,6 +127,17 @@ def _rows(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return [row for row in value if isinstance(row, dict)]
 
 
+def _region_of(raw: object) -> UserRegion:
+    """모델이 낸 지역. **짐작해서 채우지 않는다** — 없으면 빈 값이다."""
+    if not isinstance(raw, dict):
+        return UserRegion()
+    return UserRegion(
+        sido=str(raw.get("sido", "") or "").strip(),
+        sigungu=str(raw.get("sigungu", "") or "").strip(),
+        dong=str(raw.get("dong", "") or "").strip(),
+    )
+
+
 def _state_of(raw: object) -> NodeState:
     """모델이 낸 상태 문자열을 값으로. 모르면 X다."""
     try:
@@ -161,7 +173,11 @@ class CliChatLlm:
                 for row in _rows(data, "priorities")
                 if "route" in row
             )
-            return TriageResult(question_type=qtype, priorities=priorities)
+            return TriageResult(
+                question_type=qtype,
+                priorities=priorities,
+                region=_region_of(data.get("region")),
+            )
         except Exception:
             # 실 API와 같은 폴백 — triage가 실패해도 챗은 계속 답한다
             logger.warning("triage 파싱 실패 — daily 폴백")

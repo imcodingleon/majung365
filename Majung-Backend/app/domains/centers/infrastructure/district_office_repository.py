@@ -35,8 +35,12 @@ class JsonDistrictOfficeRepository:
         ]
         # 조회가 시군구 단위로만 들어오므로 미리 묶어 둔다 — 매 요청마다 3,555건을 훑지 않는다.
         self._by_sigungu: dict[str, list[DistrictOffice]] = defaultdict(list)
+        # 사용자가 자기 입으로 동을 말하는 경우가 있다. §5.4가 "동을 모른다"고 한 것은
+        # **위치로 알아내는 경로**를 말한 것이고, 말해 준 동은 그 제약을 받지 않는다.
+        self._by_dong: dict[str, list[DistrictOffice]] = defaultdict(list)
         for office in self._items:
             self._by_sigungu[office.sigungu].append(office)
+            self._by_dong[office.dong].append(office)
 
     def count(self) -> int:
         return len(self._items)
@@ -62,3 +66,29 @@ class JsonDistrictOfficeRepository:
         if asked_sido:
             items = [o for o in items if o.sido == asked_sido]
         return list(items)
+
+    def by_dong(
+        self, dong: str, sido: str | None = None, sigungu: str | None = None
+    ) -> list[DistrictOffice]:
+        """동 이름으로 찾는다. **같은 이름이 전국에 여럿이다.**
+
+        "중앙동"은 31곳, "남면"은 12곳이다. 시도·시군구를 함께 주면 좁히고,
+        주지 않으면 후보를 전부 돌려준다 — **어느 곳인지는 부르는 쪽이 사용자에게
+        되물어야 한다.** 서버가 임의로 하나를 고르면 사용자가 엉뚱한 동네
+        주민센터로 찾아간다.
+        """
+        name = normalize_district(dong)
+        if not name:
+            return []
+        found = list(self._by_dong.get(name, []))
+        if not found:
+            # "오금1동"으로 물었는데 데이터가 "오금동"인 경우처럼 한쪽이 더 자세할 수 있다.
+            found = [o for o in self._items if district_matches(o.dong, name)]
+
+        asked_sido = normalize_sido(sido)
+        if asked_sido:
+            found = [o for o in found if o.sido == asked_sido]
+        asked_sigungu = normalize_district(sigungu)
+        if asked_sigungu:
+            found = [o for o in found if district_matches(o.sigungu, asked_sigungu)]
+        return found

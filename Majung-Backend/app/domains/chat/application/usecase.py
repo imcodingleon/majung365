@@ -26,6 +26,7 @@ from app.domains.chat.application.dto import (
 )
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.domain.evidence import EvidenceStage, notice_for
+from app.domains.chat.domain.local_office import LocalOfficeAnswer, answer_for
 from app.domains.chat.domain.prompts import build_guidance_context
 from app.domains.chat.domain.triage import (
     QuestionType,
@@ -60,6 +61,7 @@ class ChatUseCase:
         blocking_routes: frozenset[str] = frozenset(),
         passages: PassageIndex | None = None,
         graph_nodes: dict[str, GraphNode] | None = None,
+        district_offices: object | None = None,
     ) -> None:
         self._llm = llm
         self._institutions = institutions
@@ -70,6 +72,8 @@ class ChatUseCase:
         self._passages = passages
         # 상태별로 대표가 갈리는 항목은 그래프가 정한다(§4.1). 초기 진단과 같은 자리다.
         self._nodes = graph_nodes or {}
+        # 사용자가 자기 입으로 동을 말하면 그 주민센터를 짚어준다(§5.4).
+        self._offices = district_offices
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -95,6 +99,13 @@ class ChatUseCase:
         # 3) 근거 문서 검색. 카드가 제도의 요약이라면 이쪽은 본문이라,
         #    "기한이 며칠인가요" 같은 구체적인 질문에 답할 수 있는 것은 이쪽이다.
         found = self._search_passages(cmd.message, triage, cmd.route_id)
+
+        # 3.5) 사용자가 동을 말했으면 그 주민센터를 찾는다.
+        #      **있는 데이터를 없다고 말하면 안 된다** — "오금동 주민센터"를 물었는데
+        #      "인터넷에서 찾아보세요"라고 답한 적이 있다. 그 순간 서버에 답이 있었다.
+        local = self._local_office(triage)
+        if local.found:
+            found = [*found, self._as_local_passage(local)]
 
         # 4) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
         #    **사전 고지가 답변보다 먼저 나간다** — 나중에 "인터넷 정보였습니다"라고
@@ -192,6 +203,39 @@ class ChatUseCase:
         rest = tuple(p for p in triage.priorities if p.route != pinned)
         return replace(
             triage, priorities=(RoutePriority(route=pinned), *rest)[:_MAX_ROUTES]
+        )
+
+    def _local_office(self, triage: TriageResult) -> LocalOfficeAnswer:
+        """사용자가 말한 동의 주민센터. 말하지 않았으면 찾지 않는다."""
+        if self._offices is None or not triage.region.has_dong:
+            return LocalOfficeAnswer(injection="")
+        by_dong = getattr(self._offices, "by_dong", None)
+        if not callable(by_dong):
+            return LocalOfficeAnswer(injection="")
+        try:
+            found = by_dong(
+                triage.region.dong,
+                triage.region.sido or None,
+                triage.region.sigungu or None,
+            )
+        except Exception:
+            # 조회 실패가 답변 자체를 막지는 않는다. 검색어는 로그에 남기지 않는다.
+            logger.warning("주민센터 조회 실패")
+            return LocalOfficeAnswer(injection="")
+        return answer_for(triage.region.dong, list(found))
+
+    def _as_local_passage(self, local: LocalOfficeAnswer) -> Passage:
+        """주민센터 안내를 근거 구절 형태로. 확인 날짜는 붙이지 않는다 —
+        행정안전부 원본을 그대로 옮긴 것이고 우리가 따로 확인한 값이 아니다."""
+        return Passage(
+            doc_id="district-office",
+            title="주민센터 안내",
+            section="행정안전부 읍면동 현황",
+            text=local.injection,
+            source_url="",
+            fetched_at="",
+            route_ids=(),
+            department="행정안전부",
         )
 
     def _search_passages(

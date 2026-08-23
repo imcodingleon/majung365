@@ -62,6 +62,28 @@ class RoutePriority:
 
 
 @dataclass(frozen=True)
+class UserRegion:
+    """사용자가 자기 입으로 말한 지역.
+
+    **§5.4가 "동을 모른다"고 한 것은 위치로 알아내는 경로를 말한 것이다.**
+    좌표를 서버로 보내지 않으니 기기가 알려줄 수 있는 것은 시군구까지인데,
+    사용자가 "송파구 오금동 사는데"라고 말하면 그 제약을 받지 않는다.
+
+    말하지 않은 것은 빈 문자열이다. 짐작해서 채우지 않는다.
+    """
+
+    sido: str = ""
+    sigungu: str = ""
+    dong: str = ""
+
+    @property
+    def has_dong(self) -> bool:
+        return bool(self.dong)
+
+
+@dataclass(frozen=True)
 class TriageResult:
     question_type: QuestionType
     priorities: tuple[RoutePriority, ...]  # 급한 순, 보통 2~3개 (DAILY면 비어도 됨)
+    # 사용자가 말한 지역. 주민센터처럼 동 단위 안내에 쓴다.
+    region: UserRegion = UserRegion()
