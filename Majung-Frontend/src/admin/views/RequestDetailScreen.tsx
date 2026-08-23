@@ -11,6 +11,8 @@ import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 import { josa } from "@/shared/utils/korean";
 
+import { timeLabel } from "../domain/fromServer";
+
 import {
   canConfirm,
   missingDocs,
@@ -74,6 +76,28 @@ function Button({
   );
 }
 
+/**
+ * 제안할 수 있는 시간 후보.
+ *
+ * **1·2지망이 아닌 시간을 담당자가 고를 수 있어야 한다** — 조율의 시작이 그것이다.
+ * 다음 다섯 평일의 오전·오후를 낸다. 주민센터와 공단이 평일에만 열기 때문이다.
+ */
+function proposalSlots(request: StaffRequest): readonly { label: string; iso: string }[] {
+  const base = request.firstChoiceAt ? new Date(request.firstChoiceAt) : new Date();
+  const out: { label: string; iso: string }[] = [];
+  const cursor = new Date(base.getFullYear(), base.getMonth(), base.getDate());
+  while (out.length < 6) {
+    cursor.setDate(cursor.getDate() + 1);
+    const day = cursor.getDay();
+    if (day === 0 || day === 6) continue;
+    for (const hour of [10, 15]) {
+      const at = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), hour);
+      out.push({ label: timeLabel(at.toISOString()), iso: at.toISOString() });
+    }
+  }
+  return out;
+}
+
 export function RequestDetailScreen({
   request,
   onAcknowledge,
@@ -86,6 +110,7 @@ export function RequestDetailScreen({
   const [confirming, setConfirming] = useState(false);
   const [input, setInput] = useState<ConfirmInput>({
     whenLabel: request.firstChoice,
+    whenIso: request.firstChoiceAt,
     staffName: "",
     place: "",
   });
@@ -198,10 +223,17 @@ export function RequestDetailScreen({
 
                   <Text className="mb-2 text-caption font-bold text-ink-header">방문 시간</Text>
                   <View className="mb-4 flex-row flex-wrap gap-2">
-                    {[request.firstChoice, request.secondChoice].map((slot) => (
+                    {/* 라벨과 원본 시각을 짝지어 고르게 한다. 라벨만 들고 있으면 서버에
+                        보낼 시각을 되짚을 수 없어 **1지망으로 확정된 것처럼 되어 버린다** */}
+                    {[
+                      { label: request.firstChoice, iso: request.firstChoiceAt },
+                      { label: request.secondChoice, iso: request.secondChoiceAt },
+                    ]
+                      .filter((s) => s.label)
+                      .map(({ label: slot, iso }) => (
                       <Pressable
                         key={slot}
-                        onPress={() => setInput((p) => ({ ...p, whenLabel: slot }))}
+                        onPress={() => setInput((p) => ({ ...p, whenLabel: slot, whenIso: iso }))}
                         accessibilityRole="button"
                         accessibilityState={{ selected: input.whenLabel === slot }}
                         accessibilityLabel={slot}
@@ -263,30 +295,24 @@ export function RequestDetailScreen({
                 </View>
               )}
 
+              {/* **후보에서 고르게 한다.** 서버가 받는 것은 시각이지 문구가 아니어서,
+                  자유 입력은 거부된다(422). 그리고 담당자가 "다음 주쯤"처럼 적으면
+                  출소자 화면에 언제인지가 안 뜬다 */}
               <Text className="mb-2 mt-2 text-caption font-bold text-ink-header">
                 다른 시간 제안하기
               </Text>
-              <View className="mb-2 flex-row gap-2">
-                <TextInput
-                  className={`${box} flex-1`}
-                  value={proposal}
-                  onChangeText={setProposal}
-                  placeholder="예: 8월 27일 목요일 오후"
-                  placeholderTextColor={COLORS.inkMuted}
-                  accessibilityLabel="제안할 시간"
-                />
-                <Pressable
-                  onPress={() => {
-                    if (!proposal.trim()) return;
-                    onProposeReschedule(proposal.trim());
-                    setProposal("");
-                  }}
-                  accessibilityRole="button"
-                  accessibilityLabel="시간 제안 보내기"
-                  className="justify-center rounded-xl border-[1.5px] border-line bg-white px-4 active:opacity-90"
-                >
-                  <Text className="text-body-lg font-bold text-ink-sub">보내기</Text>
-                </Pressable>
+              <View className="mb-2 flex-row flex-wrap gap-2">
+                {proposalSlots(request).map(({ label, iso }) => (
+                  <Pressable
+                    key={iso}
+                    onPress={() => onProposeReschedule(iso)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${label}로 제안하기`}
+                    className="rounded-xl border-[1.5px] border-line bg-white px-4 py-3 active:opacity-80"
+                  >
+                    <Text className="text-caption font-bold text-ink-sub">{label}</Text>
+                  </Pressable>
+                ))}
               </View>
             </>
           ) : null}

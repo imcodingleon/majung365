@@ -15,6 +15,15 @@ export type StaffRequest = {
   /** 1·2지망 방문 시간. 사람이 읽는 형태다. */
   firstChoice: string;
   secondChoice: string;
+  /**
+   * 같은 시간의 원본 값(ISO).
+   *
+   * **화면은 사람이 읽는 말로 그리고 서버는 시각을 받는다.** 확정할 때 담당자가 고른
+   * 것이 어느 지망이었는지 되짚으려면 원본이 필요하다. 없으면 만나기로 한 시각을
+   * 못 보내고, 서버가 1지망으로 채우게 된다.
+   */
+  firstChoiceAt: string | null;
+  secondChoiceAt: string | null;
   /** 챙겨 온다고 표시한 준비물. */
   readyDocs: readonly string[];
   /** 이 요청에서 필요한 준비물 전체. 위 목록과 견줘 무엇이 빠졌는지 본다. */
@@ -45,6 +54,14 @@ export type StaffRequest = {
 export type ConfirmInput = {
   /** 확정한 방문 시각. 1·2지망 중 하나를 고르거나 직접 적는다. */
   whenLabel: string;
+  /**
+   * 그 시각의 원본 값(ISO). **직접 적은 경우에는 없다.**
+   *
+   * 없으면 서버가 1지망으로 채운다 — 매번 입력하게 하면 빼먹었을 때 확정 자체가
+   * 막히기 때문이다. 장소를 필수로 둔 것과 다른 판단이며, 장소는 서버가 알 수 없는
+   * 정보이지만 시각은 이미 1지망이 있다.
+   */
+  whenIso?: string | null;
   staffName: string;
   place: string;
 };

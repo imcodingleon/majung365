@@ -114,10 +114,17 @@ export function AdminApp() {
             // `meeting_place`가 따로 내려간다 — §7.1이 요구하는 "만날 사람과 만날 장소"다.
             //
             // 장소 없이 확정하면 서버가 거부한다. 그것이 이 기능의 핵심이기 때문이다.
-            void visits.act(open.id, "confirmed", { meeting_place: input.place });
+            void visits.act(open.id, "confirmed", {
+              meeting_place: input.place,
+              // **만나기로 한 시각을 함께 보낸다.** 안 보내면 서버가 1지망으로 채우므로,
+              // 담당자가 2지망으로 확정해도 출소자 화면에는 1지망이 뜬다.
+              ...(input.whenIso ? { confirmed_for: input.whenIso } : {}),
+            });
           })}
-          onProposeReschedule={touched<string>(() =>
-            void visits.act(open.id, "reschedule_proposed"),
+          // **제안한 시각을 함께 보낸다.** 담당자가 적은 시각을 버리고 상태만 바꾸면,
+          // 출소자 화면에 "담당자가 다른 시간을 이야기했어요"만 뜨고 **언제인지가 빠진다.**
+          onProposeReschedule={touched<string>((time) =>
+            void visits.act(open.id, "reschedule_proposed", { proposed_at: time }),
           )}
           onCancel={touched<string>((reason) =>
             void visits.act(open.id, "cancelled", { cancel_reason: reason }),

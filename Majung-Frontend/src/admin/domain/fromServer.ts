@@ -47,6 +47,8 @@ export function toStaffRequest(v: StaffVisitResponse): StaffRequest {
     purpose: routeLabel(v.route_id),
     firstChoice: timeLabel(v.preferred_at_1),
     secondChoice: timeLabel(v.preferred_at_2),
+    firstChoiceAt: v.preferred_at_1,
+    secondChoiceAt: v.preferred_at_2,
     readyDocs: v.prepared_docs,
     // 필요한 준비물 전체는 서버가 주지 않는다. 카드 쪽 정보라 지금은 챙겨 온 것만 보인다.
     allDocs: v.prepared_docs,
