@@ -23,6 +23,11 @@ export const COLORS = {
   card: "#fbfcfe",
   bubble: "#f1f3f8",
 
+  // 채팅 첫 마디 칩. 브랜드 파랑과 층을 갈라 **누르면 보내지는 것**임을 나타낸다 —
+  // 파랑으로 두면 이미 오간 말풍선과 섞인다.
+  chip: "#ffdcc0",
+  chipInk: "#874700",
+
   noteInfo: "#eef7ff",
   noteInfoLine: "#cfe6ff",
   noteInfoInk: "#1c5f9e",

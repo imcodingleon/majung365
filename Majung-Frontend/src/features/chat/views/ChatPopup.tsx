@@ -41,6 +41,19 @@ type Props = {
   onOpenHelp: () => void;
 };
 
+/**
+ * 무엇을 물어야 할지 모르는 사람을 위한 첫 마디 (시안).
+ *
+ * **빈 입력창은 저리터러시 사용자에게 가장 어려운 화면이다.** 물어볼 것이 없어서가
+ * 아니라 어떻게 물어야 할지 몰라서 멈춘다. 눌러서 보내면 되는 문장을 몇 개 둔다.
+ */
+const PRESETS = [
+  "오늘 뭐 해야 해요?",
+  "어디로 가면 돼요?",
+  "무슨 서류가 필요해요?",
+  "돈이 드나요?",
+] as const;
+
 function Bubble({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
@@ -60,7 +73,16 @@ function Bubble({ message }: { message: ChatMessage }) {
   }
 
   return (
-    <View className="mb-2.5 max-w-[86%] self-start rounded-2xl rounded-bl-sm bg-bubble px-3.5 py-2.5">
+    // 시안의 아바타. **누가 말하는지가 한눈에 보여야 한다** — 저리터러시 사용자에게
+    // 좌우 정렬만으로는 사람 말과 기계 말이 구별되지 않는다.
+    <View className="mb-3 max-w-[92%] flex-row items-start gap-2 self-start">
+      <View
+        className="mt-0.5 size-8 items-center justify-center rounded-full"
+        style={{ backgroundColor: COLORS.brand }}
+      >
+        <Text className="text-[15px]">🤖</Text>
+      </View>
+      <View className="flex-1 rounded-2xl rounded-tl-sm bg-bubble px-3.5 py-3">
       <Text className="text-[15px] leading-[25px] text-ink-strong">{message.text}</Text>
 
       {message.desk ? (
@@ -85,6 +107,7 @@ function Bubble({ message }: { message: ChatMessage }) {
           ) : null}
         </View>
       ) : null}
+      </View>
     </View>
   );
 }
@@ -136,21 +159,9 @@ export function ChatPopup({
       onRequestClose={onClose}
     >
       <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-        <View className="flex-row items-center gap-2 border-b border-line px-4 py-3">
-          <View className="flex-1">
-            <Text className="text-[13px] text-ink-muted">이 일에 대한 대화</Text>
-            <Text className="mt-0.5 text-[17px] font-extrabold text-ink-strong" numberOfLines={1}>
-              {taskTitle}
-            </Text>
-          </View>
-          <Pressable
-            onPress={() => setMenuOpen((v) => !v)}
-            accessibilityRole="button"
-            accessibilityLabel="더보기"
-            className="size-10 items-center justify-center rounded-full active:opacity-70"
-          >
-            <Text className="text-xl text-ink-muted">⋯</Text>
-          </Pressable>
+        {/* 시안대로 닫기를 왼쪽에 둔다. 오른쪽 위는 엄지가 닿기 먼 자리라 나가는 길을
+            거기 두면 저리터러시 사용자가 갇힌 느낌을 받는다. */}
+        <View className="flex-row items-center gap-2 border-b border-line px-3 py-3">
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
@@ -158,6 +169,22 @@ export function ChatPopup({
             className="size-10 items-center justify-center rounded-full active:opacity-70"
           >
             <Text className="text-2xl text-ink-muted">✕</Text>
+          </Pressable>
+
+          <View className="flex-1 px-1">
+            <Text className="text-[13px] text-ink-muted" numberOfLines={1}>
+              {taskTitle}
+            </Text>
+          </View>
+
+          <Text className="text-[16px] font-extrabold text-ink-strong">AI 챗봇</Text>
+          <Pressable
+            onPress={() => setMenuOpen((v) => !v)}
+            accessibilityRole="button"
+            accessibilityLabel="더보기"
+            className="size-10 items-center justify-center rounded-full active:opacity-70"
+          >
+            <Text className="text-xl text-ink-muted">⋯</Text>
           </Pressable>
         </View>
 
@@ -248,26 +275,60 @@ export function ChatPopup({
               </Pressable>
             </View>
           ) : (
-            <View className="flex-row items-end gap-2 border-t border-line px-3 py-2.5">
-              <TextInput
-                value={draft}
-                onChangeText={setDraft}
-                placeholder="궁금한 것을 물어보세요"
-                placeholderTextColor={COLORS.inkMuted}
-                multiline
-                accessibilityLabel="질문 입력"
-                className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-3.5 py-3 text-[15px] leading-[22px] text-ink-strong"
-              />
-              <Pressable
-                onPress={send}
-                disabled={!draft.trim() || busy}
-                accessibilityRole="button"
-                accessibilityLabel="보내기"
-                className="rounded-xl px-4 py-3.5 active:opacity-90"
-                style={{ backgroundColor: !draft.trim() || busy ? COLORS.brandMuted : COLORS.brand }}
-              >
-                <Text className="text-base font-extrabold text-white">보내기</Text>
-              </Pressable>
+            <View className="border-t border-line">
+              {/* 대화가 아직 없을 때만 낸다. 오간 뒤에는 화면을 좁히기만 한다 */}
+              {messages.length === 0 ? (
+                <ScrollView
+                  horizontal
+                  showsHorizontalScrollIndicator={false}
+                  className="max-h-14"
+                  contentContainerClassName="gap-2 px-3 py-2.5"
+                  keyboardShouldPersistTaps="handled"
+                >
+                  {PRESETS.map((preset) => (
+                    <Pressable
+                      key={preset}
+                      onPress={() => onSend(preset)}
+                      disabled={busy}
+                      accessibilityRole="button"
+                      accessibilityLabel={preset}
+                      className="rounded-full px-4 py-2.5 active:opacity-80"
+                      style={{ backgroundColor: COLORS.chip }}
+                    >
+                      <Text className="text-[14px] font-bold" style={{ color: COLORS.chipInk }}>
+                        {preset}
+                      </Text>
+                    </Pressable>
+                  ))}
+                </ScrollView>
+              ) : null}
+
+              <View className="flex-row items-end gap-2 px-3 pb-2.5 pt-1">
+                <TextInput
+                  value={draft}
+                  onChangeText={setDraft}
+                  placeholder="궁금한 것을 물어보세요"
+                  placeholderTextColor={COLORS.inkMuted}
+                  multiline
+                  accessibilityLabel="질문 입력"
+                  className="max-h-28 flex-1 rounded-2xl px-4 py-3 text-[15px] leading-[22px] text-ink-strong"
+                  style={{ backgroundColor: COLORS.bubble }}
+                />
+                {/* 시안의 원형 전송 버튼. 글자 대신 화살표를 쓰면 글을 읽기 어려운
+                    사람도 방향으로 뜻을 안다 */}
+                <Pressable
+                  onPress={send}
+                  disabled={!draft.trim() || busy}
+                  accessibilityRole="button"
+                  accessibilityLabel="보내기"
+                  className="size-12 items-center justify-center rounded-full active:opacity-90"
+                  style={{
+                    backgroundColor: !draft.trim() || busy ? COLORS.brandMuted : COLORS.brand,
+                  }}
+                >
+                  <Text className="text-[20px] text-white">➤</Text>
+                </Pressable>
+              </View>
             </View>
           )}
         </KeyboardAvoidingView>
