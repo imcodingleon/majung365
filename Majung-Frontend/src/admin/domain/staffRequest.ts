@@ -55,11 +55,11 @@ export function statusLabel(status: VisitStatus): string {
     case "sent":
       return "새 요청";
     case "acknowledged":
-      return "확인함";
+      return "확인";
     case "confirmed":
       return "확정";
     case "reschedule_proposed":
-      return "시간 변경 제안함";
+      return "시간 변경 제안";
     case "completed":
       return "방문 완료";
     case "cancelled":

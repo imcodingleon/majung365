@@ -105,7 +105,7 @@ export function NearbyScreen({
               어디로 가면 되는지{"\n"}알려드릴게요
             </Text>
             <Text className="mb-6 mt-3 text-base leading-[27px] text-ink-sub">
-              지금 계신 지역을 알면 찾아가실 곳을 짚어드릴 수 있어요.
+              지금 계신 지역을 알면 찾아가실 곳을 알려드릴 수 있어요.
             </Text>
 
             {/* 좌표를 서버로 보내지 않는다는 것을 화면에서 밝힌다. 위치를 켜는 일은

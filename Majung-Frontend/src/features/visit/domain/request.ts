@@ -119,8 +119,8 @@ export function sharedItems(
   hasDocs = true,
 ): readonly string[] {
   const items = ["이름", "방문하실 시간 두 가지", "무슨 일로 오시는지"];
-  if (hasDocs) items.push("챙겨 오실 준비물");
-  if (hasNote) items.push("적어주신 하고 싶은 말");
+  if (hasDocs) items.push("챙겨 오실 것");
+  if (hasNote) items.push("하고 싶은 말");
   // 기한이 있는 제도를 상담할 때만 보낸다.
   if (hasDeadlineRoute) items.push("출소한 날짜");
   return items;

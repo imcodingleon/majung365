@@ -45,7 +45,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q1-2",
     sectionId: "housing",
     routeId: "R4",
-    prompt: "가족과 오래 살 집을 구하려고 하나요? 맞는 것을 모두 골라주세요.",
+    prompt: "가족과 오래 살 집을 구하려고 하나요? 맞는 것을 모두 골라 주세요.",
     kind: "multi",
     dataKey: "housingConditionIds",
     options: [
@@ -61,7 +61,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     sectionId: "housing",
     routeId: "R11",
     prompt: "지금 지내는 곳이 주민등록 주소와 같나요?",
-    help: "늘 지낼 곳이 없다면 주민등록과 상관없이 ‘일정하게 지내는 곳이 없어요’를 골라주세요.",
+    help: "늘 지낼 곳이 없다면 주민등록과 상관없이 ‘일정하게 지내는 곳이 없어요’를 골라 주세요.",
     kind: "single",
     dataKey: "addressStatus",
     options: [
@@ -237,7 +237,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     sectionId: "identity",
     routeId: "R10",
     prompt: "내 이름으로 된 통장을 지금 쓸 수 있나요?",
-    help: "지원금을 받고 필요할 때 돈을 찾거나 보낼 수 있는 통장을 말해요.",
+    help: "지원금을 받고, 필요할 때 돈을 찾거나 보낼 수 있는 통장을 말해요.",
     kind: "single",
     dataKey: "bankAccountStatus",
     options: [
@@ -370,7 +370,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q5-1",
     sectionId: "health",
     routeId: "R3",
-    prompt: "지금 어떤 건강 도움이 필요한가요?",
+    prompt: "건강 때문에 어떤 도움이 필요한가요?",
     kind: "single",
     dataKey: "healthSupportNeed",
     options: [
@@ -406,7 +406,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q6-1",
     sectionId: "rights",
     routeId: "R13",
-    prompt: "교도소·구치소에 있던 기간과 출소일이 적힌 증명서가 있나요?",
+    prompt: "교도소·구치소에 있던 기간과 출소한 날이 적힌 증명서가 있나요?",
     help: "공식 이름은 ‘수용·출소증명서’예요. 형사사법포털이나 가까운 교도소·구치소에서 받을 수 있어요.",
     kind: "single",
     dataKey: "releaseCertificateStatus",
@@ -454,7 +454,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q6-3",
     sectionId: "rights",
     routeId: "R15",
-    prompt: "출소 후 병원비를 줄여주는 보험이나 지원을 확인했나요?",
+    prompt: "출소하고 나서 병원비를 줄여주는 보험이나 지원을 확인했나요?",
     help: "‘의료급여’는 생활이 어려운 사람의 병원비를 정부가 도와주는 제도예요. 건강보험이 직장 가입인지 지역 가입인지는 몰라도 괜찮아요.",
     kind: "single",
     dataKey: "medicalCoverageStatus",

@@ -58,7 +58,7 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
                 className="font-extrabold"
                 style={{ color: item.required ? COLORS.brand : COLORS.inkSub }}
               >
-                {item.required ? "[꼭 필요해요] " : "[안 골라도 돼요] "}
+                {item.required ? "[꼭 필요해요] " : "[안 고르셔도 돼요] "}
               </Text>
               {item.label}
             </Text>

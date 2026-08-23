@@ -55,7 +55,7 @@ const BLOCKS: Record<ConsentId, readonly Block[]> = {
     {
       heading: "어디에 쓰나요",
       lines: [
-        "일할 수 없는 직종이 있는지 확인하는 데 써요.",
+        "할 수 없는 일이 있는지 확인하는 데 써요.",
         "받을 수 있는 지원이 있는지 확인하는 데 써요.",
       ],
     },
@@ -75,7 +75,7 @@ const BLOCKS: Record<ConsentId, readonly Block[]> = {
     },
     {
       heading: "언제 알려주나요",
-      lines: ["담당자에게 방문을 미리 알릴 때만이에요.", "그 전에는 알려주지 않아요."],
+      lines: ["방문을 미리 알릴 때만 알려줘요.", "그 전에는 알려주지 않아요."],
     },
     {
       heading: "동의하지 않아도 되나요",

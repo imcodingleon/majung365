@@ -54,10 +54,10 @@ export type ChatMessage =
 
 /** 검색 전에 반드시 먼저 나가는 문장. 나중에 덧붙이면 이미 사실로 받아들인 뒤다. */
 export const SEARCH_NOTICE =
-  "지금 가지고 있는 자료에서는 관련 내용을 찾지 못했어요. 인터넷에서 찾아볼게요.";
+  "가지고 있는 자료에서는 찾지 못했어요. 인터넷에서 찾아볼게요.";
 
 /** 검색 결과를 여는 문장. */
-export const SEARCH_RESULT_LEAD = "인터넷에서 찾아보니 이렇게 나오네요. 다만 확인이 필요할 수 있어요.";
+export const SEARCH_RESULT_LEAD = "인터넷에서 찾아보니 이렇게 나오네요. 다만 맞는지 한 번 더 확인해 주세요.";
 
 /** "마중365가 2026년 8월 23일에 확인한 내용이에요." — 확인한 주체가 드러나야 한다. */
 export function checkedAtSentence(isoDate: string): string {

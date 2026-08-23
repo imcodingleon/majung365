@@ -217,7 +217,7 @@ export function ChatPopup({
               <View className="mt-10 px-2">
                 <Text className="text-center text-[15px] leading-[26px] text-ink-muted">
                   {taskTitle}에 대해 궁금한 것을 물어보세요.{"\n"}
-                  아무렇게나 적으셔도 괜찮아요.
+                  편하게 적으셔도 괜찮아요.
                 </Text>
               </View>
             ) : null}

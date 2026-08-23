@@ -30,7 +30,7 @@ export function AdminLoginScreen({ failed, timedOut, onSignIn }: Props) {
         <View className="mb-8 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
           <Text className="text-[15px] font-extrabold text-alert">시연용 화면입니다</Text>
           <Text className="mt-1 text-sm leading-[23px] text-alert-ink">
-            실제 로그인이 아니고 담당자 계정 체계도 아직 없습니다. 실제 자료는 연결되어 있지
+            실제 로그인이 아니고 담당자 계정 체계도 아직 없습니다. 실제 자료도 연결되어 있지
             않습니다.
           </Text>
         </View>

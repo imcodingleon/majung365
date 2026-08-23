@@ -68,7 +68,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
         <ScrollView className="flex-1" contentContainerClassName="px-4 py-4">
           {messages.length === 0 ? (
             <Text className="mt-10 text-center text-[15px] leading-[25px] text-ink-muted">
-              방문 시간과 오시는 길을 여기서 조율합니다.
+              여기서 방문 시간과 오시는 길을 조율합니다.
             </Text>
           ) : null}
 

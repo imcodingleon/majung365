@@ -113,7 +113,8 @@ export function RequestDetailScreen({
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
         <View className="rounded-2xl bg-white px-4">
-          <Field label="무슨 일로" value={request.purpose} />
+          {/* 방문 목적이다. 죄목이 아니며 담당자에게 죄목은 전달되지 않는다 (§7.4). */}
+          <Field label="무슨 일로 오시나요" value={request.purpose} />
           <Field label="1지망" value={request.firstChoice} />
           <Field label="2지망" value={request.secondChoice} />
           {request.releaseDate ? <Field label="출소한 날" value={request.releaseDate} /> : null}
@@ -124,7 +125,7 @@ export function RequestDetailScreen({
         <Text className="mb-2.5 mt-6 text-base font-extrabold text-ink-strong">준비물</Text>
         <View className="rounded-2xl bg-white px-4 py-3.5">
           {request.allDocs.length === 0 ? (
-            <Text className="text-[15px] text-ink-sub">필요한 준비물이 없습니다.</Text>
+            <Text className="text-[15px] text-ink-sub">준비물이 없습니다.</Text>
           ) : (
             request.allDocs.map((doc) => {
               const ready = request.readyDocs.includes(doc);
@@ -164,7 +165,7 @@ export function RequestDetailScreen({
                 <View className="mb-4 rounded-2xl border-[1.5px] border-brand-soft bg-white p-4">
                   {/* 만날 사람과 만날 장소가 이 기능의 핵심이다 (§7.1). */}
                   <Text className="mb-3 text-[15px] leading-[24px] text-ink-sub">
-                    확정하면 출소자 화면에 시간과 함께 누구를 어디서 찾으면 되는지가 뜹니다.
+                    확정하면 출소자 화면에 시간과 함께 누구를 어디서 만나면 되는지 뜹니다.
                   </Text>
 
                   <Text className="mb-2 text-sm font-bold text-ink-header">방문 시간</Text>
@@ -235,7 +236,7 @@ export function RequestDetailScreen({
               )}
 
               <Text className="mb-2 mt-2 text-sm font-bold text-ink-header">
-                다른 시간을 제안하기
+                다른 시간 제안하기
               </Text>
               <View className="mb-2 flex-row gap-2">
                 <TextInput

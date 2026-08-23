@@ -50,13 +50,13 @@ export function useRegionLookup() {
 
       const first = found[0];
       if (!first) {
-        setState({ status: "failed", reason: "지금 계신 곳을 알아내지 못했어요." });
+        setState({ status: "failed", reason: "지금 계신 곳을 찾지 못했어요." });
         return;
       }
 
       const region = matchRegion([first.region, first.city, first.district, first.subregion]);
       if (!region) {
-        setState({ status: "failed", reason: "지금 계신 곳이 어느 지역인지 알아보지 못했어요." });
+        setState({ status: "failed", reason: "지금 계신 곳이 어느 지역인지 찾지 못했어요." });
         return;
       }
       setState({ status: "resolved", region });
@@ -64,7 +64,7 @@ export function useRegionLookup() {
       // 네트워크가 없을 때 안드로이드 역지오코딩이 여기로 떨어진다 (§12-13 확인 지점).
       setState({
         status: "failed",
-        reason: "지금 계신 곳을 알아내지 못했어요. 인터넷이 끊겨 있으면 그럴 수 있어요.",
+        reason: "지금 계신 곳을 찾지 못했어요. 인터넷이 끊겨 있으면 그럴 수 있어요.",
       });
     }
   }, []);

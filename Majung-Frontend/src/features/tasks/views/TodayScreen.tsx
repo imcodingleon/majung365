@@ -72,7 +72,7 @@ export function TodayScreen({
         <Pressable
           onPress={onOpenHelp}
           accessibilityRole="button"
-          accessibilityLabel="도움이 필요해요. 전화 상담 번호를 봅니다"
+          accessibilityLabel="도움이 필요해요. 전화 상담 번호를 봐요"
           className="rounded-full bg-sun-500 px-4 py-2.5 active:opacity-90"
         >
           <Text className="text-[15px] font-extrabold text-white">도움이 필요해요</Text>
