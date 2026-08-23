@@ -291,7 +291,12 @@ def retake_intake(
     for key, value in body.answers.items():
         if isinstance(value, str) and len(value) > _MAX_ANSWER_LEN:
             raise HTTPException(status_code=422, detail="적어 주신 내용을 다시 확인해 주세요.")
-        if isinstance(value, list) and len(value) > _MAX_MULTI:
+        if isinstance(value, list) and (
+            len(value) > _MAX_MULTI
+            # **안의 값 길이도 본다.** 개수만 세면 20개 이내인 한 값이 아무리
+            # 길어도 통과해, 같은 데이터를 받는 가입 경로보다 느슨해진다.
+            or any(len(v) > _MAX_ANSWER_LEN for v in value)
+        ):
             raise HTTPException(status_code=422, detail="적어 주신 내용을 다시 확인해 주세요.")
         answers[key] = value
 
