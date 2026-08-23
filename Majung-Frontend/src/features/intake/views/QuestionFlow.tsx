@@ -5,7 +5,7 @@
 // 팝업으로 옮기고 문항을 하나씩 낸다.
 //
 // 되돌아갈 수 있어야 한다. 잘못 골랐을 때 처음부터 다시 해야 한다면 도중에 그만두게 된다.
-import { useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -13,9 +13,11 @@ import { COLORS } from "@/shared/theme/colors";
 
 import { isAnswered, type IntakeAnswers, type IntakeQuestion } from "../domain/questionTypes";
 import type { SectionId } from "../domain/sections";
+import { urgentNoticeFor, type UrgentNotice as Notice } from "../domain/urgent";
 
 import { QuestionBody } from "./QuestionBody";
 import { SectionIcon } from "./SectionIcon";
+import { UrgentNotice } from "./UrgentNotice";
 
 type Props = {
   /** 열려 있는 분야. 닫혀 있으면 null. */
@@ -45,6 +47,10 @@ export function QuestionFlow({
   onClose,
 }: Props) {
   const [step, setStep] = useState(0);
+  /** 급한 답을 골랐을 때 덮어씌우는 안내. 닫으면 이어서 답한다. */
+  const [urgent, setUrgent] = useState<Notice | null>(null);
+  /** 이미 낸 안내는 다시 내지 않는다. 답을 고칠 때마다 또 뜨면 방해가 된다. */
+  const shown = useRef<string | null>(null);
 
   // 분야를 새로 열면 처음 문항부터 시작한다.
   useEffect(() => setStep(0), [sectionId]);
@@ -56,6 +62,17 @@ export function QuestionFlow({
 
   const total = questions.length;
   const question = questions[step];
+
+  // **다 마칠 때까지 기다리지 않는다.** 고르는 순간 안내가 나가야 하는 답이 있다 (§3.9-⑩).
+  useEffect(() => {
+    if (!question) return;
+    const notice = urgentNoticeFor(question, answers);
+    if (!notice) return;
+    if (shown.current === question.id) return;
+    shown.current = question.id;
+    setUrgent(notice);
+  }, [question, answers]);
+
   const answered = question ? isAnswered(question, answers) : false;
   const last = step >= total - 1;
 
@@ -170,6 +187,8 @@ export function QuestionFlow({
           </View>
         </View>
       </SafeAreaView>
+
+      <UrgentNotice notice={urgent} onClose={() => setUrgent(null)} />
     </Modal>
   );
 }
