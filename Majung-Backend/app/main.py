@@ -10,6 +10,17 @@ from fastapi.middleware.cors import CORSMiddleware
 from slowapi import _rate_limit_exceeded_handler
 from slowapi.errors import RateLimitExceeded
 
+from app.domains.account.adapter.inbound.api.router import router as account_router
+from app.domains.account.application.usecase import SignupUseCase
+from app.domains.account.infrastructure.client import (
+    make_field_cipher,
+    make_supabase_client,
+)
+from app.domains.account.infrastructure.supabase_repository import (
+    SupabaseAccountRepository,
+    SupabaseCrimeRepository,
+    SupabaseSessionRepository,
+)
 from app.domains.centers.adapter.inbound.api.router import router as centers_router
 from app.domains.chat.adapter.inbound.api.router import router as chat_router
 from app.domains.chat.adapter.outbound.external.claude_client import ClaudeChatLlm
@@ -119,6 +130,24 @@ def create_app() -> FastAPI:
         rules=JsonIntakeRuleRepository().all(),
         blocking_routes=routes_blocking_others(graph_nodes),
     )
+    # 저장 기능은 설정이 갖춰졌을 때만 켠다. 없으면 signup_usecase가 없고
+    # 라우터가 503으로 막는다 — 받아 두고 버리는 것이 가장 나쁘다.
+    supabase = make_supabase_client(settings)
+    if supabase is None:
+        logger.warning(
+            "💾 저장 기능 꺼짐 — SUPABASE_URL·SUPABASE_SERVICE_KEY가 없다. "
+            "가입(POST /api/signup)은 503을 돌려준다"
+        )
+    else:
+        cipher = make_field_cipher(settings)  # 키가 없으면 여기서 부팅이 멈춘다
+        app.state.signup_usecase = SignupUseCase(
+            accounts=SupabaseAccountRepository(supabase, cipher),
+            crimes=SupabaseCrimeRepository(supabase, cipher),
+            sessions=SupabaseSessionRepository(supabase),
+            intake=app.state.intake_usecase,
+        )
+        logger.info("💾 저장 기능 켜짐 — 가입 정보는 암호화해 저장한다")
+
     app.state.analyze_usecase = AnalyzeUseCase(
         llm=llm, institutions=institutions, graph_nodes=graph_nodes
     )
@@ -128,6 +157,7 @@ def create_app() -> FastAPI:
     # Routers
     app.include_router(chat_router)
     app.include_router(centers_router)
+    app.include_router(account_router)
     app.include_router(onboarding_router)
 
     @app.get("/api/health")
