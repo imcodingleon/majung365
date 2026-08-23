@@ -7,8 +7,8 @@ import type { TaskCard } from "../types";
 function InfoRow({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row gap-3">
-      <Text className="w-16 text-sm font-semibold text-[#7c7c7c]">{label}</Text>
-      <Text className="flex-1 text-sm leading-5 text-[#1d1b20]">{value}</Text>
+      <Text className="w-16 text-sm font-semibold text-ink-header">{label}</Text>
+      <Text className="flex-1 text-sm leading-5 text-ink-strong">{value}</Text>
     </View>
   );
 }
@@ -29,20 +29,20 @@ export function TaskCardView({
     <View className="gap-6">
       <View className="gap-2">
         <Text className="text-base font-semibold text-brand">오늘 할 일을 알려드릴게요</Text>
-        <Text className="text-2xl font-bold leading-9 text-[#1d1b20]">{task.node_name}</Text>
+        <Text className="text-2xl font-bold leading-9 text-ink-strong">{task.node_name}</Text>
         {task.priority_reason ? (
-          <Text className="text-base leading-6 text-[#494551]">{task.priority_reason}</Text>
+          <Text className="text-base leading-6 text-ink-sub">{task.priority_reason}</Text>
         ) : null}
       </View>
 
       {task.deadline ? (
-        <View className="rounded-[16px] bg-[#fff3e0] p-4">
-          <Text className="text-sm font-semibold text-[#9a5b00]">⏰ {task.deadline} 안에 하세요.</Text>
+        <View className="rounded-[16px] bg-sun-100 p-4">
+          <Text className="text-sm font-semibold text-chip-ink">⏰ {task.deadline} 안에 하세요.</Text>
         </View>
       ) : null}
 
       {task.summary_easy ? (
-        <Text className="text-base leading-6 text-[#1d1b20]">{task.summary_easy}</Text>
+        <Text className="text-base leading-6 text-ink-strong">{task.summary_easy}</Text>
       ) : null}
 
       <View className="gap-3 rounded-[20px] border border-line bg-white p-5">

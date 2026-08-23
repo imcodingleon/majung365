@@ -10,7 +10,4 @@ export type {
   RouteOut,
   TaskCard,
   Turn,
-  VoiceEmotion,
-  VoiceLocation,
-  VoiceResult,
 } from "./api";
