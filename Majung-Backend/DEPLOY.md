@@ -13,7 +13,7 @@
 | 공개 API | **https://3-34-251-223.sslip.io** (sslip.io = 무료 IP→호스트명, 도메인/DNS 설정 불필요) |
 | HTTPS | Caddy 자동 Let's Encrypt (발급·갱신 자동) |
 | 보안그룹 | `sg-0e65887f93481d3fc` — 22←사용자 IP만 / 80·443←전체 |
-| SSH 키 | 로컬 `freedom_project/majung_backend.pem` (ed25519, gitignore됨). 공개키만 AWS import(`majung-backend`) |
+| SSH 키 | **`C:\Users\skwog\Documents\freedom_project\majung_backend.pem`** (ed25519, gitignore됨). 공개키만 AWS import(`majung-backend`) |
 | 앱 디렉토리 | EC2 `/home/ec2-user/majung-backend` |
 | 서비스 | systemd `majung-backend`(uvicorn 127.0.0.1:8000) + `caddy` |
 | LLM | **실 Claude API**(2026-08-23 전환). 지출 서킷브레이커와 rate limit이 방어한다 |
@@ -27,6 +27,12 @@
 
 - **Mock LLM** → 유료 외부 호출 원천 0. 챗 남용해도 Claude 비용 0.
 - SSH는 사용자 IP(`220.120.196.8/32`)만. 비번 로그인 없음(키 전용).
+- **막혔을 때 거절 메시지로 원인을 가른다.** 둘을 섞으면 엉뚱한 곳을 고친다.
+
+  ```
+  Permission denied (publickey)   키가 틀렸다 — 위 $KEY 경로를 확인한다
+  Connection timed out            IP가 막혔다 — 보안그룹 22번 인바운드를 갱신한다
+  ```
 - uvicorn은 localhost 바인딩 → Caddy만 외부 노출. 앱 포트 직접 노출 X.
 - 인스턴스 롤 없음 + Mock → 박스에 고가치 비밀 없음(blast radius 최소).
 - 계정 $50 예산 알람 기존 존재(skwogusdld@gmail.com).
@@ -34,9 +40,14 @@
 
 ## 운영 명령
 
+**키는 이 레포에 없다.** 백엔드가 `freedom-backend`로 분리되기 전에 쓰인 상대 경로가
+문서에 남아 있었는데 지금은 가리키는 곳이 없다. 아래 `$KEY`를 그대로 쓴다.
+
 ```bash
+KEY="/c/Users/skwog/Documents/freedom_project/majung_backend.pem"   # Git Bash 기준
+
 # SSH
-ssh -i majung_backend.pem ec2-user@3.34.251.223
+ssh -i "$KEY" ec2-user@3.34.251.223
 
 # 상태·로그
 sudo systemctl status majung-backend caddy
@@ -46,8 +57,8 @@ curl https://3-34-251-223.sslip.io/api/health   # {"status":"ok"}
 # 코드 업데이트 (로컬에서 tar→scp→재시작)
 cd Majung-Backend
 tar czf /tmp/mb.tar.gz --exclude=.venv --exclude=.git --exclude='*cache*' app pyproject.toml uv.lock tests
-scp -i ../majung_backend.pem /tmp/mb.tar.gz ec2-user@3.34.251.223:/tmp/
-ssh -i ../majung_backend.pem ec2-user@3.34.251.223 \
+scp -i "$KEY" /tmp/mb.tar.gz ec2-user@3.34.251.223:/tmp/
+ssh -i "$KEY" ec2-user@3.34.251.223 \
   'cd ~/majung-backend && tar xzf /tmp/mb.tar.gz && ~/.local/bin/uv sync --python 3.12 && sudo systemctl restart majung-backend'
 ```
 

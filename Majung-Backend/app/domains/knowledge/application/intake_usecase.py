@@ -78,10 +78,16 @@ class IntakeUseCase:
         절차가 안내됐다. 카드를 옮길 때 그래프를 함께 고치지 않으면 생기는 일이다.
 
         **그래프가 대표를 이기는 구조라 이 어긋남은 조용히 새 카드를 덮어쓴다.**
+
+        **겹침만 보면 부족하다.** `shelter` 노드가 R1·R4를 겸하는데 R4용 경로가
+        따로 없어 R4가 R1과 똑같은 카드를 냈다. 그런데 두 경로 모두 노드의 항목과
+        한 칸씩 겹치니 겹침 검사는 그대로 통과했다. **겸하는 항목마다 자기 경로가
+        있는지**를 따로 봐야 걸린다.
         """
         broken: list[str] = []
         for node in self._nodes.values():
             covered = set(node.route_ids)
+            self._check_each_route_has_a_path(node, broken)
             for path in node.obtain:
                 found = self._institutions.by_id(path.kb_ref)
                 if found is None:
@@ -166,14 +172,39 @@ class IntakeUseCase:
         꼬리질문만 안다. 그 밖에는 그래프가 먼저다.
         """
         graph_ref = kb_ref_for_route(self._nodes, verdict.route_id.value, verdict.state)
-        order = [(graph_ref, "그래프"), (verdict.lead_override, "규칙표")]
+        # 세 번째 값은 '역할까지 판단한 지정인가'다. 규칙표는 사람이 답변별로
+        # 적은 것이라 대표로 세우려는 의도가 분명하고, 그래프는 "이 자원을 얻는
+        # 방법"이라 대표·동반 역할까지 정한 것이 아니다.
+        order = [
+            (graph_ref, "그래프", False),
+            (verdict.lead_override, "규칙표", True),
+        ]
         if verdict.override_is_specific and verdict.lead_override:
             order.reverse()
-        for kb_ref, origin in order:
+        for kb_ref, origin, role_aware in order:
             if not kb_ref:
                 continue
             found = self._institutions.by_id(kb_ref)
             if found is not None:
+                if not role_aware and verdict.route_id in found.companion_for:
+                    # **동반으로 선언된 제도는 대표가 되지 않는다.**
+                    #
+                    # R2의 그래프 경로가 정부 긴급복지(129)를 가리키는데 그것은
+                    # R2의 동반이다. 대표 자리에 앉으면 `_card_for`가 대표와 같은
+                    # id를 동반에서 빼기 때문에 **선언된 대표인 공단 긴급지원
+                    # (1670-7004)이 카드에서 통째로 사라진다.** 둘 다 보여야 하는
+                    # 자리라고 companion_for 주석이 적어 둔 그 항목이다.
+                    #
+                    # 그래프가 아는 것은 "이 자원을 얻는 방법"이고, 대표·동반
+                    # 역할은 선언이 정한다. 역할까지 그래프가 뒤집게 두지 않는다.
+                    logger.info(
+                        "%s가 가리킨 제도는 이 항목의 동반이다 — 대표는 선언을 따른다"
+                        " (route=%s kb_ref=%s)",
+                        origin,
+                        verdict.route_id.value,
+                        kb_ref,
+                    )
+                    continue
                 return found
             # 가리킨 제도가 KB에 없다. 데이터가 어긋난 것이라 조용히 넘기지 않는다 —
             # 기본 대표로 답하되 무엇이 어긋났는지 남긴다.
@@ -185,6 +216,28 @@ class IntakeUseCase:
                 kb_ref,
             )
         return self._institutions.lead_of(verdict.route_id)
+
+    def _check_each_route_has_a_path(
+        self, node: GraphNode, broken: list[str]
+    ) -> None:
+        """항목을 겸하는 노드에서, 어느 항목이 자기 경로를 못 가지는지 본다.
+
+        경로에 `route_ids`를 안 적으면 노드의 모든 항목에 해당하므로, 그런 경로가
+        하나라도 있으면 전부 덮인 것으로 본다 — 겸하지 않는 노드에 일일이 적게
+        하면 데이터만 늘고 틀릴 자리가 생긴다.
+        """
+        routes = set(node.route_ids)
+        if len(routes) < 2:
+            return
+        if any(not path.route_ids for path in node.obtain):
+            return
+        claimed = {r for path in node.obtain for r in path.route_ids}
+        orphan = sorted(routes - claimed)
+        if orphan:
+            broken.append(
+                f"{node.id}({','.join(sorted(routes))})에 "
+                f"{','.join(orphan)}용 경로가 없다 — 다른 항목의 카드가 대신 나간다"
+            )
 
     def _card_for(self, verdict: IntakeVerdict) -> IntakeCard:
         """항목당 카드 하나. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —

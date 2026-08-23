@@ -54,6 +54,9 @@
               "confidence": "assumed",
               "basis": "V-1: 공단 생활관 입소에 수용증명서로 충분한지 공단 확인 필요 — 갈음 불가 시 순환 해제점이 사라짐(최우선 확인)"
             }
+          ],
+          "route_ids": [
+            "R1"
           ]
         },
         {
@@ -73,6 +76,9 @@
               "confidence": "confirmed",
               "basis": "KB housing-emergency-welfare-housing docs: 신분 확인 서류"
             }
+          ],
+          "route_ids": [
+            "R4"
           ]
         }
       ]

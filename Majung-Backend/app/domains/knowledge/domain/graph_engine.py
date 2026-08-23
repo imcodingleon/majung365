@@ -34,6 +34,12 @@ class Requirement:
 @dataclass(frozen=True)
 class ObtainPath:
     for_state: tuple[str, ...]
+    # 이 경로가 어느 지원 항목의 것인가. **한 노드가 두 항목을 겸할 때만 적는다.**
+    #
+    # "잘 곳"(shelter)이 R1 숙식제공과 R4 주거지원을 함께 달고 있는데, 경로를
+    # 항목으로 가르지 않으면 미충족 개수가 같은 두 경로 중 먼저 선언된 쪽이 뽑혀
+    # **R4가 R1과 똑같은 카드를 냈다.** 비어 있으면 노드의 모든 항목에 해당한다.
+    route_ids: tuple[str, ...]
     action: str
     kb_ref: str
     where: str
@@ -87,10 +93,23 @@ def _candidate_paths(node: GraphNode, state: NodeState) -> tuple[ObtainPath, ...
 
 
 def _select_path(
-    node: GraphNode, state: NodeState, satisfied: set[str]
+    node: GraphNode,
+    state: NodeState,
+    satisfied: set[str],
+    route_id: str | None = None,
 ) -> ObtainPath | None:
-    """for_state에 맞는 경로 중, 지금 시점 기준 미충족 선행조건이 가장 적은 경로를 고른다."""
+    """for_state에 맞는 경로 중, 지금 시점 기준 미충족 선행조건이 가장 적은 경로를 고른다.
+
+    route_id를 주면 **그 항목의 경로만 본다.** 한 노드가 두 항목을 겸할 때
+    항목별로 다른 답이 나와야 하는데, 가르지 않으면 먼저 선언된 경로가 둘 다 이긴다.
+    """
     candidates = _candidate_paths(node, state)
+    if route_id is not None:
+        # 항목을 적지 않은 경로는 노드의 모든 항목에 해당한다 — 겸하지 않는
+        # 노드에 일일이 적게 하면 데이터만 늘고 틀릴 자리가 생긴다.
+        owned = [p for p in candidates if not p.route_ids or route_id in p.route_ids]
+        if owned:
+            candidates = owned
     if not candidates:
         return None
 
@@ -227,7 +246,8 @@ def kb_ref_for_route(
         # 한 항목에 노드가 둘 이상이면 어느 쪽 경로를 따를지 정할 근거가 없다.
         # 조용히 하나를 고르지 않고 기본 대표로 물러난다.
         return None
-    path = _select_path(matched[0], state, satisfied=set())
+    # **반대 방향도 막는다** — 한 노드가 항목 둘을 겸하면 항목으로 경로를 가른다.
+    path = _select_path(matched[0], state, satisfied=set(), route_id=route_id)
     return path.kb_ref if path else None
 
 
