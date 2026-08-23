@@ -18,10 +18,12 @@ type Props = {
 
 type Block = { heading: string; lines: readonly string[] };
 
+// 제목은 동의란의 항목명과 같은 말이어야 한다. 목록에서 누른 것과 열린 화면의 제목이 다르면
+// 다른 문서를 연 것으로 읽힌다.
 const TITLES: Record<ConsentId, string> = {
-  privacy: "개인정보를 모으고 쓰는 일",
-  crime: "어떤 일로 계셨는지 모으고 쓰는 일",
-  share: "공단 담당자에게 알려주는 일",
+  privacy: "개인정보 수집·이용 동의",
+  crime: "민감정보 수집·이용 동의",
+  share: "개인정보 제3자 제공 동의",
 };
 
 // 법령 조문을 그대로 옮겨 붙이지 않는다. 쉬운 말과 큰 글씨가 원칙이다 (§3.4).

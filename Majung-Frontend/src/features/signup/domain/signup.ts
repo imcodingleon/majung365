@@ -12,15 +12,21 @@ import {
 export type { CrimeCategory, CrimeCategoryId };
 export { CRIME_CATEGORIES, needsCrimeConsent };
 
-/** 죄목을 말하지 않아도 되고, 그때 무엇이 달라지는지 문항 아래에 한 줄로 알린다 (§3.3-2). */
-export const CRIME_OPTIONAL_NOTE =
-  "말하지 않으셔도 괜찮아요. 다만 일자리 안내는 조금 덜 자세할 수 있어요.";
 
 export type ConsentId = "privacy" | "crime" | "share";
 
 export type ConsentItem = {
   id: ConsentId;
+  /**
+   * 동의 항목명. **여기만 격식체 명사구다.**
+   *
+   * 나머지 화면은 "쉬운 말·-어요체"를 지키지만 동의란은 법적 효력이 걸린 고지이며,
+   * 사용자가 다른 서비스에서 이미 익힌 형식이 따로 있다. 그 형식을 깨면 오히려
+   * 무엇에 동의하는 것인지 알아보기 어려워진다. 대신 아래 `plain`이 쉬운 말을 맡는다.
+   */
   label: string;
+  /** 같은 내용을 쉬운 말로 한 줄. 항목명만으로는 저리터러시 사용자가 읽어내지 못한다. */
+  plain: string;
   /** 체크해야 진행할 수 있는 항목. */
   required: boolean;
   /** 체크하지 않으면 무엇이 제한되는지 미리 알린다 (§3.4-4). */
@@ -28,13 +34,24 @@ export type ConsentItem = {
 };
 
 export const CONSENT_ITEMS: readonly ConsentItem[] = [
-  { id: "privacy", label: "개인정보를 모으고 쓰는 데 동의해요", required: true },
+  {
+    id: "privacy",
+    label: "개인정보 수집·이용 동의",
+    plain: "이름과 생일 같은 정보를 모으고 쓰는 데 동의해요.",
+    required: true,
+  },
   // 민감정보라 다른 개인정보 동의와 묶어서 한 번에 받지 않는다 (§3.4-1 · §9.5).
   // 죄목을 밝힌 경우에만 나타나고, 나타나면 체크해야 진행할 수 있다 (§3.4-2).
-  { id: "crime", label: "어떤 일로 계셨는지 모으고 쓰는 데 동의해요", required: true },
+  {
+    id: "crime",
+    label: "민감정보 수집·이용 동의",
+    plain: "어떤 일로 계셨는지 모으고 쓰는 데 동의해요.",
+    required: true,
+  },
   {
     id: "share",
-    label: "공단 담당자에게 내 정보를 알려주는 데 동의해요",
+    label: "개인정보 제3자 제공 동의",
+    plain: "공단 담당자에게 내 정보를 알려주는 데 동의해요.",
     required: false,
     limitNote: "동의하지 않으면 담당자에게 방문을 미리 알릴 수 없어요. 나중에 다시 정하실 수 있어요.",
   },
@@ -57,40 +74,27 @@ export function consentSatisfied(crime: CrimeCategoryId | null, state: ConsentSt
     .every((c) => state[c.id]);
 }
 
-/** 생년월일·출소일. 저리터러시 사용자를 전제해 년·월·일을 따로 받는다. */
-export type DateParts = {
-  year: string;
-  month: string;
-  day: string;
-};
-
-export const EMPTY_DATE: DateParts = { year: "", month: "", day: "" };
+// 날짜 값과 검사는 여러 화면이 함께 쓰므로 shared로 올렸다. 가입 화면이 쓰던 이름을 그대로
+// 다시 내보내 부르는 쪽이 바뀌지 않게 한다.
+export { EMPTY_DATE, isValidDate, toIsoDate, type DateParts } from "@/shared/types/date";
 
 /**
- * 입력한 날짜가 실제로 있는 날인지 본다. 형식만 맞고 없는 날(2월 30일 등)이면 거짓이다.
- * 주민등록번호는 받지 않으므로 생일만으로 동명이인을 구분한다 (§3.2).
+ * 개인정보 처리 고지 (§3.5).
+ *
+ * **고지 내용과 실제 처리가 다르면 신뢰 자체가 무너진다.** 그래서 한 문단으로 뭉뚱그리지 않고
+ * 고지가 갖춰야 하는 네 가지(수집 항목·이용 목적·보관 방법·보유 기간)를 항목으로 나눠 낸다.
+ * 저리터러시 사용자에게도 줄글보다 짝지어진 표가 읽힌다.
+ *
+ * 이 자리 역시 동의란과 같은 이유로 격식체다.
  */
-export function isValidDate({ year, month, day }: DateParts): boolean {
-  if (!/^\d{4}$/.test(year) || !/^\d{1,2}$/.test(month) || !/^\d{1,2}$/.test(day)) return false;
-  const y = Number(year);
-  const m = Number(month);
-  const d = Number(day);
-  if (y < 1900 || m < 1 || m > 12 || d < 1) return false;
-  const lastDay = new Date(y, m, 0).getDate();
-  return d <= lastDay;
-}
+export type NoticeRow = { label: string; value: string };
 
-/** 서버로 보낼 형태(YYYY-MM-DD). 유효하지 않으면 null이다. */
-export function toIsoDate(parts: DateParts): string | null {
-  if (!isValidDate(parts)) return null;
-  const m = parts.month.padStart(2, "0");
-  const d = parts.day.padStart(2, "0");
-  return `${parts.year}-${m}-${d}`;
-}
+export const STORAGE_NOTICE_ROWS: readonly NoticeRow[] = [
+  { label: "수집 항목", value: "이름, 생년월일, 출소일, 상황 알아보기 답변" },
+  { label: "이용 목적", value: "맞춤 할 일 안내, 담당 기관 연계" },
+  { label: "보관 방법", value: "암호화 저장" },
+  { label: "보유 기간", value: "마지막 이용일부터 1년" },
+];
 
-/**
- * §3.5에서 교체가 확정된 안내 문구. 고지 내용과 실제 처리가 다르면 신뢰가 무너진다.
- * 한 문장에 한 가지만 담는다는 §3.9-⑦에 따라 세 문장으로 나눴다 (2026-08-23 기획 수정).
- */
-export const STORAGE_NOTICE =
-  "입력하신 정보는 암호화해서 안전하게 보관해요. 할 일 목록을 만들고 담당자와 연결하는 데에만 써요. 언제든지 지우실 수 있어요.";
+/** 표 아래 한 줄. 사용자가 가진 권리를 고지 끝에 둔다. */
+export const STORAGE_NOTICE_RIGHT = "요청하시면 즉시 삭제해 드립니다.";
