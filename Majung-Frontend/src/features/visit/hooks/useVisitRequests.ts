@@ -11,7 +11,12 @@ import type { SharedAnswerInput, VisitResponse } from "@/shared/types";
 import { ApiError, getVisits, postVisit } from "@/shared/utils/api";
 import { loadToken } from "@/shared/utils/tokenStore";
 
-import { blockReason, type LimitReason, type VisitRequest } from "../domain/request";
+import {
+  blockReason,
+  countSentToday,
+  type LimitReason,
+  type VisitRequest,
+} from "../domain/request";
 import { isoLabel, slotToIso } from "../domain/timeSlots";
 
 type Draft = {
@@ -32,10 +37,14 @@ function toRequest(v: VisitResponse): VisitRequest {
     secondChoice: isoLabel(v.preferred_at_2),
     readyDocs: v.prepared_docs,
     note: v.note || undefined,
+    createdAt: v.created_at,
     confirmation:
       v.status === "confirmed"
         ? {
-            whenLabel: isoLabel(v.confirmed_at) || "정해진 시간",
+            // **비워 둔다.** `confirmed_at`은 담당자가 확정을 누른 시각이지 만나기로 한
+            // 시각이 아니다. 그것을 방문 시각으로 내면 새벽에 만나자는 안내가 나간다.
+            // 만날 시각을 담을 자리가 계약에 생기면 그때 채운다.
+            whenLabel: "",
             staffName: v.staff_name,
             place: v.meeting_place,
           }
@@ -47,14 +56,6 @@ function toRequest(v: VisitResponse): VisitRequest {
 
 export function useVisitRequests() {
   const [requests, setRequests] = useState<VisitRequest[]>([]);
-  /**
-   * 오늘 보낸 횟수. 하루 상한을 세는 데 쓴다 (§7.5).
-   *
-   * 지금은 앱을 켜 둔 동안만 세므로 날이 바뀌어도 0으로 돌아가지 않고, 앱을 다시 켜면 0이 된다.
-   * **하루 상한의 실제 판정은 서버가 해야 한다.** 기기에서 세는 값은 우회할 수 있고, 날짜
-   * 경계도 서버 시각으로 봐야 정확하다. 여기 값은 보내기 전에 미리 알려주는 용도다.
-   */
-  const [todaySent, setTodaySent] = useState(0);
   /** 지금 폼이 열려 있는 할 일. 닫혀 있으면 null. */
   const [formTaskId, setFormTaskId] = useState<string | null>(null);
   /** 상한에 걸려 막힌 이유. 막되 이유와 기존 요청을 함께 보여준다. */
@@ -84,7 +85,7 @@ export function useVisitRequests() {
 
   const openForm = useCallback(
     (taskId: string) => {
-      const reason = blockReason(taskId, todaySent, requests);
+      const reason = blockReason(taskId, countSentToday(requests), requests);
       if (reason) {
         setBlocked(reason);
         return;
@@ -92,7 +93,7 @@ export function useVisitRequests() {
       setBlocked(null);
       setFormTaskId(taskId);
     },
-    [requests, todaySent],
+    [requests],
   );
 
   const closeForm = useCallback(() => setFormTaskId(null), []);
@@ -128,8 +129,9 @@ export function useVisitRequests() {
             ? { shared_answers: [...draft.sharedAnswers], share_consented: true }
             : {}),
         });
-        setRequests((prev) => [...prev, toRequest(created)]);
-        setTodaySent((n) => n + 1);
+        // **앞에 붙인다.** 서버가 최신순으로 주고 `requestFor`가 처음 맞는 것을 쓰므로,
+        // 뒤에 붙이면 같은 할 일의 옛 요청(취소된 것 따위)이 대신 보인다.
+        setRequests((prev) => [toRequest(created), ...prev]);
         setFormTaskId(null);
       } catch (err) {
         // **상한에 걸린 것도 여기로 온다.** 서버가 이유를 문구로 주므로 그대로 낸다 (§7.5).
@@ -141,6 +143,7 @@ export function useVisitRequests() {
     [formTaskId],
   );
 
+  /** 그 할 일의 가장 최근 요청. **서버가 최신순으로 주므로 처음 맞는 것이 최신이다.** */
   const requestFor = useCallback(
     (taskId: string) => requests.find((r) => r.taskId === taskId) ?? null,
     [requests],

@@ -53,7 +53,15 @@ export interface VisitResponse {
    */
   staff_name: string;
   meeting_place: string;
+  /**
+   * **담당자가 확정을 누른 시각이다. 만나기로 한 시각이 아니다.**
+   *
+   * 이것을 방문 시각으로 쓰면 새벽에 만나자는 안내가 나간다. 만나기로 한 시각을 담을
+   * 자리는 아직 계약에 없다 — 그때까지 확정 문구에서 시각을 빼고 만날 사람과 장소만 낸다.
+   */
   confirmed_at: string | null;
+  /** 보낸 시각. 하루 상한을 미리 알려주는 데 쓴다 (§7.5). */
+  created_at: string | null;
   /** 담당자가 다른 시간을 제안했을 때. */
   proposed_at: string | null;
   cancel_reason: string;

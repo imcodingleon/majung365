@@ -36,6 +36,8 @@ export type VisitRequest = {
   proposedTime?: string;
   /** 취소된 이유. 사용자에게 그대로 보여준다. */
   cancelReason?: string;
+  /** 보낸 시각(ISO). 하루 상한을 미리 알려주는 데 쓴다. 서버가 주지 않으면 없다. */
+  createdAt?: string | null;
 };
 
 /** 각 상태에서 사용자가 보는 문장 (§7.1). */
@@ -89,6 +91,25 @@ export type LimitReason = "daily" | "pending" | "duplicate";
  * 지금 새 요청을 보낼 수 있는지. 막는 이유가 있으면 그 이유를 돌려준다.
  * 진짜 위험은 담당자가 못 받는 것이 아니라 급한 사람의 진짜 요청이 목록 아래로 밀리는 것이다.
  */
+/**
+ * 오늘 보낸 건수. **보낸 시각을 모르는 요청은 세지 않는다.**
+ *
+ * 세면 어제 것까지 오늘로 계산되어 멀쩡한 요청이 막힌다. 덜 세는 쪽이 안전한 이유는
+ * 판정을 서버가 다시 하기 때문이다 — 화면의 셈은 미리 알려주는 용도다.
+ */
+export function countSentToday(requests: readonly VisitRequest[], now: Date = new Date()): number {
+  const sameDay = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return false;
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  };
+  return requests.filter((r) => r.createdAt && sameDay(r.createdAt)).length;
+}
+
 export function blockReason(
   taskId: string,
   todaySentCount: number,
