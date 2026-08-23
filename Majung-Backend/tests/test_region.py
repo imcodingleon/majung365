@@ -94,3 +94,45 @@ def test_district_offices_take_official_names_too() -> None:
     repo = JsonDistrictOfficeRepository()
     assert repo.by_sigungu("송파구", "서울특별시"), "정식 명칭으로 못 찾는다"
     assert repo.by_sigungu("해운대구", "부산광역시")
+
+
+# ── 붙여 쓴 행정구 (기기의 경계 데이터가 주는 형식) ──
+
+
+def test_compound_city_names_get_a_space() -> None:
+    """**띄어쓰기 하나로 조회가 통째로 빈다.**
+
+    기기의 경계 데이터는 "수원시장안구"로 주는데 우리 데이터는 "수원시 장안구"다.
+    그대로 두면 0건이 나오고, 오류가 아니라 결과가 비는 형태라 화면에서는
+    "그 지역에 없나 보다"로 읽힌다.
+    """
+    assert normalize_district("수원시장안구") == "수원시 장안구"
+    assert normalize_district("성남시분당구") == "성남시 분당구"
+    assert normalize_district("창원시마산합포구") == "창원시 마산합포구"
+
+
+def test_plain_districts_are_untouched() -> None:
+    """행정구가 없는 시군구는 그대로 둔다."""
+    assert normalize_district("송파구") == "송파구"
+    assert normalize_district("해운대구") == "해운대구"
+    assert normalize_district("수원시") == "수원시"
+    assert normalize_district("강릉시") == "강릉시"
+    # 이미 띄어 쓴 것은 건드리지 않는다.
+    assert normalize_district("수원시 장안구") == "수원시 장안구"
+
+
+def test_compound_form_finds_offices() -> None:
+    """붙여 쓴 표기로도 그 구의 주민센터가 나온다."""
+    repo = JsonDistrictOfficeRepository()
+    assert repo.by_sigungu("수원시장안구", "경기도"), "붙여 쓰면 0건이 된다"
+    assert repo.by_sigungu("성남시분당구", "경기도")
+
+
+def test_compound_form_narrows_institutions() -> None:
+    """같은 시의 여러 센터 중 그 구의 것이 앞에 온다."""
+    repo = JsonSupportInstitutionRepository()
+    kinds = institution_kinds_for(RouteId.R8)
+    jangan = repo.find(kinds, "경기도", "수원시장안구", limit=1)
+    yeongtong = repo.find(kinds, "경기도", "수원시영통구", limit=1)
+    assert "장안구" in jangan[0].address
+    assert "영통구" in yeongtong[0].address

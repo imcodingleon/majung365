@@ -53,13 +53,29 @@ def normalize_sido(raw: str | None) -> str:
     return _SIDO_ALIASES.get(name, name)
 
 
+# 행정구를 품은 시. 경계 데이터가 "수원시장안구"처럼 붙여 주는데 우리 데이터는
+# "수원시 장안구"로 띄어 쓴다. **띄어쓰기 하나로 조회가 통째로 빈다.**
+_COMPOUND_CITY_TAIL = ("구",)
+
+
 def normalize_district(raw: str | None) -> str:
-    """시군구 이름. 앞뒤 공백만 정리한다.
+    """시군구 이름. 붙여 쓴 행정구를 띄운다.
 
     **자르지 않는다.** "수원시 장안구"를 "수원시"로 줄이면 그 반대 방향
     (데이터가 장안구인데 요청이 수원시)을 놓친다. 겹치는지는 부르는 쪽이 본다.
+
+    다만 **띄어쓰기는 맞춘다.** 기기의 경계 데이터가 "수원시장안구"로 주는데
+    우리 데이터는 "수원시 장안구"다. 그대로 두면 0건이 나오고, 오류가 아니라
+    결과가 비는 형태라 화면에서는 "그 지역에 없나 보다"로 읽힌다.
     """
-    return (raw or "").strip()
+    name = (raw or "").strip()
+    if " " in name or not name.endswith(_COMPOUND_CITY_TAIL):
+        return name
+    # "수원시장안구" → "수원시 장안구". 시·군 뒤에서 한 번만 끊는다.
+    for i, ch in enumerate(name[:-1]):
+        if ch in "시군" and i + 1 < len(name):
+            return f"{name[: i + 1]} {name[i + 1 :]}"
+    return name
 
 
 def district_matches(data_district: str, asked: str) -> bool:
