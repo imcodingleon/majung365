@@ -94,31 +94,41 @@ export function SignupScreen({
 
   // 위치 동의를 켜면 그 자리에서 기기 위치를 묻는다. 나중에 따로 물으면 사용자는
   // 자기가 무엇에 동의했는지와 지금 뜬 팝업을 잇지 못한다.
+  // 아래 둘도 `form` 전체가 아니라 쓰는 것만 의존성에 넣는다. 훅이 매 렌더마다
+  // 새 객체를 돌려주므로 `form`을 넣으면 콜백이 매번 새로 만들어진다.
+  const { toggleConsent: setConsent, toggleAllConsent: setAllConsent } = form;
+  const locationOn = form.consent.location;
+  const locate = lookup.locate;
+
   const toggleConsent = useCallback(
     (id: ConsentId) => {
-      if (id === "location" && !form.consent.location) {
-        void lookup.locate();
-      }
-      form.toggleConsent(id);
+      if (id === "location" && !locationOn) void locate();
+      setConsent(id);
     },
-    [form, lookup],
+    [locationOn, locate, setConsent],
   );
 
   const toggleAllConsent = useCallback(
     (next: boolean) => {
-      if (next && !form.consent.location) void lookup.locate();
-      form.toggleAllConsent(next);
+      if (next && !locationOn) void locate();
+      setAllConsent(next);
     },
-    [form, lookup],
+    [locationOn, locate, setAllConsent],
   );
 
   // **기기가 거부하면 체크도 푼다.** 켜져 있는데 위치가 안 잡히는 상태로 두면
   // 사용자는 나중에 왜 근처 기관이 안 나오는지 알 길이 없다.
+  //
+  // **의존성에 `form`을 넣지 않는다.** 훅이 매 렌더마다 새 객체를 돌려주므로
+  // 넣으면 효과가 끝없이 다시 돌고 화면이 멈춘다(실제로 "Maximum update depth
+  // exceeded"가 났다). 여기서 쓰는 것은 `clearLocationConsent` 하나뿐이고
+  // 그것은 useCallback으로 고정되어 있다.
+  const clearLocationConsent = form.clearLocationConsent;
   useEffect(() => {
     if (lookup.state.status === "denied" || lookup.state.status === "failed") {
-      form.clearLocationConsent();
+      clearLocationConsent();
     }
-  }, [lookup.state.status, form]);
+  }, [lookup.state.status, clearLocationConsent]);
 
   const located = lookup.state.status === "resolved" ? lookup.state.place : null;
   const locationNote =
