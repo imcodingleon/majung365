@@ -20,6 +20,8 @@
 | 게이트 | 비활성(Mock이라 지출 리스크 없음). 실키 전환 시 반드시 활성화 |
 | IAM 인스턴스 롤 | 없음(훔칠 자격증명 0) / IMDSv2 강제 / EBS 암호화 |
 | Frontend | Vercel `majung365.vercel.app` (Root Directory=Majung-Frontend) |
+| DB | **Supabase** `jaqcgcysacajbjitdrnx` (서울). 모든 테이블 RLS 켜고 정책 없음 = 백엔드 service_role만 접근 |
+| 실시간 | **Socket.IO** — Caddy `reverse_proxy`가 업그레이드를 자동 통과시킨다. 설정 추가 없음 |
 
 ## 보안 설계 (요금 폭탄 방어)
 
@@ -49,11 +51,64 @@ ssh -i ../majung_backend.pem ec2-user@3.34.251.223 \
   'cd ~/majung-backend && tar xzf /tmp/mb.tar.gz && ~/.local/bin/uv sync --python 3.12 && sudo systemctl restart majung-backend'
 ```
 
+## 본선 환경변수 (저장 기능)
+
+**셋이 모두 있어야 저장이 켜진다.** 하나라도 없으면 가입·방문 요청·채팅이 503이다.
+
+```
+SUPABASE_URL=https://<project>.supabase.co
+SUPABASE_SERVICE_KEY=<service_role JWT>
+FIELD_ENCRYPTION_KEY=<base64 32바이트>
+```
+
+- `SUPABASE_SERVICE_KEY`는 **RLS를 무시하는 키다.** 서버에만 두고 클라이언트 번들에 넣지 않는다.
+- `FIELD_ENCRYPTION_KEY`가 없으면 **부팅이 멈춘다.** 평문으로 저장하는 폴백은 두지 않는다(§9.2).
+  키가 바뀌면 이미 저장된 이름·생일·출소날짜·대화를 읽지 못한다. 회전하려면 재암호화가 필요하다.
+
+스키마는 `migrations/*.sql`에 있고 Supabase에 이미 적용되어 있다. 새 마이그레이션을 만들면
+Supabase 콘솔이나 MCP로 적용한 뒤 파일로 남긴다.
+
 ## 실 Claude 키로 전환 (본선/유료)
 
 1. EC2 `.env`에 `ANTHROPIC_API_KEY=sk-ant-...` 추가 + `USE_MOCK_LLM=false`
-2. **게이트 활성 필수**: `DEMO_ACCESS_CODE_HASH` 설정(+ 프론트 게이트 입력 UI) → 무방비 노출 방지
-3. `sudo systemctl restart majung-backend`
+2. `sudo systemctl restart majung-backend`
+
+**게이트를 켜지 않는다.** 기획서 §2.3에서 진입 게이트(코드 입력)를 폐지했다. 남용 방어는
+게이트 대신 셋으로 나눠 맡는다.
+
+| 위험 | 방어 | 상태 |
+|---|---|---|
+| LLM 호출 비용 남용 | 지출 서킷브레이커(시간·일 상한) | 구현됨 |
+| 대량 요청 | IP 기준 rate limit | 구현됨 |
+| 허위 방문 알림 | 하루 3건·미확정 5건 상한 + 담당자 승인 | 구현됨 (§7.5) |
+
+**게이트 코드는 지우지 않았다.** `DEMO_ACCESS_CODE_HASH`가 비면 자동으로 꺼지는 구조라,
+남용이 실제로 문제가 되면 환경변수 하나로 되살릴 수 있다.
+
+## 담당자 계정 (§8.2)
+
+해커톤 단계에서는 **우리가 발급한다.** 발급 API를 열지 않고 마이그레이션으로 넣는다 —
+스스로 가입하는 길을 만들면 그게 곧 구멍이 된다. 관리자 앱은 정의상 출소자 명단을 만든다.
+
+시연 계정 둘이 `migrations/0003_staff_account.sql`에 있다(공단·주민센터, 경기지부).
+비밀번호는 scrypt 해시로만 저장되며 원문은 이 문서에 적지 않는다.
+
+**세션은 8시간이다.** 출소자(90일)와 다른 기준이며 담당자 기기가 공용일 가능성을 전제한다.
+
+## 배포 후 확인
+
+```bash
+curl https://3-34-251-223.sslip.io/api/health              # {"status":"ok"}
+curl "https://3-34-251-223.sslip.io/socket.io/?EIO=4&transport=polling"
+# 0{"sid":"...","upgrades":["websocket"],...} 가 나와야 한다
+```
+
+부팅 로그에 아래가 보이면 저장이 켜진 것이다.
+
+```
+sudo journalctl -u majung-backend -n 50 | grep 💾
+# 💾 저장 기능 켜짐 — 가입 정보는 암호화해 저장한다
+```
 
 ## 완전 삭제 (teardown, 비용 정지)
 
