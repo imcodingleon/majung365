@@ -48,6 +48,13 @@ type Props = {
    * 갈 곳은 남는다.
    */
   onOpenNearby?: () => void;
+  /**
+   * 내 정보 열람·수정·삭제 화면을 연다 (§2.5·§9.4).
+   *
+   * **저장하는 이상 지울 길이 있어야 한다.** 기획서가 "만들지 않을 수 없다"고 적어둔
+   * 화면이고 법적 요구사항이기도 한데, 들어갈 문이 없으면 없는 것과 같다.
+   */
+  onOpenMyInfo?: () => void;
   /** 처음 받은 할 일 개수. 진행 표시의 분모다. */
   total?: number;
 };
@@ -95,6 +102,7 @@ export function TodayScreen({
   hideNotifyFor,
   renderNearby,
   onOpenNearby,
+  onOpenMyInfo,
   total,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
@@ -179,6 +187,19 @@ export function TodayScreen({
           >
             <Text className="text-body-lg">📍</Text>
             <Text className="text-body-lg font-bold text-ink-sub">우리 동네 기관 찾아보기</Text>
+          </Pressable>
+        ) : null}
+
+        {/* **맨 아래에 작게 둔다.** 자주 쓰는 자리가 아니고, 할 일보다 앞에 오면
+            무엇을 하러 온 화면인지가 흐려진다. 다만 찾을 수는 있어야 한다 */}
+        {onOpenMyInfo ? (
+          <Pressable
+            onPress={onOpenMyInfo}
+            accessibilityRole="button"
+            accessibilityLabel="내 정보 보기. 적어주신 정보를 보고 지울 수 있어요"
+            className="mt-3 items-center py-3 active:opacity-60"
+          >
+            <Text className="text-caption font-bold text-ink-muted underline">내 정보 보기</Text>
           </Pressable>
         ) : null}
 

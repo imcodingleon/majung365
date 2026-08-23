@@ -75,6 +75,7 @@ export default function TodayRoute() {
         onToggle={toggle}
         onComplete={complete}
         onOpenNearby={() => router.push("/nearby")}
+        onOpenMyInfo={() => router.push("/my-info")}
         renderNearby={(taskId) =>
           taskId === shownId && !nearby.loading ? (
             <NearbyPlaces
@@ -106,6 +107,9 @@ export default function TodayRoute() {
               request={request}
               onOpenStaffChat={() => chat.open(taskId)}
               onCancel={() => void visit.cancel(request.id)}
+              // 취소된 요청을 다시 보낸다. 폼을 다시 열어 시간부터 고르게 한다 —
+              // 같은 시간으로 자동 재전송하면 그때가 안 되어 취소한 경우 되풀이된다.
+              onResend={() => visit.openForm(taskId)}
             />
           );
         }}
