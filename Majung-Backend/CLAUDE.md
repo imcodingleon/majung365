@@ -74,7 +74,7 @@ app/
 - **분류 단위는 지원 항목(route)이다.** 폐기된 6영역(`Area`) 대신 `RouteId`(R1~R4·R6~R15)와 `SectionId`(S1~S6, 초기 진단 6분야)를 쓴다. `app/domains/shared/routes.py`가 표준 정의다
   - **R5(가족지원)는 결번이다.** 번호를 다시 매기지 않는다 — 기획서의 모든 참조가 어긋난다
   - KB는 `route_ids` 배열로 항목에 붙는다(한 제도가 여러 항목의 근거일 수 있다). `lead_for`가 항목별 대표 제도를 정하고, 카드는 대표 1개가 나간다. 로더가 부팅 시 검증한다
-- **정본 계약**: `../_bmad-output/specs/spec-majung-2nd/` — intake-contract.md(용어·6분야↔지원 항목), intake-questions.md(문항 세트), route-contacts.md(항목별 연락처), graph-design.md(그래프 데이터 설계). 제품 결정의 정본은 레포 밖의 `majung365_리뉴얼_개발플로_기획안_v2.md`다
+- **정본 계약**: `../_bmad-output/specs/spec-majung-2nd/` — intake-contract.md(용어·6분야↔지원 항목), intake-questions.md(문항 세트), route-contacts.md(항목별 연락처), graph-design.md(그래프 데이터 설계). 제품 결정의 정본은 같은 폴더의 `majung365_리뉴얼_개발플로_기획안_v2.md`다
   **예선 계약(`spec-majung-demo/`)은 이력이다.** 같은 사안에서 충돌하면 본선 결정을 따른다
 - **안내 응답 형식**: 제도명 명시 + 어디서·무슨 서류·다음 단계. 한 문장 = 한 지시. **화면에 나가는 문구의 어체는 `humanize-korean` 스킬로 점검해 확정한다**
 - **KB 밖 환각 금지**: 제도 안내는 `knowledge/data/` 내 항목만 인용

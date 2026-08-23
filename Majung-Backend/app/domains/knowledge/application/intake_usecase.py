@@ -11,6 +11,7 @@
 """
 
 import logging
+from dataclasses import replace
 
 from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
@@ -21,6 +22,11 @@ from app.domains.knowledge.domain.graph_engine import (
     kb_ref_for_route,
 )
 from app.domains.knowledge.domain.intake import IntakeRule, IntakeVerdict, judge
+from app.domains.knowledge.domain.purpose import (
+    docs_with_purpose,
+    expense_purpose,
+    say_with_purpose,
+)
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import (
@@ -125,7 +131,13 @@ class IntakeUseCase:
         **저장하는 것은 이 결과뿐이다** (§9.1). 답변 원문을 서버에 남기지 않으면서도
         나중에 같은 할 일 목록을 다시 만들 수 있게 하는 것이 이 판정이다.
         """
-        return judge(answers, self._rules, self._blocking_routes)
+        verdicts = judge(answers, self._rules, self._blocking_routes)
+        # 고른 용도를 판정에 얹는다. 답변은 저장하지 않으므로(0008) 여기서
+        # 담아 두지 않으면 세션 복원 뒤에 문구가 조용히 달라진다.
+        return tuple(
+            replace(v, purpose=expense_purpose(v.route_id, answers) or "")
+            for v in verdicts
+        )
 
     def run(
         self,
@@ -160,16 +172,18 @@ class IntakeUseCase:
             if v.route_id not in completed
         )
 
-    def _to_option(self, inst: Institution) -> IntakeCardOption:
+    def _to_option(
+        self, inst: Institution, purpose: str | None = None
+    ) -> IntakeCardOption:
         desk = desk_of(inst)
         contact = contact_of(inst)
         return IntakeCardOption(
             org=inst.name,
             where=inst.where,
             next_step=inst.next_step,
-            docs=inst.docs,
+            docs=docs_with_purpose(inst.docs, purpose),
             desk_place=desk.place if desk else "",
-            desk_say=desk.say if desk else "",
+            desk_say=say_with_purpose(desk.say, purpose) if desk else "",
             contact_org=contact.org,
             contact_phone=contact.phone,
             contact_hours=contact.hours,
@@ -263,6 +277,9 @@ class IntakeUseCase:
         카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다."""
         route = verdict.route_id
         lead = self._lead_for(verdict)
+        # **용도는 판정에서 꺼낸다.** 답변에서 뽑은 파생 문구라 판정과 함께
+        # 저장되고, 세션을 복원해도 준비물 문구가 일반형으로 돌아가지 않는다.
+        purpose = verdict.purpose or None
         # 대표가 동반 목록에 다시 들어가면 같은 곳이 두 번 보인다.
         companions = [
             i for i in self._institutions.companions_of(route) if i.id != lead.id
@@ -272,7 +289,7 @@ class IntakeUseCase:
             institution_id=lead.id,
             name=lead.name,
             summary_easy=lead.summary_easy,
-            docs=lead.docs,
+            docs=docs_with_purpose(lead.docs, purpose),
             deadline=lead.deadline,
             source_url=lead.source_url,
             benefit_summary=lead.benefit_summary,
@@ -281,7 +298,5 @@ class IntakeUseCase:
             cautions=lead.cautions,
             source_urls=lead.source_urls,
             verified_note=verified_note(lead.verified_at),
-            options=tuple(
-                self._to_option(i) for i in paths
-            ),
+            options=tuple(self._to_option(i, purpose) for i in paths),
         )

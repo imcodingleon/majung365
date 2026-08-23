@@ -72,9 +72,9 @@ def test_resolved_option_drops_the_task() -> None:
 
 def test_multi_select_needs_all_resolved() -> None:
     """복수선택은 하나라도 미해결이 남으면 아직 할 일이다."""
-    rules = (IntakeRule(RouteId.R4, "housingConditionIds", frozenset({"NONE"})),)
-    assert judge({"housingConditionIds": ["NONE"]}, rules) == ()
-    assert len(judge({"housingConditionIds": ["NONE", "HAS_DEPENDENT_FAMILY"]}, rules)) == 1
+    rules = (IntakeRule(RouteId.R7, "startupReadinessIds", frozenset({"UNKNOWN"})),)
+    assert judge({"startupReadinessIds": ["UNKNOWN"]}, rules) == ()
+    assert len(judge({"startupReadinessIds": ["UNKNOWN", "STARTUP_TRAINING"]}, rules)) == 1
 
 
 def test_empty_resolved_options_keeps_task() -> None:

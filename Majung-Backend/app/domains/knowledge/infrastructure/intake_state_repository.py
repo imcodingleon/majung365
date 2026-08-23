@@ -34,6 +34,7 @@ def _to_json(verdicts: tuple[IntakeVerdict, ...]) -> str:
                 "section_id": v.section_id.value,
                 "blocks_others": v.blocks_others,
                 "state": v.state.value,
+                "purpose": v.purpose,
                 "lead_override": v.lead_override,
                 "override_is_specific": v.override_is_specific,
             }
@@ -58,6 +59,8 @@ def _from_json(raw: str) -> tuple[IntakeVerdict, ...]:
                     section_id=SectionId(item["section_id"]),
                     blocks_others=bool(item["blocks_others"]),
                     state=NodeState(item.get("state", NodeState.X.value)),
+                    # 옛 행에는 없다 — 없으면 용도 없이 연다.
+                    purpose=str(item.get("purpose", "")),
                     lead_override=str(item.get("lead_override", "")),
                     override_is_specific=bool(item.get("override_is_specific", False)),
                 )
