@@ -34,10 +34,7 @@ from app.domains.chat.infrastructure.message_repository import (
 from app.domains.knowledge.adapter.inbound.api.router import router as onboarding_router
 from app.domains.knowledge.application.intake_usecase import IntakeUseCase
 from app.domains.knowledge.application.usecase import AnalyzeUseCase
-from app.domains.knowledge.domain.graph_engine import (
-    referenced_kb_refs,
-    routes_blocking_others,
-)
+from app.domains.knowledge.domain.graph_engine import routes_blocking_others
 from app.domains.knowledge.infrastructure.graph_repository import JsonGraphRepository
 from app.domains.knowledge.infrastructure.intake_rules_repository import (
     JsonIntakeRuleRepository,
@@ -148,7 +145,7 @@ def create_app() -> FastAPI:
     )
     # KB에 있으나 어떤 화면에도 닿지 않는 제도를 부팅 때 알린다.
     # 지원 항목에 걸어 두면 쓰인다고 믿기 쉬운데, 확인하지 않으면 알 길이 없다.
-    unreachable = institutions.unreachable(referenced_kb_refs(graph_nodes))
+    unreachable = institutions.unreachable(app.state.intake_usecase.reachable_kb_refs())
     if unreachable:
         logger.warning(
             "📕 어느 화면에도 나가지 않는 제도 %d건: %s",

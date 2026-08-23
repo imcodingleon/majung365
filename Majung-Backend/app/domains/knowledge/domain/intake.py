@@ -48,6 +48,13 @@ class IntakeRule:
     # **그래프가 답할 수 있는 갈림은 여기 적지 않는다.** 같은 사실이 두 군데 적히면
     # 언젠가 한쪽만 고치는 날이 온다. 겹치면 그래프가 이긴다(§4.1).
     lead_by_option: Mapping[str, str] = field(default_factory=dict)
+    # lead_by_option이 볼 문항. 비면 data_key의 답을 본다.
+    #
+    # **꼬리질문의 답으로 갈려야 하는 자리가 있다.** 통장이 막힌 사유(Q3-2-1)가
+    # 압류인지 한도제한인지 은행 자체 제한인지는 필수 문항이 아니라 꼬리질문이
+    # 묻는다. 그런데 셋의 답이 전혀 다르다 — **압류는 은행이 풀어줄 수 없다.**
+    # 필수 문항의 답만 보면 셋이 한 덩어리가 되어 틀린 안내가 나간다.
+    lead_data_key: str = ""
 
 
 @dataclass(frozen=True)
@@ -62,8 +69,14 @@ class IntakeVerdict:
     # 사용자가 지금 어떤 상태인가. **그래프가 경로를 고르는 입력이다.**
     # 답이 왔는데 해결도 막힘도 아니면 아직 없는 것(X)으로 본다.
     state: NodeState = NodeState.X
-    # 규칙표가 답변을 보고 지정한 제도. 그래프가 답하지 못하는 갈림에만 채워진다.
+    # 규칙표가 답변을 보고 지정한 제도. 그래프가 답하지 못하는 갈림에 채워진다.
     lead_override: str = ""
+    # 그 지정이 꼬리질문까지 보고 내린 것인가.
+    #
+    # **꼬리질문을 본 판정은 그래프를 이긴다.** 그래프는 보유 상태 넷만 알아서
+    # "막혔다"까지밖에 말하지 못하는데, 꼬리질문은 왜 막혔는지를 안다. 압류와
+    # 은행 자체 제한은 할 일이 정반대라, 덜 아는 쪽이 이기면 틀린 안내가 나간다.
+    override_is_specific: bool = False
 
 
 def _matches(answer: object, options: frozenset[str]) -> bool:
@@ -92,10 +105,17 @@ def _state_of(answer: object, rule: IntakeRule) -> NodeState:
     return NodeState.X
 
 
-def _lead_override(answer: object, rule: IntakeRule) -> str:
+def _lead_override(answers: dict[str, object], rule: IntakeRule) -> str:
     """답변이 제도를 직접 가리키는 경우. **복수선택에는 쓰지 않는다** —
-    둘을 고르면 어느 쪽 제도인지 정할 근거가 없고, 조용히 하나를 고르면 안 된다."""
-    if not rule.lead_by_option or not isinstance(answer, str):
+    둘을 고르면 어느 쪽 제도인지 정할 근거가 없고, 조용히 하나를 고르면 안 된다.
+
+    꼬리질문을 보는 규칙은 그 답이 오지 않았을 수 있다(§3.8). 화면에 안 보였거나
+    사용자가 답을 바꿔 닫혔다는 뜻이므로, 없으면 기본 대표로 둔다.
+    """
+    if not rule.lead_by_option:
+        return ""
+    answer = answers.get(rule.lead_data_key or rule.data_key)
+    if not isinstance(answer, str):
         return ""
     return rule.lead_by_option.get(answer, "")
 
@@ -127,7 +147,8 @@ def judge(
                 section_id=section_of(rule.route_id),
                 blocks_others=rule.route_id.value in blocking_routes,
                 state=state,
-                lead_override=_lead_override(answers[rule.data_key], rule),
+                lead_override=_lead_override(answers, rule),
+                override_is_specific=bool(rule.lead_data_key),
             )
         )
 

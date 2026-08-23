@@ -15,7 +15,11 @@ import logging
 from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
-from app.domains.knowledge.domain.graph_engine import GraphNode, kb_ref_for_route
+from app.domains.knowledge.domain.graph_engine import (
+    GraphNode,
+    NodeState,
+    kb_ref_for_route,
+)
 from app.domains.knowledge.domain.intake import IntakeRule, IntakeVerdict, judge
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.sources import verified_note
@@ -43,6 +47,44 @@ class IntakeUseCase:
         # 상태별로 대표가 갈리는 항목은 그래프가 정한다(기획서 §4.1).
         # 없으면 항목의 기본 대표를 쓴다 — 갈림이 없는 항목이 대부분이다.
         self._nodes = graph_nodes or {}
+        self._validate_overrides()
+
+    def _validate_overrides(self) -> None:
+        """규칙표가 가리키는 제도가 KB에 있는지 부팅 때 확인한다.
+
+        **배포 뒤에 알면 늦다.** 없는 id를 가리키면 그 답을 고른 사람에게만 기본
+        대표가 나가고, 아무도 그 화면을 보지 않으면 어긋난 채로 남는다.
+
+        옵션 id 자체가 문항 정의와 맞는지는 여기서 확인할 수 없다 — 문항 정의는
+        프론트가 들고 있고 서버에는 없다. 그쪽은 계약 문서로 맞춰야 한다.
+        """
+        broken = [
+            f"{rule.route_id.value}.{option}→{kb_ref}"
+            for rule in self._rules
+            for option, kb_ref in rule.lead_by_option.items()
+            if self._institutions.by_id(kb_ref) is None
+        ]
+        if broken:
+            raise ValueError(f"규칙표가 KB에 없는 제도를 가리킨다: {broken}")
+
+    def reachable_kb_refs(self) -> frozenset[str]:
+        """초기 진단 화면에 실제로 나갈 수 있는 제도들.
+
+        **"그래프 어딘가가 가리킨다"와 "화면에 도달한다"는 다르다.** `debt-legal-aid`가
+        그 예였다 — 그래프의 `legal_aid` 노드가 가리키지만 R14에 노드가 둘이라
+        `kb_ref_for_route`가 물러나고, 결국 화면에는 기본 대표만 나갔다.
+
+        그래서 가리키는 곳을 세지 않고 **상태 넷을 실제로 돌려 본다.** 넷뿐이라
+        전부 시도해도 부담이 없고, 판정 경로를 그대로 지나므로 결과가 정확하다.
+        """
+        found: set[str] = set()
+        for rule in self._rules:
+            for state in NodeState:
+                ref = kb_ref_for_route(self._nodes, rule.route_id.value, state)
+                if ref:
+                    found.add(ref)
+            found.update(rule.lead_by_option.values())
+        return frozenset(found)
 
     def run(
         self,
@@ -89,10 +131,16 @@ class IntakeUseCase:
         그래프에 답이 없으면(노드가 없거나 갈림이 없으면) 규칙표가 답변별로 지정한
         제도를 본다. 진행 단계처럼 4값에 담기지 않는 갈림이 그 자리다. 둘 다 없으면
         항목의 기본 대표를 쓴다.
+
+        **순서는 아는 것이 많은 쪽이 먼저다.** 규칙표가 꼬리질문까지 보고 내린
+        판정은 그래프를 앞선다 — 그래프는 "막혔다"까지만 알고 왜 막혔는지는
+        꼬리질문만 안다. 그 밖에는 그래프가 먼저다.
         """
         graph_ref = kb_ref_for_route(self._nodes, verdict.route_id.value, verdict.state)
-        # **그래프가 먼저다**(§4.1). 겹치는 항목이 생겨도 조용히 갈리지 않게 한다.
-        for kb_ref, origin in ((graph_ref, "그래프"), (verdict.lead_override, "규칙표")):
+        order = [(graph_ref, "그래프"), (verdict.lead_override, "규칙표")]
+        if verdict.override_is_specific and verdict.lead_override:
+            order.reverse()
+        for kb_ref, origin in order:
             if not kb_ref:
                 continue
             found = self._institutions.by_id(kb_ref)

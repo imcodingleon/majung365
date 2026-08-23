@@ -236,18 +236,75 @@ def test_multiple_choice_never_picks_a_card() -> None:
     assert tasks[0].card.institution_id == "debt-credit-recovery"
 
 
-def test_unknown_card_id_falls_back_and_warns(
-    caplog: pytest.LogCaptureFixture,
-) -> None:
-    """규칙표가 KB에 없는 제도를 가리키면 기본 대표로 답하되 조용히 넘기지 않는다."""
+def test_unknown_card_id_is_caught_at_boot() -> None:
+    """**배포 뒤에 알면 늦다.**
+
+    없는 제도를 가리키면 그 답을 고른 사람에게만 기본 대표가 나가고, 아무도 그
+    화면을 보지 않으면 어긋난 채로 남는다. 부팅에서 멈춘다.
+    """
+    with pytest.raises(ValueError, match="KB에 없는 제도"):
+        _usecase_with_rules(
+            IntakeRule(
+                route_id=RouteId.R14,
+                data_key="debtProcedureStage",
+                lead_by_option={"COURT_PROCESS": "없는-제도"},
+            )
+        )
+
+
+# ── 꼬리질문의 답으로 갈린다 (기획서 §23-1) ──
+
+
+def test_tail_question_answer_picks_the_card() -> None:
+    """**압류는 은행이 풀어줄 수 없다.**
+
+    통장이 막힌 사유 셋(압류·한도제한·은행 자체 제한)은 필수 문항이 아니라
+    꼬리질문(Q3-2-1)이 묻는다. 필수 문항의 답만 보면 셋이 한 덩어리가 되어
+    압류인 사람에게도 "은행에 가면 된다"는 틀린 안내가 나간다.
+    """
     usecase = _usecase_with_rules(
         IntakeRule(
-            route_id=RouteId.R14,
-            data_key="debtProcedureStage",
-            lead_by_option={"COURT_PROCESS": "없는-제도"},
+            route_id=RouteId.R10,
+            data_key="bankAccountStatus",
+            blocked_options=frozenset({"UNUSABLE"}),
+            # 그래프는 BLOCKED에 "정지 풀기"를 준다. 압류에는 그것이 틀렸으므로
+            # 꼬리질문을 본 이 판정이 앞선다.
+            lead_by_option={"SEIZED": "identity-bank-account"},
+            lead_data_key="bankBlockReason",
         )
     )
-    with caplog.at_level("WARNING"):
-        tasks = usecase.run({"debtProcedureStage": "COURT_PROCESS"})
-    assert tasks[0].card.institution_id == "debt-credit-recovery"
-    assert "없는-제도" in caplog.text
+    tasks = usecase.run(
+        {"bankAccountStatus": "UNUSABLE", "bankBlockReason": "SEIZED"}
+    )
+    assert tasks[0].card.institution_id == "identity-bank-account"
+
+
+def test_missing_tail_answer_keeps_the_default() -> None:
+    """꼬리질문은 화면에 안 보였을 수 있다(§3.8). 답이 없으면 기본 대표로 둔다."""
+    usecase = _usecase_with_rules(
+        IntakeRule(
+            route_id=RouteId.R10,
+            data_key="bankAccountStatus",
+            blocked_options=frozenset({"UNUSABLE"}),
+            lead_by_option={"SEIZED": "identity-bank-account"},
+            lead_data_key="bankBlockReason",
+        )
+    )
+    tasks = usecase.run({"bankAccountStatus": "UNUSABLE"})
+    assert tasks[0].card.institution_id == "identity-bank-account-unblock"
+
+
+def test_reachable_refs_follow_the_real_path() -> None:
+    """**"그래프 어딘가가 가리킨다"와 "화면에 도달한다"는 다르다.**
+
+    debt-legal-aid는 legal_aid 노드가 가리키지만 R14에 노드가 둘이라 판정이
+    물러나고, 화면에는 기본 대표만 나갔다. 가리키는 곳을 세면 이걸 놓친다.
+    """
+    usecase = IntakeUseCase(
+        JsonInstitutionRepository(),
+        JsonIntakeRuleRepository().all(),
+        graph_nodes=JsonGraphRepository().nodes(),
+    )
+    reachable = usecase.reachable_kb_refs()
+    assert "identity-bank-account-unblock" in reachable
+    assert "debt-legal-aid" not in reachable
