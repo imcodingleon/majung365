@@ -58,6 +58,17 @@ class Settings(BaseSettings):
     )
     web_search_max_uses: int = 3
 
+    # ── Supabase (사용자 데이터 저장) ──
+    # **service_role 키는 서버에만 둔다.** 테이블에 RLS가 켜져 있고 정책이 없어서
+    # anon 키로는 아무것도 읽지 못한다 — 클라이언트가 DB에 직접 닿는 길이 없다는 뜻이다.
+    # 이 키가 클라이언트로 내려가면 그 방어가 통째로 무너진다.
+    supabase_url: str = ""
+    supabase_service_key: str = ""
+
+    # 컬럼 단위 암호화 키(base64 32바이트). 없으면 저장 기능이 뜨지 않는다 —
+    # 평문으로 저장하는 폴백은 두지 않는다(§9.2).
+    field_encryption_key: str = ""
+
     # ── 접근 게이트 (남용 방어 ①) ──
     # 데모 진입 코드의 해시(sha256 hex). 평문 코드는 저장하지 않는다.
     demo_access_code_hash: str = ""
