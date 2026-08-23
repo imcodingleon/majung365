@@ -1,10 +1,14 @@
 // 온보딩 구조화 질문 (CAP-1a). 순수 데이터.
-// 그래프 코어 9노드(_bmad-output/specs/spec-majung-2nd/graph-design.md) 기준 재설계.
+// 그래프 코어 노드(_bmad-output/specs/spec-majung-2nd/graph-design.md) 기준 재설계.
+// 휴대폰 문항은 뺐다 — 앱을 쓰고 있다는 것 자체가 휴대폰이 있다는 뜻이라
+// 백엔드 그래프에서 phone 노드를 폐기했다(intake-contract.md §4).
+// 다만 통장 개설의 선행조건은 '본인 명의' 휴대폰이라, 그 확인은
+// R10(통장) 결과 카드의 준비물 안내가 맡는다.
 // nodeId는 백엔드 graph.json의 노드 id와 정확히 일치해야 한다(계약).
 // ⚠️ 문구는 초안 — 공단 인터뷰 후 확정. 판단하지 않는 톤·쉬운 말 유지.
 //
 // 각 질문은 O/X/△ 버튼만 받는다("기타" 개별 입력 없음) — 버튼으로 담기 어려운 사정은
-// 9문항이 끝난 뒤 자유서술 단계 1개에서 한 번에 받는다(useOnboarding의 narrative 단계).
+// 문항이 모두 끝난 뒤 자유서술 단계 1개에서 한 번에 받는다(useOnboarding의 narrative 단계).
 
 /** 그래프 노드 상태값. */
 export type NodeStateValue = "O" | "X" | "BLOCKED" | "UNKNOWN";
@@ -65,15 +69,6 @@ export const QUESTIONS: OnboardingQuestion[] = [
       { id: "yes", label: "네, 쓸 수 있어요", state: "O" },
       { id: "no", label: "아니요, 없어요", state: "X" },
       { id: "blocked", label: "있는데 정지됐어요", state: "BLOCKED", hint: "압류·분실 등으로 못 쓰는 경우" },
-    ],
-  },
-  {
-    nodeId: "phone",
-    title: "본인 명의 휴대폰을\n지금 쓸 수 있으신가요?",
-    options: [
-      { id: "yes", label: "네, 쓸 수 있어요", state: "O" },
-      { id: "no", label: "아니요, 없어요", state: "X" },
-      { id: "blocked", label: "있는데 정지됐어요", state: "BLOCKED", hint: "요금 미납 등으로 못 쓰는 경우" },
     ],
   },
   {

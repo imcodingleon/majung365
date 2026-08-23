@@ -11,13 +11,13 @@ import logging
 from collections.abc import AsyncIterator
 
 from app.domains.chat.application.dto import (
-    AreaOut,
     CardData,
     CardEvent,
     ChatCommand,
     ChatEvent,
     DoneEvent,
     ErrorEvent,
+    RouteOut,
     TextEvent,
     TriageEvent,
 )
@@ -26,7 +26,7 @@ from app.domains.chat.domain.prompts import build_guidance_context
 from app.domains.chat.domain.triage import QuestionType, TriageResult
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.repository import InstitutionRepository
-from app.domains.shared.areas import label_for
+from app.domains.shared.routes import label_for
 
 logger = logging.getLogger("majung.chat")
 
@@ -49,7 +49,7 @@ class ChatUseCase:
             yield ErrorEvent()
             return
 
-        yield TriageEvent(areas=self._to_area_out(triage))
+        yield TriageEvent(routes=self._to_route_out(triage))
 
         # 2) 카드 매칭 (서버, KB 밖 생성 금지)
         cards = self._match_cards(triage)
@@ -79,9 +79,9 @@ class ChatUseCase:
         yield DoneEvent()
 
     # ── helpers ──
-    def _to_area_out(self, triage: TriageResult) -> tuple[AreaOut, ...]:
+    def _to_route_out(self, triage: TriageResult) -> tuple[RouteOut, ...]:
         return tuple(
-            AreaOut(key=p.area.value, label=label_for(p.area), rank=i + 1, reason=p.reason)
+            RouteOut(key=p.route.value, label=label_for(p.route), rank=i + 1, reason=p.reason)
             for i, p in enumerate(triage.priorities)
         )
 
@@ -91,12 +91,12 @@ class ChatUseCase:
         picked: list[Institution] = []
         seen: set[str] = set()
         for p in triage.priorities:
-            for inst in self._institutions.by_area(p.area):
+            for inst in self._institutions.by_route(p.route):
                 if inst.id in seen:
                     continue
                 picked.append(inst)
                 seen.add(inst.id)
-                break  # 영역당 1개 (급한 영역 우선)
+                break  # 항목당 1개 (급한 항목 우선)
             if len(picked) >= _MAX_CARDS:
                 break
         return picked
@@ -108,11 +108,15 @@ class ChatUseCase:
             f"(어디서: {inst.where} / 서류: {docs} / 다음 단계: {inst.next_step})"
         )
 
+    def _route_label(self, inst: Institution) -> str:
+        """카드 상단에 보일 항목 라벨. 한 제도가 여러 항목의 근거면 모두 적는다."""
+        return " · ".join(label_for(r) for r in inst.route_ids)
+
     def _to_card(self, inst: Institution) -> CardData:
         return CardData(
             institution_id=inst.id,
             name=inst.name,
-            area_label=label_for(inst.area),
+            route_label=self._route_label(inst),
             summary_easy=inst.summary_easy,
             where=inst.where,
             docs=inst.docs,

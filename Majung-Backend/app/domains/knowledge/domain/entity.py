@@ -5,13 +5,14 @@
 
 from dataclasses import dataclass, field
 
-from app.domains.shared.areas import Area
+from app.domains.shared.routes import RouteId
 
 
 @dataclass(frozen=True)
 class Institution:
     id: str
-    area: Area
+    # 한 제도가 여러 지원 항목의 근거가 될 수 있다(예: 주민등록 재등록 → R9·R11).
+    route_ids: tuple[RouteId, ...]
     name: str
     summary_easy: str
     where: str

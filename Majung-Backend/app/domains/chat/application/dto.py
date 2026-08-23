@@ -16,7 +16,9 @@ class ChatCommand:
 
 
 @dataclass(frozen=True)
-class AreaOut:
+class RouteOut:
+    """triage가 고른 지원 항목 1개. key는 RouteId 값(R1~R4, R6~R15)."""
+
     key: str
     label: str
     rank: int
@@ -27,7 +29,7 @@ class AreaOut:
 class CardData:
     institution_id: str
     name: str
-    area_label: str
+    route_label: str
     summary_easy: str
     where: str
     docs: tuple[str, ...]
@@ -39,7 +41,7 @@ class CardData:
 # ── SSE 이벤트 (UseCase가 yield) ──
 @dataclass(frozen=True)
 class TriageEvent:
-    areas: tuple[AreaOut, ...]
+    routes: tuple[RouteOut, ...]
 
 
 @dataclass(frozen=True)

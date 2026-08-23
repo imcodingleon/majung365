@@ -9,9 +9,9 @@ from app.domains.chat.application.dto import (
     TriageEvent,
 )
 from app.domains.chat.application.usecase import ChatUseCase
-from app.domains.chat.domain.triage import AreaPriority, QuestionType, TriageResult
+from app.domains.chat.domain.triage import QuestionType, RoutePriority, TriageResult
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
-from app.domains.shared.areas import Area
+from app.domains.shared.routes import RouteId
 from tests.fakes import FakeLlm
 
 
@@ -27,8 +27,8 @@ async def test_support_flow_order_and_cards() -> None:
     triage = TriageResult(
         question_type=QuestionType.SUPPORT,
         priorities=(
-            AreaPriority(area=Area.IDENTITY, reason="통장·신분증부터 필요해요"),
-            AreaPriority(area=Area.WELFARE, reason="당장 생계가 급해요"),
+            RoutePriority(route=RouteId.R9, reason="통장·신분증부터 필요해요"),
+            RoutePriority(route=RouteId.R2, reason="당장 생계가 급해요"),
         ),
     )
     llm = FakeLlm(triage)
@@ -44,14 +44,14 @@ async def test_support_flow_order_and_cards() -> None:
 
     triage_ev = events[0]
     assert isinstance(triage_ev, TriageEvent)
-    assert triage_ev.areas[0].key == "identity"
-    assert triage_ev.areas[0].rank == 1
+    assert triage_ev.routes[0].key == "R9"
+    assert triage_ev.routes[0].rank == 1
 
     cards = [e for e in events if isinstance(e, CardEvent)]
     assert cards, "support면 KB 카드가 매칭돼야 한다"
-    # 카드는 KB(identity/welfare) 항목이어야 한다 (환각 아님)
+    # 카드는 triage가 고른 항목(R9 신분증 / R2 공단 긴급지원)의 KB 항목이어야 한다 (환각 아님)
     for c in cards:
-        assert c.card.area_label in ("신분 재건", "긴급복지·생계")
+        assert "신분증" in c.card.route_label or "공단 긴급지원" in c.card.route_label
 
     # support면 웹 검색 비활성
     assert llm.last_allow_web is False
@@ -86,10 +86,10 @@ async def test_stream_failure_yields_error_after_triage() -> None:
 async def test_injected_context_has_kb_facts_not_hallucinated() -> None:
     triage = TriageResult(
         question_type=QuestionType.SUPPORT,
-        priorities=(AreaPriority(area=Area.HOUSING, reason="잘 곳이 없어요"),),
+        priorities=(RoutePriority(route=RouteId.R1, reason="잘 곳이 없어요"),),
     )
     llm = FakeLlm(triage)
     await _collect(ChatUseCase(llm, _repo()), "잘 곳이 없어요")
-    # 주입 컨텍스트에 '확인된 정보'와 주거 KB 항목이 들어가야 한다
+    # 주입 컨텍스트에 '확인된 정보'와 숙식 KB 항목이 들어가야 한다
     assert llm.last_context is not None
     assert "확인된 정보" in llm.last_context

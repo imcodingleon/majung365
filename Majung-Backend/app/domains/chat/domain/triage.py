@@ -3,7 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
-from app.domains.shared.areas import Area
+from app.domains.shared.routes import RouteId
 
 
 class QuestionType(StrEnum):
@@ -12,12 +12,12 @@ class QuestionType(StrEnum):
 
 
 @dataclass(frozen=True)
-class AreaPriority:
-    area: Area
+class RoutePriority:
+    route: RouteId
     reason: str  # 왜 급한지 (쉬운 말)
 
 
 @dataclass(frozen=True)
 class TriageResult:
     question_type: QuestionType
-    priorities: tuple[AreaPriority, ...]  # 급한 순, 보통 2~3개 (DAILY면 비어도 됨)
+    priorities: tuple[RoutePriority, ...]  # 급한 순, 보통 2~3개 (DAILY면 비어도 됨)

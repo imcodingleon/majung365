@@ -1,11 +1,11 @@
 // 백엔드(Majung-Backend) API 계약을 그대로 미러링한 타입.
 // 계약이 바뀌면 이 파일을 같은 커밋에서 갱신한다.
 
-/** triage 6영역 분류 결과 항목 (CAP-2). rank=1이 가장 급함. */
-export interface AreaOut {
-  /** identity | welfare | housing | employment | health | debt */
+/** triage가 고른 지원 항목 (CAP-2). rank=1이 가장 급함. */
+export interface RouteOut {
+  /** 지원 항목 코드 R1~R4 · R6~R15 (R5는 결번) */
   key: string;
-  /** "신분 재건", "긴급복지·생계" 등 표시 라벨 */
+  /** "신분증", "공단 긴급지원" 등 표시 라벨 */
   label: string;
   /** 우선순위 (1이 가장 급함) */
   rank: number;
@@ -18,7 +18,8 @@ export interface CardData {
   institution_id: string;
   /** 제도명 */
   name: string;
-  area_label: string;
+  /** 이 제도가 근거가 되는 지원 항목 라벨. 여러 항목에 걸치면 가운뎃점으로 이어 붙는다. */
+  route_label: string;
   /** 쉬운 말 요약 */
   summary_easy: string;
   /** 어디서 신청하는지 */
@@ -80,7 +81,8 @@ export interface VoiceResult {
   emotion: VoiceEmotion;
   /** specific | vague */
   specificity: string;
-  /** 감지된 6영역 */
+  /** 감지된 영역. 별도 SER 서비스가 자체 분류로 채우는 값이라
+   *  백엔드 지원 항목(RouteOut.key)과는 다른 축이다. */
   area: string;
   /** 매칭된 제도명(없으면 null) */
   matched: string | null;
@@ -143,8 +145,8 @@ export interface TaskCard {
 
 /** SSE 스트림 이벤트를 소비하는 콜백 묶음. */
 export interface ChatStreamHandlers {
-  /** triage 결과(급한 영역 2~3개) 도착 */
-  onTriage?: (areas: AreaOut[]) => void;
+  /** triage 결과(급한 지원 항목 2~3개) 도착 */
+  onTriage?: (routes: RouteOut[]) => void;
   /** 안내 텍스트 델타(스트리밍 조각) 도착 */
   onText?: (delta: string) => void;
   /** 제도 카드 도착 */

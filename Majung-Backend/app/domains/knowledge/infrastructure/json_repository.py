@@ -7,7 +7,7 @@ import json
 from pathlib import Path
 
 from app.domains.knowledge.domain.entity import Institution
-from app.domains.shared.areas import Area
+from app.domains.shared.routes import RouteId
 
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "institutions.json"
 
@@ -18,7 +18,7 @@ class JsonInstitutionRepository:
         self._items: list[Institution] = [
             Institution(
                 id=row["id"],
-                area=Area(row["area"]),
+                route_ids=tuple(RouteId(r) for r in row["route_ids"]),
                 name=row["name"],
                 summary_easy=row["summary_easy"],
                 where=row["where"],
@@ -33,8 +33,8 @@ class JsonInstitutionRepository:
     def all(self) -> list[Institution]:
         return list(self._items)
 
-    def by_area(self, area: Area) -> list[Institution]:
-        return [i for i in self._items if i.area == area]
+    def by_route(self, route: RouteId) -> list[Institution]:
+        return [i for i in self._items if route in i.route_ids]
 
     def by_id(self, institution_id: str) -> Institution | None:
         return next((i for i in self._items if i.id == institution_id), None)

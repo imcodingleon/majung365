@@ -4,7 +4,7 @@
 
 import type {
   AnalyzeRequest,
-  AreaOut,
+  RouteOut,
   CardData,
   Center,
   ChatRequest,
@@ -183,7 +183,7 @@ function dispatchFrame(frame: string, handlers: ChatStreamHandlers): void {
 
   switch (event) {
     case "triage":
-      handlers.onTriage?.((parsed as { areas: AreaOut[] }).areas);
+      handlers.onTriage?.((parsed as { routes: RouteOut[] }).routes);
       break;
     case "text":
       handlers.onText?.((parsed as { delta: string }).delta);

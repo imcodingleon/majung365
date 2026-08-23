@@ -1,6 +1,5 @@
 export type {
   AnalyzeRequest,
-  AreaOut,
   CardData,
   Center,
   ChatRequest,
@@ -8,6 +7,7 @@ export type {
   ChatStreamHandlers,
   NodeAnswerInput,
   NodeStateValue,
+  RouteOut,
   TaskCard,
   Turn,
   VoiceEmotion,

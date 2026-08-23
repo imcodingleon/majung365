@@ -1,7 +1,7 @@
 // 챗봇 UseCase — 메시지 상태 + SSE 스트림 소비. API는 shared/utils/api.ts만 경유.
 import { useCallback, useRef, useState } from "react";
 
-import type { AreaOut, CardData } from "@/shared/types";
+import type { CardData, RouteOut } from "@/shared/types";
 import { ApiError, streamChat } from "@/shared/utils/api";
 
 import {
@@ -62,10 +62,10 @@ export function useChat(): UseChat {
       streamChat(
         { message: text, history, token: tokenRef.current },
         {
-          onTriage: (areas: AreaOut[]) => {
+          onTriage: (routes: RouteOut[]) => {
             setMessages((prev) => [
               ...prev,
-              { id: nextId(), author: "bot", kind: "triage", areas, at: now() },
+              { id: nextId(), author: "bot", kind: "triage", routes, at: now() },
             ]);
           },
           onText: (delta: string) => {

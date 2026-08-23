@@ -105,7 +105,7 @@ async def chat(
                 yield {
                     "event": "triage",
                     "data": json.dumps(
-                        {"areas": [a.__dict__ for a in ev.areas]}, ensure_ascii=False
+                        {"routes": [r.__dict__ for r in ev.routes]}, ensure_ascii=False
                     ),
                 }
             elif isinstance(ev, TextEvent):
@@ -118,7 +118,7 @@ async def chat(
                         {
                             "institution_id": c.institution_id,
                             "name": c.name,
-                            "area_label": c.area_label,
+                            "route_label": c.route_label,
                             "summary_easy": c.summary_easy,
                             "where": c.where,
                             "docs": list(c.docs),

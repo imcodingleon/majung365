@@ -43,7 +43,7 @@ def _parse_node(row: dict[str, Any]) -> GraphNode:
     return GraphNode(
         id=str(row["id"]),
         name=str(row["name"]),
-        area=str(row["area"]),
+        route_ids=tuple(str(r) for r in row["route_ids"]),
         tier=str(row["tier"]),
         deadline=_parse_deadline(row.get("deadline")),
         obtain=tuple(_parse_path(p) for p in row["obtain"]),
