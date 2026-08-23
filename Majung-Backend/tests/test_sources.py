@@ -11,8 +11,20 @@ from app.domains.knowledge.infrastructure.json_repository import JsonInstitution
 def test_note_names_who_verified() -> None:
     """기관이 갱신한 날이 아니라 우리가 확인한 날임이 문장에 드러나야 한다."""
     note = verified_note("2026-08-22")
-    assert note == "마중365가 2026년 8월 22일에 확인한 내용이에요."
+    assert "마중365가" in note, "누가 확인했는지가 빠지면 기관이 갱신한 날로 읽힌다"
+    assert "2026년 8월 22일" in note
     assert "기준" not in note, "'기준'은 기관이 그날 확인했다는 뜻으로 읽힌다"
+
+
+def test_note_names_what_was_verified() -> None:
+    """**무엇을 확인했는지가 문장 앞에 와야 한다.**
+
+    "확인한 내용이에요"는 그 대상이 문장 안에 없어서, 답변과 카드를 한 흐름으로
+    읽는 사용자에게 "이 답이 질문에 맞다는 것을 확인했다"로 읽힐 수 있다.
+    확인한 것은 안내이지 그 답이 질문에 맞다는 판정이 아니다.
+    """
+    note = verified_note("2026-08-22")
+    assert note.startswith("이 안내는"), note
 
 
 def test_note_is_empty_without_a_date() -> None:

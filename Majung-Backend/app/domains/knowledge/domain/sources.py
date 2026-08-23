@@ -26,4 +26,9 @@ def verified_note(verified_at: str) -> str:
         d = date.fromisoformat(verified_at)
     except ValueError:
         return ""
-    return f"{_SERVICE_NAME}가 {d.year}년 {d.month}월 {d.day}일에 확인한 내용이에요."
+    # **무엇을 확인했는지를 문장 앞에 둔다.**
+    #
+    # "확인한 내용이에요"는 그 대상이 문장 안에 없어서, 답변과 카드를 한 흐름으로
+    # 읽는 사용자에게는 "이 답이 질문에 맞다는 것을 확인했다"로 읽힐 수 있다.
+    # 확인한 것은 안내이지 그 답이 질문에 맞다는 판정이 아니다.
+    return f"이 안내는 {_SERVICE_NAME}가 {d.year}년 {d.month}월 {d.day}일에 확인했어요."
