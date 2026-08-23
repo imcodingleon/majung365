@@ -10,6 +10,9 @@ export type {
   RouteOut,
   TaskCard,
   Turn,
+  DistrictOffice,
+  Institution,
+  InstitutionKind,
 } from "./api";
 
 export type {

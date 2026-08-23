@@ -9,22 +9,21 @@
  */
 export type BranchKind = "branch" | "head" | "training" | "hug";
 
-export type Institution = {
-  name: string;
-  address: string;
-  phone: string;
-  /** 공단 기관이면 종류가 붙는다. 정신건강복지센터에는 없다. */
-  kind?: BranchKind;
-  /** 같은 시군구에 여러 센터가 있을 때의 구분. 예: "아동청소년" */
-  note?: string;
-};
+import type { DistrictOffice, Institution } from "@/shared/types";
 
-/** 한 지역에서 안내할 기관 묶음. 서버가 시군구를 받아 돌려준다. */
-export type RegionInstitutions = {
-  /** 공단 지부. 광역 단위라 시군구를 몰라도 짚을 수 있다. */
-  branches: readonly Institution[];
-  /** 기초정신건강복지센터. 시군구를 알아야 한다. */
-  centers: readonly Institution[];
+export type { DistrictOffice, Institution };
+
+/** 한 지역에서 안내할 것. 서버가 시도·시군구를 받아 돌려준다. */
+export type NearbyResult = {
+  /** 그 시군구의 주민센터 전체. 위치로 알아낸 동으로 좁혀 쓴다. */
+  offices: readonly DistrictOffice[];
+  /**
+   * 공단 기관과 지역 센터.
+   *
+   * **공단 기관은 지역이 안 맞아도 들어 있다.** 전국에 몇 곳뿐이라 지역으로 거르면
+   * 사라지고, 그러면 주 경로가 화면에서 없어진다. `kind`로 갈라 그린다.
+   */
+  institutions: readonly Institution[];
 };
 
 // **확인 날짜 필드를 두지 않는다.** 이 목록의 데이터에는 확인 날짜가 없다.

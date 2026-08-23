@@ -12,7 +12,8 @@ import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
-import { kindLabel, type Institution, type RegionInstitutions } from "../domain/institution";
+import type { DistrictOffice, Institution, NearbyResult } from "../domain/institution";
+import { districtLabel, type LocatedPlace } from "../domain/locate";
 import type { SelectedRegion } from "../domain/region";
 import type { LookupState } from "../hooks/useRegionLookup";
 
@@ -20,25 +21,51 @@ import { RegionPicker } from "./RegionPicker";
 
 type Props = {
   state: LookupState;
-  region: SelectedRegion | null;
-  /** 서버가 돌려준 기관 목록. 아직 받기 전이면 null. */
-  institutions: RegionInstitutions | null;
+  /** 위치로 알아냈거나 직접 고른 곳. 아직 정해지지 않았으면 null. */
+  place: LocatedPlace | null;
+  /** 서버가 돌려준 것. 아직 받기 전이면 null. */
+  result: NearbyResult | null;
+  loading: boolean;
+  /** 불러오지 못했을 때. **빈 목록과 구별해 보여준다.** */
+  error: string | null;
   onLocate: () => void;
   onPick: (region: SelectedRegion) => void;
   onReset: () => void;
   onClose: () => void;
 };
 
-function InstitutionCard({ item }: { item: Institution }) {
-  const dial = item.phone.replace(/[^0-9]/g, "");
+/**
+ * 찾아갈 곳 하나.
+ *
+ * **전화번호가 없을 수 있다.** 주민센터는 원본(행정안전부 '읍면동 하부행정기관 현황')에
+ * 전화번호가 없다. 빈 자리를 만들지 않고 아예 그리지 않는다.
+ */
+function PlaceCard({
+  name,
+  address,
+  phone,
+  badge,
+}: {
+  name: string;
+  address: string;
+  phone?: string;
+  /** "여기예요"처럼 그 자리에서만 붙는 표시. */
+  badge?: string;
+}) {
+  const dial = phone ? phone.replace(/[^0-9]/g, "") : "";
   return (
     <View className="mb-3 rounded-2xl border-[1.5px] border-line bg-white px-4 py-4">
-      <Text className="text-body-lg font-extrabold text-ink-strong">
-        {item.name}
-        {item.note ? <Text className="text-body font-semibold text-ink-sub"> ({item.note})</Text> : null}
-      </Text>
-      <Text className="mt-2 text-body text-ink-body">{item.address}</Text>
+      <View className="flex-row items-center gap-2">
+        <Text className="flex-1 text-body-lg font-extrabold text-ink-strong">{name}</Text>
+        {badge ? (
+          <View className="rounded-full bg-brand-soft px-3 py-1">
+            <Text className="text-caption font-extrabold text-brand">{badge}</Text>
+          </View>
+        ) : null}
+      </View>
+      <Text className="mt-2 text-body text-ink-body">{address}</Text>
 
+      {phone ? (
       <Pressable
         onPress={() => {
           Linking.openURL(`tel:${dial}`).catch(() => {
@@ -47,45 +74,78 @@ function InstitutionCard({ item }: { item: Institution }) {
           });
         }}
         accessibilityRole="button"
-        accessibilityLabel={`${item.name}에 전화하기. ${item.phone}`}
+        accessibilityLabel={`${name}에 전화하기. ${phone}`}
         className="mt-3 flex-row items-center gap-2 self-start rounded-xl border-[1.5px] border-brand-soft bg-brand-soft px-4 py-3 active:opacity-80"
       >
         <Text className="text-body-lg">📞</Text>
-        <Text className="text-body-lg font-extrabold text-brand">{item.phone}</Text>
+        <Text className="text-body-lg font-extrabold text-brand">{phone}</Text>
       </Pressable>
+      ) : null}
     </View>
   );
 }
 
-function Section({ title, items }: { title: string; items: readonly Institution[] }) {
-  if (items.length === 0) return null;
+function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <View className="mb-6">
       <Text className="mb-3 text-heading font-extrabold text-ink-strong">{title}</Text>
-      {items.map((item) => (
-        <InstitutionCard key={`${item.name}-${item.phone}`} item={item} />
-      ))}
+      {children}
     </View>
   );
+}
+
+/**
+ * 그 사람이 사는 동의 주민센터를 앞에 둔다. 나머지는 같은 구 안의 다른 동이다.
+ *
+ * **동 이름이 정확히 맞지 않을 수 있다.** 경계 데이터가 "불당동"인데 주민센터는
+ * "불당1동"·"불당2동"으로 나뉘어 있는 식이다 — 행정동이 갈라진 시점이 서로 다르다.
+ * 그래서 앞부분이 겹치면 같은 동네로 본다. 틀려도 걸어갈 거리이고, 못 찾는 것보다 낫다.
+ */
+function sortOffices(
+  offices: readonly DistrictOffice[],
+  dong: string,
+): readonly DistrictOffice[] {
+  if (!dong) return offices;
+  const stem = dong.replace(/\d+(동|가)$/, "").replace(/동$/, "");
+  const mine = offices.filter((o) => o.dong === dong || (stem.length >= 2 && o.dong.startsWith(stem)));
+  return mine.length > 0 ? [...mine, ...offices.filter((o) => !mine.includes(o))] : offices;
+}
+
+/**
+ * 그 시군구의 정신건강복지센터.
+ *
+ * **서버는 시도 단위로 준다.** 송파구를 물어도 서울 17개 구가 다 오고, 그 구의 것이
+ * 맨 앞에 온다. 전부 그리면 **엉뚱한 구의 센터가 잔뜩 나온다** — 강남구 센터를 보고
+ * 찾아가면 헛걸음이다. 맞는 구만 그리고, 그 구에 없으면 서버가 앞에 둔 하나만 낸다.
+ */
+function centersFor(
+  institutions: readonly Institution[],
+  district: string,
+): readonly Institution[] {
+  const all = institutions.filter((x) => x.kind === "mental_health");
+  const mine = all.filter((x) => district.startsWith(x.district) || x.district.startsWith(district));
+  return mine.length > 0 ? mine : all.slice(0, 1);
 }
 
 export function NearbyScreen({
   state,
-  region,
-  institutions,
+  place,
+  result,
+  loading,
+  error,
   onLocate,
   onPick,
   onReset,
   onClose,
 }: Props) {
-  const showPicker = region === null && (state.status === "denied" || state.status === "failed");
+  const showPicker = place === null && (state.status === "denied" || state.status === "failed");
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
       <ScreenHeader title="가까운 곳 찾기" closeHint="가까운 곳 찾기 화면 닫기" onClose={onClose} />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-6">
-        {region === null && state.status === "idle" ? (
+        {place === null && state.status === "idle" ? (
           <View>
             <Text className="text-title font-extrabold text-ink-strong">
               어디로 가면 되는지{"\n"}알려드릴게요
@@ -129,7 +189,7 @@ export function NearbyScreen({
           </Text>
         ) : null}
 
-        {showPicker || (region !== null && region.sido === "") ? (
+        {showPicker || (place !== null && place.sido === "") ? (
           <View>
             {state.status === "denied" ? (
               <Text className="mb-5 text-body text-ink-sub">
@@ -145,11 +205,13 @@ export function NearbyScreen({
           </View>
         ) : null}
 
-        {region !== null && region.sido !== "" ? (
+        {place !== null && place.sido !== "" ? (
           <View>
             <View className="mb-5 flex-row items-center justify-between">
               <Text className="text-heading font-extrabold text-ink-strong">
-                {region.district ? `${region.sido} ${region.district}` : region.sido}
+                {place.district
+                  ? `${place.sido} ${districtLabel(place.district)}${place.dong ? ` ${place.dong}` : ""}`
+                  : place.sido}
               </Text>
               <Pressable
                 onPress={onReset}
@@ -161,30 +223,66 @@ export function NearbyScreen({
               </Pressable>
             </View>
 
-            {institutions === null ? (
+            {error ? (
+              <NoteBox tone="alert" className="mb-4">
+                {error}
+              </NoteBox>
+            ) : null}
+
+            {loading ? (
               <Text className="mt-6 text-center text-body-lg text-ink-sub">
                 찾아가실 곳을 알아보고 있어요…
               </Text>
-            ) : (
+            ) : result === null ? null : (
               <>
-                <Section title={kindLabel("branch")} items={institutions.branches} />
-                <Section title="마음이 힘들 때 가는 곳" items={institutions.centers} />
-
-                {institutions.branches.length === 0 && institutions.centers.length === 0 ? (
-                  <View className="rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
-                    <Text className="text-body text-note-warn-ink">
-                      이 지역에서 찾아가실 곳을 아직 못 찾았어요.{"\n"}
-                      1670-7004로 전화하시면 알려드려요.
-                    </Text>
-                  </View>
+                {/* **그 사람이 사는 동의 주민센터를 앞에 둔다.** 구 하나에 스물몇 곳이라
+                    순서가 없으면 자기 것을 찾지 못한다 */}
+                {result.offices.length > 0 ? (
+                  <Section title="주민센터">
+                    {sortOffices(result.offices, place.dong)
+                      .slice(0, 3)
+                      .map((o, i) => (
+                        <PlaceCard
+                          key={`${o.dong}-${o.name}`}
+                          name={o.name}
+                          address={o.address}
+                          badge={i === 0 && place.dong && o.dong === place.dong ? "여기예요" : undefined}
+                        />
+                      ))}
+                    {/* 신분증 재발급은 어느 주민센터에서나 된다. 자기 동이 아니어도
+                        괜찮다는 것을 알려야 가까운 곳으로 간다 (§5.4) */}
+                    <NoteLine tone="info">신분증은 어느 주민센터에서나 다시 받으실 수 있어요.</NoteLine>
+                  </Section>
                 ) : null}
 
-                {/* **확인 문장을 내지 않는다.** 화면이 들고 있던 날짜는 다른 파일의
-                    것이었고, 이 목록의 데이터에는 확인 날짜가 없다. 서버가 항목마다
-                    검증 여부와 날짜를 실어 주면 검증된 것에만 붙인다.
+                {/* 공단 기관은 지역이 안 맞아도 온다. 전국에 몇 곳뿐이라 지역으로
+                    거르면 사라지고, 그러면 주 경로가 화면에서 없어진다 */}
+                {centersFor(result.institutions, place.district).length > 0 ? (
+                  <Section title="마음이 힘들 때 가는 곳">
+                    {centersFor(result.institutions, place.district).map((x) => (
+                      <PlaceCard key={x.name} name={x.name} address={x.address} phone={x.phone} />
+                    ))}
+                  </Section>
+                ) : null}
 
-                    확인 날짜가 아예 없는 편이 틀린 날짜가 있는 것보다 낫다 —
-                    §6.4가 "확인하지 않은 날짜를 지어내지 않는다"고 정한 자리다*/}
+                {result.institutions.filter((x) => x.kind !== "mental_health").length > 0 ? (
+                  <Section title="법무보호복지공단">
+                    {result.institutions
+                      .filter((x) => x.kind !== "mental_health")
+                      .map((x) => (
+                        <PlaceCard key={x.name} name={x.name} address={x.address} phone={x.phone} />
+                      ))}
+                  </Section>
+                ) : null}
+
+                {result.offices.length === 0 && result.institutions.length === 0 ? (
+                  <NoteBox tone="warn">
+                    <NoteLine tone="warn">이 지역에서 찾아가실 곳을 아직 못 찾았어요.</NoteLine>
+                    <NoteLine tone="warn" className="mt-1">
+                      1670-7004로 전화하시면 알려드려요.
+                    </NoteLine>
+                  </NoteBox>
+                ) : null}
               </>
             )}
           </View>
@@ -192,7 +290,7 @@ export function NearbyScreen({
       </ScrollView>
 
       {/* 위치를 쓰지 않기로 한 뒤에도 색을 죽이지 않는다. 다시 시도할 수 있어야 한다. */}
-      {state.status === "denied" && region === null ? (
+      {state.status === "denied" && place === null ? (
         <View className="border-t border-line bg-white px-5 py-3">
           <Pressable
             onPress={onLocate}

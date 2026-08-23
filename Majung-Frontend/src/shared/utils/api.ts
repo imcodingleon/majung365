@@ -10,6 +10,8 @@ import type {
   CardData,
   Center,
   ChatRequest,
+  DistrictOffice,
+  Institution,
   ChatStreamHandlers,
   TaskCard,
 } from "../types";
@@ -255,6 +257,41 @@ export async function patchStaffVisit(
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as StaffVisitResponse;
+}
+
+/**
+ * GET /api/district-offices — 그 시군구의 주민센터.
+ *
+ * **좌표는 보내지 않는다** (§5.4). 기기에서 알아낸 시도·시군구 이름만 보낸다.
+ * 붙여 쓴 표기("수원시장안구")도 서버가 받아 정규화하므로 그대로 넘긴다.
+ */
+export async function getDistrictOffices(
+  sido: string,
+  sigungu: string,
+): Promise<DistrictOffice[]> {
+  const qs = `?sido=${encodeURIComponent(sido)}&sigungu=${encodeURIComponent(sigungu)}`;
+  const res = await fetch(`${API_BASE}/api/district-offices${qs}`);
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as DistrictOffice[];
+}
+
+/**
+ * GET /api/institutions — 그 지원 항목에서 안내할 기관.
+ *
+ * `route`로 물으면 그 항목에 맞는 종류가 함께 온다 — R8이면 허그상담소와
+ * 정신건강복지센터, R6이면 지부와 교육원이다 (§5.4).
+ */
+export async function getInstitutions(
+  route: string,
+  sido: string,
+  district: string,
+): Promise<Institution[]> {
+  const qs =
+    `?route=${encodeURIComponent(route)}` +
+    `&sido=${encodeURIComponent(sido)}&district=${encodeURIComponent(district)}`;
+  const res = await fetch(`${API_BASE}/api/institutions${qs}`);
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as Institution[];
 }
 
 /** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */

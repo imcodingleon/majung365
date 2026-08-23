@@ -134,6 +134,29 @@ export function blockReason(
 }
 
 /**
+ * 사용자가 스스로 물릴 수 있는 상태.
+ *
+ * **§7.1의 상태 흐름에는 담당자가 하는 취소만 있다.** 사용자가 물리는 길은 적혀 있지
+ * 않은데, 서버에는 사용자 토큰으로 부르는 창구가 있다. 못 가게 되는 일은 실제로
+ * 생기고, 그때 물릴 길이 없으면 **담당자가 헛되이 기다린다.**
+ *
+ * 이미 다녀왔거나 이미 취소된 것은 물릴 것이 없다.
+ */
+export function canCancel(status: VisitStatus): boolean {
+  return status !== "completed" && status !== "cancelled";
+}
+
+/**
+ * 물리기 전에 한 번 더 묻는지.
+ *
+ * **확정된 요청만 묻는다.** 담당자가 시간과 창구를 비워둔 상태라 무르는 값이 다르다.
+ * 아직 확정 전이면 묻지 않는다 — 저리터러시 전제에서 확인 절차가 늘수록 그만두게 된다.
+ */
+export function cancelNeedsConfirm(status: VisitStatus): boolean {
+  return status === "confirmed";
+}
+
+/**
  * 상한에 닿아도 그냥 막지 않는다. 다시 보내는 이유는 대개 앞서 보낸 것이 갔는지 모르기 때문이라,
  * 이미 보낸 요청을 함께 보여주는 것이 답이다 (§7.5).
  */

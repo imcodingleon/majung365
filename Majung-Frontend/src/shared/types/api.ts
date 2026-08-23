@@ -42,6 +42,41 @@ export interface CardData {
   verified_note: string;
 }
 
+/**
+ * 주민센터. `GET /api/district-offices` 응답 항목.
+ *
+ * **전화번호가 없다.** 원본(행정안전부 '읍면동 하부행정기관 현황')이 주지 않는 값이라
+ * 파싱 누락이 아니다. 전화가 필요하면 정부민원안내콜센터 110으로 넘긴다.
+ */
+export interface DistrictOffice {
+  sido: string;
+  sigungu: string;
+  /** "오금동". 위치로 알아낸 동과 맞춰 그 사람의 주민센터를 짚는다. */
+  dong: string;
+  kind: string;
+  name: string;
+  zipcode: string;
+  address: string;
+}
+
+/** 기관 갈래. 지원 항목마다 안내할 종류가 다르다 (§5.4). */
+export type InstitutionKind = "branch" | "head" | "training" | "hug" | "mental_health";
+
+/**
+ * 공단 기관과 지역 센터. `GET /api/institutions?route=…&sido=…&district=…` 응답 항목.
+ *
+ * **공단 기관은 지역이 안 맞아도 목록에 남는다.** 전국에 몇 곳뿐이라(허그상담소 3곳)
+ * 지역으로 거르면 사라지고, 그러면 주 경로가 화면에서 없어진다. `kind`로 갈라 그린다.
+ */
+export interface Institution {
+  name: string;
+  kind: InstitutionKind;
+  sido: string;
+  district: string;
+  address: string;
+  phone: string;
+}
+
 /** 지원기관 (CAP-5 지도). GET /api/centers 응답 항목. */
 export interface Center {
   id: string;
