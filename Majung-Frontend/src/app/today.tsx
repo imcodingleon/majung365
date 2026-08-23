@@ -59,6 +59,7 @@ export default function TodayRoute() {
           visible
           taskTitle={chatTask.title}
           messages={chat.messages}
+          busy={chat.busy}
           onSend={chat.send}
           onClose={chat.close}
           onClear={chat.clear}
