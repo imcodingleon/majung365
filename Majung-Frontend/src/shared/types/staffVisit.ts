@@ -31,6 +31,8 @@ export interface StaffVisitResponse {
   note: string;
   /** 확정된 만날 장소. 확정 전에는 빈 문자열이다. */
   meeting_place: string;
+  /** 만나기로 한 시각. **확정을 누른 시각이 아니다.** 확정 전에는 없다. */
+  confirmed_for?: string | null;
   created_at: string | null;
   /**
    * 본인이 함께 보내기로 한 초기 진단 답변 (§7.4-1).

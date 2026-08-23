@@ -41,10 +41,9 @@ function toRequest(v: VisitResponse): VisitRequest {
     confirmation:
       v.status === "confirmed"
         ? {
-            // **비워 둔다.** `confirmed_at`은 담당자가 확정을 누른 시각이지 만나기로 한
-            // 시각이 아니다. 그것을 방문 시각으로 내면 새벽에 만나자는 안내가 나간다.
-            // 만날 시각을 담을 자리가 계약에 생기면 그때 채운다.
-            whenLabel: "",
+            // **`confirmed_for`다.** `confirmed_at`은 담당자가 확정을 누른 시각이라
+            // 그것을 내면 새벽에 만나자는 안내가 나간다.
+            whenLabel: isoLabel(v.confirmed_for),
             staffName: v.staff_name,
             place: v.meeting_place,
           }

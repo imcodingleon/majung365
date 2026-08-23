@@ -40,6 +40,9 @@ export type VisitRequest = {
   createdAt?: string | null;
 };
 
+/** 이 말로 끝나면 직함이 이미 붙은 것이다. 뒤에 "담당자"를 또 붙이지 않는다. */
+const TITLE_TAIL = /(담당자|주무관|팀장|과장|계장|주임|선생님|상담사|사회복지사)$/;
+
 /** 각 상태에서 사용자가 보는 문장 (§7.1). */
 export function statusMessage(request: VisitRequest): string {
   switch (request.status) {
@@ -52,7 +55,15 @@ export function statusMessage(request: VisitRequest): string {
       if (!c) return "방문 시간이 정해졌어요.";
       // **만날 사람과 장소가 먼저다** (§7.1). 창구에서 신분이 드러나는 순간이 실질적
       // 장벽이고, 그 해법은 시간을 아는 것이 아니라 누구를 찾아가면 되는지 아는 것이다.
-      const where = `${c.place}에서 ${c.staffName} 담당자를 찾으세요.`;
+      //
+      // 이름만 올 것을 전제하지 않는다. 서버가 "행정복지센터 담당자"·"박지훈 주무관"처럼
+      // 직함이 섞인 값을 주기도 하고, 그때 뒤에 "담당자"를 또 붙이면
+      // **"담당자 담당자를 찾으세요"**가 된다. 이름만 왔을 때만 직함을 붙인다 —
+      // 한국 이름은 띄어쓰지 않으므로 공백이 있으면 이미 직함이 붙은 것으로 본다.
+      const who = c.staffName.trim();
+      const bare = who.length > 0 && !who.includes(" ") && !TITLE_TAIL.test(who);
+      const whom = bare ? `${who} 담당자` : who;
+      const where = `${c.place}에서 ${whom}${josa(whom, "을", "를")} 찾으세요.`;
       // 시각이 비면 시각 이야기를 빼고 만다. 넣으면 "정해진 시간으로 정해졌어요"가 된다.
       if (!c.whenLabel) return `방문 시간이 정해졌어요. ${where}`;
       return `${c.whenLabel}${josa(c.whenLabel, "으로", "로")} 정해졌어요. ${where}`;
