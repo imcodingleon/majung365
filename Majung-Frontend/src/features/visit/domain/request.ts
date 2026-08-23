@@ -60,10 +60,17 @@ export function statusMessage(request: VisitRequest): string {
       // 직함이 섞인 값을 주기도 하고, 그때 뒤에 "담당자"를 또 붙이면
       // **"담당자 담당자를 찾으세요"**가 된다. 이름만 왔을 때만 직함을 붙인다 —
       // 한국 이름은 띄어쓰지 않으므로 공백이 있으면 이미 직함이 붙은 것으로 본다.
-      const who = c.staffName.trim();
+      // 서버가 이름을 안 줄 수 있다. 그대로 부르면 화면 전체가 터진다.
+      const who = (c.staffName ?? "").trim();
       const bare = who.length > 0 && !who.includes(" ") && !TITLE_TAIL.test(who);
       const whom = bare ? `${who} 담당자` : who;
-      const where = `${c.place}에서 ${whom}${josa(whom, "을", "를")} 찾으세요.`;
+      // 만날 사람도 장소도 없으면 그 문장을 아예 만들지 않는다. "에서 를 찾으세요"보다
+      // 시간만 알리는 편이 낫다.
+      const place = (c.place ?? "").trim();
+      if (!who && !place) return "방문 시간이 정해졌어요. 담당자에게 확인해 주세요.";
+      const where = place
+        ? `${place}에서 ${whom}${josa(whom, "을", "를")} 찾으세요.`
+        : `${whom}${josa(whom, "을", "를")} 찾으세요.`;
       // 시각이 비면 시각 이야기를 빼고 만다. 넣으면 "정해진 시간으로 정해졌어요"가 된다.
       if (!c.whenLabel) return `방문 시간이 정해졌어요. ${where}`;
       return `${c.whenLabel}${josa(c.whenLabel, "으로", "로")} 정해졌어요. ${where}`;

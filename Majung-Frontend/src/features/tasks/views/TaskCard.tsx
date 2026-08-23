@@ -7,7 +7,7 @@ import { Text, View } from "react-native";
 import { Button } from "@/shared/components/Button";
 import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
-import { josa } from "@/shared/utils/korean";
+import { joinKorean, josa } from "@/shared/utils/korean";
 
 import type { Task } from "../domain/task";
 

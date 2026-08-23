@@ -101,21 +101,25 @@ export function useVisitRequests() {
 
   const submit = useCallback(
     async (draft: Draft) => {
-      if (!formTaskId) return;
+      if (!formTaskId || sending) return;
+      // **잠금을 토큰 읽기 앞에 건다.** 뒤에 두면 토큰을 읽는 동안 버튼이 살아 있어,
+      // 한 번 더 누르면 방문 요청이 두 건 만들어진다.
+      setSending(true);
+      setError(null);
       const token = await loadToken();
       if (!token) {
         setError("다시 로그인해 주세요.");
+        setSending(false);
         return;
       }
 
       const first = slotToIso(draft.firstChoice);
       if (!first) {
         setError("가실 수 있는 때를 다시 골라 주세요.");
+        setSending(false);
         return;
       }
 
-      setSending(true);
-      setError(null);
       try {
         const created = await postVisit(token, {
           route_id: formTaskId,
@@ -140,7 +144,7 @@ export function useVisitRequests() {
         setSending(false);
       }
     },
-    [formTaskId],
+    [formTaskId, sending],
   );
 
   /**

@@ -83,10 +83,15 @@ function Button({
  * 다음 다섯 평일의 오전·오후를 낸다. 주민센터와 공단이 평일에만 열기 때문이다.
  */
 function proposalSlots(request: StaffRequest): readonly { label: string; iso: string }[] {
-  const base = request.firstChoiceAt ? new Date(request.firstChoiceAt) : new Date();
+  // **서버 값을 그대로 믿지 않는다.** 파싱되지 않는 시각이 오면 Invalid Date가 되고,
+  // 그 뒤 `toISOString()`이 RangeError를 던져 **요청 상세 화면이 렌더 도중에 터진다.**
+  const parsed = request.firstChoiceAt ? new Date(request.firstChoiceAt) : null;
+  const base = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+
   const out: { label: string; iso: string }[] = [];
   const cursor = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  while (out.length < 6) {
+  // 다섯 평일 × 오전·오후. 한 번에 둘을 넣으므로 열까지 채운다.
+  while (out.length < 10) {
     cursor.setDate(cursor.getDate() + 1);
     const day = cursor.getDay();
     if (day === 0 || day === 6) continue;
@@ -114,7 +119,6 @@ export function RequestDetailScreen({
     staffName: "",
     place: "",
   });
-  const [proposal, setProposal] = useState("");
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
 
@@ -307,7 +311,7 @@ export function RequestDetailScreen({
                     key={iso}
                     onPress={() => onProposeReschedule(iso)}
                     accessibilityRole="button"
-                    accessibilityLabel={`${label}로 제안하기`}
+                    accessibilityLabel={`${label}${josa(label, "으로", "로")} 제안하기`}
                     className="rounded-xl border-[1.5px] border-line bg-white px-4 py-3 active:opacity-80"
                   >
                     <Text className="text-caption font-bold text-ink-sub">{label}</Text>

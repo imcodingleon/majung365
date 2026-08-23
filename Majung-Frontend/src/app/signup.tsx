@@ -5,7 +5,6 @@
 //
 // **서버 호출은 여기서 한다.** 화면은 값을 모아 넘기기만 하고 렌더에 집중한다.
 import { useCallback, useState } from "react";
-import {  } from "react-native";
 import { router } from "expo-router";
 
 import { HelpScreen } from "@/features/help";

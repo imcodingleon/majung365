@@ -75,12 +75,14 @@ export function useTaskThreads(initial: Threads = {}) {
     (taskId: string) => {
       setOpenTaskId(taskId);
       if (loaded.current.has(taskId)) return;
-      loaded.current.add(taskId);
       void (async () => {
         const token = await loadToken();
         if (!token) return;
         try {
           const past = await getChatHistory(token, taskId);
+          // **성공한 뒤에 표시한다.** 먼저 표시하면 한 번 실패한 방은 앱을 다시 켜기
+          // 전까지 지난 대화를 영영 못 불러온다.
+          loaded.current.add(taskId);
           if (past.length === 0) return;
           setThreads((prev) => {
             // 그 사이에 말을 걸었으면 덮지 않는다.
@@ -183,6 +185,25 @@ export function useTaskThreads(initial: Threads = {}) {
           // 뒤다. 사전 고지는 로딩 안내도 겸한다(검색이 붙으면 응답이 느려진다).
           onEvidence: (ev) => {
             stage = ev.stage;
+            // **이미 만들어진 말풍선의 배지를 고쳐 준다.** 근거가 텍스트보다 먼저 오는
+            // 것이 정상이지만, 늦게 오면 배지가 "확인한 자료"로 굳은 채 남는다.
+            // 인터넷에서 찾은 답에 확인된 자료라고 붙는 것은 §6.4가 막으려던 바로 그것이다.
+            if (started) {
+              setThreads((prev) => ({
+                ...prev,
+                [taskId]: (prev[taskId] ?? []).map((m) =>
+                  m.id === replyId && m.role === "assistant"
+                    ? {
+                        ...m,
+                        evidence: {
+                          stage: ev.stage === "web" ? "web" : "rag",
+                          org: sourceLabel(ev.stage),
+                        },
+                      }
+                    : m,
+                ),
+              }));
+            }
             if (ev.stage === "web" && ev.notice) {
               append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: ev.notice });
             }
