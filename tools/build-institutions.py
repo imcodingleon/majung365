@@ -173,11 +173,43 @@ def write(filename: str, items: list[dict], source_url: str, checked_at: str) ->
     print(f"{filename}: {len(items)}건 (확인일 {checked_at})")
 
 
+def write_regions(centers: list[dict]) -> None:
+    """지역 선택지 목록을 프론트에 둔다.
+
+    위치 허가를 거부한 사용자가 지역을 직접 고르는 자리에 쓴다(§5.4-5). **기관 정보가
+    아니라 선택지 이름뿐이라** 주소·전화번호를 들고 있는 백엔드 데이터와 성격이 다르다.
+    고르는 순간 목록이 있어야 하므로 화면 쪽에 둔다.
+
+    센터가 있는 시군구만 담는다. 없는 지역은 "우리 지역이 없어요"로 받아 광역 지부만
+    안내한다.
+    """
+    by_sido: dict[str, list[str]] = {}
+    for c in centers:
+        by_sido.setdefault(c["sido"], [])
+        if c["district"] not in by_sido[c["sido"]]:
+            by_sido[c["sido"]].append(c["district"])
+
+    out_dir = ROOT / "Majung-Frontend" / "src" / "features" / "institutions" / "data"
+    out_dir.mkdir(parents=True, exist_ok=True)
+    payload = {
+        "_meta": {"generated_by": "tools/build-institutions.py"},
+        "regions": [
+            {"sido": sido, "districts": sorted(names)} for sido, names in sorted(by_sido.items())
+        ],
+    }
+    (out_dir / "regions.json").write_text(
+        json.dumps(payload, ensure_ascii=False, indent=2) + "\n", encoding="utf-8"
+    )
+    total = sum(len(v) for v in by_sido.values())
+    print(f"regions.json: 시도 {len(by_sido)} · 시군구 {total}")
+
+
 def main() -> None:
     branches, b_url, b_date = build_branches()
     centers, c_url, c_date = build_centers()
     write("koreha_branches.json", branches, b_url, b_date)
     write("mental_health_centers.json", centers, c_url, c_date)
+    write_regions(centers)
 
     kinds = Counter(b["kind"] for b in branches)
     print("  공단 기관 종류:", dict(kinds))

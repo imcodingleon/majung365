@@ -50,18 +50,6 @@ async function errorMessage(res: Response): Promise<string> {
 /**
  * POST {SER}/analyze — 음성(Blob) + 현재위치 → 감정×구체성 적응형 응답.
  * multipart. Content-Type은 브라우저가 boundary와 함께 자동 설정하므로 지정하지 않는다.
- */
-export async function postGate(code: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/gate`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code }),
-  });
-  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
-  const data = (await res.json()) as { token: string };
-  return data.token;
-}
-
 /** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */
 export async function getCenters(category?: string): Promise<Center[]> {
   const qs = category ? `?category=${encodeURIComponent(category)}` : "";
