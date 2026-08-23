@@ -13,6 +13,22 @@ import type { IntakeQuestion } from "./questionTypes";
 /** 모든 문항에 두는 "잘 모르겠어요". 같은 역할의 선택지가 이미 있으면 넣지 않는다. */
 const UNKNOWN = { id: "UNKNOWN", label: "잘 모르겠어요" };
 
+/**
+ * 이 항목이 필요 없는 사람이 고르는 답. **목록 맨 아래에 둔다.**
+ *
+ * 이것이 없으면 그 지원 항목이 **모든 사용자에게 무조건 뜬다.** 빚이 한 푼도 없는 사람에게
+ * 개인회생 안내가 붙고, 아프지 않은 사람에게 병원 안내가 붙는다. 하지도 않은 일이 할 일
+ * 목록에 쌓이면 목록 전체를 믿지 않게 된다.
+ *
+ * 문구를 다섯 문항에서 똑같이 쓴다. 같은 역할의 선택지가 문항마다 다른 말이면 그때마다
+ * 다시 읽어야 한다. "지금은"을 붙인 것은 영구적 거절이 아니라 오늘의 상태라는 뜻이다 —
+ * 나중에 마음이 바뀌면 다시 고를 수 있어야 한다.
+ *
+ * 판정에서는 `intake_rules.json`의 `resolved_options`가 이 값을 받아 할 일에서 뺀다.
+ * **선택지만 넣고 그쪽을 비워 두면 아무것도 달라지지 않는다.** 둘이 짝이다.
+ */
+const NOT_NEEDED = { id: "NOT_NEEDED", label: "지금은 필요 없어요" };
+
 export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
   // ── 분야 1 주거 ─────────────────────────────────────────────
   {
@@ -57,6 +73,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "ALL_HOUSEHOLD_HOMELESS", label: "함께 살 가족 모두 자기 집이 없어요" },
       { id: "RESPONSIBLE_HOUSEHOLD_HEAD", label: "내가 가족의 생활을 책임지고 있어요" },
       { id: "IMMEDIATE_SHELTER", label: "오래 살 집보다 오늘 잘 곳이 먼저 필요해요" },
+      { ...NOT_NEEDED, exclusive: true },
       { ...UNKNOWN, exclusive: true },
     ],
   },
@@ -128,6 +145,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "FACILITY_BASIC_LIVING", label: "생활관에서 지낼 기본 생활비가 필요해요", collapsed: true },
       { id: "TRAINING_PREP", label: "직업교육을 받는 동안 쓸 돈이 필요해요", collapsed: true },
       { id: "JOB_SEARCH_PREP", label: "일자리를 찾는 동안 쓸 돈이 필요해요", collapsed: true },
+      NOT_NEEDED,
       UNKNOWN,
     ],
   },
@@ -388,6 +406,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "HEALTH_CHECKUP", label: "건강검진을 받고 싶어요" },
       { id: "MENTAL_HEALTHCARE", label: "우울하거나 불안해서 병원 진료가 필요해요" },
       { id: "FAMILY_HEALTHCARE", label: "가족의 병원비나 치료 도움이 필요해요" },
+      NOT_NEEDED,
       UNKNOWN,
     ],
   },
@@ -404,6 +423,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "ASSESSMENT", label: "심리검사를 받고 결과 설명도 듣고 싶어요" },
       { id: "MEDICAL_REFERRAL", label: "병원이나 전문 상담기관을 연결받고 싶어요" },
       { id: "FAMILY", label: "가족도 함께 상담받고 싶어요" },
+      NOT_NEEDED,
       UNKNOWN,
     ],
   },
@@ -436,6 +456,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "COURT_PROCESS", label: "법원에 개인회생이나 파산을 신청해 진행 중이에요" },
       { id: "CCRS_PROCESS", label: "신용회복위원회에서 빚 조정을 진행 중이에요" },
       { id: "STOPPED", label: "신청했는데 중간에 멈췄거나 안 됐어요" },
+      NOT_NEEDED,
       UNKNOWN,
       // 모르는 것과 말하고 싶지 않은 것은 다르다. 채무는 민감한 주제라 둘 다 둔다 (규칙 ⑥).
       { id: "OPT_OUT", label: "답하고 싶지 않아요" },
