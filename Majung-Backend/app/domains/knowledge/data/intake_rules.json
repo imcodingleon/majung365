@@ -61,7 +61,13 @@
       ],
       "blocked_options": [
         "UNUSABLE"
-      ]
+      ],
+      "lead_data_key": "bankAccountDetail",
+      "lead_by_option": {
+        "SEIZED": "identity-seizure-free-account",
+        "SEIZURE_WORRY": "identity-seizure-free-account"
+      },
+      "_note": "압류(SEIZED)만 갈 곳이 다르다 — 은행이 풀어줄 수 없고 압류를 막아주는 통장을 새로 만들어야 한다. BANK_RESTRICTED·LIMIT_RESTRICTED는 둘 다 은행 창구라 '쓰던 통장이 막혔을 때' 카드가 그대로 맞다. SEIZURE_WORRY는 아직 압류가 걸리지 않았지만 걱정하는 상태이며, 생계비계좌는 압류를 푸는 것이 아니라 미리 보호받는 계좌를 만드는 것이라 여기에도 맞는다."
     },
     {
       "route_id": "R6",
@@ -105,7 +111,11 @@
       "resolved_options": [
         "NOT_NEEDED",
         "OPT_OUT"
-      ]
+      ],
+      "lead_by_option": {
+        "COURT_PROCESS": "debt-court-in-progress",
+        "STOPPED": "debt-restart"
+      }
     },
     {
       "route_id": "R15",

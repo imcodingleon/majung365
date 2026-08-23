@@ -308,3 +308,48 @@ def test_reachable_refs_follow_the_real_path() -> None:
     reachable = usecase.reachable_kb_refs()
     assert "identity-bank-account-unblock" in reachable
     assert "debt-legal-aid" not in reachable
+
+
+# ── 실제 데이터로 고정한다 ──
+
+
+def test_real_data_splits_bank_account_by_reason() -> None:
+    """**압류는 은행이 풀어줄 수 없다.**
+
+    실제 규칙표와 KB로 확인한다. 데이터만 바뀌어도 갈림이 무너지면 여기서 걸린다.
+    """
+    usecase = _usecase_with_graph()
+
+    def card_name(answers: dict[str, object]) -> str:
+        return next(t for t in usecase.run(answers) if t.route_id == "R10").card.name
+
+    seized = card_name(
+        {"bankAccountStatus": "UNUSABLE", "bankAccountDetail": "SEIZED"}
+    )
+    assert "압류" in seized
+
+    # 은행이 건 제한과 한도 문제는 둘 다 은행 창구다 — 카드를 가르지 않는다.
+    for detail in ("BANK_RESTRICTED", "LIMIT_RESTRICTED"):
+        assert card_name(
+            {"bankAccountStatus": "UNUSABLE", "bankAccountDetail": detail}
+        ) == card_name({"bankAccountStatus": "UNUSABLE"})
+
+    # 아직 압류가 걸리지 않았지만 걱정하는 사람에게도 미리 만들도록 안내한다.
+    worry = card_name(
+        {"bankAccountStatus": "NONE", "bankAccountDetail": "SEIZURE_WORRY"}
+    )
+    assert "압류" in worry
+
+
+def test_real_data_splits_debt_by_stage() -> None:
+    """법원 절차를 밟는 사람에게 신용회복위원회 상담을 안내하지 않는다."""
+    usecase = _usecase_with_graph()
+
+    def card_id(stage: str) -> str:
+        tasks = usecase.run({"debtProcedureStage": stage})
+        return next(t for t in tasks if t.route_id == "R14").card.institution_id
+
+    assert card_id("COURT_PROCESS") == "debt-court-in-progress"
+    assert card_id("STOPPED") == "debt-restart"
+    # 아직 시작 안 한 사람에게는 기본 대표가 맞다.
+    assert card_id("STARTING") == "debt-credit-recovery"
