@@ -37,7 +37,9 @@ _ROUTE_LEAD: dict[RouteId, str] = {
     RouteId.R6: "employment-koreha-job",
     RouteId.R7: "startup-koreha-support",
     RouteId.R8: "health-mental-support",
-    RouteId.R9: "identity-resident-registration",
+    # 재발급과 재등록은 다른 절차다. "신분증 잃어버렸는데"에 재등록이 나가면
+    # 주민센터에서 헛걸음한다.
+    RouteId.R9: "identity-id-card-reissue",
     RouteId.R10: "identity-bank-account",
     RouteId.R11: "identity-address-registration",
     RouteId.R12: "welfare-basic-livelihood",

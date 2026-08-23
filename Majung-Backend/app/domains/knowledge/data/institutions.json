@@ -118,12 +118,9 @@
     {
       "id": "identity-resident-registration",
       "route_ids": [
-        "R9",
         "R11"
       ],
-      "lead_for": [
-        "R9"
-      ],
+      "lead_for": [],
       "name": "주민등록 재등록",
       "summary_easy": "주민센터에서 주민등록 재등록을 신청할 수 있어요. 다른 신청들도 대부분 여기서 시작돼요.",
       "where": "가까운 주민센터(행정복지센터)",
@@ -141,7 +138,10 @@
       "verified_at": "2026-08-22",
       "contact_key": "110",
       "desk_place": "가까운 주민센터",
-      "desk_say": "주민등록 재등록하러 왔어요"
+      "desk_say": "주민등록 재등록하러 왔어요",
+      "companion_for": [
+        "R11"
+      ]
     },
     {
       "id": "welfare-koreha-emergency",
@@ -589,6 +589,36 @@
         "https://slb.scourt.go.kr/rel/guide/support/index_a.jsp",
         "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490",
         "https://slb.scourt.go.kr/rel/guide/support/index_f.jsp"
+      ],
+      "verified_at": "2026-08-23"
+    },
+    {
+      "id": "identity-id-card-reissue",
+      "route_ids": [
+        "R9"
+      ],
+      "lead_for": [
+        "R9"
+      ],
+      "name": "주민등록증 재발급",
+      "summary_easy": "신분증을 잃어버렸거나 못 쓰게 됐으면 주민센터에서 다시 만들 수 있어요. 만드는 데 2주쯤 걸리는데, 그동안 쓸 수 있는 임시 신분증을 신청한 자리에서 받을 수 있어요. 그 임시 신분증은 30일 동안 쓸 수 있어요.",
+      "where": "가까운 주민센터",
+      "docs": [
+        "6개월 안에 찍은 사진 1장 (가로 3.5cm 세로 4.5cm, 모자 안 쓴 상반신)",
+        "신분 확인 서류",
+        "수수료 5,000원 (칩을 넣으면 10,000원)"
+      ],
+      "next_step": "사진을 챙겨 주민센터에 가서 '주민등록증 재발급하러 왔어요'라고 말하고, '임시 신분증도 받고 싶어요'라고 함께 말하세요.",
+      "deadline": null,
+      "source_url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+      "contact_key": "110",
+      "desk_place": "가까운 주민센터",
+      "desk_say": "주민등록증 재발급하러 왔어요. 임시 신분증도 받고 싶어요",
+      "source_urls": [
+        "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+        "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_2/screen.do",
+        "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_5/screen.do",
+        "https://www.law.go.kr/법령/주민등록법시행령/제41조"
       ],
       "verified_at": "2026-08-23"
     }
