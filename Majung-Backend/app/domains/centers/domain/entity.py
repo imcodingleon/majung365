@@ -36,3 +36,22 @@ class DistrictOffice:
     name: str
     zipcode: str
     address: str
+
+
+@dataclass(frozen=True)
+class SupportInstitution:
+    """지원 기관 하나 — 공단 지부·교육원·허그센터와 정신건강복지센터.
+
+    Center(지도용)와 달리 좌표가 없고 DistrictOffice(주민센터)와 달리 전화번호가 있다.
+    쓰임도 다르다. **지원 항목마다 갈 기관의 종류가 정해져 있어서** 항목으로 조회한다 —
+    "가까운 공단"에 교육원이 나오면 헛걸음이다.
+    """
+
+    name: str
+    # branch·head(공단 지원 전반) | training(직업훈련) | hug(허그센터) | mental_health
+    kind: str
+    sido: str
+    # 시군구. 공단 지부는 광역 단위로 관할해 비어 있다.
+    district: str
+    address: str
+    phone: str

@@ -127,3 +127,22 @@ def section_of(route: RouteId) -> SectionId:
 def routes_in(section: SectionId) -> tuple[RouteId, ...]:
     """분야에 속한 지원 항목들. RouteId 선언 순서를 그대로 따른다."""
     return tuple(r for r in RouteId if ROUTE_SECTION[r] == section)
+
+
+# 지원 항목마다 갈 수 있는 기관의 종류. **"가까운 공단"에 교육원이 나오면 헛걸음이다.**
+# 여기 없는 항목은 공단 기관이 아니라 주민센터·은행·법원으로 간다 —
+# 그쪽은 district_offices 조회와 카드의 창구 안내가 맡는다.
+ROUTE_INSTITUTION_KINDS: dict[RouteId, frozenset[str]] = {
+    RouteId.R1: frozenset({"branch", "head"}),  # 숙식제공
+    RouteId.R2: frozenset({"branch", "head"}),  # 공단 긴급지원
+    RouteId.R3: frozenset({"branch", "head"}),  # 기초건강지원
+    RouteId.R4: frozenset({"branch", "head"}),  # 주거지원
+    RouteId.R6: frozenset({"training", "branch"}),  # 취업·직업훈련
+    RouteId.R7: frozenset({"branch", "head"}),  # 창업지원
+    RouteId.R8: frozenset({"hug", "mental_health"}),  # 심리상담
+}
+
+
+def institution_kinds_for(route: RouteId) -> frozenset[str]:
+    """그 항목에서 안내할 기관 종류. 없으면 빈 집합 — 조회할 기관이 없는 항목이다."""
+    return ROUTE_INSTITUTION_KINDS.get(route, frozenset())
