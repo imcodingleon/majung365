@@ -20,3 +20,11 @@ export type {
   IntakeCardOption,
   IntakeTask,
 } from "./intake";
+
+export type {
+  StaffLoginRequest,
+  StaffLoginResponse,
+  StaffMeResponse,
+  StaffOrgKind,
+} from "./staff";
+export { orgKindLabel } from "./staff";

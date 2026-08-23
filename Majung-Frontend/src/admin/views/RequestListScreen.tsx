@@ -6,12 +6,18 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { COLORS } from "@/shared/theme/colors";
+import { orgKindLabel, type StaffOrgKind } from "@/shared/types";
 import type { VisitStatus } from "@/shared/types/visit";
 
 import { isNew, statusLabel, type StaffRequest } from "../domain/staffRequest";
 
 type Props = {
   requests: readonly StaffRequest[];
+  /**
+   * 로그인한 담당자. 기관명을 고정값으로 박아 두면 **다른 기관 담당자에게도 공단이라고
+   * 적힌 화면이 나간다.** 지금 누가 무엇을 보고 있는지가 화면에 있어야 한다 (§8.2).
+   */
+  staff: { displayName: string; orgKind: StaffOrgKind; branch: string } | null;
   onOpen: (id: string) => void;
   onSignOut: () => void;
 };
@@ -36,7 +42,7 @@ function StatusBadge({ status }: { status: VisitStatus }) {
   );
 }
 
-export function RequestListScreen({ requests, onOpen, onSignOut }: Props) {
+export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props) {
   // 아직 손대지 않은 요청을 위로 올린다. 급한 사람의 요청이 아래로 밀리면 안 된다 (§7.5).
   const sorted = [...requests].sort((a, b) => Number(isNew(b.status)) - Number(isNew(a.status)));
   const newCount = requests.filter((r) => isNew(r.status)).length;
@@ -45,9 +51,14 @@ export function RequestListScreen({ requests, onOpen, onSignOut }: Props) {
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
       <View className="border-b border-line bg-white px-5 py-4">
         <View className="flex-row items-center justify-between">
-          <View>
-            <Text className="text-[13px] text-ink-muted">한국법무보호복지공단</Text>
+          <View className="flex-1 pr-2">
+            <Text className="text-[13px] text-ink-muted" numberOfLines={1}>
+              {staff ? `${orgKindLabel(staff.orgKind)} ${staff.branch}` : ""}
+            </Text>
             <Text className="mt-0.5 text-lg font-extrabold text-ink-strong">방문 예정 알림</Text>
+            {staff ? (
+              <Text className="mt-0.5 text-[13px] text-ink-sub">{staff.displayName} 담당자</Text>
+            ) : null}
           </View>
           <Pressable
             onPress={onSignOut}
@@ -59,11 +70,21 @@ export function RequestListScreen({ requests, onOpen, onSignOut }: Props) {
           </Pressable>
         </View>
 
+        {/* 목록은 아직 화면 안의 예시다. 로그인은 서버가 확인하지만 요청 목록 API가
+            아직 붙지 않았다 — 그 사실을 화면이 숨기지 않는다 */}
         <View className="mt-3 rounded-lg border border-alert-line bg-alert-soft px-3 py-2">
           <Text className="text-[13px] font-bold text-alert">
-            시연용 화면 · 실제 자료가 아닙니다
+            아래 목록은 예시입니다 · 실제 요청이 아닙니다
           </Text>
         </View>
+
+        {/* 다른 기관 요청은 서버가 걸러 아예 오지 않는다. 화면이 거르는 것이 아니라는
+            사실을 담당자가 알아야 목록을 믿을 수 있다 */}
+        {staff ? (
+          <Text className="mt-2 text-[13px] leading-[21px] text-ink-muted">
+            {staff.branch}으로 온 요청만 보입니다.
+          </Text>
+        ) : null}
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">

@@ -9,13 +9,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "@/shared/theme/colors";
 
 type Props = {
-  failed: boolean;
+  /** 실패 문구. 서버가 준 말을 그대로 낸다. 없으면 null. */
+  error: string | null;
+  /** 서버에 묻는 중. 두 번 누르는 것을 막는다. */
+  busy?: boolean;
   /** 손을 놓아 스스로 닫혔을 때. 왜 나갔는지 알려준다. */
   timedOut: boolean;
   onSignIn: (id: string, password: string) => void;
 };
 
-export function AdminLoginScreen({ failed, timedOut, onSignIn }: Props) {
+export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
   const [id, setId] = useState("");
   const [password, setPassword] = useState("");
 
@@ -66,11 +69,11 @@ export function AdminLoginScreen({ failed, timedOut, onSignIn }: Props) {
           accessibilityLabel="비밀번호"
         />
 
-        {failed ? (
+        {/* 아이디가 틀렸는지 비밀번호가 틀렸는지 구분해 알리지 않는다. 구분하면 존재하는
+            아이디를 찾아내는 길이 된다 — 서버가 그렇게 응답하고 화면도 그대로 낸다 */}
+        {error ? (
           <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
-            <Text className="text-[15px] leading-[24px] text-alert-ink">
-              아이디나 비밀번호가 맞지 않습니다.
-            </Text>
+            <Text className="text-[15px] leading-[24px] text-alert-ink">{error}</Text>
           </View>
         ) : null}
 
@@ -84,14 +87,16 @@ export function AdminLoginScreen({ failed, timedOut, onSignIn }: Props) {
 
         <Pressable
           onPress={() => onSignIn(id, password)}
-          disabled={!ready}
+          disabled={!ready || busy}
           accessibilityRole="button"
-          accessibilityState={{ disabled: !ready }}
+          accessibilityState={{ disabled: !ready || busy, busy }}
           accessibilityLabel="들어가기"
           className="mt-6 items-center rounded-2xl py-4 active:opacity-90"
-          style={{ backgroundColor: ready ? COLORS.brand : COLORS.brandMuted }}
+          style={{ backgroundColor: ready && !busy ? COLORS.brand : COLORS.brandMuted }}
         >
-          <Text className="text-[17px] font-extrabold text-white">들어가기</Text>
+          <Text className="text-[17px] font-extrabold text-white">
+            {busy ? "확인하는 중이에요" : "들어가기"}
+          </Text>
         </Pressable>
       </View>
     </SafeAreaView>

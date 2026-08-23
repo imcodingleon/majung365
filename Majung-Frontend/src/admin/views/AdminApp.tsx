@@ -1,8 +1,10 @@
 // 담당자 화면 묶음 (§8.3).
 //
-// ⚠️ **시연용이다.** 실제 인증도, 실데이터 연결도 없다. §12-3이 정해지면 이 폴더는
-// 별도 앱으로 떼어내고 §8.2의 네 가지 전제 조건(계정 체계·접근 통제·열람 감사 로그·
-// 자동 로그아웃)으로 대체한다.
+// **로그인은 서버가 확인한다** (§8.2). 계정은 운영 쪽에서 발급하며 가입 화면이 없다.
+// 목록 데이터는 아직 화면 안의 예시다 — 서버 목록 API가 붙으면 그 자리만 바뀐다.
+//
+// **열람 제한은 서버가 한다.** 다른 기관의 요청은 목록에 아예 오지 않고, id를 알아내
+// 수정을 시도해도 거부된다. 화면이 거르는 것이 아니다.
 //
 // 화면 전환을 라우트가 아니라 상태로 한다. 떼어낼 때 이 폴더만 옮기면 되게 하려는 것이다.
 import { useCallback, useState } from "react";
@@ -38,7 +40,8 @@ export function AdminApp() {
   if (!session.signedIn) {
     return (
       <AdminLoginScreen
-        failed={session.failed}
+        error={session.error}
+        busy={session.busy}
         timedOut={session.timedOut}
         onSignIn={session.signIn}
       />
@@ -99,6 +102,15 @@ export function AdminApp() {
     <View className="flex-1" onTouchStart={session.touch}>
       <RequestListScreen
         requests={requests}
+        staff={
+          session.session
+            ? {
+                displayName: session.session.display_name,
+                orgKind: session.session.org_kind,
+                branch: session.session.branch,
+              }
+            : null
+        }
         onOpen={touched<string>((id) => setOpenId(id))}
         onSignOut={() => session.signOut()}
       />

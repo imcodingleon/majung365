@@ -13,6 +13,11 @@ import type {
   ChatStreamHandlers,
   TaskCard,
 } from "../types";
+import type {
+  StaffLoginRequest,
+  StaffLoginResponse,
+  StaffMeResponse,
+} from "../types/staff";
 
 /** 노출 허용 변수만 사용(EXPO_PUBLIC_). 미설정 시 로컬 기본값. */
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -68,6 +73,53 @@ export async function postIntakeAnalyze(
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as IntakeAnalyzeResponse;
+}
+
+// ── 담당자 (§8.2) ─────────────────────────────────────────────────────
+//
+// **가입 엔드포인트가 없다.** 계정은 운영 쪽에서 발급한다. 관리자 앱은 정의상
+// 출소자 명단을 다루므로 스스로 계정을 만드는 길을 열면 그게 곧 구멍이 된다.
+
+/**
+ * POST /api/staff/login — 담당자 로그인.
+ *
+ * **아이디가 틀렸는지 비밀번호가 틀렸는지 서버가 구분해 알리지 않는다.** 구분하면
+ * 존재하는 아이디를 찾아내는 길이 되기 때문이다. 화면도 그 문구를 그대로 낸다.
+ */
+export async function postStaffLogin(req: StaffLoginRequest): Promise<StaffLoginResponse> {
+  const res = await fetch(`${API_BASE}/api/staff/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffLoginResponse;
+}
+
+/** GET /api/staff/me — 로그인한 담당자 정보. 토큰이 아직 살아 있는지 확인하는 데도 쓴다. */
+export async function getStaffMe(token: string): Promise<StaffMeResponse> {
+  const res = await fetch(`${API_BASE}/api/staff/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffMeResponse;
+}
+
+/**
+ * POST /api/staff/logout — 서버에서 세션을 지운다.
+ *
+ * **실패해도 화면은 로그아웃한다.** 공용 기기를 전제하므로 나가는 길이 막히면 안 된다.
+ * 서버 세션은 8시간 뒤 어차피 만료된다.
+ */
+export async function postStaffLogout(token: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/staff/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // 연결이 끊겨도 화면은 나간다.
+  }
 }
 
 /** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */
