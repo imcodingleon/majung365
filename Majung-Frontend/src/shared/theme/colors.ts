@@ -21,6 +21,7 @@ export const COLORS = {
   lineStrong: "#dfe3ec",
   surface: "#ffffff",
   card: "#fbfcfe",
+  bubble: "#f1f3f8",
 
   noteInfo: "#eef7ff",
   noteInfoLine: "#cfe6ff",

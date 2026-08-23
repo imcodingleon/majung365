@@ -3,13 +3,9 @@
 // 상태가 없으면 사용자는 보내놓고 아무것도 모르는 채 기다리게 된다. 그래서 요청이 어떤 상태를
 // 거치는지, 각 상태에서 무엇이 보이는지를 도메인에 못 박는다.
 
-export type VisitStatus =
-  | "sent"
-  | "acknowledged"
-  | "confirmed"
-  | "reschedule_proposed"
-  | "completed"
-  | "cancelled";
+import type { VisitStatus } from "@/shared/types/visit";
+
+export type { VisitStatus };
 
 /** 확정되었을 때 알려주는 것. **만날 사람과 만날 장소가 이 기능의 핵심이다** (§7.1). */
 export type VisitConfirmation = {
