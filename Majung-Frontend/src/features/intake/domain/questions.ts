@@ -65,16 +65,18 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q1-2",
     sectionId: "housing",
     routeId: "R4",
-    prompt: "가족과 오래 살 집을 구하려고 하나요?",
-    kind: "multi",
-    dataKey: "housingConditionIds",
+    // 원래는 공단 주거지원의 자격 요건 넷을 그대로 선택지로 옮겨 두었다. 요건은 **창구에서
+    // 서류로 확인할 것**이지 사용자에게 물을 것이 아니었다. 무주택 여부를 본인이 알기 어렵고,
+    // 부양가족 유무와 세대주 여부는 문구로 구별되지 않아 사실상 같은 답이 둘이었다.
+    // 게다가 R4 카드(긴급복지 주거지원)는 가족 단위 요건을 담고 있지 않다 (2026-08-23).
+    prompt: "오래 지낼 집을 구해야 하나요?",
+    help: "오늘 밤 지낼 곳은 앞에서 여쭤봤어요. 여기는 앞으로 지낼 집이에요.",
+    kind: "single",
+    dataKey: "housingNeed",
     options: [
-      { id: "HAS_DEPENDENT_FAMILY", label: "함께 살면서 내가 생활비를 대야 할 가족이 있어요" },
-      { id: "ALL_HOUSEHOLD_HOMELESS", label: "함께 살 가족 모두 자기 집이 없어요" },
-      { id: "RESPONSIBLE_HOUSEHOLD_HEAD", label: "내가 가족의 생활을 책임지고 있어요" },
-      { id: "IMMEDIATE_SHELTER", label: "오래 살 집보다 오늘 잘 곳이 먼저 필요해요" },
-      { ...NOT_NEEDED, exclusive: true },
-      { ...UNKNOWN, exclusive: true },
+      { id: "NEEDED", label: "네, 지낼 집을 구해야 해요" },
+      NOT_NEEDED,
+      UNKNOWN,
     ],
   },
   {
@@ -132,50 +134,18 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q2-1",
     sectionId: "living",
     routeId: "R2",
+    // 용도 넷은 결과가 같지만 남긴다. **창구에서 할 말과 챙겨 갈 서류가 갈리기 때문이다.**
+    // R2 카드의 준비물에 "돈이 필요한 이유를 보여주는 서류"가 있는데, 그것이 진료비
+    // 영수증인지 임대차계약서인지는 이 답이 정한다 (2026-08-23).
     prompt: "지금 가장 급하게 필요한 돈은 어디에 쓰나요?",
     kind: "single",
     dataKey: "emergencyExpenseType",
-    // 뒤의 셋은 생활관 이용자·훈련 참여자·구직 활동자에게만 해당한다. 모두에게 보일 이유가 없다.
-    expandLabel: "그 밖의 비용",
     options: [
       { id: "LIVING_EXPENSE", label: "밥값과 생활비가 필요해요" },
       { id: "MEDICAL_EXPENSE", label: "병원비가 필요해요" },
       { id: "HOUSING_EXPENSE", label: "월세나 방 구할 돈이 필요해요" },
       { id: "CHILD_EDUCATION", label: "아이 학비와 학용품값이 필요해요" },
-      { id: "FACILITY_BASIC_LIVING", label: "생활관에서 지낼 기본 생활비가 필요해요", collapsed: true },
-      { id: "TRAINING_PREP", label: "직업교육을 받는 동안 쓸 돈이 필요해요", collapsed: true },
-      { id: "JOB_SEARCH_PREP", label: "일자리를 찾는 동안 쓸 돈이 필요해요", collapsed: true },
       NOT_NEEDED,
-      UNKNOWN,
-    ],
-  },
-  {
-    id: "Q2-1-1",
-    sectionId: "living",
-    routeId: "R2",
-    prompt: "지금 직업교육을 받고 있나요?",
-    kind: "single",
-    dataKey: "trainingParticipation",
-    showWhen: { questionId: "Q2-1", optionIds: ["TRAINING_PREP"] },
-    options: [
-      { id: "ATTENDING", label: "네, 받고 있어요" },
-      { id: "LOOKING", label: "알아보는 중이에요" },
-      { id: "NOT_ATTENDING", label: "아니요, 받지 않아요" },
-      UNKNOWN,
-    ],
-  },
-  {
-    id: "Q2-1-2",
-    sectionId: "living",
-    routeId: "R2",
-    prompt: "일자리를 찾는 중인가요?",
-    kind: "single",
-    dataKey: "jobSearchActivity",
-    showWhen: { questionId: "Q2-1", optionIds: ["JOB_SEARCH_PREP"] },
-    options: [
-      { id: "SEARCHING", label: "네, 찾고 있어요" },
-      { id: "PLANNED", label: "찾아볼 계획이에요" },
-      { id: "NOT_NOW", label: "아니요, 지금은 아니에요" },
       UNKNOWN,
     ],
   },
@@ -395,17 +365,19 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q5-1",
     sectionId: "health",
     routeId: "R3",
+    // R3 카드는 "병원을 연결해 주고 진료비와 약값을 도와주고 건강검진도 받을 수 있다"를
+    // 한 문장에 담는다. 진료와 약을 따로 물을 근거가 카드에 없어 합쳤다.
+    // **"가족의 병원비"는 뺐다.** 공단 기초건강지원은 본인 대상이라 그 답을 고르면
+    // 답이 없는 안내가 나간다. **"우울하거나 불안해서"도 뺐다.** 바로 다음 문항이
+    // 마음 상담을 전담한다 (2026-08-23).
     prompt: "건강 때문에 어떤 도움이 필요한가요?",
     kind: "single",
     dataKey: "healthSupportNeed",
     options: [
-      // 이 답 하나만 119·응급실 즉시 안내로 간다. 나머지 여섯과 처리가 다르다 (규칙 ⑩).
+      // 이 답만 119·응급실 안내로 간다. 목록 맨 위에 두고 구분선으로 떼어 놓는다 (규칙 ⑩).
       { id: "IMMEDIATE_TREATMENT", label: "지금 바로 치료받아야 해요", standout: true },
-      { id: "TREATMENT", label: "병원 진료나 치료가 필요해요" },
-      { id: "MEDICATION", label: "약이 필요해요" },
+      { id: "TREATMENT", label: "병원에 가거나 약을 받아야 해요" },
       { id: "HEALTH_CHECKUP", label: "건강검진을 받고 싶어요" },
-      { id: "MENTAL_HEALTHCARE", label: "우울하거나 불안해서 병원 진료가 필요해요" },
-      { id: "FAMILY_HEALTHCARE", label: "가족의 병원비나 치료 도움이 필요해요" },
       NOT_NEEDED,
       UNKNOWN,
     ],
@@ -414,21 +386,19 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q5-2",
     sectionId: "health",
     routeId: "R8",
-    prompt: "마음이 힘들 때 어떤 도움부터 받고 싶은가요?",
+    // 상담 방식(1:1·집단·심리검사·가족)을 넷으로 물었는데 **센터에 가면 거기서 정하는 일이다.**
+    // R8 카드에도 방식을 나누는 내용이 없어, 고른 답이 안내를 바꾸지 못했다.
+    // 미리 정하게 하면 무엇이 자기에게 맞는지 또 판단해야 한다 (2026-08-23).
+    prompt: "마음이 힘들 때 상담을 받아 보시겠어요?",
+    help: "어떤 방식으로 상담할지는 가서 함께 정해요. 지금 고르지 않으셔도 돼요.",
     kind: "single",
     dataKey: "counselingNeed",
     options: [
-      { id: "INDIVIDUAL", label: "상담사와 1:1로 이야기하고 싶어요" },
-      { id: "GROUP", label: "다른 사람들과 함께 상담받고 싶어요" },
-      { id: "ASSESSMENT", label: "심리검사를 받고 결과 설명도 듣고 싶어요" },
-      { id: "MEDICAL_REFERRAL", label: "병원이나 전문 상담기관을 연결받고 싶어요" },
-      { id: "FAMILY", label: "가족도 함께 상담받고 싶어요" },
+      { id: "WANTED", label: "네, 상담받고 싶어요" },
       NOT_NEEDED,
       UNKNOWN,
     ],
   },
-
-  // ── 분야 6 기타·권리구제 ────────────────────────────────────
   {
     id: "Q6-1",
     sectionId: "rights",

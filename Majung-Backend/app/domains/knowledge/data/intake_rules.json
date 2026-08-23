@@ -14,7 +14,7 @@
     },
     {
       "route_id": "R4",
-      "data_key": "housingConditionIds",
+      "data_key": "housingNeed",
       "resolved_options": ["NOT_NEEDED"]
     },
     {
