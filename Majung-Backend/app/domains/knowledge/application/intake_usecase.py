@@ -15,7 +15,8 @@ import logging
 from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
-from app.domains.knowledge.domain.intake import IntakeRule, judge
+from app.domains.knowledge.domain.graph_engine import GraphNode, kb_ref_for_route
+from app.domains.knowledge.domain.intake import IntakeRule, IntakeVerdict, judge
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import (
@@ -34,10 +35,14 @@ class IntakeUseCase:
         institutions: InstitutionRepository,
         rules: tuple[IntakeRule, ...],
         blocking_routes: frozenset[str] = frozenset(),
+        graph_nodes: dict[str, GraphNode] | None = None,
     ) -> None:
         self._institutions = institutions
         self._rules = rules
         self._blocking_routes = blocking_routes
+        # 상태별로 대표가 갈리는 항목은 그래프가 정한다(기획서 §4.1).
+        # 없으면 항목의 기본 대표를 쓴다 — 갈림이 없는 항목이 대부분이다.
+        self._nodes = graph_nodes or {}
 
     def run(
         self,
@@ -53,7 +58,7 @@ class IntakeUseCase:
                 section_id=v.section_id.value,
                 section_label=section_label_for(v.section_id),
                 blocks_others=v.blocks_others,
-                card=self._card_for(v.route_id),
+                card=self._card_for(v),
             )
             for v in verdicts
             if v.route_id not in completed
@@ -74,11 +79,40 @@ class IntakeUseCase:
             contact_hours=contact.hours,
         )
 
-    def _card_for(self, route: RouteId) -> IntakeCard:
+    def _lead_for(self, verdict: IntakeVerdict) -> Institution:
+        """그 사람에게 맞는 대표 제도.
+
+        **답에 따라 대표가 갈리는 항목이 있다.** "통장은 있지만 쓰기 어려워요"를 고른
+        사람에게 "계좌를 새로 만드세요"가 나가면 첫 화면부터 틀린 것을 읽는다.
+        그 갈림은 그래프의 `for_state`가 정본이므로 여기서 물어본다.
+
+        그래프에 답이 없으면(노드가 없거나 갈림이 없으면) 항목의 기본 대표를 쓴다.
+        """
+        kb_ref = kb_ref_for_route(self._nodes, verdict.route_id.value, verdict.state)
+        if kb_ref:
+            found = self._institutions.by_id(kb_ref)
+            if found is not None:
+                return found
+            # 그래프가 가리킨 제도가 KB에 없다. 데이터가 어긋난 것이라 조용히 넘기지
+            # 않는다 — 기본 대표로 답하되 무엇이 어긋났는지 남긴다.
+            logger.warning(
+                "그래프의 kb_ref가 KB에 없다 — route=%s state=%s kb_ref=%s",
+                verdict.route_id.value,
+                verdict.state.value,
+                kb_ref,
+            )
+        return self._institutions.lead_of(verdict.route_id)
+
+    def _card_for(self, verdict: IntakeVerdict) -> IntakeCard:
         """항목당 카드 하나. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
         카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다."""
-        lead = self._institutions.lead_of(route)
-        paths = (lead, *self._institutions.companions_of(route))
+        route = verdict.route_id
+        lead = self._lead_for(verdict)
+        # 대표가 동반 목록에 다시 들어가면 같은 곳이 두 번 보인다.
+        companions = [
+            i for i in self._institutions.companions_of(route) if i.id != lead.id
+        ]
+        paths = (lead, *companions)
         return IntakeCard(
             institution_id=lead.id,
             name=lead.name,

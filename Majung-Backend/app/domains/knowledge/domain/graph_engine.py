@@ -204,3 +204,36 @@ def routes_blocking_others(nodes: dict[str, GraphNode]) -> frozenset[str]:
     return frozenset(
         route for nid in required for route in nodes[nid].route_ids if nid in nodes
     )
+
+
+def kb_ref_for_route(
+    nodes: dict[str, GraphNode], route_id: str, state: NodeState
+) -> str | None:
+    """그 지원 항목을 그 상태에서 다룰 때 어느 제도가 대표인가.
+
+    **초기 진단이 상태별 갈림을 그래프에서 받아 가는 자리다**(기획서 §4.1).
+    "통장은 있지만 쓰기 어려워요"에 "계좌를 새로 만드세요"가 나가던 문제를 여기서
+    막는다. 규칙표는 답변을 상태로 옮기는 데까지만 하고, 상태로 제도를 고르는 것은
+    `for_state`가 정본이다.
+
+    노드가 없거나 그 상태에 맞는 경로가 없으면 None이다. 그러면 부르는 쪽이 항목의
+    기본 대표(`lead_of`)를 쓴다 — 갈림이 없는 항목은 노드도 필요 없기 때문이다.
+
+    선행조건 충족 여부는 보지 않는다. 초기 진단은 "무엇부터"가 아니라 "무엇이 할
+    일인가"를 내고, 순서는 `blocks_others`가 이미 맡고 있다.
+    """
+    matched = [n for n in nodes.values() if route_id in n.route_ids]
+    if len(matched) != 1:
+        # 한 항목에 노드가 둘 이상이면 어느 쪽 경로를 따를지 정할 근거가 없다.
+        # 조용히 하나를 고르지 않고 기본 대표로 물러난다.
+        return None
+    path = _select_path(matched[0], state, satisfied=set())
+    return path.kb_ref if path else None
+
+
+def referenced_kb_refs(nodes: dict[str, GraphNode]) -> frozenset[str]:
+    """그래프의 어느 경로든 가리키는 제도 id 전부.
+
+    KB에 있으나 아무도 가리키지 않는 제도를 찾아내는 데 쓴다.
+    """
+    return frozenset(path.kb_ref for node in nodes.values() for path in node.obtain)

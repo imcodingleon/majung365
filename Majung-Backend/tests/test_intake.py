@@ -1,5 +1,8 @@
 """초기 진단 판정 — 27문항 답변에서 할 일 목록을 가린다 (기획서 §3.8 · §4.1 · §5.2)."""
 
+import json
+from pathlib import Path
+
 import pytest
 from fastapi.testclient import TestClient
 
@@ -116,3 +119,55 @@ def test_endpoint_rejects_oversized_answers(client: TestClient) -> None:
             json={"answers": {f"key{i}": "v" for i in range(50)}},
         )
     assert r.status_code == 400
+
+
+# ── 답에 따라 대표 제도가 갈린다 (기획서 §4.1) ──
+
+
+def _usecase_with_graph() -> IntakeUseCase:
+    return IntakeUseCase(
+        JsonInstitutionRepository(),
+        JsonIntakeRuleRepository().all(),
+        graph_nodes=JsonGraphRepository().nodes(),
+    )
+
+
+def test_blocked_account_gets_unblock_not_new_account() -> None:
+    """**"통장은 있지만 쓰기 어려워요"에 "계좌를 새로 만드세요"가 나가던 문제.**
+
+    첫 화면에서 읽는 것이 카드 제목과 요약이라, 대표가 틀리면 사용자는 틀린 것을
+    먼저 읽는다. 갈림은 그래프의 for_state가 정본이다.
+    """
+    tasks = _usecase_with_graph().run({"bankAccountStatus": "UNUSABLE"})
+    card = next(t for t in tasks if t.route_id == "R10").card
+    assert card.institution_id == "identity-bank-account-unblock"
+
+
+def test_missing_account_still_gets_new_account() -> None:
+    tasks = _usecase_with_graph().run({"bankAccountStatus": "NONE"})
+    card = next(t for t in tasks if t.route_id == "R10").card
+    assert card.institution_id == "identity-bank-account"
+
+
+def test_routes_without_a_fork_keep_their_lead() -> None:
+    """갈림이 없는 항목은 노드가 없어도 된다. 기본 대표가 그대로 나간다."""
+    tasks = _usecase_with_graph().run({"startupIntent": "WANT"})
+    card = next(t for t in tasks if t.route_id == "R7").card
+    assert card.institution_id == "startup-koreha-support"
+
+
+def test_answer_cannot_be_both_resolved_and_blocked(tmp_path: Path) -> None:
+    """한 답이 양쪽에 적히면 어느 쪽인지 알 수 없다 — 로더가 부팅을 멈춘다."""
+    rules = [
+        {
+            "route_id": r.value,
+            "data_key": f"key_{r.value}",
+            "resolved_options": ["UNUSABLE"] if r is RouteId.R10 else [],
+            "blocked_options": ["UNUSABLE"] if r is RouteId.R10 else [],
+        }
+        for r in RouteId
+    ]
+    broken = tmp_path / "rules.json"
+    broken.write_text(json.dumps({"rules": rules}, ensure_ascii=False), encoding="utf-8")
+    with pytest.raises(ValueError, match="해결과 막힘에 모두"):
+        JsonIntakeRuleRepository(broken)

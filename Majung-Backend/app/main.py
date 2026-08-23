@@ -34,7 +34,10 @@ from app.domains.chat.infrastructure.message_repository import (
 from app.domains.knowledge.adapter.inbound.api.router import router as onboarding_router
 from app.domains.knowledge.application.intake_usecase import IntakeUseCase
 from app.domains.knowledge.application.usecase import AnalyzeUseCase
-from app.domains.knowledge.domain.graph_engine import routes_blocking_others
+from app.domains.knowledge.domain.graph_engine import (
+    referenced_kb_refs,
+    routes_blocking_others,
+)
 from app.domains.knowledge.infrastructure.graph_repository import JsonGraphRepository
 from app.domains.knowledge.infrastructure.intake_rules_repository import (
     JsonIntakeRuleRepository,
@@ -141,7 +144,17 @@ def create_app() -> FastAPI:
         institutions=institutions,
         rules=JsonIntakeRuleRepository().all(),
         blocking_routes=routes_blocking_others(graph_nodes),
+        graph_nodes=graph_nodes,
     )
+    # KB에 있으나 어떤 화면에도 닿지 않는 제도를 부팅 때 알린다.
+    # 지원 항목에 걸어 두면 쓰인다고 믿기 쉬운데, 확인하지 않으면 알 길이 없다.
+    unreachable = institutions.unreachable(referenced_kb_refs(graph_nodes))
+    if unreachable:
+        logger.warning(
+            "📕 어느 화면에도 나가지 않는 제도 %d건: %s",
+            len(unreachable),
+            ", ".join(unreachable),
+        )
     # 저장 기능은 설정이 갖춰졌을 때만 켠다. 없으면 signup_usecase가 없고
     # 라우터가 503으로 막는다 — 받아 두고 버리는 것이 가장 나쁘다.
     supabase = make_supabase_client(settings)
