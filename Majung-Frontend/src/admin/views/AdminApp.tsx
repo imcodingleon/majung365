@@ -107,11 +107,14 @@ export function AdminApp() {
           request={open}
           onAcknowledge={touched<void>(() => void visits.act(open.id, "acknowledged"))}
           onConfirm={touched<ConfirmInput>((input) => {
-            // 만날 사람과 장소가 출소자 화면의 확정 문구가 된다 (§7.1).
-            // **장소 없이 확정하면 서버가 거부한다.** 그것이 이 기능의 핵심이기 때문이다.
-            void visits.act(open.id, "confirmed", {
-              meeting_place: `${input.place} · ${input.staffName}`,
-            });
+            // **장소만 보낸다. 담당자 이름은 서버가 채운다.**
+            //
+            // 합쳐 보내면 담당자가 교체될 때 옛 이름이 장소 문자열에 박혀 남는다.
+            // 서버는 요청을 처리한 담당자 id를 기록하고, 출소자 화면에는 `staff_name`과
+            // `meeting_place`가 따로 내려간다 — §7.1이 요구하는 "만날 사람과 만날 장소"다.
+            //
+            // 장소 없이 확정하면 서버가 거부한다. 그것이 이 기능의 핵심이기 때문이다.
+            void visits.act(open.id, "confirmed", { meeting_place: input.place });
           })}
           onProposeReschedule={touched<string>(() =>
             void visits.act(open.id, "reschedule_proposed"),
