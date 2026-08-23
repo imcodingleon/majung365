@@ -1,18 +1,22 @@
 {
   "_meta": {
-    "status": "초안 (draft) — 팀 검수 필요. 6영역을 지원 항목(route_ids)으로 전환(2026-08-23). R3(기초건강지원)·R7(창업지원)은 아직 대응 제도가 없어 KB 미커버.",
+    "status": "초안 (draft) — 팀 검수 필요. 6영역을 지원 항목(route_ids)으로 전환하고 공단 긴급지원·기초건강지원·창업지원을 추가했다(2026-08-23). 지원 항목 14개 전부 커버.",
     "warning": "여기 있는 항목만 카드로 인용한다(환각 금지). 값이 불확실한 필드는 팀 검수 전까지 발표에서 단정 금지.",
     "sources": [
       "법무보호복지공단(koreha.or.kr)",
       "정부24(gov.kr)",
       "복지로(bokjiro.go.kr)",
       "고용24(work24.go.kr)"
-    ]
+    ],
+    "lead_for": "그 지원 항목의 대표 제도임을 뜻한다. 항목마다 정확히 하나여야 하고, 로더가 부팅 시 검증한다. 챗 카드는 항목당 대표 1개를 고른다 — 배열 순서에 의존하지 않는다."
   },
   "institutions": [
     {
       "id": "identity-proof-of-release",
       "route_ids": [
+        "R13"
+      ],
+      "lead_for": [
         "R13"
       ],
       "name": "수용(출소)증명서 발급",
@@ -28,6 +32,9 @@
       "route_ids": [
         "R11"
       ],
+      "lead_for": [
+        "R11"
+      ],
       "name": "전입신고(주소지 등록)",
       "summary_easy": "지금 지내는 곳을 주소지로 등록하는 절차예요. 신분증 재발급이나 다른 지원 신청에도 필요해요.",
       "where": "가까운 주민센터(행정복지센터)",
@@ -39,10 +46,29 @@
       "source_url": "https://www.gov.kr"
     },
     {
+      "id": "identity-bank-account",
+      "route_ids": [
+        "R10"
+      ],
+      "lead_for": [
+        "R10"
+      ],
+      "name": "은행 계좌 다시 만들기",
+      "summary_easy": "지원금을 받으려면 통장이 필요해요. 신분증을 준비해서 은행에서 계좌를 새로 만들면 돼요.",
+      "where": "가까운 은행 지점",
+      "docs": [
+        "신분증(주민등록증 또는 임시 신분 확인 서류)"
+      ],
+      "next_step": "먼저 신분증을 준비하고, 은행 지점에 방문해 계좌 개설을 신청하세요.",
+      "deadline": null,
+      "source_url": "https://www.gov.kr"
+    },
+    {
       "id": "identity-bank-account-unblock",
       "route_ids": [
         "R10"
       ],
+      "lead_for": [],
       "name": "통장 정지 풀기",
       "summary_easy": "통장을 다시 쓰려면 거래하던 은행에 신분증을 가지고 가서 정지를 풀면 돼요. 정지 사유에 따라 절차가 다를 수 있어요.",
       "where": "거래하던 은행 지점",
@@ -59,6 +85,9 @@
         "R9",
         "R11"
       ],
+      "lead_for": [
+        "R9"
+      ],
       "name": "주민등록 재등록",
       "summary_easy": "주민센터에서 주민등록 재등록을 신청할 수 있어요. 다른 신청들도 대부분 여기서 시작돼요.",
       "where": "가까운 주민센터(행정복지센터)",
@@ -71,39 +100,32 @@
       "source_url": "https://www.gov.kr"
     },
     {
-      "id": "identity-bank-account",
-      "route_ids": [
-        "R10"
-      ],
-      "name": "은행 계좌 다시 만들기",
-      "summary_easy": "지원금을 받으려면 통장이 필요해요. 신분증을 준비해서 은행에서 계좌를 새로 만들면 돼요.",
-      "where": "가까운 은행 지점",
-      "docs": [
-        "신분증(주민등록증 또는 임시 신분 확인 서류)"
-      ],
-      "next_step": "먼저 신분증을 준비하고, 은행 지점에 방문해 계좌 개설을 신청하세요.",
-      "deadline": null,
-      "source_url": "https://www.gov.kr"
-    },
-    {
-      "id": "welfare-emergency-support",
+      "id": "welfare-koreha-emergency",
       "route_ids": [
         "R2"
       ],
-      "name": "긴급복지지원제도",
-      "summary_easy": "당장 먹고 지내기 어려우면 생계비·의료비 등을 지원받을 수 있는 제도예요.",
-      "where": "주민센터 또는 보건복지상담센터(전화 129)",
-      "docs": [
-        "신분 확인 서류",
-        "지금 형편을 설명할 수 있는 자료(있는 대로)"
+      "lead_for": [
+        "R2"
       ],
-      "next_step": "주민센터에 가거나 129로 전화해서 '긴급복지지원 신청하고 싶다'고 말하세요.",
-      "deadline": "빠른 시일",
-      "source_url": "https://www.bokjiro.go.kr"
+      "name": "법무보호복지공단 긴급지원",
+      "summary_easy": "급하게 돈이 필요할 때 공단에서 목적에 맞게 도와줘요. 밥값·병원비·월세·자녀 학비처럼 쓸 곳에 따라 지원 내용이 달라요.",
+      "where": "한국법무보호복지공단 관할 지부 또는 공식 온라인 신청 페이지",
+      "docs": [
+        "출소 사실 확인 서류 또는 기관의뢰서",
+        "주민등록등본",
+        "본인이나 가족의 통장 사본",
+        "돈이 필요한 이유를 보여주는 서류"
+      ],
+      "next_step": "가까운 공단 지부에 '긴급지원을 신청하고 싶다'고 문의하세요.",
+      "deadline": null,
+      "source_url": "https://koreha.or.kr/sub/02_01_2.do"
     },
     {
       "id": "welfare-basic-livelihood",
       "route_ids": [
+        "R12"
+      ],
+      "lead_for": [
         "R12"
       ],
       "name": "기초생활보장(생계급여)",
@@ -118,8 +140,29 @@
       "source_url": "https://www.bokjiro.go.kr"
     },
     {
+      "id": "welfare-emergency-support",
+      "route_ids": [
+        "R2",
+        "R12"
+      ],
+      "lead_for": [],
+      "name": "긴급복지지원제도",
+      "summary_easy": "당장 먹고 지내기 어려우면 생계비·의료비 등을 지원받을 수 있는 제도예요.",
+      "where": "주민센터 또는 보건복지상담센터(전화 129)",
+      "docs": [
+        "신분 확인 서류",
+        "지금 형편을 설명할 수 있는 자료(있는 대로)"
+      ],
+      "next_step": "주민센터에 가거나 129로 전화해서 '긴급복지지원 신청하고 싶다'고 말하세요.",
+      "deadline": "빠른 시일",
+      "source_url": "https://www.bokjiro.go.kr"
+    },
+    {
       "id": "housing-koreha-residence",
       "route_ids": [
+        "R1"
+      ],
+      "lead_for": [
         "R1"
       ],
       "name": "법무보호복지공단 숙식 지원(생활관)",
@@ -138,6 +181,9 @@
       "route_ids": [
         "R4"
       ],
+      "lead_for": [
+        "R4"
+      ],
       "name": "긴급복지 주거지원",
       "summary_easy": "지낼 곳이 필요하면 긴급복지제도로 임시 거처나 주거비를 지원받을 수 있어요.",
       "where": "주민센터 또는 보건복지상담센터(129)",
@@ -150,23 +196,11 @@
       "source_url": "https://www.bokjiro.go.kr"
     },
     {
-      "id": "employment-national-support",
+      "id": "employment-koreha-job",
       "route_ids": [
         "R6"
       ],
-      "name": "국민취업지원제도",
-      "summary_easy": "일자리를 찾는 동안 상담과 약간의 지원금을 받을 수 있는 제도예요.",
-      "where": "고용센터 또는 고용24(온라인)",
-      "docs": [
-        "신분 확인 서류"
-      ],
-      "next_step": "가까운 고용센터에 방문하거나 고용24에서 '국민취업지원제도'를 신청하세요.",
-      "deadline": null,
-      "source_url": "https://www.work24.go.kr"
-    },
-    {
-      "id": "employment-koreha-job",
-      "route_ids": [
+      "lead_for": [
         "R6"
       ],
       "name": "법무보호복지공단 취업 지원",
@@ -180,8 +214,27 @@
       "source_url": "https://www.koreha.or.kr"
     },
     {
+      "id": "employment-national-support",
+      "route_ids": [
+        "R6"
+      ],
+      "lead_for": [],
+      "name": "국민취업지원제도",
+      "summary_easy": "일자리를 찾는 동안 상담과 약간의 지원금을 받을 수 있는 제도예요.",
+      "where": "고용센터 또는 고용24(온라인)",
+      "docs": [
+        "신분 확인 서류"
+      ],
+      "next_step": "가까운 고용센터에 방문하거나 고용24에서 '국민취업지원제도'를 신청하세요.",
+      "deadline": null,
+      "source_url": "https://www.work24.go.kr"
+    },
+    {
       "id": "health-medical-aid",
       "route_ids": [
+        "R15"
+      ],
+      "lead_for": [
         "R15"
       ],
       "name": "의료급여·건강보험 확인",
@@ -199,6 +252,9 @@
       "route_ids": [
         "R8"
       ],
+      "lead_for": [
+        "R8"
+      ],
       "name": "마음 상담(정신건강복지센터)",
       "summary_easy": "많이 힘들고 불안하면 혼자 견디지 않아도 돼요. 지역 정신건강복지센터에서 무료로 마음 상담을 받을 수 있어요.",
       "where": "지역 정신건강복지센터 (전화 1577-0199)",
@@ -210,6 +266,9 @@
     {
       "id": "debt-credit-recovery",
       "route_ids": [
+        "R14"
+      ],
+      "lead_for": [
         "R14"
       ],
       "name": "채무조정(신용회복위원회)",
@@ -228,6 +287,7 @@
       "route_ids": [
         "R14"
       ],
+      "lead_for": [],
       "name": "무료 법률 지원(법률구조공단)",
       "summary_easy": "빚·계약 문제로 법적인 도움이 필요하면 대한법률구조공단에서 무료로 상담받을 수 있어요.",
       "where": "대한법률구조공단 (전화 132)",
@@ -237,6 +297,45 @@
       "next_step": "132(법률구조공단)로 전화해 '무료 법률 상담'을 요청하세요.",
       "deadline": null,
       "source_url": "https://www.klac.or.kr"
+    },
+    {
+      "id": "health-koreha-basic",
+      "route_ids": [
+        "R3"
+      ],
+      "lead_for": [
+        "R3"
+      ],
+      "name": "법무보호복지공단 기초건강지원",
+      "summary_easy": "몸이나 마음이 아플 때 공단이 병원을 연결해 주고 진료비와 약값을 도와줘요. 건강검진도 받을 수 있어요.",
+      "where": "한국법무보호복지공단 관할 지부",
+      "docs": [
+        "출소 사실 확인 서류 또는 기관의뢰서",
+        "신분 확인 서류"
+      ],
+      "next_step": "공단 지부에 '기초건강지원 상담'을 문의하세요.",
+      "deadline": null,
+      "source_url": "https://koreha.or.kr/sub/02_01_15.do?MN1=3&MN2=244&MN3=273&MN=273"
+    },
+    {
+      "id": "startup-koreha-support",
+      "route_ids": [
+        "R7"
+      ],
+      "lead_for": [
+        "R7"
+      ],
+      "name": "법무보호복지공단 창업지원",
+      "summary_easy": "장사나 사업을 시작할 때 가게 보증금을 낮은 이자로 빌려줘요. 내가 준비해야 하는 돈도 있어요.",
+      "where": "한국법무보호복지공단 관할 지부",
+      "docs": [
+        "출소 사실 확인 서류 또는 기관의뢰서",
+        "신분 확인 서류",
+        "창업 사업계획서"
+      ],
+      "next_step": "공단 지부에 '창업지원 상담'을 먼저 받으세요. 요건과 준비 서류를 알려줘요.",
+      "deadline": null,
+      "source_url": "https://www.koreha.or.kr/sub/02_01_5.do"
     }
   ]
 }

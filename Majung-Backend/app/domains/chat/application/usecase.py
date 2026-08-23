@@ -91,12 +91,11 @@ class ChatUseCase:
         picked: list[Institution] = []
         seen: set[str] = set()
         for p in triage.priorities:
-            for inst in self._institutions.by_route(p.route):
-                if inst.id in seen:
-                    continue
+            # 항목당 대표 1개. 어느 제도가 대표인지는 KB 데이터가 정한다(lead_for).
+            inst = self._institutions.lead_of(p.route)
+            if inst.id not in seen:
                 picked.append(inst)
                 seen.add(inst.id)
-                break  # 항목당 1개 (급한 항목 우선)
             if len(picked) >= _MAX_CARDS:
                 break
         return picked
