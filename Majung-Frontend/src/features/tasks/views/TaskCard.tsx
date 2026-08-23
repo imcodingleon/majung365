@@ -92,6 +92,13 @@ export function TaskCard({
         ) : null}
         <Button icon="✅" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
       </View>
+
+      {/* **안내 목록 밖, 버튼 아래에 둔다** (§6.4). 목록에 섞으면 ✓가 붙어 할 일처럼
+          읽히고, 버튼 위에 두면 행동 앞을 가로막는다. 언제 확인한 것인지는
+          알아야 하지만 먼저 읽을 것은 아니다 */}
+      {task.verifiedNote ? (
+        <Text className="mt-4 text-caption text-ink-muted">{task.verifiedNote}</Text>
+      ) : null}
     </View>
   );
 }

@@ -56,9 +56,8 @@ export function toTask(item: IntakeTask): Task {
   // 창구 안내와 연락처는 첫 경로 것을 쓴다. 여럿일 때는 각 경로의 안내가 info 줄에 들어간다.
   const first = item.card.options[0];
 
+  // **확인 날짜를 안내 목록에 넣지 않는다.** 넣으면 ✓가 붙어 할 일처럼 읽힌다.
   const info = [item.card.summary_easy, ...optionLines(item)];
-  // 확인 날짜는 안내 끝에 붙인다. 제도는 바뀌므로 언제 확인한 것인지가 드러나야 한다 (§6.4).
-  if (item.card.verified_note) info.push(item.card.verified_note);
 
   return {
     id: item.route_id,
@@ -68,6 +67,7 @@ export function toTask(item: IntakeTask): Task {
     meta: item.section_label,
     must: item.blocks_others,
     info: info.filter(Boolean),
+    verifiedNote: item.card.verified_note || undefined,
     docs: mergedDocs(item),
     desk: first ? deskOf(first) : undefined,
     contact: first ? contactOf(first) : undefined,
