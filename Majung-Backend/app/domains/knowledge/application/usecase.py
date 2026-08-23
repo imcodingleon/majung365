@@ -16,6 +16,7 @@ from app.domains.knowledge.domain.graph_engine import (
     compute_starting_task,
 )
 from app.domains.knowledge.domain.repository import InstitutionRepository
+from app.domains.knowledge.domain.sources import verified_note
 
 logger = logging.getLogger("majung.knowledge")
 
@@ -55,7 +56,8 @@ class AnalyzeUseCase:
     def _to_card(self, task: StartingTask, states: dict[str, NodeState]) -> TaskCard:
         inst = self._institutions.by_id(task.kb_ref)
         if inst is None:
-            # 환각 차단 — KB 미매칭이면 사실 문장(요약·서류·다음단계·출처)을 비운다
+            # 환각 차단 — KB 미매칭이면 사실 문장을 전부 비운다.
+            # 확장 필드(지원 내용·먼저 확인할 것·절차·주의)도 사실이라 기본값인 빈 값으로 둔다.
             logger.warning("kb_ref 미매칭 — 사실 문장 미출력: %s", task.kb_ref)
             return TaskCard(
                 node_id=task.node_id,
@@ -84,4 +86,10 @@ class AnalyzeUseCase:
             duration_days=task.duration_days,
             is_fallback=task.is_fallback,
             resolved_states=dict(states),
+            benefit_summary=inst.benefit_summary,
+            eligibility=inst.eligibility,
+            steps=inst.steps,
+            cautions=inst.cautions,
+            source_urls=inst.source_urls,
+            verified_note=verified_note(inst.verified_at),
         )

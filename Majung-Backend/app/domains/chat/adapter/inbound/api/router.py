@@ -125,6 +125,26 @@ async def chat(
                             "next_step": c.next_step,
                             "deadline": c.deadline,
                             "source_url": c.source_url,
+                            "benefit_summary": c.benefit_summary,
+                            "eligibility": list(c.eligibility),
+                            "steps": list(c.steps),
+                            "cautions": list(c.cautions),
+                            "source_urls": list(c.source_urls),
+                            "verified_note": c.verified_note,
+                            "options": [
+                                {
+                                    "org": o.org,
+                                    "where": o.where,
+                                    "next_step": o.next_step,
+                                    "docs": list(o.docs),
+                                    "desk_place": o.desk_place,
+                                    "desk_say": o.desk_say,
+                                    "contact_org": o.contact_org,
+                                    "contact_phone": o.contact_phone,
+                                    "contact_hours": o.contact_hours,
+                                }
+                                for o in c.options
+                            ],
                         },
                         ensure_ascii=False,
                     ),

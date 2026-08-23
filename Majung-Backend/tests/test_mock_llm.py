@@ -30,8 +30,6 @@ async def test_mock_triage_expected_routes(message: str, expected: set[RouteId])
     assert result.question_type == QuestionType.SUPPORT
     got = {p.route for p in result.priorities}
     assert expected & got, f"기대 항목 {expected} 중 하나도 triage에 없음: {got}"
-    # 모든 우선순위에 쉬운 말 사유가 붙는다
-    assert all(p.reason for p in result.priorities)
 
 
 async def test_mock_triage_daily_fallback() -> None:

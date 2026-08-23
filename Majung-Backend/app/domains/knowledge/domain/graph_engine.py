@@ -187,3 +187,20 @@ def _build_priority_reason(
     if is_fallback:
         return "다른 서류 없이 진행할 수 있어요."
     return ""
+
+
+def routes_blocking_others(nodes: dict[str, GraphNode]) -> frozenset[str]:
+    """다른 노드의 선행조건으로 참조되는 노드들의 지원 항목 코드.
+
+    사용자 상태와 무관한 정적 계산이다 — 그래프 구조 자체의 사실이라 누가 물어도 답이 같다.
+    챗의 triage가 "이걸 먼저 해두면 다음 일들이 수월해져요"를 말할 근거로 쓴다.
+    compute_starting_task의 unlocks()와 달리 여기서는 현재 충족 상태를 보지 않는다.
+    """
+    required: set[str] = set()
+    for node in nodes.values():
+        for path in node.obtain:
+            for req in path.requires:
+                required.add(req.node)
+    return frozenset(
+        route for nid in required for route in nodes[nid].route_ids if nid in nodes
+    )

@@ -1,0 +1,24 @@
+{
+  "_meta": {
+    "source": "_bmad-output/specs/spec-majung-2nd/intake-questions.md",
+    "note": "초기 진단 답변 → 지원 항목 판정 규칙. 필수 문항 14개가 지원 항목 14개와 1:1 대응한다.",
+    "warning": "optionId 값은 기획 검토 중이다(intake-questions.md §9-1). resolved_options가 비어 있으면 그 항목은 답이 온 이상 항상 할 일로 잡힌다 — 확정되면 값만 채우면 되고 코드는 그대로다.",
+    "resolved_options": "이 답을 골랐으면 이미 해결된 상태라 할 일에서 뺀다."
+  },
+  "rules": [
+    { "route_id": "R1", "data_key": "accommodationStatus", "resolved_options": [] },
+    { "route_id": "R4", "data_key": "housingConditionIds", "resolved_options": [] },
+    { "route_id": "R11", "data_key": "addressStatus", "resolved_options": [] },
+    { "route_id": "R2", "data_key": "emergencyExpenseType", "resolved_options": [] },
+    { "route_id": "R12", "data_key": "livelihoodBenefitStatus", "resolved_options": [] },
+    { "route_id": "R9", "data_key": "identityStatus", "resolved_options": [] },
+    { "route_id": "R10", "data_key": "bankAccountStatus", "resolved_options": [] },
+    { "route_id": "R6", "data_key": "employmentCurrentStatus", "resolved_options": [] },
+    { "route_id": "R7", "data_key": "startupIntent", "resolved_options": [] },
+    { "route_id": "R3", "data_key": "healthSupportNeed", "resolved_options": [] },
+    { "route_id": "R8", "data_key": "counselingNeed", "resolved_options": [] },
+    { "route_id": "R13", "data_key": "releaseCertificateStatus", "resolved_options": [] },
+    { "route_id": "R14", "data_key": "debtProcedureStage", "resolved_options": [] },
+    { "route_id": "R15", "data_key": "medicalCoverageStatus", "resolved_options": [] }
+  ]
+}

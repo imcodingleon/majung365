@@ -61,6 +61,26 @@ ROUTE_LABELS: dict[RouteId, str] = {
     RouteId.R15: "의료급여·건강보험",
 }
 
+# 인덱스 탭에 들어가는 짧은 이름. **5자까지 들어가고 6자부터 잘린다**(탭 폭 제약).
+# 제도명이 아니라 사용자가 겪는 일로 적는다 — 탭은 자기 상황을 알아보는 자리라
+# "개인회생"보다 "빚 문제"가 빨리 읽힌다.
+ROUTE_TAB_LABELS: dict[RouteId, str] = {
+    RouteId.R1: "거처",
+    RouteId.R2: "지원금",
+    RouteId.R3: "건강",
+    RouteId.R4: "집 구하기",
+    RouteId.R6: "일자리",
+    RouteId.R7: "창업",
+    RouteId.R8: "마음상담",
+    RouteId.R9: "신분증",
+    RouteId.R10: "통장",
+    RouteId.R11: "주민등록",
+    RouteId.R12: "생계급여",
+    RouteId.R13: "증명서",
+    RouteId.R14: "빚 문제",
+    RouteId.R15: "병원비",
+}
+
 SECTION_LABELS: dict[SectionId, str] = {
     SectionId.S1: "주거",
     SectionId.S2: "생계·긴급비용",
@@ -90,6 +110,10 @@ ROUTE_SECTION: dict[RouteId, SectionId] = {
 
 def label_for(route: RouteId) -> str:
     return ROUTE_LABELS[route]
+
+
+def tab_label_for(route: RouteId) -> str:
+    return ROUTE_TAB_LABELS[route]
 
 
 def section_label_for(section: SectionId) -> str:
