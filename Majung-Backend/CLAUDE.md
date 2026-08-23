@@ -1,6 +1,6 @@
 # CLAUDE.md — Majung-Backend
 
-[마중365] 백엔드. FastAPI — triage(6영역)·제도 매칭 안내·센터 데이터 API. HailMary-Backend 헥사고날 컨벤션의 **경량판** (예선: DB 없음).
+[마중365] 백엔드. FastAPI — triage(지원 항목 분류)·제도 매칭 안내·센터 데이터 API. HailMary-Backend 헥사고날 컨벤션의 **경량판** (예선: DB 없음).
 
 ## Tech Stack
 
@@ -28,19 +28,20 @@ uv run pytest                                      # 테스트
 app/
 ├── domains/
 │   ├── chat/                    # CAP-2·3: triage + 안내 생성
-│   │   ├── domain/              # 6영역 분류 규칙, 프롬프트 (순수 Python)
+│   │   ├── domain/              # 지원 항목 분류 규칙, 프롬프트 (순수 Python)
 │   │   ├── application/         # UseCase, Request/Response DTO
 │   │   └── adapter/
 │   │       ├── inbound/api/     # POST /api/chat (SSE)
 │   │       └── outbound/external/   # Claude API 클라이언트
 │   ├── knowledge/               # 제도 지식베이스
-│   │   ├── data/institutions.json   # 6영역 × 2~3 제도 (예선 KB)
+│   │   ├── data/institutions.json   # 지원 항목별 제도 (예선 KB, route_ids·lead_for)
 │   │   ├── domain/
 │   │   ├── application/
 │   │   └── adapter/inbound/api/     # GET /api/knowledge/...
-│   └── centers/                 # CAP-5: 지원기관 (지도용)
-│       ├── data/centers.json        # 서울 서부 중심 실데이터
-│       └── adapter/inbound/api/     # GET /api/centers
+│   ├── centers/                 # CAP-5: 지원기관 (지도용)
+│   │   ├── data/centers.json        # 서울 서부 중심 실데이터
+│   │   └── adapter/inbound/api/     # GET /api/centers
+│   └── shared/routes.py         # RouteId·SectionId — 지원 항목·분야 표준 식별자
 ├── infrastructure/
 │   └── config/settings.py       # 환경변수 (Pydantic BaseSettings) — 유일한 진입점
 └── main.py                      # FastAPI 진입점, DI 와이어링
@@ -62,7 +63,11 @@ app/
 
 ## 이 프로젝트 특수 규칙
 
-- **정본 계약**: `../_bmad-output/specs/spec-majung-demo/` — SPEC.md(CAP·제약), demo-scenario.md(triage 기대 결과 = 테스트 픽스처)
+- **분류 단위는 지원 항목(route)이다.** 폐기된 6영역(`Area`) 대신 `RouteId`(R1~R4·R6~R15)와 `SectionId`(S1~S6, 초기 진단 6분야)를 쓴다. `app/domains/shared/routes.py`가 표준 정의다
+  - **R5(가족지원)는 결번이다.** 번호를 다시 매기지 않는다 — 기획서의 모든 참조가 어긋난다
+  - KB는 `route_ids` 배열로 항목에 붙는다(한 제도가 여러 항목의 근거일 수 있다). `lead_for`가 항목별 대표 제도를 정하고, 카드는 대표 1개가 나간다. 로더가 부팅 시 검증한다
+- **정본 계약**: `../_bmad-output/specs/spec-majung-2nd/` — intake-contract.md(용어·6분야↔지원 항목), intake-questions.md(문항 세트), route-contacts.md(항목별 연락처), graph-design.md(그래프 데이터 설계).
+  예선 계약 `../_bmad-output/specs/spec-majung-demo/`(SPEC.md·demo-scenario.md)는 여전히 유효하되, **같은 사안에서 충돌하면 날짜가 늦은 결정이 이긴다**
 - **안내 응답 형식**: 제도명 명시 + 어디서·무슨 서류·다음 단계. 쉬운 말 톤 규칙(demo-scenario.md) 준수 — 한 문장 = 한 지시
 - **KB 밖 환각 금지**: 제도 안내는 `knowledge/data/` 내 항목만 인용. 없으면 "상담사 연결" 폴백
 - Claude 모델: `claude-sonnet-5` — 현행 Sonnet(near-Opus 품질·저비용), `web_search_20260209` 동적필터 지원, adaptive thinking 기본. 가장 민감한 응답 경로는 `claude-opus-4-8` 승격 고려. (HailMary는 sonnet-4-6이지만 마중은 상향)
