@@ -104,6 +104,11 @@ class VisitOut(BaseModel):
     cancel_reason: str
     # 담당자가 확인하기 전에는 채팅을 열지 않는다(§7.3-4).
     chat_available: bool
+    # 하루 상한(§7.5)을 화면이 미리 셀 수 있게 함께 보낸다.
+    #
+    # **판정은 서버가 한다.** 다만 이 값이 없으면 화면은 앱을 다시 켤 때마다
+    # 셈이 0으로 돌아가, 사용자가 보내고 나서야 막혔다는 것을 알게 된다.
+    created_at: datetime | None
 
 
 class LimitOut(BaseModel):
@@ -130,6 +135,7 @@ def _to_out(r: VisitRequest) -> VisitOut:
         proposed_at=r.proposed_at,
         cancel_reason=r.cancel_reason,
         chat_available=r.chat_available,
+        created_at=r.created_at,
     )
 
 
