@@ -16,6 +16,7 @@ from app.domains.chat.application.dto import (
     ChatCommand,
     DoneEvent,
     ErrorEvent,
+    EvidenceEvent,
     TextEvent,
     TriageEvent,
     Turn,
@@ -106,6 +107,13 @@ async def chat(
                     "event": "triage",
                     "data": json.dumps(
                         {"routes": [r.__dict__ for r in ev.routes]}, ensure_ascii=False
+                    ),
+                }
+            elif isinstance(ev, EvidenceEvent):
+                yield {
+                    "event": "evidence",
+                    "data": json.dumps(
+                        {"stage": ev.stage, "notice": ev.notice}, ensure_ascii=False
                     ),
                 }
             elif isinstance(ev, TextEvent):

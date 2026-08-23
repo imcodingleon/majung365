@@ -3,7 +3,7 @@
 '약사 모델': 안내 텍스트는 모델이 생성하되, 제도 카드(사실)는 서버가 KB에서 매칭해 붙인다.
 모델은 제도명·신청처를 지어내지 않는다.
 
-SSE 순서 계약: triage → text(델타*) → card* → done  (오류 시 error)
+SSE 순서 계약: triage → evidence → text(델타*) → card* → done  (오류 시 error)
 대화는 서버에 저장하지 않는다(멀티턴은 클라이언트가 history로 전달, 처리 후 폐기).
 """
 
@@ -18,11 +18,13 @@ from app.domains.chat.application.dto import (
     ChatEvent,
     DoneEvent,
     ErrorEvent,
+    EvidenceEvent,
     RouteOut,
     TextEvent,
     TriageEvent,
 )
 from app.domains.chat.application.port import ChatLlm
+from app.domains.chat.domain.evidence import EvidenceStage, notice_for
 from app.domains.chat.domain.prompts import build_guidance_context
 from app.domains.chat.domain.triage import (
     QuestionType,
@@ -70,11 +72,19 @@ class ChatUseCase:
         # 2) 카드 매칭 (서버, KB 밖 생성 금지)
         cards = self._match_cards(triage)
 
-        # 3) 쉬운 말 안내 (스트리밍). support면 카드 사실을 주입, daily면 웹 검색 허용
+        # 3) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
+        #    **사전 고지가 답변보다 먼저 나간다** — 나중에 "인터넷 정보였습니다"라고
+        #    덧붙이면 이미 사용자는 그것을 사실로 받아들인 뒤다.
+        stage = EvidenceStage.CONFIRMED if cards else EvidenceStage.WEB
+        yield EvidenceEvent(stage=stage.value, notice=notice_for(stage))
+
+        # 4) 쉬운 말 안내 (스트리밍)
         context = build_guidance_context(
-            triage, [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)]
+            triage,
+            [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)],
+            stage=stage,
         )
-        allow_web = triage.question_type == QuestionType.DAILY
+        allow_web = stage == EvidenceStage.WEB
 
         try:
             async for delta in self._llm.stream_guidance(
@@ -90,7 +100,7 @@ class ChatUseCase:
             yield ErrorEvent()
             return
 
-        # 4) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
+        # 5) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
         for lead, companions, route in cards:
             yield CardEvent(card=self._to_card(lead, companions, route))
 

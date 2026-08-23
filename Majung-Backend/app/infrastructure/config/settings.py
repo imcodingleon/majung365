@@ -17,9 +17,38 @@ class Settings(BaseSettings):
     claude_model: str = "claude-sonnet-5"
     # Mock LLM 강제 사용(무비용 데모). 미설정이어도 키가 없으면 자동으로 Mock 사용.
     use_mock_llm: bool = False
-    # 웹 검색 허용 도메인 (일상 질문용, 공공 도메인만). 쉼표 구분.
-    web_search_allowed_domains: str = (
-        "gov.kr,korea.kr,bokjiro.go.kr,work24.go.kr,koreha.or.kr,mohw.go.kr,moel.go.kr"
+    # 웹 검색 허용 도메인 (기획서 §6.4 확정, 24개). 쉼표 구분.
+    #
+    # 기존 7개로는 수집한 근거 문서의 절반 가까운 도메인에 접근할 수 없었다 —
+    # RAG는 교정본부의 출소증명서 안내를 근거로 쓰는데 웹 검색은 같은 사이트에 못 갔다.
+    #
+    # **지자체 2곳(gb.go.kr·songpa.go.kr)은 근거로만 쓰고 검색에서는 뺀다.**
+    # 근거로 쓸 때는 어느 지자체 자료인지 우리가 알고 화면에 표시할 수 있지만,
+    # 검색은 무엇이 걸려 올지 통제되지 않는다. 부산 사용자에게 송파구 기준 구비서류가
+    # 나가면 사용자는 그것이 자기 지역 기준이 아니라는 것을 알 방법이 없다.
+    #
+    # 민간 금융 2곳은 이 둘만 명시적으로 연다. 은행 도메인 일반으로 넓히지 않는다.
+    web_search_allowed_domains: str = ",".join(
+        (
+            # 법령·법률
+            "law.go.kr", "easylaw.go.kr", "helplaw24.go.kr",
+            # 법원·회생파산
+            "slb.scourt.go.kr", "ecfs.scourt.go.kr",
+            # 법무·교정
+            "moj.go.kr", "corrections.go.kr", "kics.go.kr", "koreha.or.kr",
+            # 복지·보건
+            "bokjiro.go.kr", "mohw.go.kr", "nhis.or.kr",
+            # 고용
+            "work24.go.kr", "moel.go.kr",
+            # 행정
+            "gov.kr", "korea.kr", "mois.go.kr",
+            # 주거
+            "lh.or.kr",
+            # 금융·채무
+            "fsc.go.kr", "ccrs.or.kr", "payinfo.or.kr", "epostbank.go.kr",
+            # 민간 금융 (예외 2건 — 상업 정보라 기관명을 반드시 표시한다)
+            "obank.kbstar.com", "shinhangroup.com",
+        )
     )
     web_search_max_uses: int = 3
 

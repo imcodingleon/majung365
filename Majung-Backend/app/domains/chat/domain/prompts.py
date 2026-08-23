@@ -8,6 +8,10 @@
 - 카드(제도 사실)는 서버가 KB에서 붙인다. 모델은 제도명·신청처를 지어내지 않는다.
 """
 
+from app.domains.chat.domain.evidence import (
+    WEB_RESULT_OPENING,
+    EvidenceStage,
+)
 from app.domains.chat.domain.triage import TriageResult
 from app.domains.shared.routes import (
     RouteId,
@@ -70,6 +74,7 @@ def route_display(route: RouteId) -> str:
 def build_guidance_context(
     triage: TriageResult,
     injected_cards: list[str],
+    stage: EvidenceStage = EvidenceStage.CONFIRMED,
 ) -> str:
     """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약)."""
     lines: list[str] = []
@@ -81,8 +86,14 @@ def build_guidance_context(
         lines.extend(injected_cards)
     else:
         lines.append(
-            "[확인된 제도 정보 없음 — 일반 대화로 편하게 도와주되, "
-            "제도명·기관명·전화번호·기한 같은 사실은 확실하지 않으면 지어내지 말고 "
-            "'정확히는 모른다'고 말하고 확인할 곳(주민센터·129 등)을 알려주세요]"
+            "[확인된 제도 정보 없음 — 제도명·기관명·전화번호·기한 같은 사실은 "
+            "확실하지 않으면 지어내지 말고 '정확히는 모른다'고 말하고 "
+            "확인할 곳(주민센터·129 등)을 알려주세요]"
+        )
+    if stage == EvidenceStage.WEB:
+        # 인터넷에서 온 답임이 말투에 드러나야 한다. 확실성이 다른데 같은 어조로
+        # 말하면 사용자가 검색 결과를 제도 안내로 믿는다.
+        lines.append(
+            f"[인터넷 검색으로 답하는 상황 — 이렇게 시작하세요: \"{WEB_RESULT_OPENING}\" 어느 기관 사이트에서 나온 내용인지 함께 밝히세요]"
         )
     return "\n".join(lines)
