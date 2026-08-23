@@ -165,3 +165,43 @@ async def test_reason_text_never_carries_user_input() -> None:
     allowed = set(REASON_TEXTS.values()) | {""}
     for route in banner.routes:
         assert route.reason in allowed, f"고정 문구가 아닌 사유가 나왔다: {route.reason}"
+
+
+# ── R2 병렬 안내 (기획서 §12-15) ──
+
+
+async def test_r2_shows_both_koreha_and_government_paths() -> None:
+    """R2는 공단 긴급지원과 정부 긴급복지가 서로 다른 경로라 하나로 끝내면 안 된다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R2),),
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "생활비가 없어요")
+    cards = [e.card for e in events if isinstance(e, CardEvent)]
+
+    ids = [c.institution_id for c in cards]
+    assert ids[0] == "welfare-koreha-emergency", "공단 제도가 먼저다"
+    assert "welfare-emergency-support" in ids, "정부 긴급복지가 함께 나가야 한다"
+
+
+async def test_card_label_names_the_route_it_came_from() -> None:
+    """정부 긴급복지는 R2·R12 양쪽 근거라, 걸친 항목을 모두 이어붙이면 왜 떴는지 알 수 없다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R2),),
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "생활비가 없어요")
+    cards = [e.card for e in events if isinstance(e, CardEvent)]
+
+    for card in cards:
+        assert card.route_label == "공단 긴급지원"
+
+
+async def test_routes_without_companions_stay_single() -> None:
+    """동반은 예외다. 대부분의 항목은 대표 한 장으로 끝난다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R8),),
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "많이 힘들어요")
+    assert len([e for e in events if isinstance(e, CardEvent)]) == 1

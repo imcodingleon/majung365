@@ -20,6 +20,7 @@ class JsonInstitutionRepository:
                 id=row["id"],
                 route_ids=tuple(RouteId(r) for r in row["route_ids"]),
                 lead_for=tuple(RouteId(r) for r in row.get("lead_for", [])),
+                companion_for=tuple(RouteId(r) for r in row.get("companion_for", [])),
                 name=row["name"],
                 summary_easy=row["summary_easy"],
                 where=row["where"],
@@ -35,6 +36,7 @@ class JsonInstitutionRepository:
             for row in raw["institutions"]
         ]
         self._leads = self._build_leads()
+        self._validate_companions()
 
     def _build_leads(self) -> dict[RouteId, Institution]:
         """항목별 대표를 미리 확정한다. 대표가 없거나 둘 이상이면 부팅을 멈춘다 —
@@ -55,6 +57,23 @@ class JsonInstitutionRepository:
         if missing:
             raise ValueError(f"대표 제도가 없는 지원 항목: {missing}")
         return leads
+
+    def _validate_companions(self) -> None:
+        """동반 제도가 그 항목의 근거가 맞는지, 대표와 겹치지 않는지 본다."""
+        for inst in self._items:
+            for route in inst.companion_for:
+                if route not in inst.route_ids:
+                    raise ValueError(
+                        f"{inst.id}의 companion_for에 route_ids에 없는 {route.value}가 있다"
+                    )
+                if route in inst.lead_for:
+                    raise ValueError(
+                        f"{inst.id}는 {route.value}의 대표이면서 동반일 수 없다"
+                    )
+
+    def companions_of(self, route: RouteId) -> list[Institution]:
+        """대표와 함께 낼 제도들. 대부분의 항목은 비어 있다."""
+        return [i for i in self._items if route in i.companion_for]
 
     def all(self) -> list[Institution]:
         return list(self._items)

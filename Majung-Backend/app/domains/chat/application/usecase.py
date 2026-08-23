@@ -68,7 +68,7 @@ class ChatUseCase:
         cards = self._match_cards(triage)
 
         # 3) 쉬운 말 안내 (스트리밍). support면 카드 사실을 주입, daily면 웹 검색 허용
-        context = build_guidance_context(triage, [self._as_injection(c) for c in cards])
+        context = build_guidance_context(triage, [self._as_injection(c) for c, _ in cards])
         allow_web = triage.question_type == QuestionType.DAILY
 
         try:
@@ -86,8 +86,8 @@ class ChatUseCase:
             return
 
         # 4) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
-        for inst in cards:
-            yield CardEvent(card=self._to_card(inst))
+        for inst, route in cards:
+            yield CardEvent(card=self._to_card(inst, route))
 
         yield DoneEvent()
 
@@ -115,16 +115,21 @@ class ChatUseCase:
             return ReasonCode.NO_DOCUMENTS
         return None
 
-    def _match_cards(self, triage: TriageResult) -> list[Institution]:
+    def _match_cards(self, triage: TriageResult) -> list[tuple[Institution, RouteId]]:
         if triage.question_type != QuestionType.SUPPORT:
             return []
-        picked: list[Institution] = []
+        picked: list[tuple[Institution, RouteId]] = []
         seen: set[str] = set()
         for p in triage.priorities:
-            # 항목당 대표 1개. 어느 제도가 대표인지는 KB 데이터가 정한다(lead_for).
-            inst = self._institutions.lead_of(p.route)
-            if inst.id not in seen:
-                picked.append(inst)
+            # 항목당 대표 1개가 원칙이고, 동반 제도가 있으면 그 뒤에 붙는다.
+            # 어느 제도가 대표이고 무엇이 동반인지는 KB 데이터가 정한다(lead_for·companion_for).
+            for inst in [
+                self._institutions.lead_of(p.route),
+                *self._institutions.companions_of(p.route),
+            ]:
+                if inst.id in seen or len(picked) >= _MAX_CARDS:
+                    continue
+                picked.append((inst, p.route))
                 seen.add(inst.id)
             if len(picked) >= _MAX_CARDS:
                 break
@@ -137,15 +142,13 @@ class ChatUseCase:
             f"(어디서: {inst.where} / 서류: {docs} / 다음 단계: {inst.next_step})"
         )
 
-    def _route_label(self, inst: Institution) -> str:
-        """카드 상단에 보일 항목 라벨. 한 제도가 여러 항목의 근거면 모두 적는다."""
-        return " · ".join(label_for(r) for r in inst.route_ids)
-
-    def _to_card(self, inst: Institution) -> CardData:
+    def _to_card(self, inst: Institution, route: RouteId) -> CardData:
+        """카드 라벨은 이 카드가 나온 항목의 이름이다. 제도가 걸친 항목을 모두 이어붙이면
+        R2로 매칭된 정부 긴급복지가 "공단 긴급지원 · 생계급여"로 나와 왜 떴는지 알 수 없다."""
         return CardData(
             institution_id=inst.id,
             name=inst.name,
-            route_label=self._route_label(inst),
+            route_label=label_for(route),
             summary_easy=inst.summary_easy,
             where=inst.where,
             docs=inst.docs,
