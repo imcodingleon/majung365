@@ -34,14 +34,6 @@ import type {
 /** 노출 허용 변수만 사용(EXPO_PUBLIC_). 미설정 시 로컬 기본값. */
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/**
- * 음성 감정 적응형 RAG(SER) 서비스 베이스 URL. PC의 SER 서버 → 폰 테스트 시 cloudflared 터널 HTTPS.
- * 기존 백엔드(EC2)와 분리 — SER 모델이 무거워 PC/GPU에서 자체호스팅.
- */
-/**
- * 🔒 터널 접근용 '약한 게이트' 토큰(선택). EXPO_PUBLIC_이라 번들에 노출됨 → 진짜 비밀 아님.
- * 실제 방어: CORS 오리진 제한 + 테스트할 때만 터널 on + 서버 오디오 무영속. 데모 한정 사용.
- */
 
 /** 서버가 준 사용자용 문구(detail)를 담는 오류. UI는 message를 그대로 보여줘도 됨. */
 export class ApiError extends Error {
@@ -66,9 +58,6 @@ async function errorMessage(res: Response): Promise<string> {
   return DEFAULT_ERROR;
 }
 
-/**
- * POST {SER}/analyze — 음성(Blob) + 현재위치 → 감정×구체성 적응형 응답.
- * multipart. Content-Type은 브라우저가 boundary와 함께 자동 설정하므로 지정하지 않는다.
 /**
  * POST /api/intake/analyze — 초기 진단 답변 → 할 일 목록 (§3.8·§4.1).
  *
