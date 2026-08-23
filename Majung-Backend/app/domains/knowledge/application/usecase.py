@@ -16,6 +16,7 @@ from app.domains.knowledge.domain.graph_engine import (
     compute_starting_task,
 )
 from app.domains.knowledge.domain.repository import InstitutionRepository
+from app.domains.knowledge.domain.sources import verified_note
 
 logger = logging.getLogger("majung.knowledge")
 
@@ -89,4 +90,6 @@ class AnalyzeUseCase:
             eligibility=inst.eligibility,
             steps=inst.steps,
             cautions=inst.cautions,
+            source_urls=inst.source_urls,
+            verified_note=verified_note(inst.verified_at),
         )

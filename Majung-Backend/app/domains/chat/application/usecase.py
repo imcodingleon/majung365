@@ -32,6 +32,7 @@ from app.domains.chat.domain.triage import (
 )
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.repository import InstitutionRepository
+from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import RouteId, label_for
 
 logger = logging.getLogger("majung.chat")
@@ -164,6 +165,8 @@ class ChatUseCase:
             eligibility=inst.eligibility,
             steps=inst.steps,
             cautions=inst.cautions,
+            source_urls=inst.source_urls,
+            verified_note=verified_note(inst.verified_at),
             options=tuple(
                 CardOption(
                     org=i.name, where=i.where, next_step=i.next_step, docs=i.docs

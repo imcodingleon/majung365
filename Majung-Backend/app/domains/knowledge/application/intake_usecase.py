@@ -15,6 +15,7 @@ import logging
 from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
 from app.domains.knowledge.domain.intake import IntakeRule, judge
 from app.domains.knowledge.domain.repository import InstitutionRepository
+from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import (
     RouteId,
     label_for,
@@ -72,6 +73,8 @@ class IntakeUseCase:
             eligibility=lead.eligibility,
             steps=lead.steps,
             cautions=lead.cautions,
+            source_urls=lead.source_urls,
+            verified_note=verified_note(lead.verified_at),
             options=tuple(
                 IntakeCardOption(
                     org=i.name, where=i.where, next_step=i.next_step, docs=i.docs

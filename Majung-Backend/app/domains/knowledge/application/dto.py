@@ -40,6 +40,8 @@ class TaskCard:
     eligibility: tuple[str, ...] = ()
     steps: tuple[str, ...] = ()
     cautions: tuple[str, ...] = ()
+    source_urls: tuple[str, ...] = ()
+    verified_note: str = ""
 
 
 @dataclass(frozen=True)
@@ -67,6 +69,8 @@ class IntakeCard:
     steps: tuple[str, ...]
     cautions: tuple[str, ...]
     options: tuple[IntakeCardOption, ...]
+    source_urls: tuple[str, ...] = ()
+    verified_note: str = ""
 
 
 @dataclass(frozen=True)

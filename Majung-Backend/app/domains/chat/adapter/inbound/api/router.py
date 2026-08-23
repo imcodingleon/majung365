@@ -129,6 +129,8 @@ async def chat(
                             "eligibility": list(c.eligibility),
                             "steps": list(c.steps),
                             "cautions": list(c.cautions),
+                            "source_urls": list(c.source_urls),
+                            "verified_note": c.verified_note,
                             "options": [
                                 {
                                     "org": o.org,

@@ -59,6 +59,11 @@ class CardData:
     # 신청 경로. 항상 최소 하나이고, 둘 이상이면 화면이 기관명을 앞에 붙여 나열한다.
     # where·next_step은 첫 경로와 같은 값이다(단일 경로 화면의 하위 호환).
     options: tuple[CardOption, ...] = ()
+    # 근거가 된 공식 페이지들. source_url 하나로는 근거가 여럿인 제도를 못 담는다.
+    source_urls: tuple[str, ...] = ()
+    # 확인 날짜 안내 문구. 서버가 조립한다 — 날짜만 내려보내면 화면마다
+    # "누가 확인한 날짜인지"가 흐려진다. 확인하지 않았으면 빈 문자열이다.
+    verified_note: str = ""
 
 
 # ── SSE 이벤트 (UseCase가 yield) ──

@@ -45,3 +45,8 @@ class Institution:
     steps: tuple[str, ...] = field(default_factory=tuple)
     # 모르고 가면 헛걸음이 되는 것. 예: "임차보증금의 50% 이상은 본인이 준비해야 해요"
     cautions: tuple[str, ...] = field(default_factory=tuple)
+    # 이 안내의 근거가 된 공식 페이지들. source_url 하나로는 근거가 여럿인 제도를 못 담는다.
+    source_urls: tuple[str, ...] = field(default_factory=tuple)
+    # **마중365가 그 자료를 확인한 날짜**(YYYY-MM-DD). 기관이 문서를 갱신한 날이 아니다.
+    # 확인하지 않았으면 비운다 — 없는 날짜를 지어내면 사용자가 최신인 줄 알고 헛걸음한다.
+    verified_at: str = ""

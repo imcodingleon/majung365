@@ -53,6 +53,8 @@ class TaskCardOut(BaseModel):
     eligibility: list[str]
     steps: list[str]
     cautions: list[str]
+    source_urls: list[str]
+    verified_note: str
 
 
 def _to_command(body: AnalyzeIn) -> AnalyzeCommand:
@@ -97,6 +99,8 @@ async def analyze(body: AnalyzeIn, request: Request) -> TaskCardOut:
         eligibility=list(card.eligibility),
         steps=list(card.steps),
         cautions=list(card.cautions),
+        source_urls=list(card.source_urls),
+        verified_note=card.verified_note,
     )
 
 
@@ -141,6 +145,8 @@ class IntakeCardOut(BaseModel):
     eligibility: list[str]
     steps: list[str]
     cautions: list[str]
+    source_urls: list[str]
+    verified_note: str
     options: list[IntakeCardOptionOut]
 
 
@@ -208,6 +214,8 @@ def analyze_intake(body: IntakeIn, request: Request) -> IntakeOut:
                     eligibility=list(t.card.eligibility),
                     steps=list(t.card.steps),
                     cautions=list(t.card.cautions),
+                    source_urls=list(t.card.source_urls),
+                    verified_note=t.card.verified_note,
                     options=[
                         IntakeCardOptionOut(
                             org=o.org, where=o.where, next_step=o.next_step, docs=list(o.docs)
