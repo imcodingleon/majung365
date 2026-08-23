@@ -7,6 +7,9 @@ import { useCallback, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppHeader } from "@/shared/components/AppHeader";
+import { COLORS } from "@/shared/theme/colors";
+
 import type { RouteId, Task } from "../domain/task";
 
 import { TaskCard } from "./TaskCard";
@@ -35,7 +38,37 @@ type Props = {
   renderStatusStrip?: (taskId: RouteId) => React.ReactNode;
   /** 이 할 일에 알리기 버튼을 감출지. 이미 보낸 요청이 있을 때 참이다. */
   hideNotifyFor?: (taskId: RouteId) => boolean;
+  /** 처음 받은 할 일 개수. 진행 표시의 분모다. */
+  total?: number;
 };
+
+/**
+ * 진행 표시 (2026-08-23 시안).
+ *
+ * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. 마친 것을 세는 것이 아니라
+ * **남은 것에서 거꾸로 센다** — 서버가 마친 항목을 목록에서 빼기 때문이다.
+ */
+function Progress({ done, total }: { done: number; total: number }) {
+  const ratio = total > 0 ? Math.min(1, done / total) : 0;
+  return (
+    <View className="mb-5">
+      <View className="mb-2 flex-row items-end justify-between">
+        <Text className="text-[15px] font-extrabold" style={{ color: COLORS.brand }}>
+          진행 상황
+        </Text>
+        <Text className="text-[15px] font-bold text-ink-sub">
+          {done} / {total}
+        </Text>
+      </View>
+      <View className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: COLORS.line }}>
+        <View
+          className="h-full rounded-full"
+          style={{ backgroundColor: COLORS.brand, width: `${ratio * 100}%` }}
+        />
+      </View>
+    </View>
+  );
+}
 
 export function TodayScreen({
   tasks,
@@ -50,6 +83,7 @@ export function TodayScreen({
   onNotifyStaff,
   renderStatusStrip,
   hideNotifyFor,
+  total,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const rowOffsets = useRef<Record<string, number>>({});
@@ -73,28 +107,21 @@ export function TodayScreen({
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top"]}>
       {/* 도움 연결은 스크롤해도 사라지지 않는다. 할 일 진행과 무관하게 언제든 닿아야 한다 (§5.3). */}
-      <View className="flex-row items-center gap-3 border-b border-line bg-white px-5 py-3">
-        <View className="flex-1">
-          <Text className="text-[15px] text-ink-muted">
-            {userName ? `${userName}님, 어서 오세요` : "어서 오세요"}
-          </Text>
-          <Text className="mt-0.5 text-[21px] font-extrabold text-ink-strong">오늘의 할 일</Text>
-        </View>
-        <Pressable
-          onPress={onOpenHelp}
-          accessibilityRole="button"
-          accessibilityLabel="도움이 필요해요. 전화 상담 번호를 봐요"
-          className="rounded-full bg-sun-500 px-4 py-2.5 active:opacity-90"
-        >
-          <Text className="text-[15px] font-extrabold text-white">도움이 필요해요</Text>
-        </Pressable>
-      </View>
+      <AppHeader
+        actionLabel="도움이 필요해요"
+        actionHint="도움이 필요해요. 전화 상담 번호를 봐요"
+        onAction={onOpenHelp}
+      />
 
       <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="px-5 pb-16 pt-5">
-        <Text className="mb-5 text-[13px] leading-[21px] text-ink-muted">
-          {tasks.length > 0
-            ? `아직 ${tasks.length}개 남았어요 — 서두르지 않아도 괜찮아요.`
-            : ""}
+        <Progress done={Math.max(0, (total ?? tasks.length) - tasks.length)} total={total ?? tasks.length} />
+
+        <Text className="text-[15px] text-ink-sub">
+          {userName ? `${userName}님, 어서 오세요.` : "어서 오세요."}
+        </Text>
+        <Text className="mt-0.5 text-[26px] font-extrabold text-ink-strong">오늘의 할 일</Text>
+        <Text className="mb-6 mt-2 text-[15px] leading-[25px] text-ink-sub">
+          어려운 상황에서도 한 걸음씩 나아갈 수 있도록{"\n"}꼭 필요한 일만 골라 두었어요.
         </Text>
 
         {tasks.map((task, index) => (

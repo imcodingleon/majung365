@@ -12,13 +12,20 @@ import type { RouteId, Task } from "../domain/task";
 
 type State = {
   tasks: readonly Task[];
+  /**
+   * 처음 받은 할 일 개수. 진행 표시("1/5")의 분모다.
+   *
+   * **서버가 마친 항목을 목록에서 빼기 때문에** `tasks.length`를 분모로 쓰면
+   * 하나를 끝낼 때마다 분모도 같이 줄어 진행이 영영 안 는다. 처음 값을 붙들어 둔다.
+   */
+  total: number;
   loading: boolean;
   /** 사용자에게 보여줄 오류 문구. 없으면 null. */
   error: string | null;
 };
 
 export function useServerTasks(answers: IntakeAnswerMap | null) {
-  const [state, setState] = useState<State>({ tasks: [], loading: false, error: null });
+  const [state, setState] = useState<State>({ tasks: [], total: 0, loading: false, error: null });
   /** 마친 항목. 다음 요청에 함께 보내 목록에서 뺀다. */
   const [completed, setCompleted] = useState<RouteId[]>([]);
 
@@ -28,7 +35,14 @@ export function useServerTasks(answers: IntakeAnswerMap | null) {
       setState((s) => ({ ...s, loading: true, error: null }));
       try {
         const res = await postIntakeAnalyze({ answers, completed: done });
-        setState({ tasks: toTasks(res.tasks), loading: false, error: null });
+        const tasks = toTasks(res.tasks);
+        setState((s) => ({
+          tasks,
+          // 첫 응답에서만 정한다. 그 뒤로는 마친 개수만큼 목록이 줄어든다.
+          total: s.total === 0 ? tasks.length + done.length : s.total,
+          loading: false,
+          error: null,
+        }));
       } catch (err) {
         const message =
           err instanceof ApiError

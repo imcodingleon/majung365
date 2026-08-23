@@ -1,5 +1,7 @@
-// 인덱스 탭을 펼쳤을 때 나오는 정보 카드 (§6.1).
-// 채팅은 이 카드 안에 그리지 않는다. "AI와 대화하기"를 누르면 화면 전체를 덮는 팝업이 열린다.
+// 카드를 펼쳤을 때 나오는 본문 (§6.1 · 2026-08-23 시안).
+// 채팅은 이 카드 안에 그리지 않는다. "AI 챗봇과 대화하기"를 누르면 화면 전체를 덮는 팝업이 열린다.
+//
+// 카드 머리(제목·번호·기관)는 TaskRow가 그린다. 여기는 그 아래 내용만 맡는다.
 import { Pressable, Text, View } from "react-native";
 
 import { COLORS } from "@/shared/theme/colors";
@@ -79,7 +81,7 @@ export function TaskCard({
   const showGuide = !task.must && !done && pendingMust.length > 0;
 
   return (
-    <View className="mx-0.5 -mt-1 rounded-b-2xl border-[1.5px] border-t-0 border-line bg-card px-4 pb-4 pt-[18px]">
+    <View className="px-4 pb-4 pt-4">
       {showGuide ? (
         <GuideNote tone="hint">
           🔑 {pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.{"\n"}
@@ -92,7 +94,9 @@ export function TaskCard({
       <View className="mb-3.5">
         {task.info.map((line) => (
           <View key={line} className="mb-1.5 flex-row pr-1">
-            <Text className="mr-2 text-[15px] font-extrabold text-brand">✓</Text>
+            <Text className="mr-2 text-[15px] font-extrabold" style={{ color: COLORS.doneInk }}>
+              ✓
+            </Text>
             <Text className="flex-1 text-[15px] leading-[26px] text-ink-body">{line}</Text>
           </View>
         ))}
@@ -107,13 +111,15 @@ export function TaskCard({
         </View>
       ) : null}
 
+      {/* 시안의 회색 안내 상자. 창구 안내(파랑)와 층이 갈리게 색을 낮춘다 —
+          갈 곳이 정해진 항목에서는 창구가 먼저 읽혀야 한다 (§6.4) */}
       {task.contact ? (
-        <View className="mb-3.5">
-          <Text className="text-sm leading-[24px] text-ink-muted">
-            더 물어볼 것이 있으면 {task.contact.org} {task.contact.phone}으로 전화해 보세요.
+        <View className="mb-3.5 rounded-xl px-3.5 py-3" style={{ backgroundColor: COLORS.bubble }}>
+          <Text className="text-[14px] leading-[23px] text-ink-sub">
+            더 물어볼 것이 있으면 {task.contact.org} {task.contact.phone}으로 전화해 주세요.
           </Text>
           {task.contact.hours ? (
-            <Text className="mt-0.5 text-sm leading-[24px] text-ink-muted">
+            <Text className="mt-0.5 text-[14px] leading-[23px] text-ink-sub">
               전화받는 시간은 {task.contact.hours}예요.
             </Text>
           ) : null}
@@ -123,7 +129,7 @@ export function TaskCard({
       {statusStrip}
 
       <View className="gap-2">
-        <ActionButton label="💬 AI와 대화하기" tone="primary" onPress={onOpenChat} />
+        <ActionButton label="💬 AI 챗봇과 대화하기" tone="primary" onPress={onOpenChat} />
         {task.visitLabel && onNotifyStaff ? (
           <ActionButton
             label={`🔔 ${task.visitLabel} 담당자에게 미리 알리기`}

@@ -60,6 +60,7 @@ export default function TodayRoute() {
         onComplete={complete}
         pendingMust={pendingMust}
         headId={headId}
+        total={server.total}
         userName={session.name}
         onOpenChat={chat.open}
         onOpenHelp={() => setHelpOpen(true)}
