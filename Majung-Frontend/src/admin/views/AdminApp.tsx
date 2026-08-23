@@ -7,7 +7,7 @@
 // 수정을 시도해도 거부된다. 화면이 거르는 것이 아니다.
 //
 // 화면 전환을 라우트가 아니라 상태로 한다. 떼어낼 때 이 폴더만 옮기면 되게 하려는 것이다.
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
 import type { VisitStatus } from "@/shared/types/visit";
@@ -15,18 +15,57 @@ import type { VisitStatus } from "@/shared/types/visit";
 import { DEMO_REQUESTS } from "../domain/demoRequests";
 import type { ConfirmInput, StaffRequest } from "../domain/staffRequest";
 import { useAdminSession } from "../hooks/useAdminSession";
+import { useVisitChat } from "../hooks/useVisitChat";
 
 import { AdminLoginScreen } from "./AdminLoginScreen";
 import { RequestDetailScreen } from "./RequestDetailScreen";
 import { RequestListScreen } from "./RequestListScreen";
-import { StaffChatScreen, type StaffMessage } from "./StaffChatScreen";
+import { StaffChatScreen } from "./StaffChatScreen";
+
+/**
+ * 방문 조율 채팅방.
+ *
+ * **훅을 조건부로 부르지 않으려고 컴포넌트를 나눴다.** 채팅이 닫혀 있을 때 소켓을
+ * 붙들고 있으면 담당자가 목록만 보는 동안에도 연결이 살아 있게 된다.
+ */
+function StaffChatRoom({
+  request,
+  token,
+  onTouch,
+  onBack,
+}: {
+  request: StaffRequest;
+  token: string | null;
+  onTouch: () => void;
+  onBack: () => void;
+}) {
+  const chat = useVisitChat(request.id, token);
+
+  // 방을 열면 읽음으로 표시한다. 상대는 자기 말이 닿았는지 알아야 기다릴 수 있다.
+  useEffect(() => {
+    if (chat.connected && !chat.blocked) chat.markRead();
+  }, [chat.connected, chat.blocked, chat.markRead]);
+
+  return (
+    <StaffChatScreen
+      peerName={request.name}
+      messages={chat.messages}
+      blocked={chat.blocked}
+      connected={chat.connected}
+      onSend={(text) => {
+        onTouch();
+        chat.send(text);
+      }}
+      onBack={onBack}
+    />
+  );
+}
 
 export function AdminApp() {
   const session = useAdminSession();
   const [requests, setRequests] = useState<StaffRequest[]>([...DEMO_REQUESTS]);
   const [openId, setOpenId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [threads, setThreads] = useState<Record<string, StaffMessage[]>>({});
 
   const open = requests.find((r) => r.id === openId) ?? null;
 
@@ -57,18 +96,10 @@ export function AdminApp() {
   if (open && chatOpen) {
     return (
       <View className="flex-1" onTouchStart={session.touch}>
-        <StaffChatScreen
-          peerName={open.name}
-          messages={threads[open.id] ?? []}
-          onSend={touched<string>((text) => {
-            setThreads((prev) => {
-              const room = prev[open.id] ?? [];
-              return {
-                ...prev,
-                [open.id]: [...room, { id: `${open.id}-${room.length + 1}`, from: "staff", text }],
-              };
-            });
-          })}
+        <StaffChatRoom
+          request={open}
+          token={session.session?.session_token ?? null}
+          onTouch={session.touch}
           onBack={touched<void>(() => setChatOpen(false))}
         />
       </View>

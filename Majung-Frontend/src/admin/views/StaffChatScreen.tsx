@@ -1,16 +1,13 @@
 // 담당자 채팅 (§7.3·§8.1).
 //
-// **화면만이다.** 백엔드 Socket.IO가 아직 없다. 붙일 때 지켜야 할 것이 정해져 있다.
-//   - 접속 핸드셰이크에 세션 토큰을 실어 서버가 검증한다. 방 참여자가 아니면 입장 거부
-//   - 낙관적 UI. 임시 말풍선을 먼저 그리고 clientMsgId로 서버 에코와 짝짓는다
-//   - 전송 방식을 websocket으로 고정하지 않는다. polling으로 붙은 뒤 승격한다
-//   - 토큰이 갱신되면 소켓 자격증명도 교체한다
+// 연결은 `useVisitChat`이 맡는다. 이 화면은 받은 것을 그리기만 한다.
 //
 // **이미지는 주고받지 않는다.** 신분증이나 서류 사진이 오가면 위험만 커진다. 텍스트만이다.
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
@@ -27,9 +24,25 @@ type Props = {
   messages: readonly StaffMessage[];
   onSend: (text: string) => void;
   onBack: () => void;
+  /**
+   * 방이 열리지 않은 이유. 서버가 준 문구를 그대로 낸다.
+   *
+   * **없는 요청과 남의 요청에 같은 문구가 온다.** 구분해 주면 남의 방 id를 찾는 데
+   * 쓰이므로 화면에서도 그 둘을 다르게 표시하지 않는다.
+   */
+  blocked?: string | null;
+  /** 붙어 있는지. 끊긴 채 입력만 받으면 보낸 줄 알고 기다리게 된다. */
+  connected?: boolean;
 };
 
-export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
+export function StaffChatScreen({
+  peerName,
+  messages,
+  onSend,
+  onBack,
+  blocked,
+  connected = true,
+}: Props) {
   const [draft, setDraft] = useState("");
 
   const send = () => {
@@ -49,13 +62,19 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
         onClose={onBack}
       />
 
-      {/* 실제로 전송되지 않는다는 사실을 화면이 숨기지 않는다. 담당자가 보냈다고 믿고
-          기다리면 그 사이에 사용자는 답을 못 받는다. 서버 연결이 붙으면 이 띠를 지운다 */}
-      <View className="border-b border-line px-4 py-2" style={{ backgroundColor: COLORS.alertSoft }}>
-        <Text className="text-caption font-bold" style={{ color: COLORS.alert }}>
-          아직 실제로 전송되지 않습니다
-        </Text>
-      </View>
+      {/* 방이 안 열렸거나 끊긴 것을 화면이 숨기지 않는다. 담당자가 보냈다고 믿고
+          기다리면 그 사이에 사용자는 답을 못 받는다 */}
+      {blocked ? (
+        <NoteBox tone="warn" className="mx-4 mt-3">
+          {blocked}
+        </NoteBox>
+      ) : !connected ? (
+        <View className="border-b border-line px-4 py-2" style={{ backgroundColor: COLORS.noteWarn }}>
+          <Text className="text-caption font-bold" style={{ color: COLORS.noteWarnInk }}>
+            연결이 끊겼어요. 다시 잇는 중이에요.
+          </Text>
+        </View>
+      ) : null}
 
       <KeyboardAvoidingView
         className="flex-1"

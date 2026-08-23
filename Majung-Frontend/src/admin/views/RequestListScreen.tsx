@@ -32,6 +32,13 @@ const STATUS_TONE: Record<VisitStatus, { bg: string; ink: string }> = {
   cancelled: { bg: COLORS.alertSoft, ink: COLORS.alertInk },
 };
 
+/** 받침이 있으면 "으로", 없으면 "로". 조사가 틀리면 기계가 쓴 문장으로 읽힌다. */
+function hasFinalConsonant(word: string): boolean {
+  const last = word.trim().slice(-1);
+  if (!last || last < "가" || last > "힣") return false;
+  return (last.charCodeAt(0) - 0xac00) % 28 !== 0;
+}
+
 function StatusBadge({ status }: { status: VisitStatus }) {
   const tone = STATUS_TONE[status];
   return (
@@ -58,7 +65,7 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
             </Text>
             <Text className="mt-1 text-heading font-extrabold text-ink-strong">방문 예정 알림</Text>
             {staff ? (
-              <Text className="mt-1 text-caption text-ink-sub">{staff.displayName} 담당자</Text>
+              <Text className="mt-1 text-caption text-ink-sub">{staff.displayName}</Text>
             ) : null}
           </View>
           <Pressable
@@ -79,7 +86,8 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
             사실을 담당자가 알아야 목록을 믿을 수 있다 */}
         {staff ? (
           <Text className="mt-2 text-caption text-ink-muted">
-            {staff.branch}으로 온 요청만 보입니다.
+            {staff.branch}
+            {hasFinalConsonant(staff.branch) ? "으로" : "로"} 온 요청만 보입니다.
           </Text>
         ) : null}
       </View>
