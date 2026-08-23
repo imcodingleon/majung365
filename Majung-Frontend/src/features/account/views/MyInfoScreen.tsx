@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ChoiceButton } from "@/shared/components/ChoiceButton";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
@@ -81,31 +82,16 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
               const selected =
                 c.id === "undisclosed" ? profile.crime === null : profile.crime === c.id;
               return (
-                <Pressable
+                <ChoiceButton
                   key={c.id}
+                  label={c.label}
+                  selected={selected}
                   onPress={() => {
                     onChangeCrime(c.id === "undisclosed" ? null : c.id);
                     setEditingCrime(false);
                   }}
-                  accessibilityRole="radio"
-                  accessibilityState={{ selected }}
-                  accessibilityLabel={c.label}
-                  className="mb-2 rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
-                  style={{
-                    backgroundColor: selected ? COLORS.brandSoft : COLORS.surface,
-                    borderColor: selected ? COLORS.brand : COLORS.line,
-                  }}
-                >
-                  <Text
-                    className="text-body-lg"
-                    style={{
-                      color: selected ? COLORS.brand : COLORS.inkStrong,
-                      fontWeight: selected ? "800" : "600",
-                    }}
-                  >
-                    {c.label}
-                  </Text>
-                </Pressable>
+                  className="mb-2"
+                />
               );
             })}
           </View>

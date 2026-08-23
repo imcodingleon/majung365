@@ -12,6 +12,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/shared/components/AppHeader";
 import { DateField } from "@/shared/components/DateField";
 import { Button } from "@/shared/components/Button";
+import { ChoiceButton } from "@/shared/components/ChoiceButton";
 import { COLORS } from "@/shared/theme/colors";
 
 import { CRIME_CATEGORIES, type ConsentId, type CrimeCategoryId } from "../domain/signup";
@@ -46,40 +47,6 @@ function FieldLabel({ children, optional }: { children: React.ReactNode; optiona
         <Text className="text-caption font-semibold text-ink-muted"> (안 고르셔도 돼요)</Text>
       ) : null}
     </Text>
-  );
-}
-
-function CrimeOption({
-  label,
-  selected,
-  onPress,
-}: {
-  label: string;
-  selected: boolean;
-  onPress: () => void;
-}) {
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="radio"
-      accessibilityState={{ selected }}
-      accessibilityLabel={label}
-      className="mb-2 rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
-      style={{
-        backgroundColor: selected ? COLORS.brandSoft : COLORS.surface,
-        borderColor: selected ? COLORS.brand : COLORS.line,
-      }}
-    >
-      <Text
-        className="text-body-lg"
-        style={{
-          color: selected ? COLORS.brand : COLORS.inkStrong,
-          fontWeight: selected ? "800" : "600",
-        }}
-      >
-        {label}
-      </Text>
-    </Pressable>
   );
 }
 
@@ -141,11 +108,12 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
         <FieldLabel optional>어떤 일로 계셨나요</FieldLabel>
         <View>
           {CRIME_CATEGORIES.map((c) => (
-            <CrimeOption
+            <ChoiceButton
               key={c.id}
               label={c.label}
               selected={form.crime === c.id}
               onPress={() => form.selectCrime(c.id as CrimeCategoryId)}
+              className="mb-2"
             />
           ))}
         </View>

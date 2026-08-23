@@ -5,6 +5,7 @@
 import { useEffect, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { ChoiceButton } from "@/shared/components/ChoiceButton";
 import { DateField } from "@/shared/components/DateField";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
@@ -26,58 +27,27 @@ type Props = {
   onToggleMulti: (question: IntakeQuestion, optionId: string) => void;
 };
 
+/** 문항의 선택지. 공용 버튼에 이 화면의 규칙(응급 답 강조)을 얹는다. */
 function OptionButton({
   option,
   selected,
+  multi,
   onPress,
 }: {
   option: IntakeOption;
   selected: boolean;
+  multi?: boolean;
   onPress: () => void;
 }) {
-  const urgent = Boolean(option.standout);
   return (
-    <Pressable
+    <ChoiceButton
+      label={option.label}
+      selected={selected}
       onPress={onPress}
-      accessibilityRole="button"
-      accessibilityState={{ selected }}
-      accessibilityLabel={option.label}
-      className="mb-3 flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-4 active:opacity-80"
-      style={{
-        backgroundColor: selected
-          ? urgent
-            ? COLORS.alertSoft
-            : COLORS.brandSoft
-          : COLORS.surface,
-        borderColor: selected
-          ? urgent
-            ? COLORS.alert
-            : COLORS.brand
-          : urgent
-            ? COLORS.alertLine
-            : COLORS.line,
-      }}
-    >
-      {/* 고른 것이 한눈에 보여야 한다. 색만으로는 구별이 어려운 사람이 있다 */}
-      <View
-        className="size-6 items-center justify-center rounded-full border-2"
-        style={{
-          backgroundColor: selected ? (urgent ? COLORS.alert : COLORS.brand) : "transparent",
-          borderColor: selected ? (urgent ? COLORS.alert : COLORS.brand) : COLORS.lineStrong,
-        }}
-      >
-        {selected ? <Text className="text-caption font-extrabold text-white">✓</Text> : null}
-      </View>
-      <Text
-        className="flex-1 text-body-lg"
-        style={{
-          color: urgent ? COLORS.alert : selected ? COLORS.brand : COLORS.inkStrong,
-          fontWeight: selected || urgent ? "800" : "600",
-        }}
-      >
-        {option.label}
-      </Text>
-    </Pressable>
+      urgent={Boolean(option.standout)}
+      multi={multi}
+      className="mb-3"
+    />
   );
 }
 
@@ -188,6 +158,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
                 key={o.id}
                 option={o}
                 selected={isSelected(answer, o.id)}
+                multi={question.kind === "multi"}
                 onPress={() => pick(o.id)}
               />
             ))}
@@ -198,6 +169,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
                 key={o.id}
                 option={o}
                 selected={isSelected(answer, o.id)}
+                multi={question.kind === "multi"}
                 onPress={() => pick(o.id)}
               />
             ))}
