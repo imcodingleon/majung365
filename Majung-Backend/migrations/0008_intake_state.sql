@@ -44,3 +44,14 @@ create table if not exists intake_state (
 
 comment on table intake_state is
   '초기 진단 판정 결과와 완료 상태. 답변 원문은 담지 않는다 (§9.1 데이터 최소화).';
+
+-- **RLS를 켠다. 다른 모든 테이블과 같다.**
+--
+-- 정책이 없으면 anon·authenticated 역할은 아무것도 읽지 못한다. 백엔드는
+-- service_role로 접근하므로 RLS를 우회한다. anon 키는 클라이언트 번들에 들어가는
+-- 공개 값이라, RLS가 꺼져 있으면 그 키를 가진 누구나 전체 테이블을 읽고 고칠 수 있다.
+--
+-- 이 테이블이 특히 그렇다 — 어떤 지원 항목이 배정됐는지가 그 사람의 상황을
+-- 말한다. R1(숙식제공)이 있으면 잘 곳이 없다는 뜻이다. 값은 암호화되어 있지만
+-- 행이 존재한다는 사실과 completed 목록은 평문이다.
+alter table intake_state enable row level security;
