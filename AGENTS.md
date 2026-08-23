@@ -6,12 +6,12 @@ KDT 해커톤 프로젝트 (팀 '여름아 부탁해', 5인). **예선은 끝났
 
 | 폴더 | 내용 | 규칙 문서 |
 |---|---|---|
-| `Majung-Frontend/` | Expo(React Native) + expo-router + NativeWind | `Majung-Frontend/CLAUDE.md` |
-| `Majung-Backend/` | FastAPI (Python 3.12+, uv) | `Majung-Backend/CLAUDE.md` |
+| `Majung-Frontend/` | Expo(React Native) + expo-router + NativeWind | `Majung-Frontend/AGENTS.md` |
+| `Majung-Backend/` | FastAPI (Python 3.12+, uv) | `Majung-Backend/AGENTS.md` |
 | `_bmad-output/specs/spec-majung-2nd/` | **본선 정본 계약** | — |
 | `_bmad-output/specs/spec-majung-demo/` | 예선 계약 (이력) | — |
 | `tools/` | RAG 수집기, 기관 데이터 생성 스크립트 | — |
-| `_bmad/`, `.claude/skills/` | BMad-Method 프레임워크 | — |
+| `_bmad/`, `.codex/skills/` | BMad-Method 프레임워크 | — |
 
 ## 작업 시작 전 필독
 
