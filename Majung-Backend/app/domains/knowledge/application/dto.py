@@ -52,6 +52,11 @@ class IntakeCardOption:
     where: str
     next_step: str
     docs: tuple[str, ...] = ()
+    desk_place: str = ""
+    desk_say: str = ""
+    contact_org: str = ""
+    contact_phone: str = ""
+    contact_hours: str = ""
 
 
 @dataclass(frozen=True)

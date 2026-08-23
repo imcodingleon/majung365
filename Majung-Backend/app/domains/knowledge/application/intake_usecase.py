@@ -13,6 +13,8 @@
 import logging
 
 from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
+from app.domains.knowledge.domain.contacts import contact_of, desk_of
+from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.intake import IntakeRule, judge
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.sources import verified_note
@@ -57,6 +59,21 @@ class IntakeUseCase:
             if v.route_id not in completed
         )
 
+    def _to_option(self, inst: Institution) -> IntakeCardOption:
+        desk = desk_of(inst)
+        contact = contact_of(inst)
+        return IntakeCardOption(
+            org=inst.name,
+            where=inst.where,
+            next_step=inst.next_step,
+            docs=inst.docs,
+            desk_place=desk.place if desk else "",
+            desk_say=desk.say if desk else "",
+            contact_org=contact.org,
+            contact_phone=contact.phone,
+            contact_hours=contact.hours,
+        )
+
     def _card_for(self, route: RouteId) -> IntakeCard:
         """항목당 카드 하나. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
         카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다."""
@@ -76,9 +93,6 @@ class IntakeUseCase:
             source_urls=lead.source_urls,
             verified_note=verified_note(lead.verified_at),
             options=tuple(
-                IntakeCardOption(
-                    org=i.name, where=i.where, next_step=i.next_step, docs=i.docs
-                )
-                for i in paths
+                self._to_option(i) for i in paths
             ),
         )

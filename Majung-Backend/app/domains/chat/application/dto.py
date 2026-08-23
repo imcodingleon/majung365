@@ -38,6 +38,14 @@ class CardOption:
     where: str
     next_step: str
     docs: tuple[str, ...] = ()
+    # 갈 곳과 거기서 할 말. **전화번호보다 먼저 나간다** — 전화를 걸면 무엇을 물어야
+    # 할지 또 판단해야 하지만, 창구에서는 한 문장만 말하면 된다.
+    desk_place: str = ""
+    desk_say: str = ""
+    # 연락처. 기관명 없이 번호만 내지 않는다 — 어디에 거는지 알 수 없다.
+    contact_org: str = ""
+    contact_phone: str = ""
+    contact_hours: str = ""
 
 
 @dataclass(frozen=True)

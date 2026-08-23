@@ -7,6 +7,7 @@ import json
 from pathlib import Path
 
 from app.domains.knowledge.domain.entity import Institution
+from app.domains.shared.hotlines import HOTLINES
 from app.domains.shared.routes import RouteId
 
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "institutions.json"
@@ -34,11 +35,15 @@ class JsonInstitutionRepository:
                 cautions=tuple(row.get("cautions", [])),
                 source_urls=tuple(row.get("source_urls", [])),
                 verified_at=row.get("verified_at", ""),
+                desk_place=row.get("desk_place", ""),
+                desk_say=row.get("desk_say", ""),
+                contact_key=row.get("contact_key", ""),
             )
             for row in raw["institutions"]
         ]
         self._leads = self._build_leads()
         self._validate_companions()
+        self._validate_contacts()
 
     def _build_leads(self) -> dict[RouteId, Institution]:
         """항목별 대표를 미리 확정한다. 대표가 없거나 둘 이상이면 부팅을 멈춘다 —
@@ -72,6 +77,19 @@ class JsonInstitutionRepository:
                     raise ValueError(
                         f"{inst.id}는 {route.value}의 대표이면서 동반일 수 없다"
                     )
+
+    def _validate_contacts(self) -> None:
+        """연락처 키가 공용 목록에 있는지 본다. 목록에 없는 번호는 화면에 내지 않는다 —
+        틀린 번호는 헛걸음이 되고, 지부 번호가 대표번호 자리에 들어가면 지역이 어긋난다."""
+        for inst in self._items:
+            if inst.contact_key and inst.contact_key not in HOTLINES:
+                raise ValueError(
+                    f"{inst.id}의 연락처 {inst.contact_key}가 공용 목록에 없다"
+                )
+            if inst.desk_place and not inst.desk_say:
+                raise ValueError(
+                    f"{inst.id}에 갈 곳만 있고 무슨 말을 할지가 없다"
+                )
 
     def companions_of(self, route: RouteId) -> list[Institution]:
         """대표와 함께 낼 제도들. 대부분의 항목은 비어 있다."""

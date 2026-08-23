@@ -27,25 +27,12 @@ import re
 from dataclasses import dataclass
 from datetime import date
 
+from app.domains.shared.hotlines import PUBLIC_HOTLINE_NUMBERS
+
 # 공공 상담·안내 번호. 사용자가 "129에 전화했는데요"라고 쓸 수 있고, 그건 개인정보가
 # 아니라 맥락이다. 지우면 모델이 무슨 일이 있었는지 모른다.
-# 출처: _bmad-output/specs/spec-majung-2nd/route-contacts.md
-# 연락처를 코드로 옮기는 작업(기획서 §6.4 ③단계) 때 이 목록과 합친다.
-PUBLIC_HOTLINES: frozenset[str] = frozenset(
-    {
-        "110",  # 정부민원안내콜센터
-        "119",  # 응급
-        "129",  # 보건복지상담센터
-        "132",  # 대한법률구조공단
-        "1350",  # 고용노동부 고객상담센터
-        "1363",  # 교정민원콜센터
-        "1577-0199",  # 정신건강 위기상담전화
-        "1577-1000",  # 국민건강보험공단
-        "1588-2188",  # 정부24 헬프데스크
-        "1600-5500",  # 신용회복위원회
-        "1670-7004",  # 한국법무보호복지공단
-    }
-)
+# 목록은 domains/shared/hotlines.py 한곳에 둔다 — 두 벌이면 한쪽만 갱신되는 날이 온다.
+PUBLIC_HOTLINES = PUBLIC_HOTLINE_NUMBERS
 
 # 마스킹 표식. 무엇이 지워졌는지는 알려준다 — 모델이 "이름을 말했구나"를 알아야
 # 대화가 어색해지지 않는다.

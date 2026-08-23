@@ -137,6 +137,11 @@ async def chat(
                                     "where": o.where,
                                     "next_step": o.next_step,
                                     "docs": list(o.docs),
+                                    "desk_place": o.desk_place,
+                                    "desk_say": o.desk_say,
+                                    "contact_org": o.contact_org,
+                                    "contact_phone": o.contact_phone,
+                                    "contact_hours": o.contact_hours,
                                 }
                                 for o in c.options
                             ],

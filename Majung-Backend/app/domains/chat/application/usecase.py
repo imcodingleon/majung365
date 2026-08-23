@@ -30,6 +30,7 @@ from app.domains.chat.domain.triage import (
     TriageResult,
     reason_text,
 )
+from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.sources import verified_note
@@ -146,6 +147,21 @@ class ChatUseCase:
             f"(어디서: {inst.where} / 서류: {docs} / 다음 단계: {inst.next_step})"
         )
 
+    def _to_option(self, inst: Institution) -> CardOption:
+        desk = desk_of(inst)
+        contact = contact_of(inst)
+        return CardOption(
+            org=inst.name,
+            where=inst.where,
+            next_step=inst.next_step,
+            docs=inst.docs,
+            desk_place=desk.place if desk else "",
+            desk_say=desk.say if desk else "",
+            contact_org=contact.org,
+            contact_phone=contact.phone,
+            contact_hours=contact.hours,
+        )
+
     def _to_card(
         self, inst: Institution, companions: tuple[Institution, ...], route: RouteId
     ) -> CardData:
@@ -168,9 +184,6 @@ class ChatUseCase:
             source_urls=inst.source_urls,
             verified_note=verified_note(inst.verified_at),
             options=tuple(
-                CardOption(
-                    org=i.name, where=i.where, next_step=i.next_step, docs=i.docs
-                )
-                for i in (inst, *companions)
+                self._to_option(i) for i in (inst, *companions)
             ),
         )

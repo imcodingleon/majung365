@@ -132,6 +132,11 @@ class IntakeCardOptionOut(BaseModel):
     where: str
     next_step: str
     docs: list[str]
+    desk_place: str
+    desk_say: str
+    contact_org: str
+    contact_phone: str
+    contact_hours: str
 
 
 class IntakeCardOut(BaseModel):
@@ -218,7 +223,15 @@ def analyze_intake(body: IntakeIn, request: Request) -> IntakeOut:
                     verified_note=t.card.verified_note,
                     options=[
                         IntakeCardOptionOut(
-                            org=o.org, where=o.where, next_step=o.next_step, docs=list(o.docs)
+                            org=o.org,
+                            where=o.where,
+                            next_step=o.next_step,
+                            docs=list(o.docs),
+                            desk_place=o.desk_place,
+                            desk_say=o.desk_say,
+                            contact_org=o.contact_org,
+                            contact_phone=o.contact_phone,
+                            contact_hours=o.contact_hours,
                         )
                         for o in t.card.options
                     ],
