@@ -107,6 +107,8 @@ export default function TodayRoute() {
           userName={session.name}
           purpose={visitTask.title}
           docs={visitTask.docs ?? []}
+          answers={session.rawAnswers}
+          routeId={visitTask.id}
           onSubmit={visit.submit}
           onClose={visit.closeForm}
         />

@@ -49,7 +49,13 @@ export default function SignupRoute() {
         // 남았는데 지울 열쇠가 없는 상태가 된다.
         await saveToken(found.session_token);
         // 가입 응답에 할 일이 함께 온다. 홈에서 다시 부르지 않는다.
-        startSession({ answers: request.answers, name: request.name, tasks: found.tasks });
+        startSession({
+          answers: request.answers,
+          // 문항 id 기준 원본. 방문 알림에서 답을 문장으로 만들 때 쓴다 (§7.4-1).
+          rawAnswers: intake.answers,
+          name: request.name,
+          tasks: found.tasks,
+        });
         router.replace("/today");
       } catch (err) {
         setError(

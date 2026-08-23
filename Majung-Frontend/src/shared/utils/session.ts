@@ -9,10 +9,23 @@
 //
 // **세션 토큰은 여기 두지 않는다.** 그것은 `tokenStore`가 기기 보안 저장소에 넣는다.
 // 여기는 가입 화면에서 홈으로 값을 넘기는 통로일 뿐이며 앱을 닫으면 사라진다.
+import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
+
 import type { IntakeAnswerMap, IntakeTask } from "../types";
 
 type Session = {
+  /** 서버로 보낸 형태(dataKey 기준). 할 일을 다시 계산할 때 쓴다. */
   answers: IntakeAnswerMap;
+  /**
+   * 문항 id 기준의 원본 답.
+   *
+   * 방문 알림에서 **답을 문장으로 만들려면** 어느 문항의 답인지 알아야 하는데,
+   * 위의 `answers`는 서버가 쓰는 dataKey로 바뀐 뒤라 문항을 되짚을 수 없다.
+   *
+   * 이것도 메모리에만 있고 서버로 가지 않는다. 담당자에게 보낼 때만 그 순간의
+   * 문장으로 만들어 방문 요청에 싣는다 (§7.4-1).
+   */
+  rawAnswers?: IntakeAnswers;
   /** 인사말에 쓸 이름. */
   name: string;
   /**

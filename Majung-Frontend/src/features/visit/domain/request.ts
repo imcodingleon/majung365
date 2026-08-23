@@ -117,11 +117,17 @@ export function sharedItems(
   hasNote: boolean,
   hasDeadlineRoute: boolean,
   hasDocs = true,
+  /** 함께 보내기로 한 분야 이름들. 고르지 않았으면 비어 있다 (§7.4-1). */
+  sharedSections: readonly string[] = [],
 ): readonly string[] {
   const items = ["이름", "방문하실 시간 두 가지", "무슨 일로 오시는지"];
   if (hasDocs) items.push("챙겨 오실 것");
   if (hasNote) items.push("하고 싶은 말");
   // 기한이 있는 제도를 상담할 때만 보낸다.
   if (hasDeadlineRoute) items.push("출소한 날짜");
+  // **고른 분야를 이름으로 낸다.** "답한 내용"이라고만 적으면 무엇이 가는지 알 수 없다.
+  if (sharedSections.length > 0) {
+    items.push(`${sharedSections.join("·")} 답하신 내용`);
+  }
   return items;
 }

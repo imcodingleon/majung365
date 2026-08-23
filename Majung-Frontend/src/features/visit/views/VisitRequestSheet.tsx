@@ -8,7 +8,16 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { COLORS } from "@/shared/theme/colors";
 
+import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
+import { SECTIONS, type SectionId } from "@/features/intake/domain/sections";
+
 import { sharedItems } from "../domain/request";
+import {
+  answeredSections,
+  buildSharedAnswers,
+  defaultSections,
+  type SharedAnswer,
+} from "../domain/sharedAnswers";
 import { buildTimeSlots, type TimeSlot } from "../domain/timeSlots";
 
 type Props = {
@@ -28,8 +37,14 @@ type Props = {
     secondChoice: string;
     readyDocs: readonly string[];
     note?: string;
+    /** 함께 보내기로 한 진단 답변. 동의하지 않으면 비어 있다 (§7.4-1). */
+    sharedAnswers?: readonly SharedAnswer[];
   }) => void;
   onClose: () => void;
+  /** 초기 진단 답변. 없으면 함께 보내기 자리를 만들지 않는다. */
+  answers?: IntakeAnswers;
+  /** 무슨 일로 가는지의 지원 항목 코드. 어느 분야를 기본으로 켤지 정한다. */
+  routeId?: string;
 };
 
 function SlotPicker({
@@ -93,12 +108,33 @@ export function VisitRequestSheet({
   today,
   onSubmit,
   onClose,
+  answers,
+  routeId,
 }: Props) {
   const slots = useMemo(() => buildTimeSlots(today ?? new Date()), [today]);
   const [first, setFirst] = useState<string | null>(null);
   const [second, setSecond] = useState<string | null>(null);
   const [readyDocs, setReadyDocs] = useState<string[]>([]);
   const [note, setNote] = useState("");
+
+  // 답한 것이 있는 분야만 고를 수 있다. 답이 없는 분야를 내놓으면 고를 것이 없는 칸이 생긴다.
+  const available = useMemo(() => (answers ? answeredSections(answers) : []), [answers]);
+  /** 함께 보낼지. **꺼진 채로 시작한다** — 켜는 것은 사용자가 하는 결정이다. */
+  const [shareOn, setShareOn] = useState(false);
+  const [picked, setPicked] = useState<SectionId[]>([]);
+
+  // 방문 목적과 같은 기관에서 처리하는 분야만 처음에 켠다 (§7.4-1).
+  // 주민센터에 가는 사람에게 공단 것까지 보낼 이유가 없다.
+  useMemo(() => {
+    if (!routeId) return;
+    const suggested = defaultSections(routeId).filter((id) => available.includes(id));
+    setPicked(suggested);
+  }, [routeId, available]);
+
+  const shared = useMemo(
+    () => (answers && shareOn ? buildSharedAnswers(answers, picked) : []),
+    [answers, shareOn, picked],
+  );
 
   const canSend = first !== null && second !== null;
 
@@ -113,6 +149,8 @@ export function VisitRequestSheet({
       secondChoice: second,
       readyDocs,
       note: note.trim() ? note.trim() : undefined,
+      // 동의하지 않았으면 아예 담기지 않는다. 빈 배열도 보내지 않는다.
+      sharedAnswers: shared.length > 0 ? shared : undefined,
     });
   };
 
@@ -220,12 +258,113 @@ export function VisitRequestSheet({
             textAlignVertical="top"
           />
 
+          {/* 진단 답변을 함께 보낼지 (§7.4-1).
+              **창구에서 자기 사정을 입으로 말하지 않아도 되게 하는 것**이 목적이다.
+              담당자 편의가 아니라 §7.6의 "창구 노출 부담을 서비스가 흡수한다"가 근거다. */}
+          {available.length > 0 ? (
+            <View className="mt-6">
+              <Pressable
+                onPress={() => setShareOn((v) => !v)}
+                accessibilityRole="checkbox"
+                accessibilityState={{ checked: shareOn }}
+                accessibilityLabel="상황 알아보기에서 답한 내용도 함께 보내기"
+                className="flex-row items-start gap-3 rounded-2xl border-[1.5px] px-4 py-4 active:opacity-80"
+                style={{
+                  backgroundColor: shareOn ? COLORS.brandSoft : COLORS.surface,
+                  borderColor: shareOn ? COLORS.brand : COLORS.line,
+                }}
+              >
+                <View
+                  className="mt-0.5 size-6 items-center justify-center rounded-md border-2"
+                  style={{
+                    backgroundColor: shareOn ? COLORS.brand : COLORS.surface,
+                    borderColor: shareOn ? COLORS.brand : COLORS.brandMuted,
+                  }}
+                >
+                  {shareOn ? (
+                    <Text className="text-caption font-extrabold text-white">✓</Text>
+                  ) : null}
+                </View>
+                <View className="flex-1">
+                  <Text
+                    className="text-body-lg font-extrabold"
+                    style={{ color: shareOn ? COLORS.brand : COLORS.inkStrong }}
+                  >
+                    상황 알아보기에서 답하신 내용도 함께 보낼까요?
+                  </Text>
+                  <Text className="mt-1 text-caption leading-[21px] text-ink-sub">
+                    담당자가 미리 보면 창구에서 다시 설명하지 않으셔도 돼요.
+                  </Text>
+                </View>
+              </Pressable>
+
+              {shareOn ? (
+                <View className="mt-3">
+                  <Text className="mb-2 text-caption text-ink-sub">
+                    보낼 것만 골라 주세요. 안 고른 것은 가지 않아요.
+                  </Text>
+                  {SECTIONS.filter((sec) => available.includes(sec.id)).map((sec) => {
+                    const on = picked.includes(sec.id);
+                    return (
+                      <Pressable
+                        key={sec.id}
+                        onPress={() =>
+                          setPicked((prev) =>
+                            prev.includes(sec.id)
+                              ? prev.filter((x) => x !== sec.id)
+                              : [...prev, sec.id],
+                          )
+                        }
+                        accessibilityRole="checkbox"
+                        accessibilityState={{ checked: on }}
+                        accessibilityLabel={`${sec.label} 답변 함께 보내기`}
+                        className="mb-2 flex-row items-center gap-3 rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
+                        style={{
+                          backgroundColor: on ? COLORS.brandSoft : COLORS.surface,
+                          borderColor: on ? COLORS.brand : COLORS.line,
+                        }}
+                      >
+                        <View
+                          className="size-5 items-center justify-center rounded border-2"
+                          style={{
+                            backgroundColor: on ? COLORS.brand : COLORS.surface,
+                            borderColor: on ? COLORS.brand : COLORS.brandMuted,
+                          }}
+                        >
+                          {on ? (
+                            <Text className="text-[11px] font-extrabold text-white">✓</Text>
+                          ) : null}
+                        </View>
+                        <Text
+                          className="flex-1 text-body"
+                          style={{
+                            color: on ? COLORS.brand : COLORS.inkStrong,
+                            fontWeight: on ? "800" : "600",
+                          }}
+                        >
+                          {sec.label}
+                        </Text>
+                      </Pressable>
+                    );
+                  })}
+                </View>
+              ) : null}
+            </View>
+          ) : null}
+
           {/* 무엇이 담당자에게 가는지 전송 직전에 보여준다 (§7.4). */}
           <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
             <Text className="mb-2 text-body font-extrabold text-note-info-ink">
               담당자에게 이만큼만 알려줘요
             </Text>
-            {sharedItems(note.trim().length > 0, Boolean(hasDeadline), docs.length > 0).map((item) => (
+            {sharedItems(
+              note.trim().length > 0,
+              Boolean(hasDeadline),
+              docs.length > 0,
+              // 고른 분야만 이름으로 낸다. 켜고 끈 것이 이 목록에 바로 비쳐야
+              // "이만큼만 알려줘요"가 사실이 된다
+              shared.length > 0 ? [...new Set(shared.map((a) => a.section))] : [],
+            ).map((item) => (
               <Text key={item} className="text-caption text-note-info-ink">
                 · {item}
               </Text>
