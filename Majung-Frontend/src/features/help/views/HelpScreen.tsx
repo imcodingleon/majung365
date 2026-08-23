@@ -33,7 +33,7 @@ function LineButton({
       onPress={call}
       accessibilityRole="button"
       accessibilityLabel={`${line.label}에 전화하기. ${line.when}. ${line.org}`}
-      className="mb-2.5 flex-row items-center rounded-2xl border-[1.5px] px-4 py-4 active:opacity-90"
+      className="mb-3 flex-row items-center rounded-2xl border-[1.5px] px-4 py-4 active:opacity-90"
       style={{
         backgroundColor: emergency ? COLORS.alertSoft : COLORS.surface,
         borderColor: emergency ? COLORS.alertLine : COLORS.brandSoft,
@@ -48,7 +48,7 @@ function LineButton({
           {line.label}
         </Text>
         <Text className="mt-1 text-body-lg text-ink-body">{line.when}</Text>
-        <Text className="mt-0.5 text-caption text-ink-muted">{line.org}</Text>
+        <Text className="mt-1 text-caption text-ink-muted">{line.org}</Text>
       </View>
     </Pressable>
   );
@@ -74,7 +74,7 @@ export function HelpScreen({ onClose }: Props) {
           <LineButton key={line.dial} line={line} tone="counsel" onFail={setFailedLabel} />
         ))}
 
-        <View className="mt-4 rounded-xl bg-white px-4 py-3.5">
+        <View className="mt-4 rounded-xl bg-white px-4 py-4">
           <Text className="text-caption text-ink-sub">
             번호를 누르면 전화 앱이 열려요.
           </Text>
@@ -94,7 +94,7 @@ export function HelpScreen({ onClose }: Props) {
         </View>
 
         {failedLabel ? (
-          <View className="mt-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
+          <View className="mt-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
             <Text className="text-caption font-semibold text-note-warn-ink">
               이 기기에서는 전화 앱이 열리지 않았어요.{"\n"}
               다른 전화기로 {failedLabel}번을 눌러 주세요.

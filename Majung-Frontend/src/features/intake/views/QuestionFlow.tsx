@@ -97,7 +97,7 @@ export function QuestionFlow({
     >
       <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
         {/* 어느 분야를 답하는 중인지 항상 보인다. 팝업은 앞뒤 맥락이 없어 더 필요하다. */}
-        <View className="flex-row items-center gap-3 border-b border-line px-5 py-3.5">
+        <View className="flex-row items-center gap-3 border-b border-line px-5 py-4">
           <View
             className="size-10 items-center justify-center rounded-xl"
             style={{ backgroundColor: COLORS.brandSoft }}
@@ -109,7 +109,7 @@ export function QuestionFlow({
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="닫기. 답하신 것은 그대로 남아요"
-            className="rounded-xl border border-line px-3.5 py-2.5 active:opacity-70"
+            className="rounded-xl border border-line px-4 py-3 active:opacity-70"
           >
             <Text className="text-body font-bold text-ink-sub">닫기</Text>
           </Pressable>
@@ -150,12 +150,12 @@ export function QuestionFlow({
 
         <View className="border-t border-line px-5 pb-2 pt-3">
           {!answered && question ? (
-            <Text className="mb-2.5 text-center text-caption text-ink-muted">
+            <Text className="mb-3 text-center text-caption text-ink-muted">
               답을 고르시면 다음으로 넘어가요.
             </Text>
           ) : null}
 
-          <View className="flex-row gap-2.5">
+          <View className="flex-row gap-3">
             <Pressable
               onPress={goPrev}
               disabled={step === 0}

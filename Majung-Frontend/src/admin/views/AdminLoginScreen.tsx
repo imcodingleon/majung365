@@ -23,14 +23,14 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
   const [password, setPassword] = useState("");
 
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-body-lg text-ink-strong";
   const ready = id.trim().length > 0 && password.length > 0;
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
       <View className="flex-1 justify-center px-6">
         {/* 이 배너를 지우지 말 것. 인증으로 오해한 채 배포하면 출소자 명단이 열린다. */}
-        <View className="mb-8 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
+        <View className="mb-8 rounded-xl border border-alert-line bg-alert-soft px-4 py-4">
           <Text className="text-body font-extrabold text-alert">시연용 화면입니다</Text>
           <Text className="mt-1 text-caption text-alert-ink">
             실제 로그인이 아니고 담당자 계정 체계도 아직 없습니다. 실제 자료도 연결되어 있지
@@ -72,13 +72,13 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
         {/* 아이디가 틀렸는지 비밀번호가 틀렸는지 구분해 알리지 않는다. 구분하면 존재하는
             아이디를 찾아내는 길이 된다 — 서버가 그렇게 응답하고 화면도 그대로 낸다 */}
         {error ? (
-          <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
+          <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-4">
             <Text className="text-body text-alert-ink">{error}</Text>
           </View>
         ) : null}
 
         {timedOut ? (
-          <View className="mt-4 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
+          <View className="mt-4 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
             <Text className="text-body text-note-warn-ink">
               한동안 쓰지 않아 자동으로 나갔습니다. 다시 들어와 주세요.
             </Text>

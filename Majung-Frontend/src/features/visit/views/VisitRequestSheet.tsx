@@ -57,7 +57,7 @@ function SlotPicker({
             accessibilityRole="radio"
             accessibilityState={{ selected: isSelected, disabled: isDisabled }}
             accessibilityLabel={slot.label}
-            className="rounded-xl border-[1.5px] px-3.5 py-3 active:opacity-80"
+            className="rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
             style={{
               backgroundColor: isSelected ? COLORS.brandSoft : COLORS.surface,
               borderColor: isSelected ? COLORS.brand : COLORS.line,
@@ -81,7 +81,7 @@ function SlotPicker({
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <Text className="mb-2.5 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>;
+  return <Text className="mb-3 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>;
 }
 
 export function VisitRequestSheet({
@@ -147,18 +147,18 @@ export function VisitRequestSheet({
           </Text>
 
           <SectionTitle>가시는 분</SectionTitle>
-          <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-3.5">
+          <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-4">
             <Text className="text-body-lg text-ink-strong">{userName}</Text>
           </View>
 
           <SectionTitle>무슨 일로 가시나요</SectionTitle>
-          <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-3.5">
+          <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-4">
             <Text className="text-body-lg text-ink-strong">{purpose}</Text>
           </View>
 
           {/* 1지망이 안 될 때 조율 왕복이 한 번 줄어든다 (§7.2). */}
           <SectionTitle>언제 가실 수 있나요</SectionTitle>
-          <Text className="mb-2.5 text-caption text-ink-muted">
+          <Text className="mb-3 text-caption text-ink-muted">
             가시고 싶은 때를 고르세요.{"\n"}
             주민센터와 공단은 평일에만 문을 열어요.
           </Text>
@@ -170,7 +170,7 @@ export function VisitRequestSheet({
           {docs.length > 0 ? (
             <>
               <SectionTitle>챙겨 가실 것</SectionTitle>
-              <Text className="mb-2.5 text-caption text-ink-muted">
+              <Text className="mb-3 text-caption text-ink-muted">
                 가지고 계신 것에 표시해 주세요.{"\n"}
                 없어도 괜찮아요. 담당자가 미리 알면 헛걸음을 막을 수 있어요.
               </Text>
@@ -183,7 +183,7 @@ export function VisitRequestSheet({
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked }}
                     accessibilityLabel={doc}
-                    className="mb-2 flex-row items-center gap-3 rounded-xl border-[1.5px] px-4 py-3.5 active:opacity-80"
+                    className="mb-2 flex-row items-center gap-3 rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
                     style={{
                       backgroundColor: checked ? COLORS.brandSoft : COLORS.surface,
                       borderColor: checked ? COLORS.brand : COLORS.line,
@@ -206,7 +206,7 @@ export function VisitRequestSheet({
           ) : null}
 
           <SectionTitle>하고 싶은 말</SectionTitle>
-          <Text className="mb-2.5 text-caption text-ink-muted">
+          <Text className="mb-3 text-caption text-ink-muted">
             안 적으셔도 괜찮아요.
           </Text>
           <TextInput
@@ -216,7 +216,7 @@ export function VisitRequestSheet({
             placeholder="미리 알려두고 싶은 것이 있으면 적어 주세요"
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="하고 싶은 말"
-            className="min-h-24 rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong"
+            className="min-h-24 rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-body-lg text-ink-strong"
             textAlignVertical="top"
           />
 

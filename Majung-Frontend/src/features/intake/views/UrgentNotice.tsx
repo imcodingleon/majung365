@@ -38,7 +38,7 @@ export function UrgentNotice({ notice, onClose }: Props) {
 
           <ScrollView className="max-h-64" contentContainerClassName="px-5 py-4">
             {notice.lines.map((line) => (
-              <Text key={line} className="mb-1.5 text-body-lg text-ink-strong">
+              <Text key={line} className="mb-2 text-body-lg text-ink-strong">
                 {line}
               </Text>
             ))}
@@ -60,7 +60,7 @@ export function UrgentNotice({ notice, onClose }: Props) {
               onPress={onClose}
               accessibilityRole="button"
               accessibilityLabel="안내를 닫고 계속 답하기"
-              className="mt-2.5 items-center rounded-2xl border-[1.5px] border-line py-3.5 active:opacity-80"
+              className="mt-3 items-center rounded-2xl border-[1.5px] border-line py-4 active:opacity-80"
             >
               <Text className="text-body-lg font-bold text-ink-sub">계속 답할게요</Text>
             </Pressable>

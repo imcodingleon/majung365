@@ -37,12 +37,12 @@ function checkedSentence(isoDate: string): string {
 function InstitutionCard({ item }: { item: Institution }) {
   const dial = item.phone.replace(/[^0-9]/g, "");
   return (
-    <View className="mb-2.5 rounded-2xl border-[1.5px] border-line bg-white px-4 py-4">
+    <View className="mb-3 rounded-2xl border-[1.5px] border-line bg-white px-4 py-4">
       <Text className="text-body-lg font-extrabold text-ink-strong">
         {item.name}
         {item.note ? <Text className="text-body font-semibold text-ink-sub"> ({item.note})</Text> : null}
       </Text>
-      <Text className="mt-1.5 text-body text-ink-body">{item.address}</Text>
+      <Text className="mt-2 text-body text-ink-body">{item.address}</Text>
 
       <Pressable
         onPress={() => {
@@ -53,7 +53,7 @@ function InstitutionCard({ item }: { item: Institution }) {
         }}
         accessibilityRole="button"
         accessibilityLabel={`${item.name}에 전화하기. ${item.phone}`}
-        className="mt-3 flex-row items-center gap-2 self-start rounded-xl border-[1.5px] border-brand-soft bg-brand-soft px-4 py-2.5 active:opacity-80"
+        className="mt-3 flex-row items-center gap-2 self-start rounded-xl border-[1.5px] border-brand-soft bg-brand-soft px-4 py-3 active:opacity-80"
       >
         <Text className="text-body-lg">📞</Text>
         <Text className="text-body-lg font-extrabold text-brand">{item.phone}</Text>
@@ -66,7 +66,7 @@ function Section({ title, items }: { title: string; items: readonly Institution[
   if (items.length === 0) return null;
   return (
     <View className="mb-6">
-      <Text className="mb-2.5 text-heading font-extrabold text-ink-strong">{title}</Text>
+      <Text className="mb-3 text-heading font-extrabold text-ink-strong">{title}</Text>
       {items.map((item) => (
         <InstitutionCard key={`${item.name}-${item.phone}`} item={item} />
       ))}
@@ -123,7 +123,7 @@ export function NearbyScreen({
               onPress={() => onPick({ sido: "", district: null })}
               accessibilityRole="button"
               accessibilityLabel="지역을 직접 고를게요"
-              className="mt-2.5 items-center rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-90"
+              className="mt-3 items-center rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-90"
             >
               <Text className="text-body-lg font-bold text-ink-sub">지역을 직접 고를게요</Text>
             </Pressable>
@@ -144,7 +144,7 @@ export function NearbyScreen({
               </Text>
             ) : null}
             {state.status === "failed" ? (
-              <View className="mb-5 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
+              <View className="mb-5 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
                 <Text className="text-caption text-note-warn-ink">{state.reason}</Text>
               </View>
             ) : null}

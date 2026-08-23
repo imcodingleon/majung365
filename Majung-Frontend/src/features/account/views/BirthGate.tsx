@@ -30,7 +30,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
 
   const filled = parts.year.length === 4 && parts.month !== "" && parts.day !== "";
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-3 py-3.5 text-center text-body-lg text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-3 py-4 text-center text-body-lg text-ink-strong";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
@@ -96,7 +96,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
         </View>
 
         {failed ? (
-          <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
+          <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-4">
             <Text className="text-body text-alert-ink">
               가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.
             </Text>

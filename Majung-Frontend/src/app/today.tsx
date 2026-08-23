@@ -77,7 +77,7 @@ export default function TodayRoute() {
       />
 
       {server.error ? (
-        <View className="absolute inset-x-4 bottom-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
+        <View className="absolute inset-x-4 bottom-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
           <Text className="text-caption text-note-warn-ink">{server.error}</Text>
         </View>
       ) : null}
@@ -125,7 +125,7 @@ export default function TodayRoute() {
               onPress={visit.dismissBlocked}
               accessibilityRole="button"
               accessibilityLabel="알겠어요"
-              className="mt-5 items-center rounded-xl bg-brand py-3.5 active:opacity-90"
+              className="mt-5 items-center rounded-xl bg-brand py-4 active:opacity-90"
             >
               <Text className="text-body-lg font-extrabold text-white">알겠어요</Text>
             </Pressable>

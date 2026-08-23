@@ -55,7 +55,7 @@ function SectionBox({
             ? `${label}. ${visible}개 중 ${answered}개 답하셨어요. 눌러서 이어서 답하기`
             : `${label}. 눌러서 답하기`
       }
-      className="w-[48.5%] rounded-2xl border-[1.5px] px-4 pb-3.5 pt-4 active:opacity-85"
+      className="w-[48.5%] rounded-2xl border-[1.5px] px-4 pb-4 pt-4 active:opacity-85"
       style={{ backgroundColor: tint, borderColor: border }}
     >
       <View
@@ -79,7 +79,7 @@ function SectionBox({
       {/* 진행 막대. 시작한 분야에만 나온다 — 아직 안 연 박스에 빈 막대가 있으면 못 한 일처럼 보인다 */}
       {started && !done ? (
         <View
-          className="mt-2.5 h-1.5 overflow-hidden rounded-full"
+          className="mt-3 h-1.5 overflow-hidden rounded-full"
           style={{ backgroundColor: COLORS.line }}
         >
           <View
@@ -88,7 +88,7 @@ function SectionBox({
           />
         </View>
       ) : (
-        <View className="mt-2.5 h-1.5" />
+        <View className="mt-3 h-1.5" />
       )}
     </Pressable>
   );
@@ -105,7 +105,7 @@ export function SectionGrid({ progress, onOpen }: Props) {
           6개 중 {done}개
         </Text>
       </View>
-      <Text className="mb-4 mt-1.5 text-body text-ink-sub">
+      <Text className="mb-4 mt-2 text-body text-ink-sub">
         하나씩 눌러서 답해 주세요.
       </Text>
 

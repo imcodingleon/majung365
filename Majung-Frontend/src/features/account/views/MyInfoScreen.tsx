@@ -56,12 +56,12 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
           {/* 라벨이 길어 다른 행처럼 옆에 붙이지 않는다. 위아래로 놓아 두 줄로 접히지 않게 한다. */}
           <View className="py-4">
             <Text className="text-body font-bold text-ink-header">어떤 일로 계셨는지</Text>
-            <Text className="mt-1.5 text-body-lg text-ink-strong">{crimeLabel}</Text>
+            <Text className="mt-2 text-body-lg text-ink-strong">{crimeLabel}</Text>
             <Pressable
               onPress={() => setEditingCrime((v) => !v)}
               accessibilityRole="button"
               accessibilityLabel="어떤 일로 계셨는지 바꾸기"
-              className="mt-2.5 self-start rounded-lg border border-line px-3 py-2 active:opacity-70"
+              className="mt-3 self-start rounded-lg border border-line px-3 py-2 active:opacity-70"
             >
               <Text className="text-caption font-bold text-ink-sub">
                 {editingCrime ? "그만두기" : "바꾸기"}
@@ -89,7 +89,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
                   accessibilityRole="radio"
                   accessibilityState={{ selected }}
                   accessibilityLabel={c.label}
-                  className="mb-2 rounded-xl border-[1.5px] px-4 py-3.5 active:opacity-80"
+                  className="mb-2 rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
                   style={{
                     backgroundColor: selected ? COLORS.brandSoft : COLORS.surface,
                     borderColor: selected ? COLORS.brand : COLORS.line,
@@ -110,7 +110,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
           </View>
         ) : null}
 
-        <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-3.5">
+        <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
           <Text className="text-caption text-note-info-ink">
             마지막으로 앱을 쓰신 날부터 1년이 지나면 저절로 지워져요.
           </Text>
@@ -123,7 +123,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
             onPress={() => setConfirming("crime")}
             accessibilityRole="button"
             accessibilityLabel="어떤 일로 계셨는지 지우기"
-            className="mb-2.5 rounded-xl border-[1.5px] border-line bg-white px-4 py-4 active:opacity-80"
+            className="mb-3 rounded-xl border-[1.5px] border-line bg-white px-4 py-4 active:opacity-80"
           >
             <Text className="text-body-lg font-bold text-ink-strong">
               어떤 일로 계셨는지 지우기

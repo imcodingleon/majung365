@@ -28,7 +28,7 @@ export function AppHeader({ actionLabel, actionHint, onAction }: Props) {
           onPress={onAction}
           accessibilityRole="button"
           accessibilityLabel={actionHint ?? actionLabel}
-          className="rounded-full bg-sun-500 px-4 py-2.5 active:opacity-90"
+          className="rounded-full bg-sun-500 px-4 py-3 active:opacity-90"
         >
           <Text className="text-body font-extrabold text-white">{actionLabel}</Text>
         </Pressable>

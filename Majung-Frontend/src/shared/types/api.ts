@@ -62,6 +62,14 @@ export interface ChatRequest {
   message: string;
   history: Turn[];
   token?: string | null;
+  /**
+   * 어느 할 일 카드에서 연 대화인지 (R1~R4·R6~R15).
+   *
+   * **triage를 건너뛰지 않고 순서만 바꾼다.** R14 카드에서 열었어도 신분증을 물을 수
+   * 있으므로 모델이 고른 항목도 뒤에 남고 근거 검색이 둘 다 훑는다. 모르는 코드를
+   * 보내면 서버가 무시한다.
+   */
+  route_id?: string;
 }
 
 /** 온보딩 그래프 노드 상태값(백엔드 NodeState와 동일). */

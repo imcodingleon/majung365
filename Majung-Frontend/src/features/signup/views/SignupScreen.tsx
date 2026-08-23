@@ -63,7 +63,7 @@ function CrimeOption({
       accessibilityRole="radio"
       accessibilityState={{ selected }}
       accessibilityLabel={label}
-      className="mb-2 rounded-xl border-[1.5px] px-4 py-3.5 active:opacity-80"
+      className="mb-2 rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
       style={{
         backgroundColor: selected ? COLORS.brandSoft : COLORS.surface,
         borderColor: selected ? COLORS.brand : COLORS.line,
@@ -107,7 +107,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
         {/* ① 개인정보 */}
         <FieldLabel>이름</FieldLabel>
         <TextInput
-          className="rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong"
+          className="rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-body-lg text-ink-strong"
           value={form.name}
           onChangeText={form.setName}
           placeholder="이름을 적어 주세요"

@@ -6,8 +6,8 @@
 // **아직 기기 안에만 남는다.** §6.3은 서버에 암호화 저장으로 확정했지만 조회·삭제 API가
 // 아직 없다. 붙으면 이 훅이 서버에서 불러오고 지운다.
 //
-// **방(routeId)은 아직 서버로 가지 않는다.** POST /chat이 방을 구분하지 않는다.
-// 계약이 생기면 요청에 실어 보낸다.
+// **방(routeId)을 서버로 보낸다.** 어느 할 일 카드에서 연 대화인지 알아야 챗봇이 그
+// 항목의 근거부터 훑는다. triage를 건너뛰는 것은 아니고 순서만 바뀐다 (2026-08-23).
 import { useCallback, useRef, useState } from "react";
 
 import type { CardData, Turn } from "@/shared/types";
@@ -88,7 +88,9 @@ export function useTaskThreads(initial: Threads = {}) {
       setBusyId(taskId);
 
       void streamChat(
-        { message: text, history },
+        // 방(taskId)이 곧 지원 항목 코드다. 어느 카드에서 연 대화인지 서버가 알아야
+        // 근거를 그쪽부터 훑는다.
+        { message: text, history, route_id: taskId },
         {
           onText: (delta) => {
             streamed += delta;

@@ -27,7 +27,7 @@ function GuideNote({ tone, children }: { tone: "hint" | "done"; children: React.
       : { backgroundColor: COLORS.noteWarn, borderColor: COLORS.noteWarnLine, color: COLORS.noteWarnInk };
   return (
     <View
-      className="mb-3.5 rounded-xl border px-3.5 py-3"
+      className="mb-4 rounded-xl border px-4 py-3"
       style={{ backgroundColor: style.backgroundColor, borderColor: style.borderColor }}
     >
       <Text className="text-caption font-semibold" style={{ color: style.color }}>
@@ -52,7 +52,7 @@ function ActionButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className="items-center rounded-xl border-[1.5px] px-4 py-3.5 active:opacity-90"
+      className="items-center rounded-xl border-[1.5px] px-4 py-4 active:opacity-90"
       style={{
         backgroundColor: filled ? COLORS.brand : COLORS.surface,
         borderColor: filled ? COLORS.brand : tone === "notify" ? COLORS.actionLine : COLORS.line,
@@ -91,9 +91,9 @@ export function TaskCard({
 
       {done ? <GuideNote tone="done">🎉 끝낸 일이에요. 잘하셨어요.</GuideNote> : null}
 
-      <View className="mb-3.5">
+      <View className="mb-4">
         {task.info.map((line) => (
-          <View key={line} className="mb-1.5 flex-row pr-1">
+          <View key={line} className="mb-2 flex-row pr-1">
             <Text className="mr-2 text-body font-extrabold" style={{ color: COLORS.doneInk }}>
               ✓
             </Text>
@@ -104,7 +104,7 @@ export function TaskCard({
 
       {/* 갈 곳이 하나로 정해지는 항목은 전화번호보다 창구 안내가 먼저 온다 (§6.4). */}
       {task.desk ? (
-        <View className="mb-3.5 rounded-xl border border-note-info-line bg-note-info px-3.5 py-3">
+        <View className="mb-4 rounded-xl border border-note-info-line bg-note-info px-4 py-3">
           <Text className="text-body font-bold text-note-info-ink">
             {task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.
           </Text>
@@ -114,12 +114,12 @@ export function TaskCard({
       {/* 시안의 회색 안내 상자. 창구 안내(파랑)와 층이 갈리게 색을 낮춘다 —
           갈 곳이 정해진 항목에서는 창구가 먼저 읽혀야 한다 (§6.4) */}
       {task.contact ? (
-        <View className="mb-3.5 rounded-xl px-3.5 py-3" style={{ backgroundColor: COLORS.bubble }}>
+        <View className="mb-4 rounded-xl px-4 py-3" style={{ backgroundColor: COLORS.bubble }}>
           <Text className="text-caption text-ink-sub">
             더 물어볼 것이 있으면 {task.contact.org} {task.contact.phone}으로 전화해 주세요.
           </Text>
           {task.contact.hours ? (
-            <Text className="mt-0.5 text-caption text-ink-sub">
+            <Text className="mt-1 text-caption text-ink-sub">
               전화받는 시간은 {task.contact.hours}예요.
             </Text>
           ) : null}

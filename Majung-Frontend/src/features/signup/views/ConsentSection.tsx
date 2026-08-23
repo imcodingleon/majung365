@@ -72,7 +72,7 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
       {items.map((item, index) => (
         <View
           key={item.id}
-          className="px-4 py-3.5"
+          className="px-4 py-4"
           style={{
             borderTopWidth: index === 0 ? 0 : 1,
             borderTopColor: COLORS.line,
@@ -102,7 +102,7 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
               onPress={() => onOpenDetail(item.id)}
               accessibilityRole="button"
               accessibilityLabel={`${item.label} 전문 보기`}
-              className="px-1.5 py-1.5 active:opacity-60"
+              className="px-2 py-2 active:opacity-60"
             >
               {/* 문구를 "보기"로 줄였다. "전문 보기"는 좁은 화면에서 항목명을 두 줄로 밀어낸다.
                   무엇을 보는 것인지는 낭독기용 라벨이 온전히 말한다. */}
@@ -114,7 +114,7 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
           <Text className="ml-9 mt-1 text-caption text-ink-sub">{item.plain}</Text>
 
           {item.limitNote ? (
-            <Text className="ml-9 mt-1.5 text-caption text-ink-muted">
+            <Text className="ml-9 mt-2 text-caption text-ink-muted">
               {item.limitNote}
             </Text>
           ) : null}

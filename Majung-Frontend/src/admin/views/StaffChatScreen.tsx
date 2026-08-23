@@ -51,7 +51,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
         </Pressable>
         <View className="flex-1">
           <Text className="text-caption text-ink-muted">방문 조율</Text>
-          <Text className="mt-0.5 text-body-lg font-extrabold text-ink-strong">{peerName}</Text>
+          <Text className="mt-1 text-body-lg font-extrabold text-ink-strong">{peerName}</Text>
         </View>
       </View>
 
@@ -77,7 +77,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
             return (
               <View
                 key={m.id}
-                className="mb-2.5 max-w-[82%] rounded-2xl px-3.5 py-2.5"
+                className="mb-3 max-w-[82%] rounded-2xl px-4 py-3"
                 style={{
                   alignSelf: mine ? "flex-end" : "flex-start",
                   backgroundColor: mine ? COLORS.brand : COLORS.bubble,
@@ -96,7 +96,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
           })}
         </ScrollView>
 
-        <View className="flex-row items-end gap-2 border-t border-line px-3 py-2.5">
+        <View className="flex-row items-end gap-2 border-t border-line px-3 py-3">
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -104,14 +104,14 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
             placeholder="메시지를 적으세요"
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="메시지 입력"
-            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-3.5 py-3 text-body text-ink-strong"
+            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-4 py-3 text-body text-ink-strong"
           />
           <Pressable
             onPress={send}
             disabled={!draft.trim()}
             accessibilityRole="button"
             accessibilityLabel="보내기"
-            className="rounded-xl px-4 py-3.5 active:opacity-90"
+            className="rounded-xl px-4 py-4 active:opacity-90"
             style={{ backgroundColor: draft.trim() ? COLORS.brand : COLORS.brandMuted }}
           >
             <Text className="text-body-lg font-extrabold text-white">보내기</Text>

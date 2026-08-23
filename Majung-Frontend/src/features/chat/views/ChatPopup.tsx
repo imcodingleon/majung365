@@ -57,7 +57,7 @@ const PRESETS = [
 function Bubble({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
-      <View className="mb-2.5 max-w-[82%] self-end rounded-2xl rounded-br-sm bg-brand px-3.5 py-2.5">
+      <View className="mb-3 max-w-[82%] self-end rounded-2xl rounded-br-sm bg-brand px-4 py-3">
         <Text className="text-body text-white">{message.text}</Text>
       </View>
     );
@@ -66,7 +66,7 @@ function Bubble({ message }: { message: ChatMessage }) {
   if (message.role === "search-notice") {
     // 사전 고지는 답변이 아니다. 말풍선과 다른 모양으로 두어 정보로 읽히지 않게 한다.
     return (
-      <View className="mb-2.5 self-stretch rounded-xl border border-note-warn-line bg-note-warn px-3.5 py-3">
+      <View className="mb-3 self-stretch rounded-xl border border-note-warn-line bg-note-warn px-4 py-3">
         <Text className="text-caption font-semibold text-note-warn-ink">{message.text}</Text>
       </View>
     );
@@ -77,16 +77,16 @@ function Bubble({ message }: { message: ChatMessage }) {
     // 좌우 정렬만으로는 사람 말과 기계 말이 구별되지 않는다.
     <View className="mb-3 max-w-[92%] flex-row items-start gap-2 self-start">
       <View
-        className="mt-0.5 size-8 items-center justify-center rounded-full"
+        className="mt-1 size-8 items-center justify-center rounded-full"
         style={{ backgroundColor: COLORS.brand }}
       >
         <Text className="text-body">🤖</Text>
       </View>
-      <View className="flex-1 rounded-2xl rounded-tl-sm bg-bubble px-3.5 py-3">
+      <View className="flex-1 rounded-2xl rounded-tl-sm bg-bubble px-4 py-3">
       <Text className="text-body text-ink-strong">{message.text}</Text>
 
       {message.desk ? (
-        <View className="mt-2.5 rounded-lg border border-note-info-line bg-note-info px-3 py-2.5">
+        <View className="mt-3 rounded-lg border border-note-info-line bg-note-info px-3 py-3">
           <Text className="text-caption font-bold text-note-info-ink">
             {message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.
           </Text>
@@ -204,7 +204,7 @@ export function ChatPopup({
         ) : null}
 
         {confirmClear ? (
-          <View className="mx-4 mt-3 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
+          <View className="mx-4 mt-3 rounded-xl border border-alert-line bg-alert-soft px-4 py-4">
             <Text className="text-body font-semibold text-alert-ink">
               이 대화를 지우면 다시 볼 수 없어요.
             </Text>
@@ -215,14 +215,14 @@ export function ChatPopup({
                   onClear();
                 }}
                 accessibilityRole="button"
-                className="rounded-lg bg-alert px-4 py-2.5 active:opacity-90"
+                className="rounded-lg bg-alert px-4 py-3 active:opacity-90"
               >
                 <Text className="text-body font-extrabold text-white">지울게요</Text>
               </Pressable>
               <Pressable
                 onPress={() => setConfirmClear(false)}
                 accessibilityRole="button"
-                className="rounded-lg border border-line bg-white px-4 py-2.5 active:opacity-90"
+                className="rounded-lg border border-line bg-white px-4 py-3 active:opacity-90"
               >
                 <Text className="text-body font-semibold text-ink-sub">그냥 둘게요</Text>
               </Pressable>
@@ -253,7 +253,7 @@ export function ChatPopup({
               <Bubble key={m.id} message={m} />
             ))}
             {busy ? (
-              <View className="mb-2.5 self-start rounded-2xl bg-bubble px-3.5 py-2.5">
+              <View className="mb-3 self-start rounded-2xl bg-bubble px-4 py-3">
                 <Text className="text-body text-ink-muted">답을 찾고 있어요…</Text>
               </View>
             ) : null}
@@ -269,7 +269,7 @@ export function ChatPopup({
               <Pressable
                 onPress={onOpenHelp}
                 accessibilityRole="button"
-                className="mt-3 items-center rounded-xl bg-brand px-4 py-3.5 active:opacity-90"
+                className="mt-3 items-center rounded-xl bg-brand px-4 py-4 active:opacity-90"
               >
                 <Text className="text-body-lg font-extrabold text-white">전화로 물어보기</Text>
               </Pressable>
@@ -282,7 +282,7 @@ export function ChatPopup({
                   horizontal
                   showsHorizontalScrollIndicator={false}
                   className="max-h-14"
-                  contentContainerClassName="gap-2 px-3 py-2.5"
+                  contentContainerClassName="gap-2 px-3 py-3"
                   keyboardShouldPersistTaps="handled"
                 >
                   {PRESETS.map((preset) => (
@@ -292,7 +292,7 @@ export function ChatPopup({
                       disabled={busy}
                       accessibilityRole="button"
                       accessibilityLabel={preset}
-                      className="rounded-full px-4 py-2.5 active:opacity-80"
+                      className="rounded-full px-4 py-3 active:opacity-80"
                       style={{ backgroundColor: COLORS.chip }}
                     >
                       <Text className="text-caption font-bold" style={{ color: COLORS.chipInk }}>
@@ -303,7 +303,7 @@ export function ChatPopup({
                 </ScrollView>
               ) : null}
 
-              <View className="flex-row items-end gap-2 px-3 pb-2.5 pt-1">
+              <View className="flex-row items-end gap-2 px-3 pb-3 pt-1">
                 <TextInput
                   value={draft}
                   onChangeText={setDraft}

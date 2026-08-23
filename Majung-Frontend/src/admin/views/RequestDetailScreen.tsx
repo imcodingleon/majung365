@@ -28,7 +28,7 @@ type Props = {
 
 function Field({ label, value }: { label: string; value: string }) {
   return (
-    <View className="border-b border-line py-3.5">
+    <View className="border-b border-line py-4">
       <Text className="text-caption font-bold text-ink-header">{label}</Text>
       <Text className="mt-1 text-body-lg text-ink-strong">{value}</Text>
     </View>
@@ -58,7 +58,7 @@ function Button({
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(disabled) }}
       accessibilityLabel={label}
-      className="mb-2 items-center rounded-xl border-[1.5px] py-3.5 active:opacity-90"
+      className="mb-2 items-center rounded-xl border-[1.5px] py-4 active:opacity-90"
       style={{
         backgroundColor: disabled && tone === "primary" ? COLORS.brandMuted : bg,
         borderColor: disabled && tone === "primary" ? COLORS.brandMuted : border,
@@ -92,7 +92,7 @@ export function RequestDetailScreen({
 
   const missing = missingDocs(request);
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-body-lg text-ink-strong";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
@@ -122,15 +122,15 @@ export function RequestDetailScreen({
         </View>
 
         {/* 담당자가 미리 알면 헛걸음을 막는다 (§7.2). */}
-        <Text className="mb-2.5 mt-6 text-body-lg font-extrabold text-ink-strong">준비물</Text>
-        <View className="rounded-2xl bg-white px-4 py-3.5">
+        <Text className="mb-3 mt-6 text-body-lg font-extrabold text-ink-strong">준비물</Text>
+        <View className="rounded-2xl bg-white px-4 py-4">
           {request.allDocs.length === 0 ? (
             <Text className="text-body text-ink-sub">준비물이 없습니다.</Text>
           ) : (
             request.allDocs.map((doc) => {
               const ready = request.readyDocs.includes(doc);
               return (
-                <View key={doc} className="flex-row items-center gap-2.5 py-1.5">
+                <View key={doc} className="flex-row items-center gap-3 py-2">
                   <Text
                     className="text-body-lg font-extrabold"
                     style={{ color: ready ? COLORS.doneInk : COLORS.alert }}
@@ -145,7 +145,7 @@ export function RequestDetailScreen({
         </View>
 
         {missing.length > 0 ? (
-          <View className="mt-2.5 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
+          <View className="mt-3 rounded-xl border border-note-warn-line bg-note-warn px-4 py-4">
             <Text className="text-caption text-note-warn-ink">
               {missing.join(" · ")}을(를) 안 가져오십니다. 미리 안내가 필요합니다.
             </Text>
@@ -177,7 +177,7 @@ export function RequestDetailScreen({
                         accessibilityRole="button"
                         accessibilityState={{ selected: input.whenLabel === slot }}
                         accessibilityLabel={slot}
-                        className="rounded-xl border-[1.5px] px-3.5 py-3 active:opacity-80"
+                        className="rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
                         style={{
                           backgroundColor:
                             input.whenLabel === slot ? COLORS.brandSoft : COLORS.surface,

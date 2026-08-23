@@ -52,7 +52,7 @@ function NumberBadge({ n, color }: { n: number; color: string }) {
 function MustBadge() {
   return (
     <View
-      className="self-start rounded-full px-3 py-1.5"
+      className="self-start rounded-full px-3 py-2"
       style={{ backgroundColor: COLORS.alertSoft }}
     >
       <Text className="text-caption font-extrabold" style={{ color: COLORS.alert }}>
@@ -88,12 +88,12 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
         {/* 선행조건 배지는 열린 카드에서만 위로 올라온다. 접힌 카드에서는 제목 아래에 붙어
             목록이 위아래로 들쭉날쭉해지지 않는다 */}
         {task.must && !done && open ? (
-          <View className="mb-2.5">
+          <View className="mb-3">
             <MustBadge />
           </View>
         ) : null}
 
-        <View className="flex-row items-center gap-2.5">
+        <View className="flex-row items-center gap-3">
           <NumberBadge n={index + 1} color={accent} />
           <Text
             className="flex-1 text-heading font-extrabold"

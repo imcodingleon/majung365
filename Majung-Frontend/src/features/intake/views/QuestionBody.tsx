@@ -41,7 +41,7 @@ function OptionButton({
       accessibilityRole="button"
       accessibilityState={{ selected }}
       accessibilityLabel={option.label}
-      className="mb-2.5 flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-4 active:opacity-80"
+      className="mb-3 flex-row items-center gap-3 rounded-2xl border-[1.5px] px-4 py-4 active:opacity-80"
       style={{
         backgroundColor: selected
           ? urgent
@@ -121,7 +121,7 @@ function DateAnswer({
       </View>
 
       {question.allowUnknown ? (
-        <View className="mt-2.5">
+        <View className="mt-3">
           <OptionButton
             option={{ id: DATE_UNKNOWN, label: "잘 모르겠어요" }}
             selected={unknown}
@@ -170,7 +170,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
       ) : null}
 
       {note ? (
-        <View className="mt-4 rounded-2xl border border-note-info-line bg-note-info px-4 py-3.5">
+        <View className="mt-4 rounded-2xl border border-note-info-line bg-note-info px-4 py-4">
           <Text className="text-body font-semibold text-note-info-ink">{note}</Text>
         </View>
       ) : null}
@@ -192,7 +192,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
                 onPress={() => pick(o.id)}
               />
             ))}
-            {standout.length > 0 ? <View className="mb-4 mt-1.5 border-t border-line" /> : null}
+            {standout.length > 0 ? <View className="mb-4 mt-2 border-t border-line" /> : null}
 
             {shown.map((o) => (
               <OptionButton

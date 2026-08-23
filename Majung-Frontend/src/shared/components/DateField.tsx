@@ -191,7 +191,7 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
 
             <ScrollView
               className="h-80 rounded-2xl border-[1.5px] border-line bg-page"
-              contentContainerClassName="py-1.5"
+              contentContainerClassName="py-2"
               showsVerticalScrollIndicator={false}
               ref={listRef}
               onContentSizeChange={() => {
@@ -209,7 +209,7 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
                     accessibilityRole="radio"
                     accessibilityState={{ selected: on }}
                     accessibilityLabel={`${n}${open ? UNIT_LABEL[open] : ""}`}
-                    className="mx-1.5 items-center justify-center rounded-xl active:opacity-70"
+                    className="mx-2 items-center justify-center rounded-xl active:opacity-70"
                     style={{
                       height: ROW - 4,
                       marginVertical: 2,

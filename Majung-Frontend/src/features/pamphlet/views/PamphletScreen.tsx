@@ -72,10 +72,10 @@ export function PamphletScreen({ onClose }: Props) {
 
         <Text className="mb-3 text-heading font-extrabold text-ink-strong">앱 받는 방법</Text>
         <View className="mb-4 rounded-2xl bg-white px-4 py-4">
-          <Text className="mb-1.5 text-body-lg text-ink-body">
+          <Text className="mb-2 text-body-lg text-ink-body">
             ① 쓰시는 폰을 고르세요.
           </Text>
-          <Text className="mb-1.5 text-body-lg text-ink-body">
+          <Text className="mb-2 text-body-lg text-ink-body">
             ② 폰 카메라로 아래 그림을 비추세요.
           </Text>
           <Text className="text-body-lg text-ink-body">
@@ -93,7 +93,7 @@ export function PamphletScreen({ onClose }: Props) {
           <Text className="text-body font-extrabold text-note-info-ink">
             선불폰으로도 받으실 수 있어요
           </Text>
-          <Text className="mt-1.5 text-caption text-note-info-ink">
+          <Text className="mt-2 text-caption text-note-info-ink">
             자세한 방법은 팜플렛 뒷면에 적혀 있어요.
           </Text>
         </View>

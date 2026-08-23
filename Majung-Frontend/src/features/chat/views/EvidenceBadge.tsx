@@ -10,7 +10,7 @@ export function EvidenceBadge({ evidence }: { evidence: Evidence }) {
   const isRag = evidence.stage === "rag";
   return (
     <View
-      className="mt-2.5 rounded-lg border px-3 py-2"
+      className="mt-3 rounded-lg border px-3 py-2"
       style={{
         backgroundColor: isRag ? COLORS.noteInfo : COLORS.noteWarn,
         borderColor: isRag ? COLORS.noteInfoLine : COLORS.noteWarnLine,
@@ -29,7 +29,7 @@ export function EvidenceBadge({ evidence }: { evidence: Evidence }) {
         {evidence.org}
       </Text>
       {isRag && evidence.checkedAt ? (
-        <Text className="mt-0.5 text-[12.5px] leading-[20px] text-note-info-ink">
+        <Text className="mt-1 text-[12.5px] leading-[20px] text-note-info-ink">
           {checkedAtSentence(evidence.checkedAt)}
         </Text>
       ) : null}

@@ -160,7 +160,12 @@ export async function streamChat(
       "Content-Type": "application/json",
       ...(req.token ? { Authorization: `Bearer ${req.token}` } : {}),
     },
-    body: JSON.stringify({ message: req.message, history: req.history }),
+    body: JSON.stringify({
+      message: req.message,
+      history: req.history,
+      // 값이 없으면 키를 아예 넣지 않는다. 빈 문자열을 보내면 서버가 모르는 코드로 받는다.
+      ...(req.route_id ? { route_id: req.route_id } : {}),
+    }),
     signal,
   });
 

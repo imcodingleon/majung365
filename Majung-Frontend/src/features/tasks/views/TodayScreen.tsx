@@ -119,7 +119,7 @@ export function TodayScreen({
         <Text className="text-body text-ink-sub">
           {userName ? `${userName}님, 어서 오세요.` : "어서 오세요."}
         </Text>
-        <Text className="mt-0.5 text-display font-extrabold text-ink-strong">오늘의 할 일</Text>
+        <Text className="mt-1 text-display font-extrabold text-ink-strong">오늘의 할 일</Text>
         <Text className="mb-6 mt-2 text-body text-ink-sub">
           어려운 상황에서도 한 걸음씩 나아갈 수 있도록{"\n"}꼭 필요한 일만 골라 두었어요.
         </Text>

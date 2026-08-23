@@ -158,11 +158,11 @@ export function ConsentPopup({ consentId, onClose }: Props) {
 
           {clauses.map((clause, index) => (
             <View key={clause.title} className="mb-6">
-              <Text className="mb-2.5 text-body-lg font-extrabold text-ink-strong">
+              <Text className="mb-3 text-body-lg font-extrabold text-ink-strong">
                 {index + 1}. {clause.title}
               </Text>
               {clause.lines.map((line) => (
-                <View key={line} className="mb-1.5 flex-row pl-1">
+                <View key={line} className="mb-2 flex-row pl-1">
                   <Text className="w-4 text-body text-ink-body">·</Text>
                   <Text className="flex-1 text-body text-ink-body">{line}</Text>
                 </View>

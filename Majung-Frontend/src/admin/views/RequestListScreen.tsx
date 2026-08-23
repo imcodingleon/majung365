@@ -55,9 +55,9 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
             <Text className="text-caption text-ink-muted" numberOfLines={1}>
               {staff ? `${orgKindLabel(staff.orgKind)} ${staff.branch}` : ""}
             </Text>
-            <Text className="mt-0.5 text-heading font-extrabold text-ink-strong">방문 예정 알림</Text>
+            <Text className="mt-1 text-heading font-extrabold text-ink-strong">방문 예정 알림</Text>
             {staff ? (
-              <Text className="mt-0.5 text-caption text-ink-sub">{staff.displayName} 담당자</Text>
+              <Text className="mt-1 text-caption text-ink-sub">{staff.displayName} 담당자</Text>
             ) : null}
           </View>
           <Pressable
@@ -98,7 +98,7 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
             onPress={() => onOpen(request.id)}
             accessibilityRole="button"
             accessibilityLabel={`${request.name} ${request.purpose} 요청 열기`}
-            className="mb-2.5 rounded-2xl border-[1.5px] border-line bg-white px-4 py-4 active:opacity-90"
+            className="mb-3 rounded-2xl border-[1.5px] border-line bg-white px-4 py-4 active:opacity-90"
           >
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1">

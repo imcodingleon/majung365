@@ -46,7 +46,7 @@ function SmallButton({
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
-      className="rounded-lg border-[1.5px] px-3.5 py-2.5 active:opacity-90"
+      className="rounded-lg border-[1.5px] px-4 py-3 active:opacity-90"
       style={{
         backgroundColor: filled ? COLORS.brand : COLORS.surface,
         borderColor: filled ? COLORS.brand : COLORS.line,
@@ -74,7 +74,7 @@ export function RequestStatusStrip({
 
   return (
     <View
-      className="mb-3.5 rounded-xl border px-4 py-3.5"
+      className="mb-4 rounded-xl border px-4 py-4"
       style={{ backgroundColor: tone.bg, borderColor: tone.line }}
     >
       <Text
