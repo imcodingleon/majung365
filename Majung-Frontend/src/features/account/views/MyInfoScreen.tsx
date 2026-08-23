@@ -29,8 +29,8 @@ type Props = {
 function Row({ label, value }: { label: string; value: string }) {
   return (
     <View className="flex-row items-start gap-3 border-b border-line py-4">
-      <Text className="w-24 text-[15px] font-bold text-ink-header">{label}</Text>
-      <Text className="flex-1 text-base text-ink-strong">{value}</Text>
+      <Text className="w-24 text-body font-bold text-ink-header">{label}</Text>
+      <Text className="flex-1 text-body-lg text-ink-strong">{value}</Text>
     </View>
   );
 }
@@ -55,15 +55,15 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
           <Row label="출소한 날" value={formatDate(profile.releaseDate)} />
           {/* 라벨이 길어 다른 행처럼 옆에 붙이지 않는다. 위아래로 놓아 두 줄로 접히지 않게 한다. */}
           <View className="py-4">
-            <Text className="text-[15px] font-bold text-ink-header">어떤 일로 계셨는지</Text>
-            <Text className="mt-1.5 text-base text-ink-strong">{crimeLabel}</Text>
+            <Text className="text-body font-bold text-ink-header">어떤 일로 계셨는지</Text>
+            <Text className="mt-1.5 text-body-lg text-ink-strong">{crimeLabel}</Text>
             <Pressable
               onPress={() => setEditingCrime((v) => !v)}
               accessibilityRole="button"
               accessibilityLabel="어떤 일로 계셨는지 바꾸기"
               className="mt-2.5 self-start rounded-lg border border-line px-3 py-2 active:opacity-70"
             >
-              <Text className="text-sm font-bold text-ink-sub">
+              <Text className="text-caption font-bold text-ink-sub">
                 {editingCrime ? "그만두기" : "바꾸기"}
               </Text>
             </Pressable>
@@ -73,7 +73,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
         {/* 처음에는 말하고 싶지 않았다가 서비스를 써보고 마음이 바뀔 수 있다 (§3.3-3). */}
         {editingCrime ? (
           <View className="mt-3 rounded-2xl border-[1.5px] border-brand-soft bg-white p-4">
-            <Text className="mb-3 text-[15px] leading-[24px] text-ink-sub">
+            <Text className="mb-3 text-body text-ink-sub">
               언제든지 바꾸거나 지우실 수 있어요.
             </Text>
             {CRIME_CATEGORIES.map((c) => {
@@ -96,7 +96,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
                   }}
                 >
                   <Text
-                    className="text-base"
+                    className="text-body-lg"
                     style={{
                       color: selected ? COLORS.brand : COLORS.inkStrong,
                       fontWeight: selected ? "800" : "600",
@@ -111,12 +111,12 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
         ) : null}
 
         <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-3.5">
-          <Text className="text-sm leading-[24px] text-note-info-ink">
+          <Text className="text-caption text-note-info-ink">
             마지막으로 앱을 쓰신 날부터 1년이 지나면 저절로 지워져요.
           </Text>
         </View>
 
-        <Text className="mb-3 mt-8 text-base font-extrabold text-ink-strong">정보 지우기</Text>
+        <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">정보 지우기</Text>
 
         {profile.crime !== null ? (
           <Pressable
@@ -125,10 +125,10 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
             accessibilityLabel="어떤 일로 계셨는지 지우기"
             className="mb-2.5 rounded-xl border-[1.5px] border-line bg-white px-4 py-4 active:opacity-80"
           >
-            <Text className="text-base font-bold text-ink-strong">
+            <Text className="text-body-lg font-bold text-ink-strong">
               어떤 일로 계셨는지 지우기
             </Text>
-            <Text className="mt-1 text-sm leading-[22px] text-ink-muted">
+            <Text className="mt-1 text-caption text-ink-muted">
               다른 정보는 그대로 있어요.
             </Text>
           </Pressable>
@@ -140,20 +140,20 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
           accessibilityLabel="모든 정보 지우기"
           className="rounded-xl border-[1.5px] border-alert-line bg-alert-soft px-4 py-4 active:opacity-80"
         >
-          <Text className="text-base font-bold text-alert">모든 정보 지우기</Text>
-          <Text className="mt-1 text-sm leading-[22px] text-alert-ink">
+          <Text className="text-body-lg font-bold text-alert">모든 정보 지우기</Text>
+          <Text className="mt-1 text-caption text-alert-ink">
             지우면 되돌릴 수 없어요.
           </Text>
         </Pressable>
 
         {confirming ? (
           <View className="mt-4 rounded-2xl border-[1.5px] border-alert-line bg-white p-5">
-            <Text className="text-[17px] font-extrabold text-alert-ink">
+            <Text className="text-body-lg font-extrabold text-alert-ink">
               {eraseTitle(confirming)}
             </Text>
             <View className="mt-3">
               {eraseDetail(confirming).map((line) => (
-                <Text key={line} className="mb-1 text-[15px] leading-[25px] text-ink-body">
+                <Text key={line} className="mb-1 text-body text-ink-body">
                   · {line}
                 </Text>
               ))}
@@ -169,7 +169,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
                 accessibilityLabel={eraseConfirmLabel(confirming)}
                 className="rounded-xl bg-alert px-4 py-3 active:opacity-90"
               >
-                <Text className="text-[15px] font-extrabold text-white">
+                <Text className="text-body font-extrabold text-white">
                   {eraseConfirmLabel(confirming)}
                 </Text>
               </Pressable>
@@ -179,7 +179,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
                 accessibilityLabel="그만두기"
                 className="rounded-xl border border-line bg-white px-4 py-3 active:opacity-90"
               >
-                <Text className="text-[15px] font-semibold text-ink-sub">그만두기</Text>
+                <Text className="text-body font-semibold text-ink-sub">그만두기</Text>
               </Pressable>
             </View>
           </View>

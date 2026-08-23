@@ -39,10 +39,10 @@ const RELEASE_SPAN_YEARS = 5;
 
 function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
   return (
-    <Text className="mb-2 mt-6 text-base font-extrabold text-ink-strong">
+    <Text className="mb-2 mt-6 text-body-lg font-extrabold text-ink-strong">
       {children}
       {optional ? (
-        <Text className="text-sm font-semibold text-ink-muted"> (안 고르셔도 돼요)</Text>
+        <Text className="text-caption font-semibold text-ink-muted"> (안 고르셔도 돼요)</Text>
       ) : null}
     </Text>
   );
@@ -70,7 +70,7 @@ function CrimeOption({
       }}
     >
       <Text
-        className="text-base"
+        className="text-body-lg"
         style={{
           color: selected ? COLORS.brand : COLORS.inkStrong,
           fontWeight: selected ? "800" : "600",
@@ -100,14 +100,14 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
       />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-16 pt-6">
-        <Text className="text-[25px] font-extrabold leading-[35px] text-ink-strong">
+        <Text className="text-display font-extrabold text-ink-strong">
           몇 가지만{"\n"}알려주시겠어요?
         </Text>
 
         {/* ① 개인정보 */}
         <FieldLabel>이름</FieldLabel>
         <TextInput
-          className="rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-[17px] text-ink-strong"
+          className="rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong"
           value={form.name}
           onChangeText={form.setName}
           placeholder="이름을 적어 주세요"
@@ -162,7 +162,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
         />
 
         {!intakeDone ? (
-          <Text className="mt-4 text-center text-sm leading-[23px] text-ink-muted">
+          <Text className="mt-4 text-center text-caption text-ink-muted">
             6개 분야를 모두 마치면 시작할 수 있어요.
           </Text>
         ) : null}
@@ -176,7 +176,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
           className="mt-4 items-center rounded-2xl py-4 active:opacity-90"
           style={{ backgroundColor: canSubmit ? COLORS.brand : COLORS.brandMuted }}
         >
-          <Text className="text-[17px] font-extrabold text-white">시작하기</Text>
+          <Text className="text-body-lg font-extrabold text-white">시작하기</Text>
         </Pressable>
       </ScrollView>
 

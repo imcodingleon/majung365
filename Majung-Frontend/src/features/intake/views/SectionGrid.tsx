@@ -66,13 +66,13 @@ function SectionBox({
       </View>
 
       <Text
-        className="mt-3 text-[16px] font-extrabold leading-[23px]"
+        className="mt-3 text-body-lg font-extrabold"
         style={{ color: done ? COLORS.doneInk : COLORS.inkStrong }}
       >
         {label}
       </Text>
 
-      <Text className="mt-1 text-[13px] font-bold" style={{ color: done ? COLORS.doneInk : COLORS.inkMuted }}>
+      <Text className="mt-1 text-caption font-bold" style={{ color: done ? COLORS.doneInk : COLORS.inkMuted }}>
         {done ? "✓ 다 답했어요" : started ? `${visible}개 중 ${answered}개` : "눌러서 답하기"}
       </Text>
 
@@ -100,12 +100,12 @@ export function SectionGrid({ progress, onOpen }: Props) {
   return (
     <View>
       <View className="flex-row items-end justify-between">
-        <Text className="text-[20px] font-extrabold text-ink-strong">상황 알아보기</Text>
-        <Text className="text-[14px] font-bold" style={{ color: done === 6 ? COLORS.doneInk : COLORS.brand }}>
+        <Text className="text-title font-extrabold text-ink-strong">상황 알아보기</Text>
+        <Text className="text-caption font-bold" style={{ color: done === 6 ? COLORS.doneInk : COLORS.brand }}>
           6개 중 {done}개
         </Text>
       </View>
-      <Text className="mb-4 mt-1.5 text-[15px] leading-[25px] text-ink-sub">
+      <Text className="mb-4 mt-1.5 text-body text-ink-sub">
         하나씩 눌러서 답해 주세요.
       </Text>
 

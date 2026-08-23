@@ -6,6 +6,24 @@ module.exports = {
   presets: [require("nativewind/preset")],
   theme: {
     extend: {
+      // ── 글자 크기. **여섯 단계로 끝낸다.**
+      //
+      // 정리 전에는 18가지가 쓰였고 큰 제목만 21·22·23·25·26px 다섯 가지였다.
+      // 한두 번씩만 쓰인 크기들이라 화면마다 제목이 미묘하게 달라 보였다.
+      //
+      // **저리터러시 전제라 아래가 잘려 있다.** 12px 이하를 두지 않았고 본문이 15px에서
+      // 시작한다. 흔한 웹 스케일이라면 caption이 12px이겠지만 여기서는 13px이 바닥이다.
+      //
+      // 이름으로 부르면 "이 자리가 무엇인가"가 코드에 남는다. `text-[19px]`는 왜 19인지
+      // 알 수 없지만 `text-heading`은 카드 제목이라는 뜻이다.
+      fontSize: {
+        display: ["26px", { lineHeight: "36px" }], // 화면 제목
+        title: ["21px", { lineHeight: "30px" }], // 구역 제목
+        heading: ["18px", { lineHeight: "26px" }], // 카드 제목·화면 머리
+        "body-lg": ["17px", { lineHeight: "27px" }], // 선택지·버튼
+        body: ["15px", { lineHeight: "25px" }], // 기본 본문
+        caption: ["13px", { lineHeight: "21px" }], // 보조 설명
+      },
       colors: {
         brand: { DEFAULT: "#024f9f", soft: "#e1eefa", muted: "#b9cde4" }, // 주 색 / 주 색 배경 / 비활성
         sun: { 500: "#EF9F27", 700: "#e04e00", 100: "#FAEEDA", 900: "#412402" }, // 강조·포인트

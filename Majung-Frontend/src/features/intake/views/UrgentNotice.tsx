@@ -31,14 +31,14 @@ export function UrgentNotice({ notice, onClose }: Props) {
           style={{ borderWidth: 2, borderColor: COLORS.alert }}
         >
           <View className="px-5 py-4" style={{ backgroundColor: COLORS.alertSoft }}>
-            <Text className="text-[21px] font-extrabold" style={{ color: COLORS.alert }}>
+            <Text className="text-title font-extrabold" style={{ color: COLORS.alert }}>
               {notice.title}
             </Text>
           </View>
 
           <ScrollView className="max-h-64" contentContainerClassName="px-5 py-4">
             {notice.lines.map((line) => (
-              <Text key={line} className="mb-1.5 text-[17px] leading-[28px] text-ink-strong">
+              <Text key={line} className="mb-1.5 text-body-lg text-ink-strong">
                 {line}
               </Text>
             ))}
@@ -53,7 +53,7 @@ export function UrgentNotice({ notice, onClose }: Props) {
               style={{ backgroundColor: COLORS.alert }}
             >
               <Text className="text-2xl">📞</Text>
-              <Text className="text-[19px] font-extrabold text-white">{notice.callLabel}</Text>
+              <Text className="text-heading font-extrabold text-white">{notice.callLabel}</Text>
             </Pressable>
 
             <Pressable
@@ -62,7 +62,7 @@ export function UrgentNotice({ notice, onClose }: Props) {
               accessibilityLabel="안내를 닫고 계속 답하기"
               className="mt-2.5 items-center rounded-2xl border-[1.5px] border-line py-3.5 active:opacity-80"
             >
-              <Text className="text-base font-bold text-ink-sub">계속 답할게요</Text>
+              <Text className="text-body-lg font-bold text-ink-sub">계속 답할게요</Text>
             </Pressable>
           </View>
         </View>

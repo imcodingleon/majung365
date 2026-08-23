@@ -138,7 +138,7 @@ export function ConsentPopup({ consentId, onClose }: Props) {
     >
       <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
         <View className="flex-row items-center justify-between border-b border-line px-5 py-4">
-          <Text className="flex-1 pr-2 text-lg font-extrabold text-ink-strong">
+          <Text className="flex-1 pr-2 text-heading font-extrabold text-ink-strong">
             {consentId ? TITLES[consentId] : ""}
           </Text>
           <Pressable
@@ -152,26 +152,26 @@ export function ConsentPopup({ consentId, onClose }: Props) {
         </View>
 
         <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-5">
-          <Text className="mb-6 text-[15px] leading-[25px] text-ink-sub">
+          <Text className="mb-6 text-body text-ink-sub">
             {consentId ? BASIS[consentId] : ""}
           </Text>
 
           {clauses.map((clause, index) => (
             <View key={clause.title} className="mb-6">
-              <Text className="mb-2.5 text-[16px] font-extrabold leading-[25px] text-ink-strong">
+              <Text className="mb-2.5 text-body-lg font-extrabold text-ink-strong">
                 {index + 1}. {clause.title}
               </Text>
               {clause.lines.map((line) => (
                 <View key={line} className="mb-1.5 flex-row pl-1">
-                  <Text className="w-4 text-[15px] leading-[26px] text-ink-body">·</Text>
-                  <Text className="flex-1 text-[15px] leading-[26px] text-ink-body">{line}</Text>
+                  <Text className="w-4 text-body text-ink-body">·</Text>
+                  <Text className="flex-1 text-body text-ink-body">{line}</Text>
                 </View>
               ))}
             </View>
           ))}
 
           <View className="mt-2 border-t border-line pt-5">
-            <Text className="text-[14px] leading-[23px] text-ink-muted">
+            <Text className="text-caption text-ink-muted">
               수집한 정보는 암호화하여 보관하며, 이용자는 언제든지 열람·정정·삭제를 요청하실 수
               있습니다.
             </Text>

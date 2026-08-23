@@ -104,14 +104,14 @@ export function QuestionFlow({
           >
             <SectionIcon id={sectionId} size={22} color={COLORS.brand} />
           </View>
-          <Text className="flex-1 text-[18px] font-extrabold text-ink-strong">{sectionLabel}</Text>
+          <Text className="flex-1 text-heading font-extrabold text-ink-strong">{sectionLabel}</Text>
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
             accessibilityLabel="닫기. 답하신 것은 그대로 남아요"
             className="rounded-xl border border-line px-3.5 py-2.5 active:opacity-70"
           >
-            <Text className="text-[15px] font-bold text-ink-sub">닫기</Text>
+            <Text className="text-body font-bold text-ink-sub">닫기</Text>
           </Pressable>
         </View>
 
@@ -126,7 +126,7 @@ export function QuestionFlow({
               }}
             />
           </View>
-          <Text className="mt-2 text-[13px] font-bold text-ink-muted">
+          <Text className="mt-2 text-caption font-bold text-ink-muted">
             {total}개 중 {Math.min(step + 1, total)}번째
           </Text>
         </View>
@@ -142,7 +142,7 @@ export function QuestionFlow({
               onToggleMulti={onToggleMulti}
             />
           ) : (
-            <Text className="text-[16px] leading-[26px] text-ink-sub">
+            <Text className="text-body-lg text-ink-sub">
               이 분야 질문은 곧 준비돼요.
             </Text>
           )}
@@ -150,7 +150,7 @@ export function QuestionFlow({
 
         <View className="border-t border-line px-5 pb-2 pt-3">
           {!answered && question ? (
-            <Text className="mb-2.5 text-center text-[14px] text-ink-muted">
+            <Text className="mb-2.5 text-center text-caption text-ink-muted">
               답을 고르시면 다음으로 넘어가요.
             </Text>
           ) : null}
@@ -168,7 +168,7 @@ export function QuestionFlow({
                 opacity: step === 0 ? 0.4 : 1,
               }}
             >
-              <Text className="text-[17px] font-bold text-ink-sub">이전</Text>
+              <Text className="text-body-lg font-bold text-ink-sub">이전</Text>
             </Pressable>
 
             <Pressable
@@ -180,7 +180,7 @@ export function QuestionFlow({
               className="flex-[1.6] items-center rounded-2xl py-4 active:opacity-90"
               style={{ backgroundColor: answered ? COLORS.brand : COLORS.brandMuted }}
             >
-              <Text className="text-[17px] font-extrabold text-white">
+              <Text className="text-body-lg font-extrabold text-white">
                 {last ? "다 답했어요" : "다음"}
               </Text>
             </Pressable>

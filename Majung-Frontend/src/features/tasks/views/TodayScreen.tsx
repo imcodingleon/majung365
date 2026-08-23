@@ -53,10 +53,10 @@ function Progress({ done, total }: { done: number; total: number }) {
   return (
     <View className="mb-5">
       <View className="mb-2 flex-row items-end justify-between">
-        <Text className="text-[15px] font-extrabold" style={{ color: COLORS.brand }}>
+        <Text className="text-body font-extrabold" style={{ color: COLORS.brand }}>
           진행 상황
         </Text>
-        <Text className="text-[15px] font-bold text-ink-sub">
+        <Text className="text-body font-bold text-ink-sub">
           {done} / {total}
         </Text>
       </View>
@@ -116,11 +116,11 @@ export function TodayScreen({
       <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="px-5 pb-16 pt-5">
         <Progress done={Math.max(0, (total ?? tasks.length) - tasks.length)} total={total ?? tasks.length} />
 
-        <Text className="text-[15px] text-ink-sub">
+        <Text className="text-body text-ink-sub">
           {userName ? `${userName}님, 어서 오세요.` : "어서 오세요."}
         </Text>
-        <Text className="mt-0.5 text-[26px] font-extrabold text-ink-strong">오늘의 할 일</Text>
-        <Text className="mb-6 mt-2 text-[15px] leading-[25px] text-ink-sub">
+        <Text className="mt-0.5 text-display font-extrabold text-ink-strong">오늘의 할 일</Text>
+        <Text className="mb-6 mt-2 text-body text-ink-sub">
           어려운 상황에서도 한 걸음씩 나아갈 수 있도록{"\n"}꼭 필요한 일만 골라 두었어요.
         </Text>
 
@@ -158,10 +158,10 @@ export function TodayScreen({
 
         {tasks.length === 0 ? (
           <View className="mt-6 rounded-2xl border border-folder-done-line bg-folder-done-bg px-5 py-6">
-            <Text className="text-center text-lg font-extrabold text-folder-done-ink">
+            <Text className="text-center text-heading font-extrabold text-folder-done-ink">
               오늘 할 일을 다 마치셨어요.
             </Text>
-            <Text className="mt-2 text-center text-[15px] leading-[25px] text-folder-done-ink">
+            <Text className="mt-2 text-center text-body text-folder-done-ink">
               천천히 하셔도 괜찮아요.
             </Text>
           </View>

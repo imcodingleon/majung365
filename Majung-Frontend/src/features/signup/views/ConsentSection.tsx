@@ -36,7 +36,7 @@ function CheckBox({ checked, large }: { checked: boolean; large?: boolean }) {
       }}
     >
       {checked ? (
-        <Text className={`${large ? "text-base" : "text-sm"} font-extrabold text-white`}>✓</Text>
+        <Text className={`${large ? "text-body-lg" : "text-caption"} font-extrabold text-white`}>✓</Text>
       ) : null}
     </View>
   );
@@ -60,7 +60,7 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
       >
         <CheckBox checked={allChecked} large />
         <Text
-          className="flex-1 text-[17px] font-extrabold"
+          className="flex-1 text-body-lg font-extrabold"
           style={{ color: allChecked ? COLORS.brand : COLORS.inkStrong }}
         >
           약관 전체 동의
@@ -87,7 +87,7 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
               className="flex-1 flex-row items-center gap-3 active:opacity-70"
             >
               <CheckBox checked={state[item.id]} />
-              <Text className="flex-1 text-[15px] leading-[24px] text-ink-strong">
+              <Text className="flex-1 text-body text-ink-strong">
                 <Text
                   className="font-extrabold"
                   style={{ color: item.required ? COLORS.brand : COLORS.inkSub }}
@@ -106,15 +106,15 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
             >
               {/* 문구를 "보기"로 줄였다. "전문 보기"는 좁은 화면에서 항목명을 두 줄로 밀어낸다.
                   무엇을 보는 것인지는 낭독기용 라벨이 온전히 말한다. */}
-              <Text className="text-[14px] font-bold text-ink-muted">보기 ›</Text>
+              <Text className="text-caption font-bold text-ink-muted">보기 ›</Text>
             </Pressable>
           </View>
 
           {/* 항목명은 형식을 맡고 이 줄이 뜻을 맡는다 */}
-          <Text className="ml-9 mt-1 text-[14px] leading-[22px] text-ink-sub">{item.plain}</Text>
+          <Text className="ml-9 mt-1 text-caption text-ink-sub">{item.plain}</Text>
 
           {item.limitNote ? (
-            <Text className="ml-9 mt-1.5 text-[13px] leading-[21px] text-ink-muted">
+            <Text className="ml-9 mt-1.5 text-caption text-ink-muted">
               {item.limitNote}
             </Text>
           ) : null}

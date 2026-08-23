@@ -30,7 +30,7 @@ function GuideNote({ tone, children }: { tone: "hint" | "done"; children: React.
       className="mb-3.5 rounded-xl border px-3.5 py-3"
       style={{ backgroundColor: style.backgroundColor, borderColor: style.borderColor }}
     >
-      <Text className="text-sm font-semibold leading-[23px]" style={{ color: style.color }}>
+      <Text className="text-caption font-semibold" style={{ color: style.color }}>
         {children}
       </Text>
     </View>
@@ -59,7 +59,7 @@ function ActionButton({
       }}
     >
       <Text
-        className="text-base font-extrabold"
+        className="text-body-lg font-extrabold"
         style={{ color: filled ? COLORS.surface : tone === "notify" ? COLORS.action : COLORS.inkSub }}
       >
         {label}
@@ -94,10 +94,10 @@ export function TaskCard({
       <View className="mb-3.5">
         {task.info.map((line) => (
           <View key={line} className="mb-1.5 flex-row pr-1">
-            <Text className="mr-2 text-[15px] font-extrabold" style={{ color: COLORS.doneInk }}>
+            <Text className="mr-2 text-body font-extrabold" style={{ color: COLORS.doneInk }}>
               ✓
             </Text>
-            <Text className="flex-1 text-[15px] leading-[26px] text-ink-body">{line}</Text>
+            <Text className="flex-1 text-body text-ink-body">{line}</Text>
           </View>
         ))}
       </View>
@@ -105,7 +105,7 @@ export function TaskCard({
       {/* 갈 곳이 하나로 정해지는 항목은 전화번호보다 창구 안내가 먼저 온다 (§6.4). */}
       {task.desk ? (
         <View className="mb-3.5 rounded-xl border border-note-info-line bg-note-info px-3.5 py-3">
-          <Text className="text-[15px] font-bold leading-[25px] text-note-info-ink">
+          <Text className="text-body font-bold text-note-info-ink">
             {task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.
           </Text>
         </View>
@@ -115,11 +115,11 @@ export function TaskCard({
           갈 곳이 정해진 항목에서는 창구가 먼저 읽혀야 한다 (§6.4) */}
       {task.contact ? (
         <View className="mb-3.5 rounded-xl px-3.5 py-3" style={{ backgroundColor: COLORS.bubble }}>
-          <Text className="text-[14px] leading-[23px] text-ink-sub">
+          <Text className="text-caption text-ink-sub">
             더 물어볼 것이 있으면 {task.contact.org} {task.contact.phone}으로 전화해 주세요.
           </Text>
           {task.contact.hours ? (
-            <Text className="mt-0.5 text-[14px] leading-[23px] text-ink-sub">
+            <Text className="mt-0.5 text-caption text-ink-sub">
               전화받는 시간은 {task.contact.hours}예요.
             </Text>
           ) : null}

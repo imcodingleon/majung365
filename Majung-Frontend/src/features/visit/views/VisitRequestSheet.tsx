@@ -65,7 +65,7 @@ function SlotPicker({
             }}
           >
             <Text
-              className="text-[15px]"
+              className="text-body"
               style={{
                 color: isSelected ? COLORS.brand : COLORS.inkStrong,
                 fontWeight: isSelected ? "800" : "600",
@@ -81,7 +81,7 @@ function SlotPicker({
 }
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <Text className="mb-2.5 mt-6 text-base font-extrabold text-ink-strong">{children}</Text>;
+  return <Text className="mb-2.5 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>;
 }
 
 export function VisitRequestSheet({
@@ -125,7 +125,7 @@ export function VisitRequestSheet({
     >
       <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
         <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-          <Text className="text-lg font-extrabold text-ink-strong">담당자에게 미리 알리기</Text>
+          <Text className="text-heading font-extrabold text-ink-strong">담당자에게 미리 알리기</Text>
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
@@ -141,24 +141,24 @@ export function VisitRequestSheet({
           contentContainerClassName="px-5 pb-10 pt-5"
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="text-[15px] leading-[26px] text-ink-sub">
+          <Text className="text-body text-ink-sub">
             미리 알려두면 가셨을 때 설명하지 않아도 돼요.{"\n"}
             바로 도와드릴 수 있어요.
           </Text>
 
           <SectionTitle>가시는 분</SectionTitle>
           <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-3.5">
-            <Text className="text-[17px] text-ink-strong">{userName}</Text>
+            <Text className="text-body-lg text-ink-strong">{userName}</Text>
           </View>
 
           <SectionTitle>무슨 일로 가시나요</SectionTitle>
           <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-3.5">
-            <Text className="text-[17px] text-ink-strong">{purpose}</Text>
+            <Text className="text-body-lg text-ink-strong">{purpose}</Text>
           </View>
 
           {/* 1지망이 안 될 때 조율 왕복이 한 번 줄어든다 (§7.2). */}
           <SectionTitle>언제 가실 수 있나요</SectionTitle>
-          <Text className="mb-2.5 text-sm leading-[23px] text-ink-muted">
+          <Text className="mb-2.5 text-caption text-ink-muted">
             가시고 싶은 때를 고르세요.{"\n"}
             주민센터와 공단은 평일에만 문을 열어요.
           </Text>
@@ -170,7 +170,7 @@ export function VisitRequestSheet({
           {docs.length > 0 ? (
             <>
               <SectionTitle>챙겨 가실 것</SectionTitle>
-              <Text className="mb-2.5 text-sm leading-[23px] text-ink-muted">
+              <Text className="mb-2.5 text-caption text-ink-muted">
                 가지고 계신 것에 표시해 주세요.{"\n"}
                 없어도 괜찮아요. 담당자가 미리 알면 헛걸음을 막을 수 있어요.
               </Text>
@@ -196,9 +196,9 @@ export function VisitRequestSheet({
                         borderColor: checked ? COLORS.brand : COLORS.brandMuted,
                       }}
                     >
-                      {checked ? <Text className="text-sm font-extrabold text-white">✓</Text> : null}
+                      {checked ? <Text className="text-caption font-extrabold text-white">✓</Text> : null}
                     </View>
-                    <Text className="flex-1 text-base text-ink-strong">{doc}</Text>
+                    <Text className="flex-1 text-body-lg text-ink-strong">{doc}</Text>
                   </Pressable>
                 );
               })}
@@ -206,7 +206,7 @@ export function VisitRequestSheet({
           ) : null}
 
           <SectionTitle>하고 싶은 말</SectionTitle>
-          <Text className="mb-2.5 text-sm leading-[23px] text-ink-muted">
+          <Text className="mb-2.5 text-caption text-ink-muted">
             안 적으셔도 괜찮아요.
           </Text>
           <TextInput
@@ -216,21 +216,21 @@ export function VisitRequestSheet({
             placeholder="미리 알려두고 싶은 것이 있으면 적어 주세요"
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="하고 싶은 말"
-            className="min-h-24 rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-base leading-[26px] text-ink-strong"
+            className="min-h-24 rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong"
             textAlignVertical="top"
           />
 
           {/* 무엇이 담당자에게 가는지 전송 직전에 보여준다 (§7.4). */}
           <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
-            <Text className="mb-2 text-[15px] font-extrabold text-note-info-ink">
+            <Text className="mb-2 text-body font-extrabold text-note-info-ink">
               담당자에게 이만큼만 알려줘요
             </Text>
             {sharedItems(note.trim().length > 0, Boolean(hasDeadline), docs.length > 0).map((item) => (
-              <Text key={item} className="text-sm leading-[24px] text-note-info-ink">
+              <Text key={item} className="text-caption text-note-info-ink">
                 · {item}
               </Text>
             ))}
-            <Text className="mt-2 text-sm leading-[24px] text-note-info-ink">
+            <Text className="mt-2 text-caption text-note-info-ink">
               어떤 일로 계셨는지는 알려주지 않아요.
             </Text>
           </View>
@@ -244,11 +244,11 @@ export function VisitRequestSheet({
             className="mt-5 items-center rounded-2xl py-4 active:opacity-90"
             style={{ backgroundColor: canSend ? COLORS.brand : COLORS.brandMuted }}
           >
-            <Text className="text-[17px] font-extrabold text-white">알림 보내기</Text>
+            <Text className="text-body-lg font-extrabold text-white">알림 보내기</Text>
           </Pressable>
 
           {!canSend ? (
-            <Text className="mt-3 text-center text-sm text-ink-muted">
+            <Text className="mt-3 text-center text-caption text-ink-muted">
               가실 수 있는 때를 두 가지 골라 주세요.
             </Text>
           ) : null}

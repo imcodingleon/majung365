@@ -37,7 +37,7 @@ function NumberBadge({ n, color }: { n: number; color: string }) {
       className="size-7 items-center justify-center rounded-full"
       style={{ backgroundColor: color }}
     >
-      <Text className="text-[15px] font-extrabold text-white">{n}</Text>
+      <Text className="text-body font-extrabold text-white">{n}</Text>
     </View>
   );
 }
@@ -55,7 +55,7 @@ function MustBadge() {
       className="self-start rounded-full px-3 py-1.5"
       style={{ backgroundColor: COLORS.alertSoft }}
     >
-      <Text className="text-[13px] font-extrabold" style={{ color: COLORS.alert }}>
+      <Text className="text-caption font-extrabold" style={{ color: COLORS.alert }}>
         먼저 하면 좋아요
       </Text>
     </View>
@@ -96,13 +96,13 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
         <View className="flex-row items-center gap-2.5">
           <NumberBadge n={index + 1} color={accent} />
           <Text
-            className="flex-1 text-[19px] font-extrabold leading-[27px]"
+            className="flex-1 text-heading font-extrabold"
             style={{ color: done ? FOLDER_DONE.title : COLORS.inkStrong }}
           >
             {task.title}
           </Text>
           {done ? (
-            <Text className="text-[15px] font-extrabold" style={{ color: FOLDER_DONE.title }}>
+            <Text className="text-body font-extrabold" style={{ color: FOLDER_DONE.title }}>
               ✓ 끝
             </Text>
           ) : (
@@ -113,7 +113,7 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
         </View>
 
         <View className="ml-[38px] mt-1 flex-row flex-wrap items-center gap-2">
-          <Text className="text-[14px] text-ink-sub">{task.meta}</Text>
+          <Text className="text-caption text-ink-sub">{task.meta}</Text>
           {task.must && !done && !open ? <MustBadge /> : null}
         </View>
       </Pressable>

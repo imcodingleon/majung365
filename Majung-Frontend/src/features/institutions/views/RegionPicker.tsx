@@ -35,7 +35,7 @@ function Chip({
       }}
     >
       <Text
-        className="text-[15px]"
+        className="text-body"
         style={{
           color: selected ? COLORS.brand : COLORS.inkStrong,
           fontWeight: selected ? "800" : "600",
@@ -53,7 +53,7 @@ export function RegionPicker({ onPick }: Props) {
 
   return (
     <View>
-      <Text className="mb-2.5 text-base font-extrabold text-ink-strong">어디에 계세요?</Text>
+      <Text className="mb-2.5 text-body-lg font-extrabold text-ink-strong">어디에 계세요?</Text>
       <View className="mb-6 flex-row flex-wrap gap-2">
         {REGIONS.map((r) => (
           <Chip
@@ -67,7 +67,7 @@ export function RegionPicker({ onPick }: Props) {
 
       {sido ? (
         <>
-          <Text className="mb-2.5 text-base font-extrabold text-ink-strong">
+          <Text className="mb-2.5 text-body-lg font-extrabold text-ink-strong">
             {sido} 어디에 계세요?
           </Text>
           <ScrollView className="max-h-80" contentContainerClassName="flex-row flex-wrap gap-2">

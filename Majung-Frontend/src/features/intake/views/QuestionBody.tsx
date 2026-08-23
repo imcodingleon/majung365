@@ -65,10 +65,10 @@ function OptionButton({
           borderColor: selected ? (urgent ? COLORS.alert : COLORS.brand) : COLORS.lineStrong,
         }}
       >
-        {selected ? <Text className="text-[13px] font-extrabold text-white">✓</Text> : null}
+        {selected ? <Text className="text-caption font-extrabold text-white">✓</Text> : null}
       </View>
       <Text
-        className="flex-1 text-[16px] leading-[25px]"
+        className="flex-1 text-body-lg"
         style={{
           color: urgent ? COLORS.alert : selected ? COLORS.brand : COLORS.inkStrong,
           fontWeight: selected || urgent ? "800" : "600",
@@ -155,23 +155,23 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
 
   return (
     <View>
-      <Text className="text-[22px] font-extrabold leading-[33px] text-ink-strong">
+      <Text className="text-title font-extrabold text-ink-strong">
         {question.prompt}
       </Text>
 
       {question.help ? (
-        <Text className="mt-2 text-[15px] leading-[24px] text-ink-sub">{question.help}</Text>
+        <Text className="mt-2 text-body text-ink-sub">{question.help}</Text>
       ) : null}
 
       {question.kind === "multi" ? (
-        <Text className="mt-2 text-[14px] font-bold" style={{ color: COLORS.brand }}>
+        <Text className="mt-2 text-caption font-bold" style={{ color: COLORS.brand }}>
           맞는 것을 모두 골라 주세요
         </Text>
       ) : null}
 
       {note ? (
         <View className="mt-4 rounded-2xl border border-note-info-line bg-note-info px-4 py-3.5">
-          <Text className="text-[15px] font-semibold leading-[24px] text-note-info-ink">{note}</Text>
+          <Text className="text-body font-semibold text-note-info-ink">{note}</Text>
         </View>
       ) : null}
 
@@ -210,7 +210,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
                 accessibilityLabel={question.expandLabel}
                 className="mb-2 rounded-2xl border-[1.5px] border-dashed border-line px-4 py-4 active:opacity-80"
               >
-                <Text className="text-[15px] font-semibold text-ink-sub">
+                <Text className="text-body font-semibold text-ink-sub">
                   {question.expandLabel} ⌄
                 </Text>
               </Pressable>

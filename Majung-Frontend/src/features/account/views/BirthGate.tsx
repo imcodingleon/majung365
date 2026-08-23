@@ -30,7 +30,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
 
   const filled = parts.year.length === 4 && parts.month !== "" && parts.day !== "";
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-3 py-3.5 text-center text-[17px] text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-3 py-3.5 text-center text-body-lg text-ink-strong";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
@@ -46,10 +46,10 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
       </View>
 
       <View className="flex-1 px-5">
-        <Text className="text-[23px] font-extrabold leading-[33px] text-ink-strong">
+        <Text className="text-title font-extrabold text-ink-strong">
           생일을 알려주세요
         </Text>
-        <Text className="mb-8 mt-2 text-base leading-[26px] text-ink-sub">
+        <Text className="mb-8 mt-2 text-body-lg text-ink-sub">
           다른 사람이 내 정보를 보지 못하게 한 번만 확인할게요.
         </Text>
 
@@ -66,7 +66,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="생일 년"
           />
-          <Text className="text-base text-ink-sub">년</Text>
+          <Text className="text-body-lg text-ink-sub">년</Text>
           <TextInput
             className={`${box} w-16`}
             value={parts.month}
@@ -79,7 +79,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="생일 월"
           />
-          <Text className="text-base text-ink-sub">월</Text>
+          <Text className="text-body-lg text-ink-sub">월</Text>
           <TextInput
             className={`${box} w-16`}
             value={parts.day}
@@ -92,12 +92,12 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="생일 일"
           />
-          <Text className="text-base text-ink-sub">일</Text>
+          <Text className="text-body-lg text-ink-sub">일</Text>
         </View>
 
         {failed ? (
           <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
-            <Text className="text-[15px] leading-[24px] text-alert-ink">
+            <Text className="text-body text-alert-ink">
               가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.
             </Text>
           </View>
@@ -112,7 +112,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
           className="mt-6 items-center rounded-2xl py-4 active:opacity-90"
           style={{ backgroundColor: filled ? COLORS.brand : COLORS.brandMuted }}
         >
-          <Text className="text-[17px] font-extrabold text-white">확인</Text>
+          <Text className="text-body-lg font-extrabold text-white">확인</Text>
         </Pressable>
       </View>
     </SafeAreaView>

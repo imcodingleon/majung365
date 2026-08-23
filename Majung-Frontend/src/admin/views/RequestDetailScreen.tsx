@@ -29,8 +29,8 @@ type Props = {
 function Field({ label, value }: { label: string; value: string }) {
   return (
     <View className="border-b border-line py-3.5">
-      <Text className="text-[13px] font-bold text-ink-header">{label}</Text>
-      <Text className="mt-1 text-base leading-[25px] text-ink-strong">{value}</Text>
+      <Text className="text-caption font-bold text-ink-header">{label}</Text>
+      <Text className="mt-1 text-body-lg text-ink-strong">{value}</Text>
     </View>
   );
 }
@@ -64,7 +64,7 @@ function Button({
         borderColor: disabled && tone === "primary" ? COLORS.brandMuted : border,
       }}
     >
-      <Text className="text-base font-extrabold" style={{ color: ink }}>
+      <Text className="text-body-lg font-extrabold" style={{ color: ink }}>
         {label}
       </Text>
     </Pressable>
@@ -92,7 +92,7 @@ export function RequestDetailScreen({
 
   const missing = missingDocs(request);
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-base text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
@@ -106,8 +106,8 @@ export function RequestDetailScreen({
           <Text className="text-2xl text-ink-muted">‹</Text>
         </Pressable>
         <View className="flex-1">
-          <Text className="text-lg font-extrabold text-ink-strong">{request.name}</Text>
-          <Text className="text-[13px] text-ink-muted">{statusLabel(request.status)}</Text>
+          <Text className="text-heading font-extrabold text-ink-strong">{request.name}</Text>
+          <Text className="text-caption text-ink-muted">{statusLabel(request.status)}</Text>
         </View>
       </View>
 
@@ -122,22 +122,22 @@ export function RequestDetailScreen({
         </View>
 
         {/* 담당자가 미리 알면 헛걸음을 막는다 (§7.2). */}
-        <Text className="mb-2.5 mt-6 text-base font-extrabold text-ink-strong">준비물</Text>
+        <Text className="mb-2.5 mt-6 text-body-lg font-extrabold text-ink-strong">준비물</Text>
         <View className="rounded-2xl bg-white px-4 py-3.5">
           {request.allDocs.length === 0 ? (
-            <Text className="text-[15px] text-ink-sub">준비물이 없습니다.</Text>
+            <Text className="text-body text-ink-sub">준비물이 없습니다.</Text>
           ) : (
             request.allDocs.map((doc) => {
               const ready = request.readyDocs.includes(doc);
               return (
                 <View key={doc} className="flex-row items-center gap-2.5 py-1.5">
                   <Text
-                    className="text-base font-extrabold"
+                    className="text-body-lg font-extrabold"
                     style={{ color: ready ? COLORS.doneInk : COLORS.alert }}
                   >
                     {ready ? "✓" : "✕"}
                   </Text>
-                  <Text className="flex-1 text-[15px] text-ink-strong">{doc}</Text>
+                  <Text className="flex-1 text-body text-ink-strong">{doc}</Text>
                 </View>
               );
             })
@@ -146,7 +146,7 @@ export function RequestDetailScreen({
 
         {missing.length > 0 ? (
           <View className="mt-2.5 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
-            <Text className="text-sm leading-[23px] text-note-warn-ink">
+            <Text className="text-caption text-note-warn-ink">
               {missing.join(" · ")}을(를) 안 가져오십니다. 미리 안내가 필요합니다.
             </Text>
           </View>
@@ -164,11 +164,11 @@ export function RequestDetailScreen({
               ) : (
                 <View className="mb-4 rounded-2xl border-[1.5px] border-brand-soft bg-white p-4">
                   {/* 만날 사람과 만날 장소가 이 기능의 핵심이다 (§7.1). */}
-                  <Text className="mb-3 text-[15px] leading-[24px] text-ink-sub">
+                  <Text className="mb-3 text-body text-ink-sub">
                     확정하면 출소자 화면에 시간과 함께 누구를 어디서 만나면 되는지 뜹니다.
                   </Text>
 
-                  <Text className="mb-2 text-sm font-bold text-ink-header">방문 시간</Text>
+                  <Text className="mb-2 text-caption font-bold text-ink-header">방문 시간</Text>
                   <View className="mb-4 flex-row flex-wrap gap-2">
                     {[request.firstChoice, request.secondChoice].map((slot) => (
                       <Pressable
@@ -185,7 +185,7 @@ export function RequestDetailScreen({
                         }}
                       >
                         <Text
-                          className="text-sm"
+                          className="text-caption"
                           style={{
                             color: input.whenLabel === slot ? COLORS.brand : COLORS.inkStrong,
                             fontWeight: input.whenLabel === slot ? "800" : "600",
@@ -197,7 +197,7 @@ export function RequestDetailScreen({
                     ))}
                   </View>
 
-                  <Text className="mb-2 text-sm font-bold text-ink-header">만날 담당자 이름</Text>
+                  <Text className="mb-2 text-caption font-bold text-ink-header">만날 담당자 이름</Text>
                   <TextInput
                     className={`${box} mb-4`}
                     value={input.staffName}
@@ -207,7 +207,7 @@ export function RequestDetailScreen({
                     accessibilityLabel="만날 담당자 이름"
                   />
 
-                  <Text className="mb-2 text-sm font-bold text-ink-header">만날 장소</Text>
+                  <Text className="mb-2 text-caption font-bold text-ink-header">만날 장소</Text>
                   <TextInput
                     className={`${box} mb-4`}
                     value={input.place}
@@ -227,7 +227,7 @@ export function RequestDetailScreen({
                     }}
                   />
                   {!canConfirm(input) ? (
-                    <Text className="mb-2 text-center text-sm text-ink-muted">
+                    <Text className="mb-2 text-center text-caption text-ink-muted">
                       만날 사람과 장소를 모두 적어야 확정할 수 있습니다.
                     </Text>
                   ) : null}
@@ -235,7 +235,7 @@ export function RequestDetailScreen({
                 </View>
               )}
 
-              <Text className="mb-2 mt-2 text-sm font-bold text-ink-header">
+              <Text className="mb-2 mt-2 text-caption font-bold text-ink-header">
                 다른 시간 제안하기
               </Text>
               <View className="mb-2 flex-row gap-2">
@@ -257,7 +257,7 @@ export function RequestDetailScreen({
                   accessibilityLabel="시간 제안 보내기"
                   className="justify-center rounded-xl border-[1.5px] border-line bg-white px-4 active:opacity-90"
                 >
-                  <Text className="text-base font-bold text-ink-sub">보내기</Text>
+                  <Text className="text-body-lg font-bold text-ink-sub">보내기</Text>
                 </Pressable>
               </View>
             </>
@@ -275,7 +275,7 @@ export function RequestDetailScreen({
               ) : (
                 <View className="rounded-2xl border-[1.5px] border-alert-line bg-white p-4">
                   {/* 취소 사유는 출소자 화면에 그대로 보인다 (§7.1). */}
-                  <Text className="mb-2 text-[15px] leading-[24px] text-ink-sub">
+                  <Text className="mb-2 text-body text-ink-sub">
                     적으신 이유가 출소자에게 그대로 보입니다.
                   </Text>
                   <TextInput

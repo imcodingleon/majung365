@@ -53,7 +53,7 @@ function SmallButton({
       }}
     >
       <Text
-        className="text-sm font-extrabold"
+        className="text-caption font-extrabold"
         style={{ color: filled ? COLORS.surface : COLORS.inkSub }}
       >
         {label}

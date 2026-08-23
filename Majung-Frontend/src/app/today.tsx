@@ -78,7 +78,7 @@ export default function TodayRoute() {
 
       {server.error ? (
         <View className="absolute inset-x-4 bottom-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
-          <Text className="text-sm leading-[23px] text-note-warn-ink">{server.error}</Text>
+          <Text className="text-caption text-note-warn-ink">{server.error}</Text>
         </View>
       ) : null}
 
@@ -118,7 +118,7 @@ export default function TodayRoute() {
       >
         <View className="flex-1 items-center justify-center bg-black/40 px-8">
           <View className="w-full rounded-2xl bg-white px-5 py-6">
-            <Text className="text-base leading-[27px] text-ink-strong">
+            <Text className="text-body-lg text-ink-strong">
               {visit.blocked ? limitMessage(visit.blocked) : ""}
             </Text>
             <Pressable
@@ -127,7 +127,7 @@ export default function TodayRoute() {
               accessibilityLabel="알겠어요"
               className="mt-5 items-center rounded-xl bg-brand py-3.5 active:opacity-90"
             >
-              <Text className="text-base font-extrabold text-white">알겠어요</Text>
+              <Text className="text-body-lg font-extrabold text-white">알겠어요</Text>
             </Pressable>
           </View>
         </View>

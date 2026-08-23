@@ -23,7 +23,7 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
   const [password, setPassword] = useState("");
 
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-[17px] text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-4 py-3.5 text-body-lg text-ink-strong";
   const ready = id.trim().length > 0 && password.length > 0;
 
   return (
@@ -31,21 +31,21 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
       <View className="flex-1 justify-center px-6">
         {/* 이 배너를 지우지 말 것. 인증으로 오해한 채 배포하면 출소자 명단이 열린다. */}
         <View className="mb-8 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
-          <Text className="text-[15px] font-extrabold text-alert">시연용 화면입니다</Text>
-          <Text className="mt-1 text-sm leading-[23px] text-alert-ink">
+          <Text className="text-body font-extrabold text-alert">시연용 화면입니다</Text>
+          <Text className="mt-1 text-caption text-alert-ink">
             실제 로그인이 아니고 담당자 계정 체계도 아직 없습니다. 실제 자료도 연결되어 있지
             않습니다.
           </Text>
         </View>
 
-        <Text className="text-[25px] font-extrabold leading-[35px] text-ink-strong">
+        <Text className="text-display font-extrabold text-ink-strong">
           담당자 화면
         </Text>
-        <Text className="mb-8 mt-2 text-base leading-[26px] text-ink-sub">
+        <Text className="mb-8 mt-2 text-body-lg text-ink-sub">
           한국법무보호복지공단 담당자용입니다.
         </Text>
 
-        <Text className="mb-2 text-base font-extrabold text-ink-strong">아이디</Text>
+        <Text className="mb-2 text-body-lg font-extrabold text-ink-strong">아이디</Text>
         <TextInput
           className={box}
           value={id}
@@ -57,7 +57,7 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
           accessibilityLabel="아이디"
         />
 
-        <Text className="mb-2 mt-5 text-base font-extrabold text-ink-strong">비밀번호</Text>
+        <Text className="mb-2 mt-5 text-body-lg font-extrabold text-ink-strong">비밀번호</Text>
         <TextInput
           className={box}
           value={password}
@@ -73,13 +73,13 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
             아이디를 찾아내는 길이 된다 — 서버가 그렇게 응답하고 화면도 그대로 낸다 */}
         {error ? (
           <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
-            <Text className="text-[15px] leading-[24px] text-alert-ink">{error}</Text>
+            <Text className="text-body text-alert-ink">{error}</Text>
           </View>
         ) : null}
 
         {timedOut ? (
           <View className="mt-4 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
-            <Text className="text-[15px] leading-[24px] text-note-warn-ink">
+            <Text className="text-body text-note-warn-ink">
               한동안 쓰지 않아 자동으로 나갔습니다. 다시 들어와 주세요.
             </Text>
           </View>
@@ -94,7 +94,7 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
           className="mt-6 items-center rounded-2xl py-4 active:opacity-90"
           style={{ backgroundColor: ready && !busy ? COLORS.brand : COLORS.brandMuted }}
         >
-          <Text className="text-[17px] font-extrabold text-white">
+          <Text className="text-body-lg font-extrabold text-white">
             {busy ? "확인하는 중이에요" : "들어가기"}
           </Text>
         </Pressable>

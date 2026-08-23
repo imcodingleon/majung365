@@ -25,13 +25,13 @@ function QrSlot({ link }: { link: StoreLink }) {
         className="size-32 items-center justify-center rounded-xl border-2 border-dashed"
         style={{ borderColor: ready ? COLORS.brandMuted : COLORS.line }}
       >
-        <Text className="text-center text-[13px] leading-[20px] text-ink-muted">
+        <Text className="text-center text-caption text-ink-muted">
           {ready ? "QR 자리" : link.pendingReason}
         </Text>
       </View>
 
-      <Text className="mt-3 text-[17px] font-extrabold text-ink-strong">{link.label}</Text>
-      <Text className="mt-1 text-center text-sm leading-[22px] text-ink-sub">{link.hint}</Text>
+      <Text className="mt-3 text-body-lg font-extrabold text-ink-strong">{link.label}</Text>
+      <Text className="mt-1 text-center text-caption text-ink-sub">{link.hint}</Text>
     </View>
   );
 }
@@ -40,7 +40,7 @@ export function PamphletScreen({ onClose }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
       <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-        <Text className="text-lg font-extrabold text-ink-strong">안내 팜플렛</Text>
+        <Text className="text-heading font-extrabold text-ink-strong">안내 팜플렛</Text>
         {onClose ? (
           <Pressable
             onPress={onClose}
@@ -56,29 +56,29 @@ export function PamphletScreen({ onClose }: Props) {
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-6">
         {/* 심사·시연용 화면이라는 것을 화면에서도 밝힌다. 실사용 경로로 오해하지 않게 한다. */}
         <View className="mb-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3">
-          <Text className="text-sm leading-[23px] text-note-warn-ink">
+          <Text className="text-caption text-note-warn-ink">
             실제로는 종이 팜플렛으로 나가요. 이 화면은 어떤 모양인지 보여주는 자리예요.
           </Text>
         </View>
 
-        <Text className="text-[26px] font-extrabold leading-[36px] text-ink-strong">
+        <Text className="text-display font-extrabold text-ink-strong">
           나가시는 길에{"\n"}
           <Text className="text-brand">마중365</Text>가 함께합니다
         </Text>
-        <Text className="mb-8 mt-3 text-base leading-[27px] text-ink-sub">
+        <Text className="mb-8 mt-3 text-body-lg text-ink-sub">
           무엇부터 해야 할지 하나씩 알려드려요.{"\n"}
           전화로 물어볼 곳도 함께 알려드려요.
         </Text>
 
-        <Text className="mb-3 text-[19px] font-extrabold text-ink-strong">앱 받는 방법</Text>
+        <Text className="mb-3 text-heading font-extrabold text-ink-strong">앱 받는 방법</Text>
         <View className="mb-4 rounded-2xl bg-white px-4 py-4">
-          <Text className="mb-1.5 text-base leading-[26px] text-ink-body">
+          <Text className="mb-1.5 text-body-lg text-ink-body">
             ① 쓰시는 폰을 고르세요.
           </Text>
-          <Text className="mb-1.5 text-base leading-[26px] text-ink-body">
+          <Text className="mb-1.5 text-body-lg text-ink-body">
             ② 폰 카메라로 아래 그림을 비추세요.
           </Text>
-          <Text className="text-base leading-[26px] text-ink-body">
+          <Text className="text-body-lg text-ink-body">
             ③ 화면에 나오는 대로 눌러서 받으세요.
           </Text>
         </View>
@@ -90,10 +90,10 @@ export function PamphletScreen({ onClose }: Props) {
         </View>
 
         <View className="mt-8 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
-          <Text className="text-[15px] font-extrabold leading-[25px] text-note-info-ink">
+          <Text className="text-body font-extrabold text-note-info-ink">
             선불폰으로도 받으실 수 있어요
           </Text>
-          <Text className="mt-1.5 text-sm leading-[24px] text-note-info-ink">
+          <Text className="mt-1.5 text-caption text-note-info-ink">
             자세한 방법은 팜플렛 뒷면에 적혀 있어요.
           </Text>
         </View>

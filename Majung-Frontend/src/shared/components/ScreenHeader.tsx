@@ -31,8 +31,8 @@ export function ScreenHeader({ title, eyebrow, onClose, closeHint, right }: Prop
       </Pressable>
 
       <View className="flex-1 px-1">
-        {eyebrow ? <Text className="text-[13px] text-ink-muted">{eyebrow}</Text> : null}
-        <Text className="text-[18px] font-extrabold text-ink-strong">{title}</Text>
+        {eyebrow ? <Text className="text-caption text-ink-muted">{eyebrow}</Text> : null}
+        <Text className="text-heading font-extrabold text-ink-strong">{title}</Text>
       </View>
 
       {right}

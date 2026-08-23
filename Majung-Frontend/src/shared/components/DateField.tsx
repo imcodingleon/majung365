@@ -67,7 +67,7 @@ function Box({
       style={{ borderColor: filled ? COLORS.brand : COLORS.line }}
     >
       <Text
-        className="text-[17px]"
+        className="text-body-lg"
         style={{
           color: filled ? COLORS.inkStrong : COLORS.inkMuted,
           fontWeight: filled ? "700" : "500",
@@ -75,7 +75,7 @@ function Box({
       >
         {text}
       </Text>
-      <Text className="text-[15px]" style={{ color: filled ? COLORS.inkSub : COLORS.inkMuted }}>
+      <Text className="text-body" style={{ color: filled ? COLORS.inkSub : COLORS.inkMuted }}>
         {unit}
       </Text>
     </Pressable>
@@ -176,7 +176,7 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
           />
           <View className="rounded-t-3xl bg-white px-5 pb-8 pt-5">
             <View className="mb-4 flex-row items-center">
-              <Text className="flex-1 text-[19px] font-extrabold text-ink-strong">
+              <Text className="flex-1 text-heading font-extrabold text-ink-strong">
                 {open ? `${UNIT_LABEL[open]}을 고르세요` : ""}
               </Text>
               <Pressable
@@ -217,7 +217,7 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
                     }}
                   >
                     <Text
-                      className="text-[20px]"
+                      className="text-title"
                       style={{
                         color: on ? COLORS.surface : COLORS.inkStrong,
                         fontWeight: on ? "800" : "600",

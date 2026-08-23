@@ -50,13 +50,13 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
           <Text className="text-2xl text-ink-muted">‹</Text>
         </Pressable>
         <View className="flex-1">
-          <Text className="text-[13px] text-ink-muted">방문 조율</Text>
-          <Text className="mt-0.5 text-[17px] font-extrabold text-ink-strong">{peerName}</Text>
+          <Text className="text-caption text-ink-muted">방문 조율</Text>
+          <Text className="mt-0.5 text-body-lg font-extrabold text-ink-strong">{peerName}</Text>
         </View>
       </View>
 
       <View className="border-b border-line bg-alert-soft px-4 py-2">
-        <Text className="text-[13px] font-bold text-alert">
+        <Text className="text-caption font-bold text-alert">
           시연용 화면 · 아직 실제로 전송되지 않습니다
         </Text>
       </View>
@@ -67,7 +67,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
       >
         <ScrollView className="flex-1" contentContainerClassName="px-4 py-4">
           {messages.length === 0 ? (
-            <Text className="mt-10 text-center text-[15px] leading-[25px] text-ink-muted">
+            <Text className="mt-10 text-center text-body text-ink-muted">
               여기서 방문 시간과 오시는 길을 조율합니다.
             </Text>
           ) : null}
@@ -86,7 +86,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
                 }}
               >
                 <Text
-                  className="text-[15px] leading-[24px]"
+                  className="text-body"
                   style={{ color: mine ? COLORS.surface : COLORS.inkStrong }}
                 >
                   {m.text}
@@ -104,7 +104,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
             placeholder="메시지를 적으세요"
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="메시지 입력"
-            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-3.5 py-3 text-[15px] leading-[22px] text-ink-strong"
+            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-3.5 py-3 text-body text-ink-strong"
           />
           <Pressable
             onPress={send}
@@ -114,7 +114,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
             className="rounded-xl px-4 py-3.5 active:opacity-90"
             style={{ backgroundColor: draft.trim() ? COLORS.brand : COLORS.brandMuted }}
           >
-            <Text className="text-base font-extrabold text-white">보내기</Text>
+            <Text className="text-body-lg font-extrabold text-white">보내기</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

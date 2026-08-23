@@ -58,7 +58,7 @@ function Bubble({ message }: { message: ChatMessage }) {
   if (message.role === "user") {
     return (
       <View className="mb-2.5 max-w-[82%] self-end rounded-2xl rounded-br-sm bg-brand px-3.5 py-2.5">
-        <Text className="text-[15px] leading-[24px] text-white">{message.text}</Text>
+        <Text className="text-body text-white">{message.text}</Text>
       </View>
     );
   }
@@ -67,7 +67,7 @@ function Bubble({ message }: { message: ChatMessage }) {
     // 사전 고지는 답변이 아니다. 말풍선과 다른 모양으로 두어 정보로 읽히지 않게 한다.
     return (
       <View className="mb-2.5 self-stretch rounded-xl border border-note-warn-line bg-note-warn px-3.5 py-3">
-        <Text className="text-sm font-semibold leading-[23px] text-note-warn-ink">{message.text}</Text>
+        <Text className="text-caption font-semibold text-note-warn-ink">{message.text}</Text>
       </View>
     );
   }
@@ -80,14 +80,14 @@ function Bubble({ message }: { message: ChatMessage }) {
         className="mt-0.5 size-8 items-center justify-center rounded-full"
         style={{ backgroundColor: COLORS.brand }}
       >
-        <Text className="text-[15px]">🤖</Text>
+        <Text className="text-body">🤖</Text>
       </View>
       <View className="flex-1 rounded-2xl rounded-tl-sm bg-bubble px-3.5 py-3">
-      <Text className="text-[15px] leading-[25px] text-ink-strong">{message.text}</Text>
+      <Text className="text-body text-ink-strong">{message.text}</Text>
 
       {message.desk ? (
         <View className="mt-2.5 rounded-lg border border-note-info-line bg-note-info px-3 py-2.5">
-          <Text className="text-sm font-bold leading-[23px] text-note-info-ink">
+          <Text className="text-caption font-bold text-note-info-ink">
             {message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.
           </Text>
         </View>
@@ -97,11 +97,11 @@ function Bubble({ message }: { message: ChatMessage }) {
 
       {message.contact ? (
         <View className="mt-2 border-t border-line-strong pt-2">
-          <Text className="text-[13px] leading-[22px] text-ink-sub">
+          <Text className="text-caption text-ink-sub">
             더 정확한 내용은 {message.contact.org} {message.contact.phone}으로 물어보시는 게 좋아요.
           </Text>
           {message.contact.hours ? (
-            <Text className="text-[13px] leading-[22px] text-ink-sub">
+            <Text className="text-caption text-ink-sub">
               전화받는 시간은 {message.contact.hours}예요.
             </Text>
           ) : null}
@@ -172,12 +172,12 @@ export function ChatPopup({
           </Pressable>
 
           <View className="flex-1 px-1">
-            <Text className="text-[13px] text-ink-muted" numberOfLines={1}>
+            <Text className="text-caption text-ink-muted" numberOfLines={1}>
               {taskTitle}
             </Text>
           </View>
 
-          <Text className="text-[16px] font-extrabold text-ink-strong">AI 챗봇</Text>
+          <Text className="text-body-lg font-extrabold text-ink-strong">AI 챗봇</Text>
           <Pressable
             onPress={() => setMenuOpen((v) => !v)}
             accessibilityRole="button"
@@ -198,14 +198,14 @@ export function ChatPopup({
               accessibilityRole="button"
               className="px-5 py-3 active:opacity-70"
             >
-              <Text className="text-[15px] font-semibold text-alert">이 대화 지우기</Text>
+              <Text className="text-body font-semibold text-alert">이 대화 지우기</Text>
             </Pressable>
           </View>
         ) : null}
 
         {confirmClear ? (
           <View className="mx-4 mt-3 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
-            <Text className="text-[15px] font-semibold leading-[24px] text-alert-ink">
+            <Text className="text-body font-semibold text-alert-ink">
               이 대화를 지우면 다시 볼 수 없어요.
             </Text>
             <View className="mt-3 flex-row gap-2">
@@ -217,14 +217,14 @@ export function ChatPopup({
                 accessibilityRole="button"
                 className="rounded-lg bg-alert px-4 py-2.5 active:opacity-90"
               >
-                <Text className="text-[15px] font-extrabold text-white">지울게요</Text>
+                <Text className="text-body font-extrabold text-white">지울게요</Text>
               </Pressable>
               <Pressable
                 onPress={() => setConfirmClear(false)}
                 accessibilityRole="button"
                 className="rounded-lg border border-line bg-white px-4 py-2.5 active:opacity-90"
               >
-                <Text className="text-[15px] font-semibold text-ink-sub">그냥 둘게요</Text>
+                <Text className="text-body font-semibold text-ink-sub">그냥 둘게요</Text>
               </Pressable>
             </View>
           </View>
@@ -242,7 +242,7 @@ export function ChatPopup({
           >
             {messages.length === 0 ? (
               <View className="mt-10 px-2">
-                <Text className="text-center text-[15px] leading-[26px] text-ink-muted">
+                <Text className="text-center text-body text-ink-muted">
                   {taskTitle}에 대해 궁금한 것을 물어보세요.{"\n"}
                   편하게 적으셔도 괜찮아요.
                 </Text>
@@ -254,7 +254,7 @@ export function ChatPopup({
             ))}
             {busy ? (
               <View className="mb-2.5 self-start rounded-2xl bg-bubble px-3.5 py-2.5">
-                <Text className="text-[15px] text-ink-muted">답을 찾고 있어요…</Text>
+                <Text className="text-body text-ink-muted">답을 찾고 있어요…</Text>
               </View>
             ) : null}
           </ScrollView>
@@ -262,7 +262,7 @@ export function ChatPopup({
           {limitReached ? (
             // 막지 않는다. 오늘은 여기까지라고 끝내면 가장 답답한 사람을 문 앞에서 돌려보내는 셈이다.
             <View className="border-t border-line bg-note-warn px-4 py-4">
-              <Text className="text-[15px] font-semibold leading-[25px] text-note-warn-ink">
+              <Text className="text-body font-semibold text-note-warn-ink">
                 오늘 이 일로 이야기를 많이 나누셨어요.{"\n"}
                 사람에게 직접 물어보는 편이 더 빠를 수 있어요.
               </Text>
@@ -271,7 +271,7 @@ export function ChatPopup({
                 accessibilityRole="button"
                 className="mt-3 items-center rounded-xl bg-brand px-4 py-3.5 active:opacity-90"
               >
-                <Text className="text-base font-extrabold text-white">전화로 물어보기</Text>
+                <Text className="text-body-lg font-extrabold text-white">전화로 물어보기</Text>
               </Pressable>
             </View>
           ) : (
@@ -295,7 +295,7 @@ export function ChatPopup({
                       className="rounded-full px-4 py-2.5 active:opacity-80"
                       style={{ backgroundColor: COLORS.chip }}
                     >
-                      <Text className="text-[14px] font-bold" style={{ color: COLORS.chipInk }}>
+                      <Text className="text-caption font-bold" style={{ color: COLORS.chipInk }}>
                         {preset}
                       </Text>
                     </Pressable>
@@ -311,7 +311,7 @@ export function ChatPopup({
                   placeholderTextColor={COLORS.inkMuted}
                   multiline
                   accessibilityLabel="질문 입력"
-                  className="max-h-28 flex-1 rounded-2xl px-4 py-3 text-[15px] leading-[22px] text-ink-strong"
+                  className="max-h-28 flex-1 rounded-2xl px-4 py-3 text-body text-ink-strong"
                   style={{ backgroundColor: COLORS.bubble }}
                 />
                 {/* 시안의 원형 전송 버튼. 글자 대신 화살표를 쓰면 글을 읽기 어려운
@@ -326,7 +326,7 @@ export function ChatPopup({
                     backgroundColor: !draft.trim() || busy ? COLORS.brandMuted : COLORS.brand,
                   }}
                 >
-                  <Text className="text-[20px] text-white">➤</Text>
+                  <Text className="text-title text-white">➤</Text>
                 </Pressable>
               </View>
             </View>

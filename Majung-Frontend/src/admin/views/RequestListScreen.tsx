@@ -35,7 +35,7 @@ function StatusBadge({ status }: { status: VisitStatus }) {
   const tone = STATUS_TONE[status];
   return (
     <View className="rounded-full px-3 py-1" style={{ backgroundColor: tone.bg }}>
-      <Text className="text-[13px] font-extrabold" style={{ color: tone.ink }}>
+      <Text className="text-caption font-extrabold" style={{ color: tone.ink }}>
         {statusLabel(status)}
       </Text>
     </View>
@@ -52,12 +52,12 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
       <View className="border-b border-line bg-white px-5 py-4">
         <View className="flex-row items-center justify-between">
           <View className="flex-1 pr-2">
-            <Text className="text-[13px] text-ink-muted" numberOfLines={1}>
+            <Text className="text-caption text-ink-muted" numberOfLines={1}>
               {staff ? `${orgKindLabel(staff.orgKind)} ${staff.branch}` : ""}
             </Text>
-            <Text className="mt-0.5 text-lg font-extrabold text-ink-strong">방문 예정 알림</Text>
+            <Text className="mt-0.5 text-heading font-extrabold text-ink-strong">방문 예정 알림</Text>
             {staff ? (
-              <Text className="mt-0.5 text-[13px] text-ink-sub">{staff.displayName} 담당자</Text>
+              <Text className="mt-0.5 text-caption text-ink-sub">{staff.displayName} 담당자</Text>
             ) : null}
           </View>
           <Pressable
@@ -66,14 +66,14 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
             accessibilityLabel="나가기"
             className="rounded-lg border border-line px-3 py-2 active:opacity-70"
           >
-            <Text className="text-sm font-bold text-ink-sub">나가기</Text>
+            <Text className="text-caption font-bold text-ink-sub">나가기</Text>
           </Pressable>
         </View>
 
         {/* 목록은 아직 화면 안의 예시다. 로그인은 서버가 확인하지만 요청 목록 API가
             아직 붙지 않았다 — 그 사실을 화면이 숨기지 않는다 */}
         <View className="mt-3 rounded-lg border border-alert-line bg-alert-soft px-3 py-2">
-          <Text className="text-[13px] font-bold text-alert">
+          <Text className="text-caption font-bold text-alert">
             아래 목록은 예시입니다 · 실제 요청이 아닙니다
           </Text>
         </View>
@@ -81,14 +81,14 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
         {/* 다른 기관 요청은 서버가 걸러 아예 오지 않는다. 화면이 거르는 것이 아니라는
             사실을 담당자가 알아야 목록을 믿을 수 있다 */}
         {staff ? (
-          <Text className="mt-2 text-[13px] leading-[21px] text-ink-muted">
+          <Text className="mt-2 text-caption text-ink-muted">
             {staff.branch}으로 온 요청만 보입니다.
           </Text>
         ) : null}
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
-        <Text className="mb-4 text-sm text-ink-sub">
+        <Text className="mb-4 text-caption text-ink-sub">
           {newCount > 0 ? `아직 확인하지 않은 요청이 ${newCount}건 있습니다.` : "새 요청이 없습니다."}
         </Text>
 
@@ -102,20 +102,20 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
           >
             <View className="flex-row items-start justify-between gap-3">
               <View className="flex-1">
-                <Text className="text-[17px] font-extrabold text-ink-strong">{request.name}</Text>
-                <Text className="mt-1 text-[15px] text-ink-body">{request.purpose}</Text>
+                <Text className="text-body-lg font-extrabold text-ink-strong">{request.name}</Text>
+                <Text className="mt-1 text-body text-ink-body">{request.purpose}</Text>
               </View>
               <StatusBadge status={request.status} />
             </View>
 
             <View className="mt-3 border-t border-line pt-3">
-              <Text className="text-sm leading-[23px] text-ink-sub">
+              <Text className="text-caption text-ink-sub">
                 1지망 {request.firstChoice}
               </Text>
-              <Text className="text-sm leading-[23px] text-ink-sub">
+              <Text className="text-caption text-ink-sub">
                 2지망 {request.secondChoice}
               </Text>
-              <Text className="mt-1 text-[13px] text-ink-muted">{request.receivedAt} 받음</Text>
+              <Text className="mt-1 text-caption text-ink-muted">{request.receivedAt} 받음</Text>
             </View>
           </Pressable>
         ))}
