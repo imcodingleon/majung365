@@ -7,6 +7,7 @@ import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox } from "@/shared/components/NoteBox";
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
 import { birthMatches } from "../domain/account";
@@ -15,9 +16,11 @@ type Props = {
   storedBirth: string;
   onPass: () => void;
   onClose: () => void;
+  /** 내 정보를 불러오지 못했을 때. 조용히 빈 화면으로 두지 않는다. */
+  error?: string | null;
 };
 
-export function BirthGate({ storedBirth, onPass, onClose }: Props) {
+export function BirthGate({ storedBirth, onPass, onClose, error }: Props) {
   const [parts, setParts] = useState({ year: "", month: "", day: "" });
   const [failed, setFailed] = useState(false);
 
@@ -35,18 +38,16 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-end px-5 py-4">
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">✕</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="내 정보" closeHint="내 정보 화면 닫기" onClose={onClose} />
 
-      <View className="flex-1 px-5">
+      <View className="flex-1 px-5 pt-6">
+        {/* 불러오지 못한 것을 조용히 넘기지 않는다. 빈 화면이면 사용자는 자기 탓을 한다 */}
+        {error ? (
+          <NoteBox tone="alert" className="mb-6">
+            {error}
+          </NoteBox>
+        ) : null}
+
         <Text className="text-title font-extrabold text-ink-strong">
           생일을 알려주세요
         </Text>

@@ -12,10 +12,17 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { AppHeader } from "@/shared/components/AppHeader";
 import { DateField } from "@/shared/components/DateField";
 import { Button } from "@/shared/components/Button";
+import { NoteBox } from "@/shared/components/NoteBox";
 import { ChoiceButton } from "@/shared/components/ChoiceButton";
 import { COLORS } from "@/shared/theme/colors";
 
-import { CRIME_CATEGORIES, type ConsentId, type CrimeCategoryId } from "../domain/signup";
+import {
+  CRIME_CATEGORIES,
+  type ConsentId,
+  type ConsentState,
+  type CrimeCategoryId,
+  type DateParts,
+} from "../domain/signup";
 import { useSignupForm } from "../hooks/useSignupForm";
 
 import { ConsentPopup } from "./ConsentPopup";
@@ -28,8 +35,21 @@ type Props = {
   intakeDone: boolean;
   /** 상시 도움 연결 (§5.3). 가입 도중에 막혀도 전화할 곳이 있어야 한다. */
   onOpenHelp: () => void;
-  /** 가입 완료. 인사말에 쓸 이름을 함께 넘긴다 (§2.5-1). */
-  onSubmit: (name: string) => void;
+  /**
+   * 가입 완료. 화면이 모은 값을 그대로 넘기고 **서버 호출은 라우트가 한다.**
+   * 화면은 렌더만 한다는 규약 때문이다.
+   */
+  onSubmit: (input: {
+    name: string;
+    birth: DateParts;
+    releaseDate: DateParts;
+    crime: CrimeCategoryId | null;
+    consent: ConsentState;
+  }) => void;
+  /** 서버에 보내는 중. 두 번 누르는 것을 막는다. */
+  submitting?: boolean;
+  /** 가입에 실패했을 때 서버가 준 문구. */
+  error?: string | null;
 };
 
 /** 생일로 고를 수 있는 범위. 위쪽은 오늘이 든 해까지다. */
@@ -50,7 +70,14 @@ function FieldLabel({ children, optional }: { children: React.ReactNode; optiona
   );
 }
 
-export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }: Props) {
+export function SignupScreen({
+  sectionBoxes,
+  intakeDone,
+  onOpenHelp,
+  onSubmit,
+  submitting,
+  error,
+}: Props) {
   const form = useSignupForm();
   const [detailId, setDetailId] = useState<ConsentId | null>(null);
 
@@ -136,7 +163,26 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
           </Text>
         ) : null}
 
-        <Button label="시작하기" onPress={() => onSubmit(form.name.trim())} disabled={!canSubmit} className="mt-4" />
+        {error ? (
+          <NoteBox tone="alert" className="mt-4">
+            {error}
+          </NoteBox>
+        ) : null}
+
+        <Button
+          label={submitting ? "저장하는 중이에요" : "시작하기"}
+          onPress={() =>
+            onSubmit({
+              name: form.name,
+              birth: form.birth,
+              releaseDate: form.releaseDate,
+              crime: form.crime,
+              consent: form.consent,
+            })
+          }
+          disabled={!canSubmit || submitting}
+          className="mt-4"
+        />
       </ScrollView>
 
       <ConsentPopup consentId={detailId} onClose={() => setDetailId(null)} />

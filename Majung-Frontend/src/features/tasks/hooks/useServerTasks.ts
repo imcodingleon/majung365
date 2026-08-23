@@ -2,7 +2,7 @@
 //
 // **서버가 진행 상태를 들고 있지 않다.** 완료한 항목을 기기가 들고 있다가 함께 보내면
 // 그것을 뺀 목록이 온다. 저장 없이도 완료 루프가 도는 구조다.
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { IntakeAnswerMap } from "@/shared/types";
 import { ApiError, postIntakeAnalyze } from "@/shared/utils/api";
@@ -24,8 +24,14 @@ type State = {
   error: string | null;
 };
 
-export function useServerTasks(answers: IntakeAnswerMap | null) {
-  const [state, setState] = useState<State>({ tasks: [], total: 0, loading: false, error: null });
+export function useServerTasks(answers: IntakeAnswerMap | null, initial?: readonly Task[]) {
+  const [state, setState] = useState<State>({
+    // 가입 응답에 할 일이 함께 왔으면 그것으로 시작한다. 화면이 비는 순간이 없어진다.
+    tasks: initial ?? [],
+    total: initial?.length ?? 0,
+    loading: false,
+    error: null,
+  });
   /** 마친 항목. 다음 요청에 함께 보내 목록에서 뺀다. */
   const [completed, setCompleted] = useState<RouteId[]>([]);
 
@@ -54,7 +60,14 @@ export function useServerTasks(answers: IntakeAnswerMap | null) {
     [answers],
   );
 
+  /** 가입에서 받은 목록으로 시작했으면 첫 호출을 건너뛴다. 같은 답으로 두 번 계산하지 않는다. */
+  const skipFirst = useRef(Boolean(initial?.length));
+
   useEffect(() => {
+    if (skipFirst.current) {
+      skipFirst.current = false;
+      return;
+    }
     void load(completed);
     // completed가 바뀔 때마다 다시 부른다. 완료하면 목록이 줄어든다.
   }, [load, completed]);

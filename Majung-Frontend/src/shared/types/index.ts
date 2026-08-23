@@ -28,3 +28,11 @@ export type {
   StaffOrgKind,
 } from "./staff";
 export { orgKindLabel } from "./staff";
+
+export type {
+  ConsentInput,
+  MeResponse,
+  SignupRequest,
+  SignupResponse,
+  UpdateMeRequest,
+} from "./account";

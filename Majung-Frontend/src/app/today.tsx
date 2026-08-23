@@ -13,6 +13,7 @@ import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
 import { ChatPopup } from "@/features/chat/views/ChatPopup";
 import { HelpScreen } from "@/features/help";
 import type { RouteId } from "@/features/tasks/domain/task";
+import { toTasks } from "@/features/tasks/domain/fromServer";
 import { useServerTasks } from "@/features/tasks/hooks/useServerTasks";
 import { TodayScreen } from "@/features/tasks";
 import { limitMessage } from "@/features/visit/domain/request";
@@ -24,7 +25,10 @@ import { getSession } from "@/shared/utils/session";
 
 export default function TodayRoute() {
   const session = getSession();
-  const server = useServerTasks(session?.answers ?? null);
+  const server = useServerTasks(
+    session?.answers ?? null,
+    session?.tasks ? toTasks(session.tasks) : undefined,
+  );
   const chat = useTaskThreads();
   const visit = useVisitRequests();
   const [helpOpen, setHelpOpen] = useState(false);

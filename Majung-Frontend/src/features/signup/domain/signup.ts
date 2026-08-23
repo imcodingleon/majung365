@@ -2,12 +2,15 @@
 //
 // 저장하지 않을 때는 유출될 데이터 자체가 없었다. 저장하는 순간부터 "출소자 명단"이 실재하므로
 // 여기서 다루는 값은 전부 고민감 정보다. 화면에 되불러오는 자리도 네 곳으로 한정된다 (§2.5).
+import type { ConsentInput, SignupRequest } from "@/shared/types/account";
 import {
   CRIME_CATEGORIES,
   needsCrimeConsent,
   type CrimeCategory,
   type CrimeCategoryId,
 } from "@/shared/types/crime";
+import type { IntakeAnswerMap } from "@/shared/types/intake";
+import { toIsoDate, type DateParts } from "@/shared/types/date";
 
 export type { CrimeCategory, CrimeCategoryId };
 export { CRIME_CATEGORIES, needsCrimeConsent };
@@ -76,4 +79,48 @@ export function consentSatisfied(crime: CrimeCategoryId | null, state: ConsentSt
 
 // 날짜 값과 검사는 여러 화면이 함께 쓰므로 shared로 올렸다. 가입 화면이 쓰던 이름을 그대로
 // 다시 내보내 부르는 쪽이 바뀌지 않게 한다.
-export { EMPTY_DATE, isValidDate, toIsoDate, type DateParts } from "@/shared/types/date";
+export { EMPTY_DATE, isValidDate } from "@/shared/types/date";
+export { toIsoDate, type DateParts };
+
+/**
+ * 서버로 보낼 가입 요청을 만든다 (§3.8·§9.1).
+ *
+ * **여기서 두 가지를 덜어낸다.**
+ *   - 화면에 보이지 않은 동의는 담지 않는다. 죄목을 말하지 않기로 했으면 죄목 동의도 없다
+ *   - `undisclosed`는 값으로 보내지 않는다. **말하지 않겠다고 한 것을 "말하지 않음"이라는
+ *     값으로 저장하면 그것도 하나의 기록이 된다**
+ *
+ * 날짜가 유효하지 않으면 null이다. 화면이 막고 있지만 여기서도 확인한다 — 서버에
+ * 형식이 틀린 값을 보내면 사용자가 이유를 알 수 없는 오류를 본다.
+ */
+export function toSignupRequest(input: {
+  name: string;
+  birth: DateParts;
+  releaseDate: DateParts;
+  crime: CrimeCategoryId | null;
+  consent: ConsentState;
+  answers: IntakeAnswerMap;
+}): SignupRequest | null {
+  const birth = toIsoDate(input.birth);
+  const release = toIsoDate(input.releaseDate);
+  if (!birth || !release || !input.name.trim()) return null;
+
+  const consents: ConsentInput[] = visibleConsents(input.crime).map((c) => ({
+    kind: c.id,
+    agreed: input.consent[c.id],
+  }));
+
+  const request: SignupRequest = {
+    name: input.name.trim(),
+    birth_date: birth,
+    release_date: release,
+    answers: input.answers,
+    consents,
+  };
+
+  // 말하지 않기로 했으면 필드 자체를 만들지 않는다.
+  if (input.crime && input.crime !== "undisclosed") {
+    request.crime_category = input.crime;
+  }
+  return request;
+}

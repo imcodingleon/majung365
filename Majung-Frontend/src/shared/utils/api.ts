@@ -14,6 +14,12 @@ import type {
   TaskCard,
 } from "../types";
 import type {
+  MeResponse,
+  SignupRequest,
+  SignupResponse,
+  UpdateMeRequest,
+} from "../types/account";
+import type {
   StaffLoginRequest,
   StaffLoginResponse,
   StaffMeResponse,
@@ -73,6 +79,64 @@ export async function postIntakeAnalyze(
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as IntakeAnalyzeResponse;
+}
+
+// ── 가입·내 정보 (§2.4·§2.5·§9.4) ────────────────────────────────────
+
+/**
+ * POST /api/signup — 가입.
+ *
+ * **여기서부터 서버에 저장이 남는다.** 그래서 §3.5 고지("암호화해서 보관해요")가
+ * 사실이 되고, 동시에 §9.4의 삭제 경로가 반드시 함께 있어야 한다.
+ *
+ * 응답의 `session_token`은 **다시 조회할 수 없다.** 받는 즉시 보관한다.
+ * 할 일 목록도 함께 오므로 곧바로 `intake/analyze`를 부르지 않는다.
+ */
+export async function postSignup(req: SignupRequest): Promise<SignupResponse> {
+  const res = await fetch(`${API_BASE}/api/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as SignupResponse;
+}
+
+/** GET /api/me — 내 정보 열람. **죄목 값은 내려오지 않는다** (§2.5). */
+export async function getMe(token: string): Promise<MeResponse> {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as MeResponse;
+}
+
+/** PATCH /api/me — 바꿀 항목만 보낸다. 죄목은 고치는 것이 아니라 철회한다 (§9.5). */
+export async function patchMe(token: string, req: UpdateMeRequest): Promise<MeResponse> {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as MeResponse;
+}
+
+/**
+ * DELETE /api/me — 모든 정보 삭제 (§9.4).
+ *
+ * **저장한다고 알리면서 지울 길이 없으면 안 된다.** 가입을 서버에 붙이는 순간부터
+ * 이 경로가 함께 살아 있어야 §3.5 고지가 거짓말이 되지 않는다. 서버가 즉시 처리한다.
+ */
+export async function deleteMe(token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  // 204가 정상. 이미 지워진 상태(401·404)도 "지워졌다"로 본다 — 사용자가 원한 결과는 같다.
+  if (!res.ok && res.status !== 401 && res.status !== 404) {
+    throw new ApiError(res.status, await errorMessage(res));
+  }
 }
 
 // ── 담당자 (§8.2) ─────────────────────────────────────────────────────

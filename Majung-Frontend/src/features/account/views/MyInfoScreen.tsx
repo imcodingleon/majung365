@@ -26,6 +26,8 @@ type Props = {
   onChangeCrime: (crime: CrimeCategoryId | null) => void;
   onErase: (scope: EraseScope) => void;
   onClose: () => void;
+  /** 서버 처리에 실패했을 때. */
+  error?: string | null;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -37,7 +39,7 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props) {
+export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose, error }: Props) {
   const [editingCrime, setEditingCrime] = useState(false);
   const [confirming, setConfirming] = useState<EraseScope | null>(null);
 
@@ -51,6 +53,12 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
       <ScreenHeader title="내 정보" closeHint="내 정보 화면 닫기" onClose={onClose} />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
+        {error ? (
+          <NoteBox tone="alert" className="mb-4">
+            {error}
+          </NoteBox>
+        ) : null}
+
         <View className="rounded-2xl bg-white px-4">
           <Row label="이름" value={profile.name} />
           <Row label="생일" value={formatDate(profile.birth)} />

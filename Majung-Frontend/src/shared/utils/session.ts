@@ -7,14 +7,21 @@
 //     들어 있고, 그것이 주소창에 남으면 안 된다
 //   - **localStorage에 둘 수도 없다.** 평문으로 남으면 기기를 잡은 사람이 읽는다 (§2.4)
 //
-// 서버 저장(Supabase)이 붙으면 이 모듈은 세션 토큰으로 대체된다. 지금은 서버가 아무것도
-// 들고 있지 않아 가입 화면에서 홈으로 답을 넘기는 통로가 필요할 뿐이다.
-import type { IntakeAnswerMap } from "../types";
+// **세션 토큰은 여기 두지 않는다.** 그것은 `tokenStore`가 기기 보안 저장소에 넣는다.
+// 여기는 가입 화면에서 홈으로 값을 넘기는 통로일 뿐이며 앱을 닫으면 사라진다.
+import type { IntakeAnswerMap, IntakeTask } from "../types";
 
 type Session = {
   answers: IntakeAnswerMap;
   /** 인사말에 쓸 이름. */
   name: string;
+  /**
+   * 가입 응답에 함께 온 할 일 목록.
+   *
+   * **가입 직후에는 서버를 다시 부르지 않는다.** 같은 답으로 같은 결과를 두 번 계산할
+   * 이유가 없고, 그 사이 화면이 비어 있는 시간도 없어진다.
+   */
+  tasks?: readonly IntakeTask[];
 };
 
 let current: Session | null = null;
