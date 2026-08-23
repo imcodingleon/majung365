@@ -12,9 +12,9 @@ import { View } from "react-native";
 
 import type { VisitStatus } from "@/shared/types/visit";
 
-import { DEMO_REQUESTS } from "../domain/demoRequests";
 import type { ConfirmInput, StaffRequest } from "../domain/staffRequest";
 import { useAdminSession } from "../hooks/useAdminSession";
+import { useStaffVisits } from "../hooks/useStaffVisits";
 import { useVisitChat } from "../hooks/useVisitChat";
 
 import { AdminLoginScreen } from "./AdminLoginScreen";
@@ -63,18 +63,12 @@ function StaffChatRoom({
 
 export function AdminApp() {
   const session = useAdminSession();
-  const [requests, setRequests] = useState<StaffRequest[]>([...DEMO_REQUESTS]);
+  const token = session.session?.session_token ?? null;
+  const visits = useStaffVisits(token);
   const [openId, setOpenId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
 
-  const open = requests.find((r) => r.id === openId) ?? null;
-
-  const patch = useCallback(
-    (id: string, next: Partial<StaffRequest> & { status?: VisitStatus }) => {
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...next } : r)));
-    },
-    [],
-  );
+  const open = visits.requests.find((r) => r.id === openId) ?? null;
 
   if (!session.signedIn) {
     return (
@@ -111,17 +105,20 @@ export function AdminApp() {
       <View className="flex-1" onTouchStart={session.touch}>
         <RequestDetailScreen
           request={open}
-          onAcknowledge={touched<void>(() => patch(open.id, { status: "acknowledged" }))}
+          onAcknowledge={touched<void>(() => void visits.act(open.id, "acknowledged"))}
           onConfirm={touched<ConfirmInput>((input) => {
-            // 만날 사람과 장소는 출소자 화면의 확정 문구가 된다 (§7.1).
-            // 서버 연결이 붙으면 여기서 그 값을 함께 보낸다.
-            patch(open.id, { status: "confirmed" });
-            void input;
+            // 만날 사람과 장소가 출소자 화면의 확정 문구가 된다 (§7.1).
+            // **장소 없이 확정하면 서버가 거부한다.** 그것이 이 기능의 핵심이기 때문이다.
+            void visits.act(open.id, "confirmed", {
+              meeting_place: `${input.place} · ${input.staffName}`,
+            });
           })}
           onProposeReschedule={touched<string>(() =>
-            patch(open.id, { status: "reschedule_proposed" }),
+            void visits.act(open.id, "reschedule_proposed"),
           )}
-          onCancel={touched<string>(() => patch(open.id, { status: "cancelled" }))}
+          onCancel={touched<string>((reason) =>
+            void visits.act(open.id, "cancelled", { cancel_reason: reason }),
+          )}
           onOpenChat={touched<void>(() => setChatOpen(true))}
           onBack={touched<void>(() => setOpenId(null))}
         />
@@ -132,7 +129,9 @@ export function AdminApp() {
   return (
     <View className="flex-1" onTouchStart={session.touch}>
       <RequestListScreen
-        requests={requests}
+        requests={visits.requests}
+        loading={visits.loading}
+        error={visits.error}
         staff={
           session.session
             ? {

@@ -21,6 +21,10 @@ type Props = {
   staff: { displayName: string; orgKind: StaffOrgKind; branch: string } | null;
   onOpen: (id: string) => void;
   onSignOut: () => void;
+  /** 목록을 불러오는 중. */
+  loading?: boolean;
+  /** 불러오지 못했을 때. 빈 목록과 실패를 구별해 보여준다. */
+  error?: string | null;
 };
 
 const STATUS_TONE: Record<VisitStatus, { bg: string; ink: string }> = {
@@ -50,7 +54,14 @@ function StatusBadge({ status }: { status: VisitStatus }) {
   );
 }
 
-export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props) {
+export function RequestListScreen({
+  requests,
+  staff,
+  onOpen,
+  onSignOut,
+  loading,
+  error,
+}: Props) {
   // 아직 손대지 않은 요청을 위로 올린다. 급한 사람의 요청이 아래로 밀리면 안 된다 (§7.5).
   const sorted = [...requests].sort((a, b) => Number(isNew(b.status)) - Number(isNew(a.status)));
   const newCount = requests.filter((r) => isNew(r.status)).length;
@@ -80,7 +91,6 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
 
         {/* 목록은 아직 화면 안의 예시다. 로그인은 서버가 확인하지만 요청 목록 API가
             아직 붙지 않았다 — 그 사실을 화면이 숨기지 않는다 */}
-        <NoteBox tone="alert" className="mt-3">아래 목록은 예시입니다 · 실제 요청이 아닙니다</NoteBox>
 
         {/* 다른 기관 요청은 서버가 걸러 아예 오지 않는다. 화면이 거르는 것이 아니라는
             사실을 담당자가 알아야 목록을 믿을 수 있다 */}
@@ -93,8 +103,20 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
       </View>
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
+        {/* **불러오지 못한 것과 요청이 없는 것을 구별한다.** 실패를 "요청 없음"으로
+            보여주면 담당자가 기다리는 사람을 놓친다 */}
+        {error ? (
+          <NoteBox tone="alert" className="mb-4">
+            {error}
+          </NoteBox>
+        ) : null}
+
         <Text className="mb-4 text-caption text-ink-sub">
-          {newCount > 0 ? `아직 확인하지 않은 요청이 ${newCount}건 있습니다.` : "새 요청이 없습니다."}
+          {loading
+            ? "요청을 불러오는 중이에요."
+            : newCount > 0
+              ? `아직 확인하지 않은 요청이 ${newCount}건 있습니다.`
+              : "새 요청이 없습니다."}
         </Text>
 
         {sorted.map((request) => (
@@ -117,10 +139,11 @@ export function RequestListScreen({ requests, staff, onOpen, onSignOut }: Props)
               <Text className="text-caption text-ink-sub">
                 1지망 {request.firstChoice}
               </Text>
-              <Text className="text-caption text-ink-sub">
-                2지망 {request.secondChoice}
-              </Text>
-              <Text className="mt-1 text-caption text-ink-muted">{request.receivedAt} 받음</Text>
+              {/* 2지망은 없을 수 있다. 빈 칸을 남기면 값이 빠진 것으로 읽힌다 */}
+              {request.secondChoice ? (
+                <Text className="text-caption text-ink-sub">2지망 {request.secondChoice}</Text>
+              ) : null}
+              <Text className="mt-1 text-caption text-ink-muted">{request.receivedAt}</Text>
             </View>
           </Pressable>
         ))}

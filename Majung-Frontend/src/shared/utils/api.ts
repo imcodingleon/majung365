@@ -19,6 +19,7 @@ import type {
   SignupResponse,
   UpdateMeRequest,
 } from "../types/account";
+import type { StaffVisitAction, StaffVisitResponse } from "../types/staffVisit";
 import type {
   StaffLoginRequest,
   StaffLoginResponse,
@@ -184,6 +185,38 @@ export async function postStaffLogout(token: string): Promise<void> {
   } catch {
     // 연결이 끊겨도 화면은 나간다.
   }
+}
+
+/**
+ * GET /api/staff/visits — 담당자가 보는 방문 요청 목록.
+ *
+ * **다른 기관 요청은 아예 오지 않는다.** 서버가 거르는 것이지 화면이 거르는 것이 아니다.
+ */
+export async function getStaffVisits(token: string): Promise<StaffVisitResponse[]> {
+  const res = await fetch(`${API_BASE}/api/staff/visits`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffVisitResponse[];
+}
+
+/**
+ * PATCH /api/staff/visits/{id} — 상태 변경.
+ *
+ * **남의 기관 요청은 id를 알아도 거부된다.** 화면이 막는 것이 아니다.
+ */
+export async function patchStaffVisit(
+  token: string,
+  id: string,
+  action: StaffVisitAction,
+): Promise<StaffVisitResponse> {
+  const res = await fetch(`${API_BASE}/api/staff/visits/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(action),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffVisitResponse;
 }
 
 /** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */

@@ -36,3 +36,5 @@ export type {
   SignupResponse,
   UpdateMeRequest,
 } from "./account";
+
+export type { StaffVisitAction, StaffVisitResponse } from "./staffVisit";
