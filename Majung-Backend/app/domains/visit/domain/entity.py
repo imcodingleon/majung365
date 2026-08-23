@@ -42,10 +42,21 @@ _NEXT: dict[VisitStatus, frozenset[VisitStatus]] = {
     VisitStatus.CANCELLED: frozenset(),
 }
 
-# 아직 결론이 나지 않은 상태들. 상한 판정(§7.5)이 이 집합을 센다.
+# 아직 답을 못 받은 상태들. **상한 판정(§7.5)이 이 집합을 센다.**
+# 확정된 것은 답을 받은 것이므로 세지 않는다 — 확정을 받고도 다음 요청을
+# 못 보내면 상한이 벌칙이 된다.
 OPEN_STATUSES: frozenset[VisitStatus] = frozenset(
     {VisitStatus.SENT, VisitStatus.ACKNOWLEDGED, VisitStatus.RESCHEDULE_PROPOSED}
 )
+
+# 아직 끝나지 않은 상태들. **담당자 목록(§8.1)이 이 집합을 쓴다.**
+#
+# 위의 집합과 목적이 다르다. 담당자에게 "열려 있다"는 "아직 할 일이 남았다"는
+# 뜻이라 **확정된 건도 포함해야 한다.** 둘을 같은 값으로 쓰다가, 담당자가
+# 확정하는 순간 그 요청이 목록에서 사라졌다 — 누가 언제 오는지 확인도,
+# 취소도, 채팅 답변도 못 하게 됐다. §8.1이 "방문 예정 알림"이라 이름 붙인
+# 화면에서 정작 확정된 예정이 안 보였다.
+LIVE_STATUSES: frozenset[VisitStatus] = OPEN_STATUSES | {VisitStatus.CONFIRMED}
 
 
 def can_move(current: VisitStatus, target: VisitStatus) -> bool:

@@ -110,6 +110,11 @@ def create_app() -> FastAPI:
     # Rate limit
     app.state.limiter = limiter
     app.state.cors_origins = settings.cors_origins_list
+    # 소켓은 정규식을 못 받는다. 개발 중에는 열고 배포에서는 목록만 쓴다 —
+    # **FastAPI 쪽만 열면 소켓 핸드셰이크가 조용히 400이 된다.**
+    app.state.socket_cors = (
+        "*" if settings.cors_allow_localhost else settings.cors_origins_list
+    )
     # slowapi 핸들러 시그니처는 Starlette 타입과 미세 불일치(외부 라이브러리 경계)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 

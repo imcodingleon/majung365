@@ -502,3 +502,38 @@ def test_confirmed_at_is_not_the_meeting_time() -> None:
     assert confirmed.confirmed_at == NOW
     assert confirmed.confirmed_for == SOON
     assert confirmed.confirmed_at != confirmed.confirmed_for
+
+
+# ── 담당자 목록이 확정된 건도 보여준다 (기획서 §8.1) ──
+
+
+def test_confirmed_stays_in_the_staff_list() -> None:
+    """**확정하는 순간 목록에서 사라졌다.**
+
+    담당자가 확정하면 그 요청에 닿을 방법이 없어졌다 — 누가 언제 오는지 확인도,
+    취소도, 채팅 답변도 못 한다. §8.1이 "방문 예정 알림"이라 이름 붙인 화면에서
+    정작 확정된 예정이 안 보였다.
+
+    상한 판정(§7.5)이 쓰는 집합과 목적이 다르다. 그쪽은 "답을 못 받은 것"을
+    세므로 확정을 빼는 것이 맞고, 여기는 "아직 끝나지 않은 것"이라 포함해야 한다.
+    """
+    from app.domains.visit.domain.entity import LIVE_STATUSES, OPEN_STATUSES
+
+    assert VisitStatus.CONFIRMED in LIVE_STATUSES
+    assert VisitStatus.CONFIRMED not in OPEN_STATUSES, "상한은 확정을 세지 않는다"
+
+    # 끝난 것은 양쪽 모두에서 빠진다.
+    for done in (VisitStatus.COMPLETED, VisitStatus.CANCELLED):
+        assert done not in LIVE_STATUSES
+        assert done not in OPEN_STATUSES
+
+
+def test_confirming_does_not_block_the_next_request() -> None:
+    """확정을 받고도 다음 요청을 못 보내면 상한이 벌칙이 된다."""
+    usecase, _, _ = make_usecase()
+    staff = make_staff()
+    sent = send(usecase, "R1")
+    _confirm(usecase, sent, staff)
+    # 같은 항목을 다시 보낼 수 있다 — 확정된 건은 미확정으로 세지 않는다.
+    again = send(usecase, "R1")
+    assert again.status == VisitStatus.SENT

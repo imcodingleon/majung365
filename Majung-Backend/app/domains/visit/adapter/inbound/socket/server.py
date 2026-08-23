@@ -56,7 +56,13 @@ def create_socket_app(app: Any) -> socketio.ASGIApp:
     """
     sio = socketio.AsyncServer(
         async_mode="asgi",
-        cors_allowed_origins=app.state.cors_origins,
+        # **Socket.IO는 FastAPI의 CORS 미들웨어를 지나지 않는다.**
+        #
+        # 이 앱이 FastAPI를 감싸고 있어서 /socket.io 요청은 FastAPI에 닿기 전에
+        # 여기서 끝난다. 그래서 개발용 localhost 정규식을 FastAPI에만 넣었더니
+        # 일반 API는 통과하는데 소켓 핸드셰이크만 400이 났고, 담당자 채팅이
+        # 통째로 안 됐다. 앞서 CORS를 두 번 고쳤는데 둘 다 FastAPI 쪽이었다.
+        cors_allowed_origins=app.state.socket_cors,
         # 로그에 사용자 입력이 실리지 않게 한다(§9.3).
         logger=False,
         engineio_logger=False,

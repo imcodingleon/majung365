@@ -17,7 +17,7 @@ from supabase import Client
 
 from app.domains.staff.domain.entity import OrgKind
 from app.domains.visit.domain.entity import (
-    OPEN_STATUSES,
+    LIVE_STATUSES,
     SharedAnswer,
     VisitRequest,
     VisitStatus,
@@ -204,7 +204,9 @@ class SupabaseVisitRepository:
         """
         query = self._db.table("visit_request").select("*").eq("org_kind", org_kind.value)
         if open_only:
-            query = query.in_("status", [s.value for s in OPEN_STATUSES])
+            # **담당자 목록은 확정된 건도 봐야 한다**(§8.1). 상한 판정이 쓰는
+            # OPEN_STATUSES와 목적이 다르다 — 자세한 것은 entity.py 주석 참고.
+            query = query.in_("status", [s.value for s in LIVE_STATUSES])
         result = query.order("created_at", desc=True).limit(100).execute()
         return self._to_entities(self._rows(result))
 

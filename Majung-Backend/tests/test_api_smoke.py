@@ -80,3 +80,25 @@ def test_cors_refuses_unknown_origin() -> None:
         },
     )
     assert r.headers.get("access-control-allow-origin") != "https://evil.example.com"
+
+
+def test_socket_cors_follows_the_same_setting_as_rest() -> None:
+    """**Socket.IO는 FastAPI의 CORS 미들웨어를 지나지 않는다.**
+
+    이 앱이 FastAPI를 감싸고 있어서 /socket.io 요청은 FastAPI에 닿기 전에
+    끝난다. 개발용 localhost 정규식을 FastAPI에만 넣었더니 일반 API는
+    통과하는데 소켓 핸드셰이크만 400이 났고, **담당자 채팅이 통째로 안 됐다.**
+
+    앞서 CORS를 두 번 고쳤는데 둘 다 FastAPI 쪽이었다. 한쪽만 고치면
+    나머지가 조용히 남는다.
+    """
+    from app.infrastructure.config.settings import Settings
+
+    app = create_app()
+    rest_open = getattr(Settings(), "cors_allow_localhost", False)
+    socket_cors = app.state.socket_cors
+
+    if rest_open:
+        assert socket_cors == "*", "REST는 열렸는데 소켓이 목록만 본다"
+    else:
+        assert socket_cors == app.state.cors_origins, "배포에서 소켓만 열려 있다"
