@@ -2,7 +2,7 @@
 import { Image } from "expo-image";
 import { Linking, Pressable, Text, View } from "react-native";
 
-import type { AreaOut, CardData } from "@/shared/types";
+import type { CardData, RouteOut } from "@/shared/types";
 
 import type { ChatMessage } from "../domain/message";
 
@@ -47,22 +47,22 @@ function UserTextBubble({ text, at }: { text: string; at: string }) {
 }
 
 /** triage 결과 — "지금 가장 급한 일" (design-map: triage는 챗봇+로드맵으로 표현, 1:221 화면 미사용). */
-function TriageBanner({ areas, at }: { areas: AreaOut[]; at: string }) {
-  const ranked = [...areas].sort((a, b) => a.rank - b.rank);
+function TriageBanner({ routes, at }: { routes: RouteOut[]; at: string }) {
+  const ranked = [...routes].sort((a, b) => a.rank - b.rank);
   return (
     <View className="w-full flex-row items-start gap-3">
       <BotAvatar />
       <View className="max-w-[262px] flex-shrink gap-1.5 lg:max-w-[68%]">
         <View className="gap-3 rounded-2xl rounded-tl-none border border-line bg-white px-4 py-4 shadow">
           <Text className="text-base font-bold text-brand">지금 가장 급한 일이에요</Text>
-          {ranked.map((area) => (
-            <View key={area.key} className="flex-row items-start gap-2">
+          {ranked.map((route) => (
+            <View key={route.key} className="flex-row items-start gap-2">
               <View className="mt-0.5 size-5 items-center justify-center rounded-full bg-brand-soft">
-                <Text className="text-xs font-bold text-brand">{area.rank}</Text>
+                <Text className="text-xs font-bold text-brand">{route.rank}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-[15px] font-bold text-ink">{area.label}</Text>
-                <Text className="text-[13px] leading-5 text-ink-muted">{area.reason}</Text>
+                <Text className="text-[15px] font-bold text-ink">{route.label}</Text>
+                <Text className="text-[13px] leading-5 text-ink-muted">{route.reason}</Text>
               </View>
             </View>
           ))}
@@ -128,7 +128,7 @@ export function MessageItem({ message }: { message: ChatMessage }) {
         <BotTextBubble text={message.text} at={message.at} />
       );
     case "triage":
-      return <TriageBanner areas={message.areas} at={message.at} />;
+      return <TriageBanner routes={message.routes} at={message.at} />;
     case "card":
       return <SupportCard card={message.card} />;
     default:

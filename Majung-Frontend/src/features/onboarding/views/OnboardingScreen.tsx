@@ -1,5 +1,5 @@
-// 온보딩 - 상황 체크 (CAP-1a). Figma 2:726 기반, 그래프 코어 9노드로 재설계.
-// 9문항(O/X/△ 버튼) + 마지막 자유서술 단계 1개로 완주. 완료하면 분석을 시작하고 로딩 화면으로 이동.
+// 온보딩 - 상황 체크 (CAP-1a). Figma 2:726 기반, 그래프 코어 노드로 재설계.
+// 문항(O/X/△ 버튼) 전체 + 마지막 자유서술 단계 1개로 완주. 완료하면 분석을 시작하고 로딩 화면으로 이동.
 import { type Href, router } from "expo-router";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";

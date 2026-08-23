@@ -1,6 +1,6 @@
 """Anthropic 구현 — ChatLlm 포트 + StateExtractorLlm 포트(C6). anthropic import는 이 파일에서만.
 
-- triage: 구조화 출력(json_schema)으로 6영역 분류. 빠르게(thinking 끔).
+- triage: 구조화 출력(json_schema)으로 지원 항목(R1~R15) 분류. 빠르게(thinking 끔).
 - stream_guidance: 스트리밍으로 쉬운 말 안내. daily 질문이면 공공 도메인 웹 검색 허용.
 - extract_narrative_states: 온보딩 마지막 자유서술 1건 → 언급된 그래프 노드들의
   상태(O/X/BLOCKED) 일괄 판정. knowledge 도메인이 쓰지만, "Claude 호출은
@@ -21,12 +21,12 @@ from app.domains.chat.domain.prompts import (
     build_system_prompt,
 )
 from app.domains.chat.domain.triage import (
-    AreaPriority,
     QuestionType,
+    RoutePriority,
     TriageResult,
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
-from app.domains.shared.areas import Area
+from app.domains.shared.routes import RouteId
 from app.infrastructure.config.settings import Settings
 from app.infrastructure.tls import make_async_http_client
 
@@ -73,13 +73,13 @@ _TRIAGE_SCHEMA = {
             "items": {
                 "type": "object",
                 "properties": {
-                    "area": {
+                    "route": {
                         "type": "string",
-                        "enum": [a.value for a in Area],
+                        "enum": [r.value for r in RouteId],
                     },
                     "reason": {"type": "string"},
                 },
-                "required": ["area", "reason"],
+                "required": ["route", "reason"],
                 "additionalProperties": False,
             },
         },
@@ -141,7 +141,7 @@ class ClaudeChatLlm:
             data = json.loads(text)
             qtype = QuestionType(data["question_type"])
             priorities = tuple(
-                AreaPriority(area=Area(p["area"]), reason=str(p.get("reason", "")))
+                RoutePriority(route=RouteId(p["route"]), reason=str(p.get("reason", "")))
                 for p in data.get("priorities", [])
             )
             return TriageResult(question_type=qtype, priorities=priorities)

@@ -9,7 +9,13 @@
 """
 
 from app.domains.chat.domain.triage import TriageResult
-from app.domains.shared.areas import Area, label_for
+from app.domains.shared.routes import (
+    RouteId,
+    SectionId,
+    label_for,
+    routes_in,
+    section_label_for,
+)
 
 _BASE_SYSTEM = """당신은 '마중365'의 대화 도우미입니다. 막 출소해 사회가 낯선 분의 곁에서, 판단하지 않고 함께 걷는 따뜻한 동행자입니다.
 
@@ -38,19 +44,26 @@ def build_system_prompt() -> str:
     return _BASE_SYSTEM
 
 
-TRIAGE_INSTRUCTION = """당신은 마중365의 상황 분류기입니다. 사용자의 마지막 메시지를 읽고 판단하세요.
+_ROUTE_CATALOG = "\n".join(
+    f"   [{section_label_for(s)}] "
+    + ", ".join(f"{r.value}={label_for(r)}" for r in routes_in(s))
+    for s in SectionId
+)
+
+TRIAGE_INSTRUCTION = f"""당신은 마중365의 상황 분류기입니다. 사용자의 마지막 메시지를 읽고 판단하세요.
 
 1) question_type:
-   - "support": 신분·주거·생계·취업·의료/마음·빚 같은 '지원 제도 안내'가 도움이 되는 상황
+   - "support": 신분·주거·생계·취업·건강/마음·권리구제 같은 '지원 제도 안내'가 도움이 되는 상황
    - "daily": 디지털 사용법·일상 방법·감정 토로 등 폭넓은 일반 질문(제도 안내가 핵심이 아닌 경우)
-2) support일 때, 아래 6개 영역 중 지금 가장 급한 것을 2~3개, 급한 순서로 고르고 각각 왜 급한지 쉬운 말로 한 줄.
-   영역 코드: identity(신분 재건), welfare(긴급복지·생계), housing(주거), employment(취업), health(의료·마음), debt(채무)
+2) support일 때, 아래 지원 항목 중 지금 가장 급한 것을 2~3개, 급한 순서로 고르고 각각 왜 급한지 쉬운 말로 한 줄.
+   항목 코드(분야별로 묶어 둡니다):
+{_ROUTE_CATALOG}
 3) daily면 priorities는 비워도 됩니다.
 판단·훈계·과거 캐묻기 금지. 사용자의 실제 말에 근거해서만 분류하세요."""
 
 
-def area_display(area: Area) -> str:
-    return label_for(area)
+def route_display(route: RouteId) -> str:
+    return label_for(route)
 
 
 def build_guidance_context(
@@ -60,7 +73,7 @@ def build_guidance_context(
     """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약)."""
     lines: list[str] = []
     if triage.priorities:
-        prio = ", ".join(f"{label_for(p.area)}({p.reason})" for p in triage.priorities)
+        prio = ", ".join(f"{label_for(p.route)}({p.reason})" for p in triage.priorities)
         lines.append(f"[지금 급한 일] {prio}")
     if injected_cards:
         lines.append("[확인된 정보 — 이 사실만 근거로 쉬운 말로 안내]")

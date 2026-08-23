@@ -10,12 +10,12 @@ const IC = {
   onboarding: require("../../../assets/images/nav/profile_on.png") as ImageSourcePropType,
   roadmap: require("../../../assets/images/nav/roadmap_on.png") as ImageSourcePropType,
   map: require("../../../assets/images/nav/map_on.png") as ImageSourcePropType,
-  identity: require("../../../assets/images/roadmap/task/identity.png") as ImageSourcePropType,
-  housing: require("../../../assets/images/roadmap/task/housing.png") as ImageSourcePropType,
-  welfare: require("../../../assets/images/roadmap/task/welfare.png") as ImageSourcePropType,
-  employment: require("../../../assets/images/roadmap/task/employment.png") as ImageSourcePropType,
-  health: require("../../../assets/images/roadmap/task/health.png") as ImageSourcePropType,
-  debt: require("../../../assets/images/roadmap/task/debt.png") as ImageSourcePropType,
+  identity: require("../../../assets/images/home/identity.png") as ImageSourcePropType,
+  housing: require("../../../assets/images/home/housing.png") as ImageSourcePropType,
+  welfare: require("../../../assets/images/home/welfare.png") as ImageSourcePropType,
+  employment: require("../../../assets/images/home/employment.png") as ImageSourcePropType,
+  health: require("../../../assets/images/home/health.png") as ImageSourcePropType,
+  debt: require("../../../assets/images/home/debt.png") as ImageSourcePropType,
 };
 
 export interface ShellNavItem {
@@ -33,7 +33,7 @@ export const SHELL_MENU: readonly ShellNavItem[] = [
   { key: "map", label: "센터 찾기", href: "/map", icon: IC.map },
 ];
 
-// 서비스 섹션 — 6영역과 1:1. 클릭 시 관련 질문으로 챗 이동(모바일 홈 타일과 동일 질문).
+// 서비스 섹션 — 초기 진단 6분야와 1:1. 클릭 시 관련 질문으로 챗 이동(모바일 홈 타일과 동일 질문).
 interface ServiceItem {
   label: string;
   icon: ImageSourcePropType;

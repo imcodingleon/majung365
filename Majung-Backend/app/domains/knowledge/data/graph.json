@@ -1,6 +1,6 @@
 {
   "_meta": {
-    "status": "초안 (draft) — 공단 검수 대기. assumed 엣지 10건은 _bmad-output/specs/spec-majung-2nd/graph-design.md §6 V-1~V-11 확인 필요.",
+    "status": "초안 (draft) — 공단 검수 대기. assumed 엣지는 _bmad-output/specs/spec-majung-2nd/graph-design.md §6 V-1~V-11 확인 필요. 6영역을 지원 항목(route_ids)으로 전환하고 phone·job_national 노드를 폐기했다(2026-08-23).",
     "source": "_bmad-output/specs/spec-majung-2nd/graph-design.md",
     "warning": "duration_days는 검증되지 않은 추정치. 팀 확정 전까지 발표에서 '약 며칠' 정도로만 안내."
   },
@@ -8,12 +8,16 @@
     {
       "id": "proof_of_release",
       "name": "수용(출소)증명서",
-      "area": "identity",
+      "route_ids": [
+        "R13"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "교정시설에서 수용증명서 발급받기",
           "kb_ref": "identity-proof-of-release",
           "where": "출소한 교정시설",
@@ -26,16 +30,23 @@
     {
       "id": "shelter",
       "name": "잘 곳",
-      "area": "housing",
+      "route_ids": [
+        "R1",
+        "R4"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "공단 생활관 입소 문의",
           "kb_ref": "housing-koreha-residence",
           "where": "한국법무보호복지공단 관할 지부",
-          "docs": ["수용증명서"],
+          "docs": [
+            "수용증명서"
+          ],
           "duration_days": 1,
           "requires": [
             {
@@ -46,11 +57,15 @@
           ]
         },
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "긴급복지 주거지원 신청",
           "kb_ref": "housing-emergency-welfare-housing",
           "where": "주민센터 또는 보건복지상담센터(129)",
-          "docs": ["신분증"],
+          "docs": [
+            "신분증"
+          ],
           "duration_days": 3,
           "requires": [
             {
@@ -65,16 +80,22 @@
     {
       "id": "address",
       "name": "주소지(주민등록 주소)",
-      "area": "identity",
+      "route_ids": [
+        "R11"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "주민센터에서 전입신고",
           "kb_ref": "identity-address-registration",
           "where": "가까운 주민센터",
-          "docs": ["수용증명서 또는 신분 확인 서류(있는 대로)"],
+          "docs": [
+            "수용증명서 또는 신분 확인 서류(있는 대로)"
+          ],
           "duration_days": 1,
           "requires": [
             {
@@ -89,16 +110,22 @@
     {
       "id": "id_card",
       "name": "신분증(주민등록증)",
-      "area": "identity",
+      "route_ids": [
+        "R9"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "주민센터에서 주민등록 재등록",
           "kb_ref": "identity-resident-registration",
           "where": "가까운 주민센터",
-          "docs": ["출소 사실을 확인할 수 있는 서류"],
+          "docs": [
+            "출소 사실을 확인할 수 있는 서류"
+          ],
           "duration_days": 7,
           "requires": [
             {
@@ -118,16 +145,23 @@
     {
       "id": "bank_account",
       "name": "본인 명의 통장",
-      "area": "identity",
+      "route_ids": [
+        "R10"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "은행에서 계좌 새로 만들기",
           "kb_ref": "identity-bank-account",
           "where": "가까운 은행 지점",
-          "docs": ["신분증"],
+          "docs": [
+            "신분증",
+            "본인 명의 휴대폰(본인 확인에 쓰여요)"
+          ],
           "duration_days": 1,
           "requires": [
             {
@@ -138,11 +172,16 @@
           ]
         },
         {
-          "for_state": ["BLOCKED"],
+          "for_state": [
+            "BLOCKED"
+          ],
           "action": "통장 정지 풀기",
           "kb_ref": "identity-bank-account-unblock",
           "where": "거래 은행 지점",
-          "docs": ["신분증"],
+          "docs": [
+            "신분증",
+            "본인 명의 휴대폰(본인 확인에 쓰여요)"
+          ],
           "duration_days": 1,
           "requires": [
             {
@@ -155,48 +194,11 @@
       ]
     },
     {
-      "id": "phone",
-      "name": "본인 명의 휴대폰",
-      "area": "identity",
-      "tier": "core",
-      "deadline": null,
-      "obtain": [
-        {
-          "for_state": ["X"],
-          "action": "통신사 대리점에서 개통",
-          "kb_ref": "identity-phone",
-          "where": "통신사 대리점 또는 알뜰폰 취급점",
-          "docs": ["신분증"],
-          "duration_days": 1,
-          "requires": [
-            {
-              "node": "id_card",
-              "confidence": "confirmed",
-              "basis": "KB identity-phone docs: 신분증"
-            }
-          ]
-        },
-        {
-          "for_state": ["BLOCKED"],
-          "action": "통신사 대리점에서 명의 살리기",
-          "kb_ref": "identity-phone",
-          "where": "통신사 대리점",
-          "docs": ["신분증"],
-          "duration_days": 1,
-          "requires": [
-            {
-              "node": "id_card",
-              "confidence": "confirmed",
-              "basis": "KB identity-phone docs: 신분증"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "emergency_cash",
       "name": "긴급복지 생계지원",
-      "area": "welfare",
+      "route_ids": [
+        "R2"
+      ],
       "tier": "core",
       "deadline": {
         "text": "출소일부터 6개월",
@@ -206,11 +208,15 @@
       },
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "주민센터 또는 129로 신청",
           "kb_ref": "welfare-emergency-support",
           "where": "주민센터 또는 보건복지상담센터(전화 129)",
-          "docs": ["신분 확인 서류"],
+          "docs": [
+            "신분 확인 서류"
+          ],
           "duration_days": 3,
           "requires": [
             {
@@ -225,16 +231,23 @@
     {
       "id": "basic_livelihood",
       "name": "기초생활보장 생계급여",
-      "area": "welfare",
+      "route_ids": [
+        "R12"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "주민센터에서 상담·신청",
           "kb_ref": "welfare-basic-livelihood",
           "where": "주민센터(행정복지센터)",
-          "docs": ["신분 확인 서류", "소득·재산을 확인할 수 있는 서류"],
+          "docs": [
+            "신분 확인 서류",
+            "소득·재산을 확인할 수 있는 서류"
+          ],
           "duration_days": 14,
           "requires": [
             {
@@ -259,16 +272,22 @@
     {
       "id": "medical_aid",
       "name": "의료급여·건강보험",
-      "area": "health",
+      "route_ids": [
+        "R15"
+      ],
       "tier": "core",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "주민센터 또는 건강보험공단에서 확인",
           "kb_ref": "health-medical-aid",
           "where": "주민센터 / 국민건강보험공단",
-          "docs": ["신분 확인 서류"],
+          "docs": [
+            "신분 확인 서류"
+          ],
           "duration_days": 3,
           "requires": [
             {
@@ -288,12 +307,16 @@
     {
       "id": "mental_care",
       "name": "마음 상담(정신건강복지센터)",
-      "area": "health",
+      "route_ids": [
+        "R8"
+      ],
       "tier": "terminal",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "전화로 상담 신청",
           "kb_ref": "health-mental-support",
           "where": "지역 정신건강복지센터(전화 1577-0199)",
@@ -306,12 +329,16 @@
     {
       "id": "legal_aid",
       "name": "무료 법률 지원",
-      "area": "debt",
+      "route_ids": [
+        "R14"
+      ],
       "tier": "terminal",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "전화로 상담 신청",
           "kb_ref": "debt-legal-aid",
           "where": "대한법률구조공단(전화 132)",
@@ -324,12 +351,16 @@
     {
       "id": "job_koreha",
       "name": "공단 취업지원·직업훈련",
-      "area": "employment",
+      "route_ids": [
+        "R6"
+      ],
       "tier": "terminal",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "공단 지부에 상담 문의",
           "kb_ref": "employment-koreha-job",
           "where": "한국법무보호복지공단 관할 지부",
@@ -346,47 +377,24 @@
       ]
     },
     {
-      "id": "job_national",
-      "name": "국민취업지원제도",
-      "area": "employment",
-      "tier": "terminal",
-      "deadline": null,
-      "obtain": [
-        {
-          "for_state": ["X"],
-          "action": "고용센터 또는 고용24에서 신청",
-          "kb_ref": "employment-national-support",
-          "where": "고용센터 또는 고용24(온라인)",
-          "docs": ["신분 확인 서류"],
-          "duration_days": 7,
-          "requires": [
-            {
-              "node": "id_card",
-              "confidence": "confirmed",
-              "basis": "KB employment-national-support docs: 신분 확인 서류"
-            },
-            {
-              "node": "bank_account",
-              "confidence": "assumed",
-              "basis": "V-8: 신청 시점에 수당 지급 계좌가 필요한지 공단 확인 필요"
-            }
-          ]
-        }
-      ]
-    },
-    {
       "id": "debt_workout",
       "name": "채무조정(신용회복위원회)",
-      "area": "debt",
+      "route_ids": [
+        "R14"
+      ],
       "tier": "terminal",
       "deadline": null,
       "obtain": [
         {
-          "for_state": ["X"],
+          "for_state": [
+            "X"
+          ],
           "action": "전화로 상담 신청",
           "kb_ref": "debt-credit-recovery",
           "where": "신용회복위원회(전화 1600-5500)",
-          "docs": ["신분 확인 서류"],
+          "docs": [
+            "신분 확인 서류"
+          ],
           "duration_days": 1,
           "requires": [
             {

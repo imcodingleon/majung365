@@ -16,9 +16,9 @@ router = APIRouter(prefix="/api", tags=["onboarding"])
 
 _VALID_STATES = {s.value for s in NodeState}
 _MAX_NARRATIVE_LEN = 1000
-# 온보딩은 코어 9노드만 답하지만, "완료 처리" 재계산 시엔 이전 응답의 resolved_states
-# 14개(그래프 전체 노드 수) 전부를 그대로 되돌려보낸다 — 그 한도까지 허용한다.
-_MAX_ANSWERS = 14
+# 온보딩은 코어 노드만 답하지만, "완료 처리" 재계산 시엔 이전 응답의 resolved_states
+# 전부를 그대로 되돌려보낸다 — 그래프 전체 노드 수까지 허용한다.
+_MAX_ANSWERS = 12
 
 
 class NodeAnswerIn(BaseModel):

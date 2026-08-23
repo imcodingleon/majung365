@@ -1,7 +1,7 @@
 """AnalyzeUseCase — 온보딩 답변(코어 9노드 버튼 + 마지막 자유서술) → 그래프엔진(C7)
 → 오늘의 과제 카드.
 
-자유서술이 있으면 C6(상태추출)이 14노드 전체를 다시 훑어, 언급된 항목만 버튼 답변 위에 덮어쓴다
+자유서술이 있으면 C6(상태추출)이 그래프 전체 노드를 다시 훑어, 언급된 항목만 버튼 답변 위에 덮어쓴다
 (가장 최근 정보로 간주). 세션/진행상태 저장 없음(stateless) — 요청 1번에 응답 1번으로 끝난다.
 """
 
@@ -35,7 +35,7 @@ class AnalyzeUseCase:
         states: dict[str, NodeState] = {
             a.node_id: a.state for a in cmd.answers if a.node_id in self._nodes
         }
-        # 답하지 않은 노드(단말 5개 등)는 X로 가정 — graph-design.md "코어 깊게 + 단말 얕게"
+        # 답하지 않은 노드(단말 노드 등)는 X로 가정 — graph-design.md "코어 깊게 + 단말 얕게"
         for node_id in self._nodes:
             states.setdefault(node_id, NodeState.X)
 

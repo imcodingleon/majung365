@@ -4,6 +4,8 @@ date: 2026-08-01
 parent: SSOT.md (§6 핵심 알고리즘 T1 · §8 데이터 스펙)
 resolves: 블로커 A (제도 노드 목록 + 선행조건 엣지)
 status: 설계 확정 · 데이터 값은 공단 검수 대기
+updated: 2026-08-23 — 6영역(area)을 지원 항목(route_ids)으로 전환하고
+  phone·job_national 노드를 폐기했다. 근거는 intake-contract.md §4.
 ---
 
 # 블로커 A — 선행조건 그래프 데이터 설계
@@ -20,7 +22,7 @@ status: 설계 확정 · 데이터 값은 공단 검수 대기
 | 2 | **경로(`obtain`)는 배열.** 한 자원에 여러 획득 경로 | 잘 곳은 공단 생활관으로도, 긴급복지 주거지원으로도 얻는다. 선행조건이 경로마다 다르다 |
 | 3 | **경로는 상태별로 분기(`for_state`)** | 통장이 `X`면 "개설", `△`면 "정지 해제". 장소·서류가 다르다. SSOT §6.2가 말한 "△가 이 도메인의 특이점"이 데이터에서 실체를 갖는 지점 |
 | 4 | **엣지마다 `confidence` + `basis`** | `assumed` 필터가 곧 공단 인터뷰 질문지(§6). 미검증 값을 데이터 레벨에서 관리한다 |
-| 5 | **코어 9 깊게 + 단말 5 얇게** | 순환은 신분·주거·긴급복지에서만 발생한다. 취업·의료·채무는 선행조건만 받고 후속 해금이 없어 검수 부담이 작다 |
+| 5 | **코어 8 깊게 + 단말 4 얇게** | 순환은 신분·주거·긴급복지에서만 발생한다. 취업·의료·채무는 선행조건만 받고 후속 해금이 없어 검수 부담이 작다 |
 | 6 | **카드 파일과 그래프 파일을 분리** | 카드는 사람이 읽는 문장, 노드는 엔진이 푸는 제약. 합치면 문구 수정이 그래프를 흔든다 |
 
 **파일 배치**
@@ -38,7 +40,7 @@ status: 설계 확정 · 데이터 값은 공단 검수 대기
 {
   "id": "bank_account",
   "name": "본인 명의 통장",
-  "area": "identity",              // identity | welfare | housing | employment | health | debt
+  "route_ids": ["R10"],            // 이 자원이 근거가 되는 지원 항목들 (R1~R4 · R6~R15)
   "tier": "core",                  // core(엣지 조밀) | terminal(후속 해금 없음)
   "deadline": null,                // { "text": "...", "confidence": "...", "basis": "..." } | null
   "obtain": [
@@ -47,7 +49,7 @@ status: 설계 확정 · 데이터 값은 공단 검수 대기
       "action": "은행에서 계좌 새로 만들기",
       "kb_ref": "identity-bank-account",
       "where": "가까운 은행 지점",
-      "docs": ["신분증"],
+      "docs": ["신분증", "본인 명의 휴대폰(본인 확인에 쓰여요)"],
       "duration_days": 1,
       "requires": [
         { "node": "id_card", "confidence": "confirmed",
@@ -78,35 +80,40 @@ status: 설계 확정 · 데이터 값은 공단 검수 대기
 
 ---
 
-## 3. 노드 14개
+## 3. 노드 12개
 
-### 3.1 코어 (9) — 순환이 발생하는 구간
+### 3.1 코어 (8) — 순환이 발생하는 구간
 
-| id | 이름 | 영역 | 선행조건 | 획득 경로 |
+| id | 이름 | 지원 항목 | 선행조건 | 획득 경로 |
 |---|---|---|---|---|
-| `proof_of_release` | 수용(출소)증명서 | identity | **없음** | 교정시설 발급 |
-| `shelter` | 잘 곳 | housing | `proof_of_release` **또는** `id_card` | ① 공단 생활관 ② 긴급복지 주거지원 |
-| `address` | 주소지(주민등록 주소) | identity | `shelter` | 주민센터 전입신고 |
-| `id_card` | 신분증(주민등록증) | identity | `address` · `proof_of_release` | 주민센터 주민등록 재등록 |
-| `bank_account` | 본인 명의 통장 | identity | `id_card` | X→개설 / △→정지 해제 |
-| `phone` | 본인 명의 휴대폰 | identity | `id_card` | X→개통 / △→명의 살리기 |
-| `emergency_cash` | 긴급복지 생계지원 | welfare | `id_card` · **기한 있음** | 주민센터 또는 129 |
-| `basic_livelihood` | 기초생활보장 생계급여 | welfare | `address` · `id_card` · `bank_account` | 주민센터 상담·신청 |
-| `medical_aid` | 의료급여·건강보험 | health | `address` · `id_card` | 주민센터 / 건강보험공단 |
+| `proof_of_release` | 수용(출소)증명서 | R13 | **없음** | 교정시설 발급 |
+| `shelter` | 잘 곳 | R1 · R4 | `proof_of_release` **또는** `id_card` | ① 공단 생활관 ② 긴급복지 주거지원 |
+| `address` | 주소지(주민등록 주소) | R11 | `shelter` | 주민센터 전입신고 |
+| `id_card` | 신분증(주민등록증) | R9 | `address` · `proof_of_release` | 주민센터 주민등록 재등록 |
+| `bank_account` | 본인 명의 통장 | R10 | `id_card` | X→개설 / △→정지 해제 |
+| `emergency_cash` | 긴급복지 생계지원 | R2 | `id_card` · **기한 있음** | 주민센터 또는 129 |
+| `basic_livelihood` | 기초생활보장 생계급여 | R12 | `address` · `id_card` · `bank_account` | 주민센터 상담·신청 |
+| `medical_aid` | 의료급여·건강보험 | R15 | `address` · `id_card` | 주민센터 / 건강보험공단 |
 
-### 3.2 단말 (5) — 선행조건만 받고 후속 해금 없음
+### 3.2 단말 (4) — 선행조건만 받고 후속 해금 없음
 
-| id | 이름 | 영역 | 선행조건 |
+| id | 이름 | 지원 항목 | 선행조건 |
 |---|---|---|---|
-| `mental_care` | 마음 상담(정신건강복지센터) | health | **없음** — 전화 1577-0199 |
-| `legal_aid` | 무료 법률 지원 | debt | **없음** — 전화 132 |
-| `job_koreha` | 공단 취업지원·직업훈련 | employment | `proof_of_release` |
-| `job_national` | 국민취업지원제도 | employment | `id_card` · `bank_account` |
-| `debt_workout` | 채무조정(신용회복위원회) | debt | `id_card` |
+| `mental_care` | 마음 상담(정신건강복지센터) | R8 | **없음** — 전화 1577-0199 |
+| `legal_aid` | 무료 법률 지원 | R14 | **없음** — 전화 132 |
+| `job_koreha` | 공단 취업지원·직업훈련 | R6 | `proof_of_release` |
+| `debt_workout` | 채무조정(신용회복위원회) | R14 | `id_card` |
+
+### 3.3 폐기한 노드 (2)
+
+| id | 이름 | 폐기 사유 |
+|---|---|---|
+| `phone` | 본인 명의 휴대폰 | 사용자가 이 앱을 쓰고 있다는 것 자체가 휴대폰이 있다는 뜻이다. 다만 통장 개설의 선행조건은 정확히는 *본인 명의* 휴대폰이고 앱은 타인 명의 기기로도 쓸 수 있으므로, 그 확인은 `bank_account` 경로의 `docs`가 맡는다 |
+| `job_national` | 국민취업지원제도 | 지원 항목으로는 만들지 않는다. R6(취업·허그일자리)의 근거 문서로는 남는다 |
 
 > `긴급복지 주거지원`은 독립 노드가 아니라 `shelter`의 두 번째 경로다. 목표는 "잘 곳" 하나이고 경로가 둘이다. 사용자에게는 과제 하나로 보인다(SSOT §6.3 "한 번에 하나만").
 
-**엣지 19개** — 코어 15 · 단말 4. 이 중 **`confirmed` 9 · `assumed` 10**(§6).
+**엣지 15개** — 코어 13 · 단말 2. 이 중 **`confirmed` 6 · `assumed` 9**(§6).
 경로 단위로 센다. `bank_account ← id_card`는 `X`(개설) 경로와 `△`(정지 해제) 경로에서 각각 한 번씩 잡히고, 두 엣지의 `confidence`가 다르다.
 
 ---
@@ -119,9 +126,9 @@ proof_of_release ●        mental_care ○        legal_aid ○
    │                      (전화만으로 가능)     (전화만으로 가능)
    ├──────────────► job_koreha ○
    │
-   ├──► shelter ──► address ──► id_card ──┬──► bank_account ──► job_national ○
-   │      ▲                        │       │         │
-   │      └────────────────────────┘       ├──► phone ○
+   ├──► shelter ──► address ──► id_card ──┬──► bank_account ○
+   │      ▲                        │       │
+   │      └────────────────────────┘       │
    │        (경로② 긴급복지 주거지원)        │
    │                                       ├──► emergency_cash ⏰
    │                                       ├──► debt_workout ○
@@ -142,15 +149,15 @@ proof_of_release ●        mental_care ○        legal_aid ○
 
 | # | 보유 상태 | 진입차수 0 후보 | 우선순위 적용 | 산출 시작점 | SSOT 기대값 | |
 |---|---|---|---|---|---|---|
-| 1 | 전부 X | `proof_of_release` · `mental_care` · `legal_aid` | 기한 없음 → **해금 수**(11 vs 0 vs 0) | 수용증명서 확보 | 수용증명서 확보 | ✅ |
-| 2 | `id_card` O, 나머지 X | `proof_of_release` · `shelter`(경로②) · `bank_account` · `phone` · `emergency_cash` · `debt_workout` · `mental_care` · `legal_aid` | **기한 임박** 1건 | 긴급복지 생계지원 신청 | 긴급복지 생계지원 신청 | ✅ |
+| 1 | 전부 X | `proof_of_release` · `mental_care` · `legal_aid` | 기한 없음 → **해금 수**(3 vs 0 vs 0) | 수용증명서 확보 | 수용증명서 확보 | ✅ |
+| 2 | `id_card` O, 나머지 X | `proof_of_release` · `shelter`(경로②) · `bank_account` · `emergency_cash` · `debt_workout` · `mental_care` · `legal_aid` | **기한 임박** 1건 | 긴급복지 생계지원 신청 | 긴급복지 생계지원 신청 | ✅ |
 | 3 | 전부 O, `bank_account` △ | `bank_account` 단독 (나머지는 O로 마킹돼 후보에서 제외) | — | 통장 정지 풀기 (`for_state: BLOCKED` 경로) | 통장 정지 해제 | ✅ |
 
 케이스 2가 성립하려면 **`emergency_cash`의 선행조건에 통장이 없어야 한다.** 신청은 신분증으로 되고 통장은 지급 단계라는 판단인데, 이건 `assumed`이고 검수 1순위다(§6 V-2).
 
 ---
 
-## 6. 🔴 공단 검수 필요 목록 (`assumed` 엣지 10, 기한 1건은 확인 완료)
+## 6. 🔴 공단 검수 필요 목록 (`assumed` 엣지 9, 기한 1건은 확인 완료)
 
 > 이 표는 `graph.json`에서 자동 생성된다. 공단 인터뷰 담당자는 이 질문만 물으면 검수가 끝난다.
 
@@ -163,13 +170,13 @@ proof_of_release ●        mental_care ○        legal_aid ○
 | **V-5** | `id_card` ← `address` | 재등록에 주소지 필요 | 주민등록 재등록과 전입신고가 동시 처리되나, 순차인가? | 두 과제를 하나로 합쳐야 할 수 있다 |
 | **V-6** | `bank_account` △ 경로 | 정지 해제는 신분증으로 거래 은행에서 | 정지 사유(압류 / 대포통장 의심 / 장기 미사용)별로 절차가 다른가? | △ 안내가 부정확해진다 |
 | **V-7** | `job_koreha` ← `proof_of_release` | 공단 취업지원은 수용증명서로 가능 | KB docs는 "신분 확인 서류" — 공단 자체 사업이라 갈음되나? | 취업 트랙 진입 시점이 늦어진다 |
-| **V-8** | `job_national` ← `bank_account` | 수당 지급 계좌 필요 | 신청 시점에 계좌가 필요한가? | 불필요한 선행 과제를 시킨다 |
+| ~~V-8~~ ⬛ | ~~`job_national` ← `bank_account`~~ | 대상 노드를 폐기했다(§3.3) | — | 결번. 번호를 다시 매기지 않는다 — 이 표를 참조하는 인터뷰 자료가 어긋난다 |
 | **V-9** | `medical_aid` ← `address` | 가구 기준이라 주소지 필요 | 주소지 없이 건강보험 자격 확인만 가능한가? | 의료 접근이 뒤로 밀린다 |
 | **V-10** | `basic_livelihood` ← `address` | 가구 단위 조사라 주소지 필요 | 주소지 없이 신청 접수가 되나? | 기초생활 진입이 뒤로 밀린다 |
 | **V-11** | `basic_livelihood` ← `bank_account` | 급여 수급 계좌 필요 | 신청 시점에 계좌가 필요한가, 지급 시점인가? | 불필요한 선행 과제를 시킨다 |
 
-**`confirmed` 9건** — KB `docs` 필드에 근거가 명시된 엣지:
-`id_card`←`proof_of_release` · `shelter`[경로②]←`id_card` · `bank_account`[X]←`id_card` · `phone`[X]←`id_card` · `phone`[△]←`id_card` · `basic_livelihood`←`id_card` · `medical_aid`←`id_card` · `job_national`←`id_card` · `debt_workout`←`id_card`
+**`confirmed` 6건** — KB `docs` 필드에 근거가 명시된 엣지:
+`id_card`←`proof_of_release` · `shelter`[경로②]←`id_card` · `bank_account`[X]←`id_card` · `basic_livelihood`←`id_card` · `medical_aid`←`id_card` · `debt_workout`←`id_card`
 
 > `mental_care`·`legal_aid`는 선행조건이 없어서(KB `docs` 비어 있음) 엣지 자체가 없다. 검수 대상도 아니다.
 
@@ -180,7 +187,7 @@ proof_of_release ●        mental_care ○        legal_aid ○
 | 위치 | 현재 | 정정 |
 |---|---|---|
 | §6.4 | "수용증명서 — 그래프에서 **유일하게** 진입차수가 0인 노드" | 진입차수 0 노드는 **3개**다. `mental_care`·`legal_aid`는 전화 한 통으로 되고 서류가 없다. "유일하게 진입차수가 0인 **제도 노드**"로 정정. 오히려 서사가 세진다 — *"아무것도 없어도 오늘 할 수 있는 게 셋 있고, 그중 다음을 가장 많이 여는 것이 수용증명서다"* |
-| §8 | 제도 노드 수 `[팀 확정]` / 선행조건 엣지 수 `[팀 확정]` | **노드 14 · 엣지 19** (confirmed 9 · assumed 10) |
+| §8 | 제도 노드 수 `[팀 확정]` / 선행조건 엣지 수 `[팀 확정]` | **노드 12 · 엣지 15** (confirmed 6 · assumed 9) |
 | §6.6 | 케이스 3건 + `[팀 확정]` | 3건 모두 이 그래프에서 검증 통과(§5). 블로커 B에서 케이스를 확장한다 |
 
 ---
@@ -200,4 +207,4 @@ proof_of_release ●        mental_care ○        legal_aid ○
 1. `graph.json` 작성 + 로더·엔진 구현 (C7)
 2. 케이스 테이블 확장 (블로커 B) — 이 그래프 위에서 조합을 늘린다
 3. 도식 ② T1 알고리즘 동작 다이어그램 — §4 그래프 형태가 원본
-4. 공단 인터뷰 시 §6 표 9건 확인 → `confidence` 갱신
+4. 공단 인터뷰 시 §6 표 9건 확인 → `confidence` 갱신 (V-8은 결번)

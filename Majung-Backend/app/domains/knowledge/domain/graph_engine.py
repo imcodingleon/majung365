@@ -55,7 +55,8 @@ class Deadline:
 class GraphNode:
     id: str
     name: str
-    area: str
+    # 이 노드가 근거가 되는 지원 항목들. 한 노드가 여러 항목에 걸칠 수 있다(예: 잘 곳 → R1·R4).
+    route_ids: tuple[str, ...]
     tier: str
     deadline: Deadline | None
     obtain: tuple[ObtainPath, ...]

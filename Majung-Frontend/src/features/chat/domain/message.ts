@@ -1,11 +1,11 @@
 // 챗봇 도메인 — 메시지 모델과 순수 변환 규칙. React/API import 금지.
-import type { AreaOut, CardData, Turn } from "@/shared/types";
+import type { CardData, RouteOut, Turn } from "@/shared/types";
 
 /** 화면에 쌓이는 대화 항목. 봇 응답은 text·triage·card 세 종류로 나뉜다. */
 export type ChatMessage =
   | { id: string; author: "user"; kind: "text"; text: string; at: string }
   | { id: string; author: "bot"; kind: "text"; text: string; at: string }
-  | { id: string; author: "bot"; kind: "triage"; areas: AreaOut[]; at: string }
+  | { id: string; author: "bot"; kind: "triage"; routes: RouteOut[]; at: string }
   | { id: string; author: "bot"; kind: "card"; card: CardData; at: string };
 
 /** "오전 10:02" 형식(한국어 12시간제). */
