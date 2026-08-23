@@ -218,3 +218,46 @@ async def test_routes_without_companions_stay_single() -> None:
     )
     events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "많이 힘들어요")
     assert len([e for e in events if isinstance(e, CardEvent)]) == 1
+
+
+# ── 카드에서 연 대화는 그 항목을 앞에 세운다 (기획서 §6.1) ──
+
+
+async def test_card_route_comes_first() -> None:
+    """**카드가 대표 경로만 안내하고 세부는 챗봇이 맡기로 했다.**
+
+    그러려면 챗봇이 어느 카드에서 열렸는지 알아야 한다. R14 카드를 보다가
+    "다음에 뭘 해야 하나요"라고 물으면 그 문장만으로는 무슨 얘기인지 알 수 없다.
+    """
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R9),),
+    )
+    usecase = ChatUseCase(FakeLlm(triage), JsonInstitutionRepository())
+    events = [
+        e
+        async for e in usecase.run(
+            ChatCommand(message="다음에 뭘 해야 하나요", route_id="R14")
+        )
+    ]
+    routes = next(e for e in events if isinstance(e, TriageEvent)).routes
+    assert routes[0].key == "R14"
+    # **모델이 고른 것을 지우지 않는다.** 카드에서 열었어도 다른 것을 물을 수 있다.
+    assert "R9" in [r.key for r in routes]
+
+
+async def test_unknown_route_id_is_ignored() -> None:
+    """틀린 값으로 검색 범위를 좁히면 맞는 근거까지 걸러진다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R9),),
+    )
+    usecase = ChatUseCase(FakeLlm(triage), JsonInstitutionRepository())
+    events = [
+        e
+        async for e in usecase.run(
+            ChatCommand(message="신분증 어디서 만드나요", route_id="R99")
+        )
+    ]
+    routes = next(e for e in events if isinstance(e, TriageEvent)).routes
+    assert routes[0].key == "R9"

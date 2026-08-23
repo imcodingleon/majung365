@@ -24,6 +24,7 @@ from app.domains.chat.application.dto import (
     TriageEvent,
     Turn,
 )
+from app.domains.shared.routes import RouteId
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
 
@@ -35,6 +36,7 @@ CurrentAccount = Annotated[Account, Depends(require_account)]
 _MAX_MESSAGE_LEN = 2000
 _MAX_TURN_LEN = 4000
 _MAX_HISTORY = 20
+_KNOWN_ROUTES = frozenset(r.value for r in RouteId)
 
 
 class GateIn(BaseModel):
@@ -84,7 +86,14 @@ def _to_command(body: ChatIn) -> ChatCommand:
         for t in body.history[-_MAX_HISTORY:]
         if t.role in ("user", "assistant") and t.content.strip()
     ]
-    return ChatCommand(message=body.message.strip(), history=tuple(turns))
+    # 모르는 항목 코드는 버린다 — 틀린 값으로 검색 범위를 좁히면
+    # 맞는 근거까지 걸러진다. 그때는 없는 것으로 두고 triage가 판단한다.
+    route_id = body.route_id.strip().upper()
+    if route_id not in _KNOWN_ROUTES:
+        route_id = ""
+    return ChatCommand(
+        message=body.message.strip(), history=tuple(turns), route_id=route_id
+    )
 
 
 @router.post("/chat")

@@ -9,6 +9,7 @@ SSE 순서 계약: triage → evidence → text(델타*) → card* → done  (�
 
 import logging
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 from app.domains.chat.application.dto import (
     CardData,
@@ -29,6 +30,7 @@ from app.domains.chat.domain.prompts import build_guidance_context
 from app.domains.chat.domain.triage import (
     QuestionType,
     ReasonCode,
+    RoutePriority,
     TriageResult,
     reason_text,
 )
@@ -42,6 +44,8 @@ from app.domains.shared.routes import RouteId, label_for
 logger = logging.getLogger("majung.chat")
 
 _MAX_CARDS = 3
+# 카드에서 연 대화라도 항목을 무한정 늘리지 않는다.
+_MAX_ROUTES = 3
 # 근거 구절에서 프롬프트로 넘길 길이. 문서당 평균 2,300자라 전부 넣으면
 # 세 구절만으로 7천 자가 되고, 관련 없는 대목이 답변에 섞인다.
 _PASSAGE_CHARS = 700
@@ -73,6 +77,11 @@ class ChatUseCase:
             logger.warning("triage 실패 (upstream)")  # 사용자 입력 원문은 로그에 남기지 않는다
             yield ErrorEvent()
             return
+
+        # **카드에서 연 대화면 그 항목을 앞에 세운다**(§6.1). 사용자가 R14 카드를
+        # 보다가 "다음에 뭘 해야 하나요"라고 물으면, 그 문장만으로는 무슨 얘기인지
+        # 알 수 없다. 화면이 이미 답을 알고 있으니 모델이 다시 맞힐 이유가 없다.
+        triage = self._pin_route(triage, cmd.route_id)
 
         yield TriageEvent(routes=self._to_route_out(triage))
 
@@ -128,6 +137,24 @@ class ChatUseCase:
                 reason=reason_text(self._reason_for(p.route)),
             )
             for i, p in enumerate(triage.priorities)
+        )
+
+    def _pin_route(self, triage: TriageResult, route_id: str) -> TriageResult:
+        """카드에서 연 대화면 그 항목을 1순위로 올린다.
+
+        **triage를 건너뛰지 않고 순서만 바꾼다.** 사용자가 R14 카드에서 열었더라도
+        "신분증은 어디서 만드나요"를 물을 수 있다. 건너뛰면 그 답을 못 하고, 순서만
+        바꾸면 모델이 고른 것도 뒤에 남아 근거 검색이 둘 다 훑는다.
+        """
+        if not route_id:
+            return triage
+        try:
+            pinned = RouteId(route_id)
+        except ValueError:
+            return triage
+        rest = tuple(p for p in triage.priorities if p.route != pinned)
+        return replace(
+            triage, priorities=(RoutePriority(route=pinned), *rest)[:_MAX_ROUTES]
         )
 
     def _search_passages(self, message: str, triage: TriageResult) -> list[Passage]:
