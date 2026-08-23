@@ -52,6 +52,28 @@ function mergedDocs(task: IntakeTask): string[] {
   return [...seen];
 }
 
+/**
+ * 담당자에게 방문을 미리 알릴 수 있는 항목인지 (§7).
+ *
+ * **서버가 이 값을 주지 않는다.** 응답에 방문 관련 필드가 아예 없어서, 화면이 모르면
+ * §7 기능 전체가 어느 카드에도 안 나온다.
+ *
+ * 받는 기관이 정해진 항목만 해당한다. R10(은행)·R13(교정시설)·R14(법원)는 아무도
+ * 받지 않아 서버가 400으로 막으므로 여기서도 내지 않는다 — 누를 수 있게 두면
+ * 눌러 보고 나서야 안 된다는 것을 알게 된다.
+ *
+ * **서버가 갈래를 내려보내기 시작하면 이 표는 지운다.** 그때까지 화면이 판단할
+ * 근거가 필요해 둔다.
+ */
+const VISITABLE = new Set([
+  "R1", "R2", "R3", "R4", "R6", "R7", "R8",  // 법무보호복지공단
+  "R9", "R11", "R12", "R15",                  // 주민센터
+]);
+
+function visitLabelFor(routeId: string, label: string): string | undefined {
+  return VISITABLE.has(routeId) ? label : undefined;
+}
+
 export function toTask(item: IntakeTask): Task {
   // 창구 안내와 연락처는 첫 경로 것을 쓴다. 여럿일 때는 각 경로의 안내가 info 줄에 들어간다.
   const first = item.card.options[0];
@@ -68,6 +90,7 @@ export function toTask(item: IntakeTask): Task {
     must: item.blocks_others,
     info: info.filter(Boolean),
     verifiedNote: item.card.verified_note || undefined,
+    visitLabel: visitLabelFor(item.route_id, item.route_label),
     docs: mergedDocs(item),
     desk: first ? deskOf(first) : undefined,
     contact: first ? contactOf(first) : undefined,
