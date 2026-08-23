@@ -13,6 +13,7 @@ from slowapi.errors import RateLimitExceeded
 from app.domains.centers.adapter.inbound.api.router import router as centers_router
 from app.domains.chat.adapter.inbound.api.router import router as chat_router
 from app.domains.chat.adapter.outbound.external.claude_client import ClaudeChatLlm
+from app.domains.chat.adapter.outbound.external.cli_client import CliChatLlm
 from app.domains.chat.adapter.outbound.external.mock_client import MockChatLlm
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.application.usecase import ChatUseCase
@@ -82,11 +83,23 @@ def create_app() -> FastAPI:
     # 실제 Claude 호출마다 지출 카운트(콜 단위). 라우터는 스트림 전 check()로 조기 차단.
     # 키가 없거나 USE_MOCK_LLM=true면 무비용 Mock 사용(외부 호출 0).
     llm: ChatLlm
-    if settings.use_mock_llm or not settings.anthropic_api_key:
+    if settings.use_mock_llm:
         llm = MockChatLlm()
         logger.warning(
             "🤖 Mock LLM 사용 중 — 실제 Claude 호출 없음(무비용 데모). "
             "실 응답이 필요하면 .env에 ANTHROPIC_API_KEY 설정 + USE_MOCK_LLM=false"
+        )
+    elif settings.use_cli_llm:
+        llm = CliChatLlm(model=settings.claude_model_alias)
+        logger.warning(
+            "🧪 Claude Code CLI로 호출 중 — **검증용이다.** 구독 크레딧을 쓰고 "
+            "웹 검색이 꺼져 있다. 배포에는 ANTHROPIC_API_KEY를 쓴다"
+        )
+    elif not settings.anthropic_api_key:
+        llm = MockChatLlm()
+        logger.warning(
+            "🤖 Mock LLM 사용 중 — API 키가 없다(무비용 데모). "
+            "실 응답이 필요하면 .env에 ANTHROPIC_API_KEY 설정"
         )
     else:
         llm = ClaudeChatLlm(settings, record_call=spend.record)

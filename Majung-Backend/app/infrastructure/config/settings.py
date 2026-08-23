@@ -17,6 +17,12 @@ class Settings(BaseSettings):
     claude_model: str = "claude-sonnet-5"
     # Mock LLM 강제 사용(무비용 데모). 미설정이어도 키가 없으면 자동으로 Mock 사용.
     use_mock_llm: bool = False
+    # Claude Code CLI(`claude -p`)로 호출한다. **검증용이다** — API 키를 붙이기 전에
+    # 실제 모델 응답을 보려는 용도이고, 배포에는 쓰지 않는다(구독 크레딧에 묶인다).
+    use_cli_llm: bool = False
+    # CLI에 넘길 모델 별칭(sonnet·opus·fable). 실 API의 claude_model과 별개다 —
+    # CLI는 모델 ID가 아니라 별칭을 받는다.
+    claude_model_alias: str = "sonnet"
     # 웹 검색 허용 도메인 (기획서 §6.4 확정, 24개). 쉼표 구분.
     #
     # 기존 7개로는 수집한 근거 문서의 절반 가까운 도메인에 접근할 수 없었다 —

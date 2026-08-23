@@ -76,6 +76,19 @@ _ADDRESS = re.compile(
 # 치통 상담이 "[이름] 아파요"가 되는 쪽이 이 사용자층에게 더 나쁘다.
 _SURNAME_SUFFIX = re.compile(r"(?<![가-힣])([가-힣])씨")
 
+# 자기소개 구문에서 이름을 잡는다. **가입에서 이름을 받기 전에도 막아야 한다** —
+# mask_text(name=...)은 아는 이름만 지우는데, 사용자는 우리가 모르는 이름을
+# 대화에 적는다(다른 사람 이름이거나, 프로필이 아직 없거나).
+#
+# 문맥 강도로 둘로 나눈다. "제 이름은"은 뒤가 이름임이 확실하지만,
+# "저는"은 "저는 통장이 없어요"처럼 이름이 아닌 말이 훨씬 흔하다.
+_STRONG_INTRO = re.compile(
+    r"(제?\s?이름은|이름이)\s*([가-힣]{2,4})(?=[\s,.]|이라|라고|입니|이에|예요|이고|인데|$)"
+)
+_WEAK_INTRO = re.compile(
+    r"(?:저는|저|제가|나는|난)\s*([가-힣]{2,4})(?=이라고|라고|입니다|이에요|예요|인데|이고)"
+)
+
 # 흔한 성. 성만 밝히는 경우를 잡되, 성이 아닌 한 글자까지 지우지 않으려면 목록이 필요하다.
 _SURNAMES: frozenset[str] = frozenset(
     "강고공곽구권금기김나남노도류마명문민박반방배백변서석선설성소손송신심안양어엄여염"
@@ -169,6 +182,29 @@ def _name_variants(name: str) -> list[str]:
     return sorted(variants, key=len, reverse=True)
 
 
+def _mask_introductions(text: str) -> str:
+    """자기소개로 밝힌 이름을 지운다.
+
+    강한 문맥("제 이름은 ○○○")은 성 목록을 보지 않는다 — 뒤에 오는 것이 이름임이
+    구문으로 확실하고, 흔치 않은 성을 놓치면 그게 더 나쁘다.
+
+    약한 문맥("저는 ○○○입니다")은 성 목록으로 한 번 거른다. 걸러내지 않으면
+    "저는 출소자입니다"·"저는 학생이고"까지 지워져 문장이 무너진다.
+    """
+
+    def strong(m: re.Match[str]) -> str:
+        return f"{m.group(1)} {MASK_NAME}"
+
+    def weak(m: re.Match[str]) -> str:
+        name = m.group(1)
+        if name[0] not in _SURNAMES:
+            return m.group(0)
+        return m.group(0).replace(name, MASK_NAME)
+
+    text = _STRONG_INTRO.sub(strong, text)
+    return _WEAK_INTRO.sub(weak, text)
+
+
 def _mask_surname_only(text: str) -> str:
     """"김씨"·"박가"처럼 성만 밝히는 경우. 성 목록에 있는 글자일 때만 지운다 —
     한 글자를 무조건 지우면 "이 씨앗"까지 걸린다."""
@@ -192,6 +228,8 @@ def mask_text(text: str, *, name: str | None = None) -> str:
     if name:
         for variant in _name_variants(name):
             masked = masked.replace(variant, MASK_NAME)
+    # 아는 이름을 지운 뒤에도 모르는 이름이 남는다 — 자기소개 구문으로 한 번 더 훑는다.
+    masked = _mask_introductions(masked)
     masked = _mask_surname_only(masked)
     masked = _EMAIL.sub(MASK_EMAIL, masked)
     masked = _ADDRESS.sub(MASK_ADDRESS, masked)
