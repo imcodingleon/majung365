@@ -6,6 +6,7 @@ import { useMemo, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
@@ -45,6 +46,10 @@ type Props = {
   answers?: IntakeAnswers;
   /** 무슨 일로 가는지의 지원 항목 코드. 어느 분야를 기본으로 켤지 정한다. */
   routeId?: string;
+  /** 서버로 보내는 중. 두 번 눌러 두 건이 가는 것을 막는다. */
+  sending?: boolean;
+  /** 보내지 못했을 때의 이유. 하루 상한에 걸린 것도 여기로 온다 (§7.5). */
+  error?: string | null;
 };
 
 function SlotPicker({
@@ -110,6 +115,8 @@ export function VisitRequestSheet({
   onClose,
   answers,
   routeId,
+  sending,
+  error,
 }: Props) {
   const slots = useMemo(() => buildTimeSlots(today ?? new Date()), [today]);
   const [first, setFirst] = useState<string | null>(null);
@@ -374,16 +381,25 @@ export function VisitRequestSheet({
             </Text>
           </View>
 
+          {/* **실패를 단추 위에 둔다.** 아래에 두면 화면 밖으로 밀려 못 보고 다시 누른다 */}
+          {error ? (
+            <NoteBox tone="alert" className="mt-5">
+              {error}
+            </NoteBox>
+          ) : null}
+
           <Pressable
             onPress={send}
-            disabled={!canSend}
+            disabled={!canSend || sending}
             accessibilityRole="button"
-            accessibilityState={{ disabled: !canSend }}
+            accessibilityState={{ disabled: !canSend || sending, busy: sending }}
             accessibilityLabel="알림 보내기"
             className="mt-5 items-center rounded-2xl py-4 active:opacity-90"
-            style={{ backgroundColor: canSend ? COLORS.brand : COLORS.brandMuted }}
+            style={{ backgroundColor: canSend && !sending ? COLORS.brand : COLORS.brandMuted }}
           >
-            <Text className="text-body-lg font-extrabold text-white">알림 보내기</Text>
+            <Text className="text-body-lg font-extrabold text-white">
+              {sending ? "보내는 중이에요" : "알림 보내기"}
+            </Text>
           </Pressable>
 
           {!canSend ? (

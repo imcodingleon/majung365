@@ -37,4 +37,10 @@ export type {
   UpdateMeRequest,
 } from "./account";
 
-export type { StaffVisitAction, StaffVisitResponse } from "./staffVisit";
+export type { SharedAnswerOut, StaffVisitAction, StaffVisitResponse } from "./staffVisit";
+
+export type {
+  SharedAnswerInput,
+  VisitCreateRequest,
+  VisitResponse,
+} from "./visitRequest";

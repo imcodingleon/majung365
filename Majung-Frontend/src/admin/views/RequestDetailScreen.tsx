@@ -143,6 +143,37 @@ export function RequestDetailScreen({
           <NoteBox tone="warn" className="mt-3">{missing.join(" · ")}을(를) 안 가져오십니다. 미리 안내가 필요합니다.</NoteBox>
         ) : null}
 
+        {/* 본인이 함께 보내기로 한 답변 (§7.4-1).
+            **동의하지 않았으면 구역 자체가 없다.** 빈 구역을 두면 "동의를 안 했구나"가
+            드러나고, 그것 자체가 담당자에게 주는 정보가 된다.
+            순서는 서버가 방문 목적에 가깝게 정렬해 보낸 것이므로 건드리지 않는다 */}
+        {request.sharedAnswers.length > 0 ? (
+          <>
+            <Text className="mb-2 mt-8 text-body-lg font-extrabold text-ink-strong">
+              본인이 미리 알려 온 것
+            </Text>
+            {/* **말하지 않은 것을 물으면 안 된다.** 창구에서 다시 설명하지 않아도 되게
+                하려고 미리 받은 답이므로, 이 목록이 상담 범위를 넓히는 근거가 아니다 */}
+            <Text className="mb-3 text-caption text-ink-sub">
+              본인이 동의해 보낸 내용입니다. 여기 없는 것은 묻지 않으셔도 됩니다.
+            </Text>
+            <View className="rounded-2xl bg-white px-4 py-2">
+              {request.sharedAnswers.map((answer, index) => (
+                <View
+                  key={`${answer.route_id}-${index}`}
+                  className={index === 0 ? "py-3" : "border-t border-line py-3"}
+                >
+                  <Text className="text-caption font-bold text-ink-header">{answer.section}</Text>
+                  <Text className="mt-1 text-body text-ink-sub">{answer.question}</Text>
+                  <Text className="mt-1 text-body-lg font-bold text-ink-strong">
+                    {answer.answer}
+                  </Text>
+                </View>
+              ))}
+            </View>
+          </>
+        ) : null}
+
         <View className="mt-8">
           {request.status === "sent" ? (
             <Button label="확인했습니다" tone="primary" onPress={onAcknowledge} />

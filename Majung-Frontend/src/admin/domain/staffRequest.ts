@@ -3,6 +3,7 @@
 // **최소 노출 원칙이다.** 담당자가 방문 응대에 필요한 것만 담는다.
 // 죄목과 생일은 여기에 없다. 타입에 자리를 두지 않는 것이 필터로 거르는 것보다 확실하다.
 
+import type { SharedAnswerOut } from "@/shared/types/staffVisit";
 import type { VisitStatus } from "@/shared/types/visit";
 
 export type StaffRequest = {
@@ -25,6 +26,13 @@ export type StaffRequest = {
   status: VisitStatus;
   /** 받은 시각. 사람이 읽는 형태다. */
   receivedAt: string;
+  /**
+   * 본인이 함께 보내기로 한 초기 진단 답변 (§7.4-1).
+   *
+   * **서버가 정렬해 보낸 순서 그대로다.** 화면에서 다시 정렬하지 않는다.
+   * 동의하지 않았으면 비어 있으며, 그때는 구역 자체를 그리지 않는다.
+   */
+  sharedAnswers: readonly SharedAnswerOut[];
 };
 
 /**

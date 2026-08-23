@@ -111,6 +111,8 @@ export default function TodayRoute() {
           routeId={visitTask.id}
           onSubmit={visit.submit}
           onClose={visit.closeForm}
+          sending={visit.sending}
+          error={visit.error}
         />
       ) : null}
 

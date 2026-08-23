@@ -20,6 +20,7 @@ import type {
   UpdateMeRequest,
 } from "../types/account";
 import type { StaffVisitAction, StaffVisitResponse } from "../types/staffVisit";
+import type { VisitCreateRequest, VisitResponse } from "../types/visitRequest";
 import type {
   StaffLoginRequest,
   StaffLoginResponse,
@@ -138,6 +139,43 @@ export async function deleteMe(token: string): Promise<void> {
   if (!res.ok && res.status !== 401 && res.status !== 404) {
     throw new ApiError(res.status, await errorMessage(res));
   }
+}
+
+// ── 방문 요청 (§7) ────────────────────────────────────────────────────
+
+/**
+ * POST /api/visits — 담당자에게 방문을 미리 알린다.
+ *
+ * **상한이 서버에서 판정된다** (§7.5). 하루 3건·미확정 5건·같은 항목 1건을 넘으면
+ * 거부되고 그 이유가 문구로 온다. 화면은 막지 않고 이유를 그대로 보여준다.
+ */
+export async function postVisit(token: string, req: VisitCreateRequest): Promise<VisitResponse> {
+  const res = await fetch(`${API_BASE}/api/visits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as VisitResponse;
+}
+
+/** GET /api/visits — 내가 보낸 방문 요청들. 확정되면 만날 사람과 장소가 함께 온다. */
+export async function getVisits(token: string): Promise<VisitResponse[]> {
+  const res = await fetch(`${API_BASE}/api/visits`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as VisitResponse[];
+}
+
+/** POST /api/visits/{id}/cancel — 보낸 요청을 거둔다. */
+export async function cancelVisit(token: string, id: string): Promise<VisitResponse> {
+  const res = await fetch(`${API_BASE}/api/visits/${encodeURIComponent(id)}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as VisitResponse;
 }
 
 // ── 담당자 (§8.2) ─────────────────────────────────────────────────────

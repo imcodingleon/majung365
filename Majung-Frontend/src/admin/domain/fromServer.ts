@@ -53,5 +53,7 @@ export function toStaffRequest(v: StaffVisitResponse): StaffRequest {
     note: v.note || undefined,
     status: v.status,
     receivedAt: receivedLabel(v.created_at),
+    // 서버가 정렬해 보낸 순서를 그대로 둔다.
+    sharedAnswers: v.shared_answers ?? [],
   };
 }

@@ -6,6 +6,15 @@
 // 프론트 타입에도 자리를 두지 않는 것이 필터로 거르는 것보다 확실하다.
 import type { VisitStatus } from "./visit";
 
+/** 담당자에게 온 진단 답변 한 줄. **id가 아니라 사람이 읽는 문장으로 온다.** */
+export interface SharedAnswerOut {
+  /** 어느 지원 항목의 문항인지. 서버가 이 값으로 정렬한다. */
+  route_id: string;
+  section: string;
+  question: string;
+  answer: string;
+}
+
 export interface StaffVisitResponse {
   id: string;
   /** 무슨 일로 오는지. 지원 항목 코드(R1~R15)다. */
@@ -23,6 +32,15 @@ export interface StaffVisitResponse {
   /** 확정된 만날 장소. 확정 전에는 빈 문자열이다. */
   meeting_place: string;
   created_at: string | null;
+  /**
+   * 본인이 함께 보내기로 한 초기 진단 답변 (§7.4-1).
+   *
+   * **서버가 방문 목적에 가까운 순서로 정렬해 보낸다** — 그 방문의 항목, 같은 기관에서
+   * 처리하는 항목, 다른 기관 순이다. **화면이 순서를 다시 매기지 않는다.**
+   *
+   * 동의하지 않았으면 빈 배열이다. 예전 요청에는 이 필드가 아예 없을 수 있다.
+   */
+  shared_answers?: SharedAnswerOut[];
 }
 
 /**
