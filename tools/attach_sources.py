@@ -28,9 +28,33 @@ MANUAL: dict[str, list[str]] = {
         "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016",
         "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=666&ccfNo=4&cciNo=1&cnpClsNo=1",
     ],
+    # 주민등록 "재등록"(말소된 등록을 되살림)이지 주민등록증 재발급이 아니다. 다른 절차다.
     "identity-resident-registration": [
-        "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
-        "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_2/screen.do",
+        "https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010&CappBizCD=13100000011",
+        # 수감 중 말소된 경우 수감 사실 증명서류로 과태료가 면제된다는 안내.
+        # 지자체(경상북도) 자료라 인용할 때 출처에 지자체명이 드러나야 한다.
+        "https://gb.go.kr/Main/chi/page.do?mnu_uid=6664&dept_code=&dept_name=&BD_CODE=life_faq"
+        "&bdName=&cmd=2&Start=60&B_NUM=58&B_STEP=2045299&B_LEVEL=0&key=4&word=&p1=0&p2=0"
+        "&V_NUM=108&tbbscode1=life_faq",
+    ],
+    "identity-proof-of-release": [
+        "https://www.corrections.go.kr/corrections/1075/subview.do",
+        "https://www.kics.go.kr/",
+    ],
+    # 계좌 개설에서 실제로 부딪히는 것은 한도제한계좌다.
+    "identity-bank-account": [
+        "https://www.fsc.go.kr/no010101/82205",
+        "https://www.shinhangroup.com/kr/archive/insight/extend/detail/32891",
+        "https://www.fsc.go.kr/no010101/71982?curPage=435",
+    ],
+    # 정지 사유마다 근거가 다르다 — 압류는 법원, 한도제한은 금융위, 은행 자체 제한은 근거가 없다.
+    # 문항 Q3-2-1이 세 갈래를 나눠 묻고 있으니 KB를 쪼갤 때 출처도 나눈다. 지금은 둘만 둔다.
+    "identity-bank-account-unblock": [
+        "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA18M02",
+        "https://www.fsc.go.kr/no010101/82205",
+    ],
+    "debt-legal-aid": [
+        "https://www.helplaw24.go.kr/",
     ],
     "welfare-basic-livelihood": [
         "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do"
@@ -57,13 +81,18 @@ MANUAL: dict[str, list[str]] = {
     "debt-credit-recovery": [
         "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490",
     ],
+    # 06_03_2.do는 "기관 찾기"(지부 목록)라 숙식 제도 안내가 아니다.
     "housing-koreha-residence": [
-        "https://www.koreha.or.kr/sub/06_03_2.do",
+        "https://koreha.or.kr/sub/02_01.do?MN=207&MN1=3&MN2=16&MN3=207",
     ],
+    # 이 KB 항목은 이름·요약이 정부 긴급복지를 가리키므로 그 문서를 붙인다.
+    # 다만 route_ids가 R4(공단 주거지원)라 항목의 정체가 어긋나 있다 — §12에 올렸다.
     "housing-emergency-welfare-housing": [
-        "https://www.koreha.or.kr/sub/02_01_16.do",
+        "https://www.mohw.go.kr/menu.es?mid=a10708010100",
     ],
+    # 취업지원(02_01_4)이 먼저다. 직업훈련(02_01_3)도 이 제도의 일부라 함께 둔다.
     "employment-koreha-job": [
+        "https://www.koreha.or.kr/sub/02_01_4.do",
         "https://www.koreha.or.kr/sub/02_01_3.do",
     ],
 }

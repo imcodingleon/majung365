@@ -50,10 +50,21 @@ def test_verified_institutions_have_sources() -> None:
 
 
 def test_unverified_institutions_show_nothing() -> None:
-    """근거를 확보하지 못한 제도는 출처도 날짜도 비운다 — 지어내지 않는다."""
+    """근거를 확보하지 못한 제도는 출처도 날짜도 비운다 — 지어내지 않는다.
+
+    지금은 18건 전부 근거가 있어 이 목록이 비어 있다. 새 제도가 근거 없이 들어오면
+    그때 이 규칙이 지켜지는지 여기서 확인된다.
+    """
     repo = JsonInstitutionRepository()
-    unverified = [i for i in repo.all() if not i.verified_at]
-    assert unverified, "전부 확인됐다면 이 테스트를 지워도 된다"
-    for inst in unverified:
+    for inst in repo.all():
+        if inst.verified_at:
+            continue
         assert not inst.source_urls
         assert verified_note(inst.verified_at) == ""
+
+
+def test_every_institution_has_a_source() -> None:
+    """근거 없는 안내가 화면에 나가지 않는다. 새 제도를 근거 없이 넣으면 여기서 걸린다."""
+    repo = JsonInstitutionRepository()
+    missing = [i.id for i in repo.all() if not i.source_urls]
+    assert not missing, f"출처가 없는 제도: {missing}"
