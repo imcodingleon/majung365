@@ -29,19 +29,6 @@ type Props = {
   onClose: () => void;
 };
 
-/**
- * "여기 나온 곳은 마중365가 2026년 8월 22일에 확인했어요."
- *
- * **무엇을 확인했는지를 문장 앞에 둔다.** 카드와 채팅의 확인 문구와 같은 형태이며,
- * 대상만 다르다 — 저기는 안내이고 여기는 기관 목록이다. 형태가 어긋나면 사용자가
- * 같은 뜻을 화면마다 다르게 읽는다.
- */
-function checkedSentence(isoDate: string): string {
-  const [y, m, d] = isoDate.split("-");
-  if (!y || !m || !d) return "";
-  return `여기 나온 곳은 마중365가 ${y}년 ${Number(m)}월 ${Number(d)}일에 확인했어요.`;
-}
-
 function InstitutionCard({ item }: { item: Institution }) {
   const dial = item.phone.replace(/[^0-9]/g, "");
   return (
@@ -192,11 +179,12 @@ export function NearbyScreen({
                   </View>
                 ) : null}
 
-                {institutions.checkedAt ? (
-                  <Text className="mt-2 text-caption text-ink-muted">
-                    {checkedSentence(institutions.checkedAt)}
-                  </Text>
-                ) : null}
+                {/* **확인 문장을 내지 않는다.** 화면이 들고 있던 날짜는 다른 파일의
+                    것이었고, 이 목록의 데이터에는 확인 날짜가 없다. 서버가 항목마다
+                    검증 여부와 날짜를 실어 주면 검증된 것에만 붙인다.
+
+                    확인 날짜가 아예 없는 편이 틀린 날짜가 있는 것보다 낫다 —
+                    §6.4가 "확인하지 않은 날짜를 지어내지 않는다"고 정한 자리다*/}
               </>
             )}
           </View>

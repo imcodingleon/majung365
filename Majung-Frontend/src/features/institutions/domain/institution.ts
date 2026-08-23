@@ -25,9 +25,14 @@ export type RegionInstitutions = {
   branches: readonly Institution[];
   /** 기초정신건강복지센터. 시군구를 알아야 한다. */
   centers: readonly Institution[];
-  /** 마중365가 이 목록을 확인한 날짜(YYYY-MM-DD). */
-  checkedAt?: string;
 };
+
+// **확인 날짜 필드를 두지 않는다.** 이 목록의 데이터에는 확인 날짜가 없다.
+// 자리를 만들어 두면 다른 데서 가져온 날짜가 채워지고, 그것이 이 목록을 확인한
+// 날짜인 것처럼 화면에 나간다. 실제로 그렇게 되어 있었다.
+//
+// 서버가 항목마다 검증 여부와 날짜를 실어 주면 그때 항목 단위로 둔다 —
+// 지금 이 목록은 공식 검증된 것과 예시가 섞여 있어 묶음 하나로 말할 수 없다.
 
 /** 어느 지원 항목에서 어떤 공단 기관을 안내할지 (§5.4). */
 export function branchKindFor(routeId: string): BranchKind {
