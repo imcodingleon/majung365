@@ -53,6 +53,20 @@ def can_move(current: VisitStatus, target: VisitStatus) -> bool:
 
 
 @dataclass(frozen=True)
+class SharedAnswer:
+    """담당자에게 보내는 초기 진단 답 한 줄 (§7.4).
+
+    **문항 id가 아니라 사람이 읽는 문장으로 담는다.** 담당자 화면은 문항 정의를
+    알 수 없고, 알게 하면 그 정의가 두 군데에 있게 된다.
+    """
+
+    route_id: str
+    section: str
+    question: str
+    answer: str
+
+
+@dataclass(frozen=True)
 class VisitRequest:
     id: UUID
     user_id: UUID
@@ -76,6 +90,11 @@ class VisitRequest:
 
     proposed_at: datetime | None = None
     cancel_reason: str = ""
+
+    # ── 담당자에게 보낸 진단 답변 (§7.4) ──
+    # **동의가 있을 때만 채워진다.** 없으면 빈 튜플이고, 담당자 화면에도 안 나간다.
+    shared_answers: tuple[SharedAnswer, ...] = ()
+    shared_answers_consented_at: datetime | None = None
 
     # ── 채팅 읽음 표시 (§7.3) ──
     # 참여자가 요청한 사람과 담당 기관 둘뿐이라 별도 테이블 대신 여기에 둔다.

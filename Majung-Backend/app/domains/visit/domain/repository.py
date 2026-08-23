@@ -24,6 +24,8 @@ class VisitRepository(Protocol):
         preferred_at_2: datetime | None,
         prepared_docs: list[str],
         note: str,
+        shared_answers: list[dict[str, str]] | None = None,
+        consented_at: datetime | None = None,
     ) -> VisitRequest: ...
 
     def by_user(self, user_id: UUID) -> list[VisitRequest]: ...

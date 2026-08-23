@@ -7,6 +7,7 @@
 보냈든 한 화면에서 받아야 시연이 되지만, 확장 시점에 설정 하나로 좁혀진다.
 """
 
+import json
 import logging
 from datetime import datetime
 from typing import Any
@@ -15,7 +16,12 @@ from uuid import UUID
 from supabase import Client
 
 from app.domains.staff.domain.entity import OrgKind
-from app.domains.visit.domain.entity import OPEN_STATUSES, VisitRequest, VisitStatus
+from app.domains.visit.domain.entity import (
+    OPEN_STATUSES,
+    SharedAnswer,
+    VisitRequest,
+    VisitStatus,
+)
 from app.infrastructure.security.crypto import CryptoError, FieldCipher
 
 logger = logging.getLogger("majung.visit")
@@ -63,6 +69,32 @@ class SupabaseVisitRepository:
             cancel_reason=str(row.get("cancel_reason") or ""),
             user_read_at=_parse_ts(row.get("user_read_at")),
             staff_read_at=_parse_ts(row.get("staff_read_at")),
+            shared_answers=self._shared_answers(row),
+            shared_answers_consented_at=_parse_ts(
+                row.get("shared_answers_consented_at")
+            ),
+        )
+
+    def _shared_answers(self, row: dict[str, Any]) -> tuple[SharedAnswer, ...]:
+        raw = row.get("shared_answers_enc")
+        if not raw:
+            return ()
+        try:
+            rows = json.loads(self._cipher.decrypt(str(raw)))
+        except (CryptoError, ValueError):
+            # 한 건이 깨졌다고 요청 자체가 안 열리면 안 된다. 다만 일부만 보여주면
+            # 담당자가 그것을 전부로 오해하므로 통째로 뺀다.
+            logger.warning("공유 답변을 읽지 못했다")
+            return ()
+        return tuple(
+            SharedAnswer(
+                route_id=str(r.get("route_id", "")),
+                section=str(r.get("section", "")),
+                question=str(r.get("question", "")),
+                answer=str(r.get("answer", "")),
+            )
+            for r in rows
+            if isinstance(r, dict)
         )
 
     def _rows(self, result: object) -> list[dict[str, Any]]:
@@ -104,6 +136,8 @@ class SupabaseVisitRepository:
         preferred_at_2: datetime | None,
         prepared_docs: list[str],
         note: str,
+        shared_answers: list[dict[str, str]] | None = None,
+        consented_at: datetime | None = None,
     ) -> VisitRequest:
         result = (
             self._db.table("visit_request")
@@ -118,6 +152,20 @@ class SupabaseVisitRepository:
                     ),
                     "prepared_docs": prepared_docs,
                     "note_enc": self._cipher.encrypt(note) if note else None,
+                    # 동의가 없으면 답변도 없다. 어댑터가 먼저 막지만 여기서도
+                    # 짝을 지어 둔다 — 한쪽만 저장되는 경우를 만들지 않는다.
+                    "shared_answers_enc": (
+                        self._cipher.encrypt(
+                            json.dumps(shared_answers, ensure_ascii=False)
+                        )
+                        if shared_answers and consented_at
+                        else None
+                    ),
+                    "shared_answers_consented_at": (
+                        consented_at.isoformat()
+                        if shared_answers and consented_at
+                        else None
+                    ),
                 }
             )
             .execute()

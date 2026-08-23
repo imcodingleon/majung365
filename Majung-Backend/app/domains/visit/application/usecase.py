@@ -48,6 +48,8 @@ class VisitUseCase:
         prepared_docs: list[str],
         note: str,
         now: datetime,
+        shared_answers: list[dict[str, str]] | None = None,
+        share_consented: bool = False,
     ) -> VisitRequest:
         try:
             route = RouteId(route_id)
@@ -71,6 +73,14 @@ class VisitUseCase:
         if not verdict.allowed:
             raise VisitError("limit", verdict.message, verdict)
 
+        if shared_answers and not share_consented:
+            # **동의 없이 받지 않는다.** §3.4의 제공 동의는 항목을 "성명, 방문
+            # 희망 일시, 방문 목적"으로 적고 있어 진단 답변은 범위 밖이다.
+            # 받아 두고 나중에 동의를 받는 순서는 성립하지 않는다.
+            raise VisitError(
+                "no_share_consent", "답변을 함께 보내려면 먼저 동의가 필요해요."
+            )
+
         return self.visits.create(
             user_id=user_id,
             route_id=route_id,
@@ -79,6 +89,8 @@ class VisitUseCase:
             preferred_at_2=preferred_at_2,
             prepared_docs=prepared_docs,
             note=note,
+            shared_answers=shared_answers,
+            consented_at=now if shared_answers and share_consented else None,
         )
 
     def my_visits(self, user_id: UUID) -> list[VisitRequest]:

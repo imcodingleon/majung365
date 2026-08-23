@@ -16,10 +16,11 @@ from pydantic import BaseModel, Field
 
 from app.domains.account.adapter.inbound.api.deps import require_account
 from app.domains.account.domain.entity import Account
+from app.domains.shared.routes import RouteId
 from app.domains.staff.adapter.inbound.api.deps import require_staff
-from app.domains.staff.domain.entity import Staff
+from app.domains.staff.domain.entity import Staff, org_for
 from app.domains.visit.application.usecase import VisitError, VisitUseCase
-from app.domains.visit.domain.entity import VisitRequest, VisitStatus
+from app.domains.visit.domain.entity import SharedAnswer, VisitRequest, VisitStatus
 from app.infrastructure.config.settings import get_settings
 
 router = APIRouter(prefix="/api", tags=["visit"])
@@ -29,6 +30,8 @@ CurrentStaff = Annotated[Staff, Depends(require_staff)]
 
 _MAX_NOTE = 500
 _MAX_DOCS = 20
+# 분야 여섯에 항목 열넷이라 그보다 많이 올 이유가 없다.
+_MAX_SHARED = 20
 
 # 거절 사유를 상태 코드로. 표에 없으면 400이다.
 _STATUS: dict[str, int] = {
@@ -36,6 +39,7 @@ _STATUS: dict[str, int] = {
     "bad_transition": 409,
     "not_found": 404,
     "other_org": 403,
+    "no_share_consent": 403,
 }
 
 
@@ -48,6 +52,26 @@ def _usecase(request: Request) -> VisitUseCase:
     return usecase
 
 
+class SharedAnswerIn(BaseModel):
+    """담당자에게 보낼 진단 답 한 줄(§7.4).
+
+    **문항 id가 아니라 사람이 읽는 문장으로 받는다.** 문항 문구는 화면이 정본으로
+    들고 있어서, 서버가 그것을 알면 같은 정의가 두 군데 있게 된다.
+    """
+
+    route_id: str = Field(min_length=2, max_length=4)
+    section: str = Field(max_length=40)
+    question: str = Field(min_length=1, max_length=200)
+    answer: str = Field(min_length=1, max_length=300)
+
+
+class SharedAnswerOut(BaseModel):
+    route_id: str
+    section: str
+    question: str
+    answer: str
+
+
 class VisitCreateIn(BaseModel):
     route_id: str = Field(min_length=2, max_length=4)
     preferred_at_1: datetime
@@ -57,6 +81,11 @@ class VisitCreateIn(BaseModel):
     prepared_docs: list[str] = Field(default_factory=list, max_length=_MAX_DOCS)
     # 미리 말해 두고 싶은 것이 있는 사람을 위한 자리다. 선택 사항이다.
     note: str = Field(default="", max_length=_MAX_NOTE)
+    # 담당자가 미리 보면 더 자세히 안내할 수 있다(§7.4). **동의가 있어야 받는다.**
+    shared_answers: list[SharedAnswerIn] = Field(
+        default_factory=list, max_length=_MAX_SHARED
+    )
+    share_consented: bool = False
 
 
 class VisitOut(BaseModel):
@@ -133,6 +162,8 @@ def create_visit(
             prepared_docs=body.prepared_docs,
             note=body.note.strip(),
             now=datetime.now(UTC),
+            shared_answers=[a.model_dump() for a in body.shared_answers],
+            share_consented=body.share_consented,
         )
     except VisitError as err:
         raise _fail(err) from None
@@ -175,6 +206,8 @@ class StaffVisitOut(BaseModel):
     note: str
     meeting_place: str
     created_at: datetime | None
+    # 사용자가 동의하고 보낸 진단 답변(§7.4). 동의가 없으면 빈 목록이다.
+    shared_answers: list[SharedAnswerOut] = []
 
 
 class StaffActionIn(BaseModel):
@@ -197,7 +230,42 @@ def _staff_out(r: VisitRequest, user_name: str) -> StaffVisitOut:
         note=r.note,
         meeting_place=r.meeting_place,
         created_at=r.created_at,
+        shared_answers=[
+            SharedAnswerOut(
+                route_id=a.route_id,
+                section=a.section,
+                question=a.question,
+                answer=a.answer,
+            )
+            for a in _sorted_answers(r)
+        ],
     )
+
+
+def _sorted_answers(r: VisitRequest) -> list[SharedAnswer]:
+    """방문 목적에 가까운 답이 위로 온다(§7.4).
+
+    **담당자는 위에서부터 읽는다.** 주민등록 재발급하러 온 사람의 답 중에 신분
+    관련이 맨 아래 있으면 그 방문에 필요한 것을 가장 늦게 본다.
+
+    1순위  그 방문의 항목
+    2순위  같은 기관에서 처리하는 항목
+    3순위  나머지
+    """
+    same_org = {
+        route.value
+        for route in RouteId
+        if org_for(route) == r.org_kind
+    }
+
+    def rank(a: SharedAnswer) -> tuple[int, str]:
+        if a.route_id == r.route_id:
+            return (0, a.route_id)
+        if a.route_id in same_org:
+            return (1, a.route_id)
+        return (2, a.route_id)
+
+    return sorted(r.shared_answers, key=rank)
 
 
 def _name_of(request: Request, user_id: UUID) -> str:

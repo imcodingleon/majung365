@@ -13,7 +13,12 @@ import pytest
 
 from app.domains.staff.domain.entity import OrgKind, Staff
 from app.domains.visit.application.usecase import VisitError, VisitUseCase
-from app.domains.visit.domain.entity import VisitRequest, VisitStatus, can_move
+from app.domains.visit.domain.entity import (
+    SharedAnswer,
+    VisitRequest,
+    VisitStatus,
+    can_move,
+)
 from app.domains.visit.domain.limits import LimitKind
 
 NOW = datetime(2026, 8, 23, 9, 0, tzinfo=UTC)
@@ -37,6 +42,8 @@ class FakeVisitRepository:
         preferred_at_2: datetime | None,
         prepared_docs: list[str],
         note: str,
+        shared_answers: list[dict[str, str]] | None = None,
+        consented_at: datetime | None = None,
     ) -> VisitRequest:
         created = VisitRequest(
             id=uuid4(),
@@ -49,6 +56,16 @@ class FakeVisitRepository:
             prepared_docs=tuple(prepared_docs),
             note=note,
             created_at=NOW,
+            shared_answers=tuple(
+                SharedAnswer(
+                    route_id=str(a.get("route_id", "")),
+                    section=str(a.get("section", "")),
+                    question=str(a.get("question", "")),
+                    answer=str(a.get("answer", "")),
+                )
+                for a in (shared_answers or [])
+            ),
+            shared_answers_consented_at=consented_at,
         )
         self.rows[created.id] = created
         return created
@@ -357,3 +374,62 @@ def test_every_staff_read_is_logged() -> None:
     # 목록 열람은 대상이 특정되지 않고, 상태 변경은 그 사용자를 가리킨다.
     assert log.entries[0][2] is None
     assert log.entries[1][2] == USER
+
+
+# ── 담당자에게 보내는 진단 답변 (기획서 §7.4) ──
+
+
+ANSWERS = [
+    {"route_id": "R14", "section": "기타·권리구제",
+     "question": "빚 문제는 어떤 상황인가요?", "answer": "법원에 신청해 진행 중이에요"},
+    {"route_id": "R9", "section": "신분·행정",
+     "question": "신분증은 지금 어떤 상황인가요?", "answer": "잃어버려서 없어요"},
+    {"route_id": "R11", "section": "주거",
+     "question": "주민등록 주소는요?", "answer": "말소됐어요"},
+]
+
+
+def test_answers_need_consent() -> None:
+    """**동의 없이 받지 않는다.**
+
+    §3.4의 제공 동의는 항목을 "성명, 방문 희망 일시, 방문 목적"으로 적고 있어
+    진단 답변은 범위 밖이다. 받아 두고 나중에 동의를 받는 순서는 성립하지 않는다.
+    """
+    usecase, _, _ = make_usecase()
+    with pytest.raises(VisitError) as err:
+        send(usecase, "R9", shared_answers=ANSWERS, share_consented=False)
+    assert err.value.code == "no_share_consent"
+
+
+def test_consented_answers_are_kept_with_the_visit() -> None:
+    """**상시 저장이 아니라 그 요청에만 붙는다.** 보관 기간도 요청을 따라간다(§9.5)."""
+    usecase, _, _ = make_usecase()
+    created = send(usecase, "R9", shared_answers=ANSWERS, share_consented=True)
+    assert len(created.shared_answers) == 3
+    assert created.shared_answers_consented_at == NOW
+
+
+def test_no_answers_means_no_consent_record() -> None:
+    """보내지 않았으면 동의 기록도 남지 않는다 — 동의만 있고 내용이 없는 행을
+    만들지 않는다."""
+    usecase, _, _ = make_usecase()
+    created = send(usecase, "R9", share_consented=True)
+    assert created.shared_answers == ()
+    assert created.shared_answers_consented_at is None
+
+
+def test_answers_are_sorted_by_relevance_to_the_visit() -> None:
+    """**담당자는 위에서부터 읽는다**(§7.4).
+
+    주민센터에 신분증 때문에 가는 사람의 답 중 신분 관련이 맨 아래 있으면,
+    그 방문에 필요한 것을 가장 늦게 본다.
+    """
+    from app.domains.visit.adapter.inbound.api.router import _sorted_answers
+
+    usecase, _, _ = make_usecase()
+    created = send(usecase, "R9", shared_answers=ANSWERS, share_consented=True)
+    order = [a.route_id for a in _sorted_answers(created)]
+
+    assert order[0] == "R9", "그 방문의 항목이 맨 위여야 한다"
+    # R11도 주민센터 일이라 R14(법원)보다 앞에 온다.
+    assert order.index("R11") < order.index("R14")
