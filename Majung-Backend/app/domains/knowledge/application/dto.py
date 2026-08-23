@@ -75,6 +75,8 @@ class IntakeTask:
 
     route_id: str
     route_label: str
+    # 인덱스 탭용 짧은 이름(5자 이내). route_label을 자르면 말이 끊긴다.
+    tab_label: str
     section_id: str
     section_label: str
     # 다른 항목의 선행조건인지 — 사용자별 판정이 아니라 그래프 구조의 사실이다.

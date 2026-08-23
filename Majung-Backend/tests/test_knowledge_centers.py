@@ -226,3 +226,12 @@ def test_extension_fields_load_when_present(tmp_path: Path) -> None:
     assert loaded is not None
     assert "5천만원" in loaded.benefit_summary
     assert loaded.cautions and loaded.eligibility
+
+
+def test_tab_labels_fit_the_tab_width() -> None:
+    """인덱스 탭은 5자까지 들어가고 6자부터 잘린다. 잘리면 무슨 일인지 알 수 없다."""
+    from app.domains.shared.routes import ROUTE_TAB_LABELS
+
+    assert set(ROUTE_TAB_LABELS) == set(RouteId), "탭 이름이 없는 항목이 있다"
+    too_long = {r.value: t for r, t in ROUTE_TAB_LABELS.items() if len(t) > 5}
+    assert not too_long, f"5자를 넘는 탭 이름: {too_long}"

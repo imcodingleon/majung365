@@ -15,7 +15,12 @@ import logging
 from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
 from app.domains.knowledge.domain.intake import IntakeRule, judge
 from app.domains.knowledge.domain.repository import InstitutionRepository
-from app.domains.shared.routes import RouteId, label_for, section_label_for
+from app.domains.shared.routes import (
+    RouteId,
+    label_for,
+    section_label_for,
+    tab_label_for,
+)
 
 logger = logging.getLogger("majung.intake")
 
@@ -41,6 +46,7 @@ class IntakeUseCase:
             IntakeTask(
                 route_id=v.route_id.value,
                 route_label=label_for(v.route_id),
+                tab_label=tab_label_for(v.route_id),
                 section_id=v.section_id.value,
                 section_label=section_label_for(v.section_id),
                 blocks_others=v.blocks_others,

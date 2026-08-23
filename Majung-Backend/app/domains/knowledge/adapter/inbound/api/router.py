@@ -147,6 +147,7 @@ class IntakeCardOut(BaseModel):
 class IntakeTaskOut(BaseModel):
     route_id: str
     route_label: str
+    tab_label: str
     section_id: str
     section_label: str
     blocks_others: bool
@@ -192,6 +193,7 @@ def analyze_intake(body: IntakeIn, request: Request) -> IntakeOut:
             IntakeTaskOut(
                 route_id=t.route_id,
                 route_label=t.route_label,
+                tab_label=t.tab_label,
                 section_id=t.section_id,
                 section_label=t.section_label,
                 blocks_others=t.blocks_others,
