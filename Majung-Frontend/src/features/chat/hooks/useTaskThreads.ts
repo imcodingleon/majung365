@@ -10,7 +10,7 @@
 // 항목의 근거부터 훑는다. triage를 건너뛰는 것은 아니고 순서만 바뀐다 (2026-08-23).
 import { useCallback, useRef, useState } from "react";
 
-import type { CardData, Turn } from "@/shared/types";
+import type { CardData, Turn, EvidenceEvent } from "@/shared/types";
 import { ApiError, streamChat } from "@/shared/utils/api";
 
 import type { ChatMessage } from "../domain/chatMessage";
@@ -18,6 +18,16 @@ import type { ChatMessage } from "../domain/chatMessage";
 type Threads = Record<string, ChatMessage[]>;
 
 /** 서버가 준 제도 카드를 말풍선에 담는다. 카드 전용 렌더는 §4.1 결과 카드 작업이다. */
+/**
+ * 배지에 적을 출처.
+ *
+ * **§6.4가 요구하는 것은 출처 기관명인데 서버가 아직 그 필드를 주지 않는다.**
+ * 그때까지 어느 갈래인지만 밝힌다 — 빈 문자열을 두면 배지에 빈 줄이 생긴다.
+ */
+function sourceLabel(stage: EvidenceEvent["stage"]): string {
+  return stage === "web" ? "인터넷 검색" : "마중365가 모아둔 자료";
+}
+
 function cardToMessage(id: string, card: CardData): ChatMessage {
   // 창구 안내(desk)로 옮기지 않는다. §6.4의 창구 안내는 "주민센터에 가서 '전입신고
   // 하러 왔어요'라고 말하면 돼요" 형태인데, KB의 next_step은 그런 짧은 대사가 아니라
@@ -85,6 +95,8 @@ export function useTaskThreads(initial: Threads = {}) {
       /** 카드가 한 장이라도 왔는지. 본문이 비어도 카드가 있으면 빈 응답이 아니다. */
       let gotCard = false;
       let started = false;
+      /** 서버가 알려준 근거 단계. 답변 텍스트보다 먼저 온다 (§6.4). */
+      let stage: EvidenceEvent["stage"] = "confirmed";
 
       abort.current?.abort();
       const controller = new AbortController();
@@ -106,7 +118,14 @@ export function useTaskThreads(initial: Threads = {}) {
                   ...prev,
                   [taskId]: [
                     ...current,
-                    { id: replyId, role: "assistant", text: streamed, streaming: true },
+                    {
+                      id: replyId,
+                      role: "assistant",
+                      text: streamed,
+                      streaming: true,
+                      // 어디서 온 답인지를 말풍선이 직접 드러낸다 (§6.4).
+                      evidence: { stage: stage === "web" ? "web" : "rag", org: sourceLabel(stage) },
+                    },
                   ],
                 };
               }
@@ -117,6 +136,15 @@ export function useTaskThreads(initial: Threads = {}) {
                 ),
               };
             });
+          },
+          // **답변보다 먼저 온다** (§6.4). 웹 검색으로 넘어가면 그 사실을 답변 앞에
+          // 내야 한다 — 나중에 "인터넷 정보였습니다"라고 덧붙이면 이미 사실로 받아들인
+          // 뒤다. 사전 고지는 로딩 안내도 겸한다(검색이 붙으면 응답이 느려진다).
+          onEvidence: (ev) => {
+            stage = ev.stage;
+            if (ev.stage === "web" && ev.notice) {
+              append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: ev.notice });
+            }
           },
           onCard: (card) => {
             gotCard = true;

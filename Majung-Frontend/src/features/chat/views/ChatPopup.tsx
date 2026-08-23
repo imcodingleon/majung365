@@ -23,6 +23,7 @@ import { josa } from "@/shared/utils/korean";
 import type { ChatMessage } from "../domain/chatMessage";
 
 import { EvidenceBadge } from "./EvidenceBadge";
+import { RichText } from "./RichText";
 import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
@@ -84,7 +85,8 @@ function Bubble({ message }: { message: ChatMessage }) {
         <Text className="text-body">🤖</Text>
       </View>
       <View className="flex-1 rounded-2xl rounded-tl-sm bg-bubble px-4 py-3">
-      <Text className="text-body text-ink-strong">{message.text}</Text>
+      {/* 모델이 쓴 `**굵게**`와 `---`를 푼다. 그대로 두면 별표가 화면에 보인다 */}
+      <RichText text={message.text} className="text-body text-ink-strong" />
 
       {message.desk ? (
         // 값이 섞인 문장은 NoteLine으로 감싼다. 그대로 두면 조각이 View의 자식이 되어

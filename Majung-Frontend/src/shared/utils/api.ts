@@ -13,6 +13,7 @@ import type {
   DistrictOffice,
   Institution,
   ChatStreamHandlers,
+  EvidenceEvent,
   TaskCard,
 } from "../types";
 import type {
@@ -397,6 +398,9 @@ function dispatchFrame(frame: string, handlers: ChatStreamHandlers): void {
   switch (event) {
     case "triage":
       handlers.onTriage?.((parsed as { routes: RouteOut[] }).routes);
+      break;
+    case "evidence":
+      handlers.onEvidence?.(parsed as EvidenceEvent);
       break;
     case "text":
       handlers.onText?.((parsed as { delta: string }).delta);

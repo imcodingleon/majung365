@@ -151,9 +151,25 @@ export interface TaskCard {
 }
 
 /** SSE 스트림 이벤트를 소비하는 콜백 묶음. */
+/**
+ * 답이 어디서 왔는지 (§6.4).
+ *
+ * **답변 텍스트보다 먼저 온다.** 웹 검색으로 넘어가는 경우 `notice`에 사전 고지 문구가
+ * 실리는데, §6.4가 "확실성이 낮다는 신호가 정보보다 앞서야 한다"고 정했기 때문이다.
+ * 나중에 "인터넷 정보였습니다"라고 덧붙이면 이미 사실로 받아들인 뒤다.
+ */
+export interface EvidenceEvent {
+  /** `confirmed`는 수집한 근거 문서, `web`은 인터넷 검색이다. */
+  stage: "confirmed" | "web";
+  /** 웹 검색으로 넘어갈 때 답변보다 먼저 낼 문장. 확인한 자료면 빈 문자열이다. */
+  notice: string;
+}
+
 export interface ChatStreamHandlers {
   /** triage 결과(급한 지원 항목 2~3개) 도착 */
   onTriage?: (routes: RouteOut[]) => void;
+  /** 근거 단계 도착. **답변 텍스트보다 먼저 온다** (§6.4). */
+  onEvidence?: (evidence: EvidenceEvent) => void;
   /** 안내 텍스트 델타(스트리밍 조각) 도착 */
   onText?: (delta: string) => void;
   /** 제도 카드 도착 */
