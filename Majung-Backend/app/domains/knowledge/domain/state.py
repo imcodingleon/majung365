@@ -35,7 +35,12 @@ class IntakeStateRepository(Protocol):
     """
 
     def save(self, user_id: UUID, verdicts: tuple[IntakeVerdict, ...]) -> None:
-        """가입 직후 판정을 남긴다. 이미 있으면 덮어쓴다."""
+        """가입 직후 판정을 남긴다. 이미 있으면 덮어쓴다.
+
+        **다시 진단했을 때도 이 경로를 쓴다.** 그때는 완료 목록도 함께 비워진다 —
+        상황이 달라져 할 일이 새로 정해진 것이라, 예전에 마친 표시를 그대로 두면
+        이번에 처음 나온 항목이 이미 끝난 것으로 보인다.
+        """
         ...
 
     def set_completed(self, user_id: UUID, completed: frozenset[str]) -> None:

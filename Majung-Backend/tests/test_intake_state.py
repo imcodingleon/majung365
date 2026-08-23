@@ -134,3 +134,16 @@ def test_압류와_은행제한의_갈림이_복원된다() -> None:
     assert "압류" not in card_name(
         {"bankAccountStatus": "UNUSABLE", "bankAccountDetail": "BANK_LIMIT"}
     )
+
+
+def test_다시_진단하면_판정이_갈린다() -> None:
+    """**상황은 바뀐다.** 잘 곳이 생기고 신분증이 나온다. 처음 답한 것에 묶여 있으면
+    이미 해결된 일이 계속 할 일로 남고 새로 생긴 문제는 목록에 안 들어온다."""
+    intake = _usecase()
+
+    before = intake.judge_only(_ANSWERS)
+    after = intake.judge_only({"identityStatus": "USABLE", "counselingNeed": "NOT_NEEDED"})
+
+    assert [v.route_id for v in before] != [v.route_id for v in after]
+    # 두 번째 판정도 같은 방식으로 저장·복원된다 — 갈아 끼우는 경로가 따로 있지 않다.
+    assert _from_json(_to_json(after)) == after

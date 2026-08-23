@@ -256,6 +256,50 @@ def read_tasks(request: Request, account: CurrentAccount) -> TasksOut:
     )
 
 
+class RetakeIn(BaseModel):
+    """상황 알아보기를 다시 했을 때 오는 답. 가입 때와 같은 모양이다."""
+
+    answers: dict[str, str | list[str]] = Field(default_factory=dict)
+
+
+@router.put("/tasks", response_model=TasksOut)
+def retake_intake(
+    body: RetakeIn,
+    request: Request,
+    account: CurrentAccount,
+) -> TasksOut:
+    """상황 알아보기를 다시 하고 할 일을 새로 받는다 (§3.7).
+
+    **상황은 바뀐다.** 잘 곳이 생기고 신분증이 나오고 일자리가 정해진다. 처음 답한
+    것에 묶여 있으면 이미 해결된 일이 계속 할 일로 남고, 새로 생긴 문제는 목록에
+    들어오지 않는다.
+
+    **여기서도 답변 원문은 저장하지 않는다** (§9.1 · 0008). 판정만 갈아 끼운다.
+
+    **완료 목록은 비운다.** 할 일이 새로 정해진 것이라 예전에 마친 표시를 그대로
+    두면 이번에 처음 나온 항목이 이미 끝난 것으로 보인다.
+    """
+    states = getattr(request.app.state, "intake_state_repo", None)
+    if states is None:
+        raise HTTPException(
+            status_code=503, detail="지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요."
+        )
+
+    if len(body.answers) > _MAX_ANSWER_KEYS:
+        raise HTTPException(status_code=422, detail="적어 주신 내용을 다시 확인해 주세요.")
+    answers: dict[str, object] = {}
+    for key, value in body.answers.items():
+        if isinstance(value, str) and len(value) > _MAX_ANSWER_LEN:
+            raise HTTPException(status_code=422, detail="적어 주신 내용을 다시 확인해 주세요.")
+        if isinstance(value, list) and len(value) > _MAX_MULTI:
+            raise HTTPException(status_code=422, detail="적어 주신 내용을 다시 확인해 주세요.")
+        answers[key] = value
+
+    intake = request.app.state.intake_usecase
+    states.save(account.id, intake.judge_only(answers))
+    return read_tasks(request, account)
+
+
 @router.put("/tasks/completed", response_model=TasksOut)
 def update_completed(
     body: CompletedIn,
