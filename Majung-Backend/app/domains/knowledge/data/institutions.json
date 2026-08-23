@@ -8,7 +8,10 @@
       "복지로(bokjiro.go.kr)",
       "고용24(work24.go.kr)"
     ],
-    "lead_for": "그 지원 항목의 대표 제도임을 뜻한다. 항목마다 정확히 하나여야 하고, 로더가 부팅 시 검증한다. 챗 카드는 항목당 대표 1개를 고른다 — 배열 순서에 의존하지 않는다."
+    "lead_for": "그 지원 항목의 대표 제도임을 뜻한다. 항목마다 정확히 하나여야 하고, 로더가 부팅 시 검증한다. 챗 카드는 항목당 대표 1개를 고른다 — 배열 순서에 의존하지 않는다.",
+    "companion_for": "대표 제도와 함께 내보낼 항목. R2는 공단 긴급지원과 정부 긴급복지가 서로 다른 경로라 하나로 끝내면 안 된다(route-contacts.md §2).",
+    "verified_at": "마중365가 그 자료를 확인한 날짜다. 기관이 문서를 갱신한 날이 아니다 — 화면 문구가 이 구분을 흐리면 안 된다.",
+    "contacts": "출처: route-contacts.md. 번호는 hotlines.py의 키로 적는다 — 여기 직접 쓰면 두 곳이 어긋난다. 창구 안내(desk_place·desk_say)가 전화번호보다 먼저 나간다. R10 통장은 대표 연락처가 없어 창구 안내만 있다."
   },
   "institutions": [
     {
@@ -25,7 +28,15 @@
       "docs": [],
       "next_step": "출소하신 교정시설에 '수용증명서 발급'을 요청하세요.",
       "deadline": null,
-      "source_url": "https://www.koreha.or.kr"
+      "source_url": "https://www.koreha.or.kr",
+      "contact_key": "1363",
+      "desk_place": "출소하신 교정시설",
+      "desk_say": "수용증명서 떼러 왔어요",
+      "source_urls": [
+        "https://www.corrections.go.kr/corrections/1075/subview.do",
+        "https://www.kics.go.kr/"
+      ],
+      "verified_at": "2026-08-22"
     },
     {
       "id": "identity-address-registration",
@@ -43,7 +54,15 @@
       ],
       "next_step": "지내실 곳이 정해지면 주민센터에 가서 '전입신고 하러 왔다'고 말하세요.",
       "deadline": null,
-      "source_url": "https://www.gov.kr"
+      "source_url": "https://www.gov.kr",
+      "source_urls": [
+        "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016",
+        "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=666&ccfNo=4&cciNo=1&cnpClsNo=1"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "110",
+      "desk_place": "가까운 주민센터",
+      "desk_say": "전입신고 하러 왔어요"
     },
     {
       "id": "identity-bank-account",
@@ -61,7 +80,15 @@
       ],
       "next_step": "먼저 신분증을 준비하고, 은행 지점에 방문해 계좌 개설을 신청하세요.",
       "deadline": null,
-      "source_url": "https://www.gov.kr"
+      "source_url": "https://www.gov.kr",
+      "desk_place": "가까운 은행 창구",
+      "desk_say": "통장 만들러 왔어요",
+      "source_urls": [
+        "https://www.fsc.go.kr/no010101/82205",
+        "https://www.shinhangroup.com/kr/archive/insight/extend/detail/32891",
+        "https://www.fsc.go.kr/no010101/71982?curPage=435"
+      ],
+      "verified_at": "2026-08-22"
     },
     {
       "id": "identity-bank-account-unblock",
@@ -77,7 +104,14 @@
       ],
       "next_step": "신분증을 챙겨 거래하던 은행 지점에 방문해 '통장 정지를 풀고 싶다'고 말하세요.",
       "deadline": null,
-      "source_url": "https://www.gov.kr"
+      "source_url": "https://www.gov.kr",
+      "desk_place": "거래하던 은행 창구",
+      "desk_say": "통장 정지를 풀러 왔어요",
+      "source_urls": [
+        "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA18M02",
+        "https://www.fsc.go.kr/no010101/82205"
+      ],
+      "verified_at": "2026-08-22"
     },
     {
       "id": "identity-resident-registration",
@@ -97,7 +131,15 @@
       ],
       "next_step": "내일 오전, 사는 곳 주민센터에 가서 '주민등록 재등록하러 왔다'고 말하세요.",
       "deadline": null,
-      "source_url": "https://www.gov.kr"
+      "source_url": "https://www.gov.kr",
+      "source_urls": [
+        "https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010&CappBizCD=13100000011",
+        "https://gb.go.kr/Main/chi/page.do?mnu_uid=6664&dept_code=&dept_name=&BD_CODE=life_faq&bdName=&cmd=2&Start=60&B_NUM=58&B_STEP=2045299&B_LEVEL=0&key=4&word=&p1=0&p2=0&V_NUM=108&tbbscode1=life_faq"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "110",
+      "desk_place": "가까운 주민센터",
+      "desk_say": "주민등록 재등록하러 왔어요"
     },
     {
       "id": "welfare-koreha-emergency",
@@ -118,7 +160,12 @@
       ],
       "next_step": "가까운 공단 지부에 '긴급지원을 신청하고 싶다'고 문의하세요.",
       "deadline": null,
-      "source_url": "https://koreha.or.kr/sub/02_01_2.do"
+      "source_url": "https://koreha.or.kr/sub/02_01_2.do",
+      "source_urls": [
+        "https://koreha.or.kr/sub/02_01_2.do"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1670-7004"
     },
     {
       "id": "welfare-basic-livelihood",
@@ -137,7 +184,14 @@
       ],
       "next_step": "주민센터에서 '기초생활보장 신청 상담'을 받아 내가 대상이 되는지 확인하세요.",
       "deadline": null,
-      "source_url": "https://www.bokjiro.go.kr"
+      "source_url": "https://www.bokjiro.go.kr",
+      "source_urls": [
+        "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001132&wlfareInfoReldBztpCd=01"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "129",
+      "desk_place": "가까운 주민센터",
+      "desk_say": "생계급여 상담받으러 왔어요"
     },
     {
       "id": "welfare-emergency-support",
@@ -146,6 +200,9 @@
         "R12"
       ],
       "lead_for": [],
+      "companion_for": [
+        "R2"
+      ],
       "name": "긴급복지지원제도",
       "summary_easy": "당장 먹고 지내기 어려우면 생계비·의료비 등을 지원받을 수 있는 제도예요.",
       "where": "주민센터 또는 보건복지상담센터(전화 129)",
@@ -155,7 +212,15 @@
       ],
       "next_step": "주민센터에 가거나 129로 전화해서 '긴급복지지원 신청하고 싶다'고 말하세요.",
       "deadline": "빠른 시일",
-      "source_url": "https://www.bokjiro.go.kr"
+      "source_url": "https://www.bokjiro.go.kr",
+      "source_urls": [
+        "https://www.mohw.go.kr/menu.es?mid=a10708010100",
+        "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000280438&chrClsCd=010201"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "129",
+      "desk_place": "가까운 주민센터",
+      "desk_say": "긴급복지지원 신청하러 왔어요"
     },
     {
       "id": "housing-koreha-residence",
@@ -174,7 +239,12 @@
       ],
       "next_step": "가까운 공단 지부에 전화해 '생활관에서 지낼 수 있는지' 문의하세요.",
       "deadline": null,
-      "source_url": "https://www.koreha.or.kr"
+      "source_url": "https://www.koreha.or.kr",
+      "source_urls": [
+        "https://koreha.or.kr/sub/02_01.do?MN=207&MN1=3&MN2=16&MN3=207"
+      ],
+      "verified_at": "2026-08-23",
+      "contact_key": "1670-7004"
     },
     {
       "id": "housing-emergency-welfare-housing",
@@ -193,7 +263,12 @@
       ],
       "next_step": "주민센터나 129에 '긴급복지 주거지원'을 문의하세요.",
       "deadline": "빠른 시일",
-      "source_url": "https://www.bokjiro.go.kr"
+      "source_url": "https://www.bokjiro.go.kr",
+      "source_urls": [
+        "https://www.mohw.go.kr/menu.es?mid=a10708010100"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "129"
     },
     {
       "id": "employment-koreha-job",
@@ -211,7 +286,13 @@
       ],
       "next_step": "공단 지부에 '취업 지원·직업훈련 상담'을 문의하세요.",
       "deadline": null,
-      "source_url": "https://www.koreha.or.kr"
+      "source_url": "https://www.koreha.or.kr",
+      "source_urls": [
+        "https://www.koreha.or.kr/sub/02_01_4.do",
+        "https://www.koreha.or.kr/sub/02_01_3.do"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1670-7004"
     },
     {
       "id": "employment-national-support",
@@ -227,7 +308,13 @@
       ],
       "next_step": "가까운 고용센터에 방문하거나 고용24에서 '국민취업지원제도'를 신청하세요.",
       "deadline": null,
-      "source_url": "https://www.work24.go.kr"
+      "source_url": "https://www.work24.go.kr",
+      "source_urls": [
+        "https://www.work24.go.kr/ua/z/z/1300/selectEmssRqutIntro.do",
+        "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=14920000086"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1350"
     },
     {
       "id": "health-medical-aid",
@@ -245,7 +332,14 @@
       ],
       "next_step": "주민센터에서 '의료급여 대상인지'와 '건강보험 상태'를 함께 확인하세요.",
       "deadline": null,
-      "source_url": "https://www.bokjiro.go.kr"
+      "source_url": "https://www.bokjiro.go.kr",
+      "source_urls": [
+        "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00000102&wlfareInfoReldBztpCd=01",
+        "https://www.mohw.go.kr/menu.es?mid=a10708030100",
+        "https://www.nhis.or.kr/nhis/minwon/minwonServiceBoard.do?mode=view&articleNo=10945783"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1577-1000"
     },
     {
       "id": "health-mental-support",
@@ -261,7 +355,13 @@
       "docs": [],
       "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해도 괜찮아요.",
       "deadline": null,
-      "source_url": "https://www.mohw.go.kr"
+      "source_url": "https://www.mohw.go.kr",
+      "source_urls": [
+        "https://www.mohw.go.kr/menu.es?mid=a10706040100",
+        "https://www.mohw.go.kr/menu.es?mid=a10706040300"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1577-0199"
     },
     {
       "id": "debt-credit-recovery",
@@ -280,7 +380,12 @@
       ],
       "next_step": "1600-5500(신용회복위원회)에 전화해 '채무조정 상담'을 받아보세요.",
       "deadline": null,
-      "source_url": "https://www.ccrs.or.kr"
+      "source_url": "https://www.ccrs.or.kr",
+      "source_urls": [
+        "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1600-5500"
     },
     {
       "id": "debt-legal-aid",
@@ -296,7 +401,12 @@
       ],
       "next_step": "132(법률구조공단)로 전화해 '무료 법률 상담'을 요청하세요.",
       "deadline": null,
-      "source_url": "https://www.klac.or.kr"
+      "source_url": "https://www.klac.or.kr",
+      "contact_key": "132",
+      "source_urls": [
+        "https://www.helplaw24.go.kr/"
+      ],
+      "verified_at": "2026-08-22"
     },
     {
       "id": "health-koreha-basic",
@@ -315,7 +425,12 @@
       ],
       "next_step": "공단 지부에 '기초건강지원 상담'을 문의하세요.",
       "deadline": null,
-      "source_url": "https://koreha.or.kr/sub/02_01_15.do?MN1=3&MN2=244&MN3=273&MN=273"
+      "source_url": "https://koreha.or.kr/sub/02_01_15.do?MN1=3&MN2=244&MN3=273&MN=273",
+      "source_urls": [
+        "https://koreha.or.kr/sub/02_01_15.do?MN1=3&MN2=244&MN3=273&MN=273"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1670-7004"
     },
     {
       "id": "startup-koreha-support",
@@ -335,7 +450,12 @@
       ],
       "next_step": "공단 지부에 '창업지원 상담'을 먼저 받으세요. 요건과 준비 서류를 알려줘요.",
       "deadline": null,
-      "source_url": "https://www.koreha.or.kr/sub/02_01_5.do"
+      "source_url": "https://www.koreha.or.kr/sub/02_01_5.do",
+      "source_urls": [
+        "https://www.koreha.or.kr/sub/02_01_5.do"
+      ],
+      "verified_at": "2026-08-22",
+      "contact_key": "1670-7004"
     }
   ]
 }
