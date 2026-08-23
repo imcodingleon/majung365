@@ -90,7 +90,7 @@ class ChatUseCase:
 
         # 3) 근거 문서 검색. 카드가 제도의 요약이라면 이쪽은 본문이라,
         #    "기한이 며칠인가요" 같은 구체적인 질문에 답할 수 있는 것은 이쪽이다.
-        found = self._search_passages(cmd.message, triage)
+        found = self._search_passages(cmd.message, triage, cmd.route_id)
 
         # 4) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
         #    **사전 고지가 답변보다 먼저 나간다** — 나중에 "인터넷 정보였습니다"라고
@@ -157,10 +157,30 @@ class ChatUseCase:
             triage, priorities=(RoutePriority(route=pinned), *rest)[:_MAX_ROUTES]
         )
 
-    def _search_passages(self, message: str, triage: TriageResult) -> list[Passage]:
-        """질문과 관련된 근거 구절. 검색어는 로그에 남기지 않는다."""
+    def _search_passages(
+        self, message: str, triage: TriageResult, pinned: str = ""
+    ) -> list[Passage]:
+        """질문과 관련된 근거 구절. 검색어는 로그에 남기지 않는다.
+
+        **카드에서 연 대화는 그 항목 문서만 본다.** "다음에 뭘 해야 하나요"처럼
+        무엇에 대한 질문인지 문장만으로는 알 수 없을 때, 가중치만으로는 엉뚱한
+        문서가 1순위가 된다. 실제로 R14 카드에서 연 대화에 전입신고 안내가 나갔다.
+        화면이 이미 답을 알고 있으니 추측하게 두지 않는다.
+
+        좁힌 결과가 비면 넓혀서 다시 찾는다 — 그 항목에 근거가 없다고 해서
+        답할 수 있는 문서까지 사라지면 안 된다.
+        """
         if self._passages is None:
             return []
+        if pinned:
+            only = frozenset({pinned})
+            narrowed = [
+                p
+                for p, _ in self._passages.search(message, only)
+                if pinned in p.route_ids
+            ]
+            if narrowed:
+                return narrowed
         routes = frozenset(p.route.value for p in triage.priorities)
         return [p for p, _ in self._passages.search(message, routes)]
 
@@ -190,7 +210,12 @@ class ChatUseCase:
     def _match_cards(
         self, triage: TriageResult
     ) -> list[tuple[Institution, tuple[Institution, ...], RouteId]]:
-        if triage.question_type != QuestionType.SUPPORT:
+        # **항목을 골랐다는 것 자체가 지원 질문이라는 신호다.**
+        #
+        # 모델이 "나갈 데가 없는데 오늘 밤 어디서 자요"에 R1·R4를 정확히 고르고도
+        # question_type을 daily로 낸 적이 있다. 그때 카드가 통째로 사라지고 답변까지
+        # 비었다. 두 값이 어긋나면 **더 구체적인 쪽(고른 항목)을 믿는다.**
+        if triage.question_type != QuestionType.SUPPORT and not triage.priorities:
             return []
         picked: list[tuple[Institution, tuple[Institution, ...], RouteId]] = []
         seen: set[str] = set()

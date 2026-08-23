@@ -9,7 +9,14 @@ import json
 import logging
 from pathlib import Path
 
-from app.domains.knowledge.domain.retrieval import Passage, PassageIndex
+from app.domains.knowledge.domain.entity import Institution
+from app.domains.knowledge.domain.retrieval import (
+    CardText,
+    Passage,
+    PassageIndex,
+    card_passages,
+)
+from app.domains.shared.routes import RouteId, label_for, tab_label_for
 
 logger = logging.getLogger("majung.knowledge")
 
@@ -49,8 +56,24 @@ def _is_blocked(doc: dict[str, object], sections: dict[str, str]) -> bool:
     )
 
 
+def _labels_of(route_ids: tuple[str, ...]) -> str:
+    """항목 이름과 탭 이름을 검색어로 쓸 수 있게 모은다."""
+    words: list[str] = []
+    for raw in route_ids:
+        try:
+            route = RouteId(raw)
+        except ValueError:
+            continue
+        words += [label_for(route), tab_label_for(route)]
+    return " ".join(dict.fromkeys(words))
+
+
 class JsonRagRepository:
-    def __init__(self, data_path: Path = _DATA_PATH) -> None:
+    def __init__(
+        self,
+        data_path: Path = _DATA_PATH,
+        cards: list[Institution] | None = None,
+    ) -> None:
         passages: list[Passage] = []
         blocked: list[str] = []
         for line in data_path.read_text(encoding="utf-8").splitlines():
@@ -83,6 +106,22 @@ class JsonRagRepository:
                 "📄 수집이 막힌 문서 %d건을 색인에서 제외했다 (재수집 필요): %s",
                 len(blocked),
                 ", ".join(blocked),
+            )
+        # **카드의 쉬운 말도 검색 대상에 넣는다.** 수집한 공식 문서는 행정 용어라
+        # 사용자의 말과 이어지지 않는데, 카드 요약은 그 말투로 쓰여 있다.
+        if cards:
+            passages += card_passages(
+                CardText(
+                    id=c.id,
+                    name=c.name,
+                    summary=c.summary_easy,
+                    next_step=c.next_step,
+                    source_url=c.source_url,
+                    verified_at=c.verified_at or "",
+                    route_ids=tuple(r.value for r in c.route_ids),
+                    labels=_labels_of(tuple(r.value for r in c.route_ids)),
+                )
+                for c in cards
             )
         self._index = PassageIndex(passages)
 

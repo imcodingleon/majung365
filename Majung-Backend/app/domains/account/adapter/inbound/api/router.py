@@ -13,11 +13,16 @@ from datetime import date
 from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Request
-from pydantic import BaseModel, Field
+from pydantic import BaseModel, Field, field_validator
 
 from app.domains.account.adapter.inbound.api.deps import require_account
 from app.domains.account.application.usecase import SignupCommand
-from app.domains.account.domain.entity import Account, Consent
+from app.domains.account.domain.entity import (
+    CONSENT_KINDS,
+    CRIME_CATEGORIES,
+    Account,
+    Consent,
+)
 from app.domains.account.domain.tokens import utcnow
 from app.domains.knowledge.adapter.inbound.api.router import IntakeTaskOut, to_task_out
 from app.infrastructure.config.settings import get_settings
@@ -51,6 +56,28 @@ class SignupIn(BaseModel):
     consents: list[ConsentIn] = Field(default_factory=list, max_length=20)
     # 죄목은 선택이다. 별도 동의를 받았을 때만 온다.
     crime_category: str | None = Field(default=None, max_length=40)
+
+    @field_validator("consents")
+    @classmethod
+    def _known_consents(cls, given: list[ConsentIn]) -> list[ConsentIn]:
+        """모르는 동의 종류는 막는다. **조용히 저장되면 아무도 모른다.**"""
+        unknown = sorted({c.kind for c in given} - CONSENT_KINDS)
+        if unknown:
+            raise ValueError(f"모르는 동의 종류: {unknown}")
+        return given
+
+    @field_validator("crime_category")
+    @classmethod
+    def _known_crime(cls, given: str | None) -> str | None:
+        """모르는 죄목 값은 막는다.
+
+        "말하고 싶지 않아요"에 해당하는 값이 오면 그것도 막는다 — 말하지 않겠다고
+        한 것을 값으로 저장하면 그것도 하나의 기록이 된다. 프론트는 그 경우
+        필드 자체를 빼고 보낸다.
+        """
+        if given is not None and given not in CRIME_CATEGORIES:
+            raise ValueError(f"모르는 죄목 값: {given}")
+        return given
 
 
 class SignupOut(BaseModel):

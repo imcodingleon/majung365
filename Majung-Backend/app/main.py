@@ -92,6 +92,9 @@ def create_app() -> FastAPI:
     app.add_middleware(
         CORSMiddleware,
         allow_origins=settings.cors_origins_list,
+        allow_origin_regex=(
+            r"http://localhost:\d+" if settings.cors_allow_localhost else None
+        ),
         allow_credentials=False,
         allow_methods=["GET", "POST"],
         allow_headers=["*"],
@@ -140,7 +143,7 @@ def create_app() -> FastAPI:
         llm=llm,
         institutions=institutions,
         blocking_routes=routes_blocking_others(graph_nodes),
-        passages=JsonRagRepository().index(),
+        passages=JsonRagRepository(cards=institutions.all()).index(),
     )
     # llm은 StateExtractorLlm(C6)도 구조적으로 만족한다(extract_node_state 메서드 보유)
     app.state.intake_usecase = IntakeUseCase(

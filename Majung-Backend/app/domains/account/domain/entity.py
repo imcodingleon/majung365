@@ -33,6 +33,28 @@ class Account:
         return (today - self.release_date).days
 
 
+# 동의 종류. 화면이 쓰는 값이 정본이고 서버는 그것을 받는다.
+#
+# **어긋나도 200이 오는 것이 가장 나쁘다.** 검증이 없으면 프론트가 다른 값을
+# 보내도 저장은 되고, 아무도 모르는 채로 기록만 어긋난다.
+CONSENT_KINDS = frozenset({
+    "privacy",  # 개인정보 수집·이용 (필수)
+    "crime",    # 민감정보 수집·이용 (필수이나 죄목을 밝힌 경우에만 화면에 나온다)
+    "share",    # 제3자 제공 (선택)
+})
+
+# 죄목 대분류. **"말하고 싶지 않아요"(undisclosed)는 여기 없다.**
+# 말하지 않겠다고 한 것을 "말하지 않음"이라는 값으로 저장하면 그것도 하나의
+# 기록이 된다(§9.1 데이터 최소화). 프론트는 그 경우 필드 자체를 빼고 보낸다.
+CRIME_CATEGORIES = frozenset({
+    "violent",   # 폭력·강력범죄
+    "sexual",    # 성범죄
+    "property",  # 재산·경제범죄
+    "drug",      # 마약·중독범죄
+    "other",     # 기타범죄
+})
+
+
 @dataclass(frozen=True)
 class CrimeCategory:
     """죄목 대분류. 별도 타입이자 별도 테이블이다(§9.1).
@@ -50,7 +72,7 @@ class Consent:
     """동의 이력. 평문으로 저장한다 — 식별정보가 아니고, 분쟁이 생겼을 때
     그대로 읽혀야 하는 기록이다."""
 
-    kind: str  # privacy | crime_category | ...
+    kind: str  # CONSENT_KINDS 중 하나
     agreed: bool
     at: datetime
 

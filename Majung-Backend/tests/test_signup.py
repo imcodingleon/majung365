@@ -9,6 +9,7 @@ from datetime import date
 from uuid import UUID, uuid4
 
 import pytest
+from pydantic import ValidationError
 
 from app.domains.account.application.usecase import SignupCommand, SignupUseCase
 from app.domains.account.domain.entity import Account, Consent, CrimeCategory, Session
@@ -186,6 +187,60 @@ def test_endpoint_drops_crime_without_consent(client) -> None:  # type: ignore[n
         release_date=date(2026, 8, 3),
         answers={},
         consents=[],
-        crime_category="재산·경제범죄",
+        # 화면이 쓰는 값이다. 한글 라벨이 아니라 id로 온다.
+        crime_category="property",
     )
     assert _to_command(body, date(2026, 8, 23)).crime_category is None
+
+
+# ── 모르는 값은 막는다 (기획서 §4.1) ──
+
+
+def test_unknown_consent_kind_is_refused(client) -> None:  # type: ignore[no-untyped-def]
+    """**어긋나도 200이 오는 것이 가장 나쁘다.**
+
+    검증이 없으면 프론트가 다른 값을 보내도 저장은 되고, 아무도 모르는 채로
+    기록만 어긋난다.
+    """
+    from app.domains.account.adapter.inbound.api.router import SignupIn
+
+    with pytest.raises(ValidationError, match="모르는 동의 종류"):
+        SignupIn(
+            name="김판수",
+            birth_date=date(1975, 3, 2),
+            release_date=date(2026, 8, 3),
+            consents=[{"kind": "마케팅수신", "agreed": True}],  # type: ignore[list-item]
+        )
+
+
+def test_undisclosed_crime_is_refused() -> None:
+    """**말하지 않겠다고 한 것을 값으로 저장하면 그것도 하나의 기록이 된다**(§9.1).
+
+    프론트는 그 경우 필드 자체를 빼고 보낸다. 값이 오면 프론트 쪽 버그다.
+    """
+    from app.domains.account.adapter.inbound.api.router import SignupIn
+
+    for bad in ("undisclosed", "재산·경제범죄", "unknown"):
+        with pytest.raises(ValidationError, match="모르는 죄목"):
+            SignupIn(
+                name="김판수",
+                birth_date=date(1975, 3, 2),
+                release_date=date(2026, 8, 3),
+                crime_category=bad,
+            )
+
+
+def test_known_values_pass() -> None:
+    from app.domains.account.adapter.inbound.api.router import SignupIn
+
+    body = SignupIn(
+        name="김판수",
+        birth_date=date(1975, 3, 2),
+        release_date=date(2026, 8, 3),
+        consents=[
+            {"kind": "privacy", "agreed": True},  # type: ignore[list-item]
+            {"kind": "share", "agreed": False},  # type: ignore[list-item]
+        ],
+        crime_category="property",
+    )
+    assert body.crime_category == "property"

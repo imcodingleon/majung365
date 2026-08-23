@@ -92,6 +92,15 @@ class Settings(BaseSettings):
 
     # ── CORS ──
     cors_origins: str = "http://localhost:8081,http://localhost:19006"
+    # 개발 중 localhost의 아무 포트나 허용한다.
+    #
+    # Expo 웹은 포트가 점유되면 8082·8104처럼 올라가서 목록으로는 따라잡지 못한다.
+    # **localhost 오리진은 사용자 자기 기기에서만 나오므로** 다른 사이트가 사용자
+    # 브라우저를 빌려 우리 API를 부르는 경로가 되지는 않는다.
+    #
+    # 그래도 기본값은 꺼 둔다. 배포에서 켜 둘 이유가 없고, 켜져 있으면 나중에
+    # "왜 열려 있지"를 다시 따져야 한다.
+    cors_allow_localhost: bool = False
 
     @property
     def web_search_domains_list(self) -> list[str]:

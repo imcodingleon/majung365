@@ -15,6 +15,7 @@
 import math
 import re
 from collections import Counter
+from collections.abc import Iterable
 from dataclasses import dataclass, field
 
 # 한글·영숫자 덩어리만 본다. 조사는 떼지 않고 2-gram이 흡수하게 둔다.
@@ -54,6 +55,25 @@ MIN_SCORE = 8.0
 _RELATIVE_CUTOFF = 0.55
 
 
+# 카드 요약이 이보다 짧으면 검색에 보탬이 되지 않는다.
+_MIN_CARD_CHARS = 20
+
+
+@dataclass(frozen=True)
+class CardText:
+    """검색에 얹을 카드 한 장. 도메인이 KB 저장소를 알지 않도록 값만 받는다."""
+
+    id: str
+    name: str
+    summary: str
+    next_step: str
+    source_url: str
+    verified_at: str
+    route_ids: tuple[str, ...]
+    # 항목 이름과 탭 이름. 짧은 질문이 여기 걸린다.
+    labels: str = ""
+
+
 @dataclass(frozen=True)
 class Passage:
     """검색 단위. 문서 하나가 섹션 여럿으로 나뉜다."""
@@ -68,6 +88,13 @@ class Passage:
     # 지자체 자료는 인용할 때 지자체명이 드러나야 한다 — 제도 조건이 지역마다 다르고,
     # 사용자는 그것이 자기 지역 기준이 아니라는 것을 알 방법이 없다(§6.4).
     department: str = ""
+    # 카드에서 만든 구절인가. **그 항목을 찾을 때만 후보가 된다.**
+    #
+    # 카드 요약은 50~150자로 짧아서 BM25의 길이 정규화가 높은 점수를 준다. 그냥
+    # 섞으면 관련 없는 카드가 1순위로 튀어 오른다 — "월세 보증금"에 채무 카드가
+    # 걸린 적이 있다. 이 구절의 목적은 그 항목 문서가 안 잡히는 것을 메우는
+    # 것이지 다른 항목 검색에 끼어드는 것이 아니다.
+    is_card: bool = False
 
 
 @dataclass
@@ -137,6 +164,11 @@ class PassageIndex:
 
         scored: list[tuple[Passage, float]] = []
         for doc in self._docs:
+            if doc.passage.is_card and not (
+                routes and set(doc.passage.route_ids) & routes
+            ):
+                # 카드 구절은 그 항목을 찾을 때만 후보다.
+                continue
             score = 0.0
             for term in set(terms):
                 tf = doc.counts.get(term, 0)
@@ -156,3 +188,42 @@ class PassageIndex:
         scored.sort(key=lambda x: (-x[1], x[0].doc_id))
         floor = scored[0][1] * _RELATIVE_CUTOFF
         return [hit for hit in scored[:limit] if hit[1] >= floor]
+
+
+def card_passages(
+    cards: "Iterable[CardText]",
+) -> list[Passage]:
+    """카드의 쉬운 말을 검색 대상으로 만든다.
+
+    **사람이 검수한 문장이 이미 있는데 검색에 쓰이지 않고 있었다.** 수집한 공식
+    문서는 행정 용어로 쓰여 있어서 "나갈 데가 없는데 오늘 밤 어디서 자요" 같은
+    말과 이어지지 않는다. 반면 카드의 요약은 그 말투로 쓰여 있다.
+
+        R2  "급하게 돈이 필요할 때 ... 밥값·병원비·월세"
+        R7  "장사나 사업을 시작할 때 가게 보증금을 낮은 이자로 빌려줘요"
+
+    항목 이름(탭 이름 포함)도 함께 넣는다. 짧은 질문은 그쪽에 걸린다.
+
+    새 데이터를 만들지 않는다. 있는 것을 검색이 볼 수 있게 할 뿐이다.
+    """
+    made: list[Passage] = []
+    for card in cards:
+        body = " ".join(
+            part for part in (card.labels, card.name, card.summary, card.next_step) if part
+        ).strip()
+        if len(body) < _MIN_CARD_CHARS:
+            continue
+        made.append(
+            Passage(
+                doc_id=card.id,
+                title=card.name,
+                section="쉬운 안내",
+                text=body,
+                source_url=card.source_url,
+                fetched_at=card.verified_at,
+                route_ids=card.route_ids,
+                department=card.name,
+                is_card=True,
+            )
+        )
+    return made
