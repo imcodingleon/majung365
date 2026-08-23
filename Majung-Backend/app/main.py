@@ -47,6 +47,9 @@ from app.domains.staff.infrastructure.supabase_repository import (
     SupabaseStaffRepository,
     SupabaseStaffSessionRepository,
 )
+from app.domains.visit.adapter.inbound.api.router import router as visit_router
+from app.domains.visit.application.usecase import VisitUseCase
+from app.domains.visit.infrastructure.supabase_repository import SupabaseVisitRepository
 from app.infrastructure.config.settings import Settings, get_settings
 from app.infrastructure.security.gate import AccessGate
 from app.infrastructure.security.rate_limit import limiter
@@ -156,6 +159,11 @@ def create_app() -> FastAPI:
         app.state.staff_repo = SupabaseStaffRepository(supabase)
         app.state.staff_session_repo = SupabaseStaffSessionRepository(supabase)
         app.state.access_log_repo = SupabaseAccessLogRepository(supabase)
+        app.state.visit_repo = SupabaseVisitRepository(supabase, cipher)
+        app.state.visit_usecase = VisitUseCase(
+            visits=app.state.visit_repo,
+            access_log=app.state.access_log_repo,
+        )
         app.state.signup_usecase = SignupUseCase(
             accounts=app.state.account_repo,
             crimes=app.state.crime_repo,
@@ -175,6 +183,7 @@ def create_app() -> FastAPI:
     app.include_router(centers_router)
     app.include_router(account_router)
     app.include_router(staff_router)
+    app.include_router(visit_router)
     app.include_router(onboarding_router)
 
     @app.get("/api/health")
