@@ -18,6 +18,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
+import { josa } from "@/shared/utils/korean";
 
 import type { ChatMessage } from "../domain/chatMessage";
 
@@ -93,7 +94,8 @@ function Bubble({ message }: { message: ChatMessage }) {
       {message.contact ? (
         <View className="mt-2 border-t border-line-strong pt-2">
           <Text className="text-caption text-ink-sub">
-            더 정확한 내용은 {message.contact.org} {message.contact.phone}으로 물어보시는 게 좋아요.
+            더 정확한 내용은 {message.contact.org} {message.contact.phone}
+            {josa(message.contact.phone, "으로", "로")} 물어보시는 게 좋아요.
           </Text>
           {message.contact.hours ? (
             <Text className="text-caption text-ink-sub">

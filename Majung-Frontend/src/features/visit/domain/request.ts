@@ -3,6 +3,8 @@
 // 상태가 없으면 사용자는 보내놓고 아무것도 모르는 채 기다리게 된다. 그래서 요청이 어떤 상태를
 // 거치는지, 각 상태에서 무엇이 보이는지를 도메인에 못 박는다.
 
+import { josa } from "@/shared/utils/korean";
+
 import type { VisitStatus } from "@/shared/types/visit";
 
 export type { VisitStatus };
@@ -46,11 +48,16 @@ export function statusMessage(request: VisitRequest): string {
     case "confirmed": {
       const c = request.confirmation;
       if (!c) return "방문 시간이 정해졌어요.";
-      return `${c.whenLabel}으로 정해졌어요. ${c.place}에서 ${c.staffName} 담당자를 찾으세요.`;
+      // **만날 사람과 장소가 먼저다** (§7.1). 창구에서 신분이 드러나는 순간이 실질적
+      // 장벽이고, 그 해법은 시간을 아는 것이 아니라 누구를 찾아가면 되는지 아는 것이다.
+      const where = `${c.place}에서 ${c.staffName} 담당자를 찾으세요.`;
+      // 시각이 비면 시각 이야기를 빼고 만다. 넣으면 "정해진 시간으로 정해졌어요"가 된다.
+      if (!c.whenLabel) return `방문 시간이 정해졌어요. ${where}`;
+      return `${c.whenLabel}${josa(c.whenLabel, "으로", "로")} 정해졌어요. ${where}`;
     }
     case "reschedule_proposed":
       return request.proposedTime
-        ? `담당자가 다른 시간을 이야기했어요. ${request.proposedTime}은 어떠세요?`
+        ? `담당자가 다른 시간을 이야기했어요. ${request.proposedTime}${josa(request.proposedTime, "은", "는")} 어떠세요?`
         : "담당자가 다른 시간을 이야기했어요.";
     case "completed":
       return "방문을 마쳤어요.";

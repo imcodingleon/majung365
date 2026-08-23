@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
+import { josa } from "@/shared/utils/korean";
 import { orgKindLabel, type StaffOrgKind } from "@/shared/types";
 import type { VisitStatus } from "@/shared/types/visit";
 
@@ -35,13 +36,6 @@ const STATUS_TONE: Record<VisitStatus, { bg: string; ink: string }> = {
   completed: { bg: COLORS.line, ink: COLORS.inkSub },
   cancelled: { bg: COLORS.alertSoft, ink: COLORS.alertInk },
 };
-
-/** 받침이 있으면 "으로", 없으면 "로". 조사가 틀리면 기계가 쓴 문장으로 읽힌다. */
-function hasFinalConsonant(word: string): boolean {
-  const last = word.trim().slice(-1);
-  if (!last || last < "가" || last > "힣") return false;
-  return (last.charCodeAt(0) - 0xac00) % 28 !== 0;
-}
 
 function StatusBadge({ status }: { status: VisitStatus }) {
   const tone = STATUS_TONE[status];
@@ -97,7 +91,7 @@ export function RequestListScreen({
         {staff ? (
           <Text className="mt-2 text-caption text-ink-muted">
             {staff.branch}
-            {hasFinalConsonant(staff.branch) ? "으로" : "로"} 온 요청만 보입니다.
+            {josa(staff.branch, "으로", "로")} 온 요청만 보입니다.
           </Text>
         ) : null}
       </View>

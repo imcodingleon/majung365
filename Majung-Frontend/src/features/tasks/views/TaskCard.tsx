@@ -7,6 +7,7 @@ import { Text, View } from "react-native";
 import { Button } from "@/shared/components/Button";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
+import { josa } from "@/shared/utils/korean";
 
 import type { Task } from "../domain/task";
 
@@ -65,7 +66,8 @@ export function TaskCard({
       {task.contact ? (
         <View className="mb-4 rounded-xl px-4 py-3" style={{ backgroundColor: COLORS.bubble }}>
           <Text className="text-caption text-ink-sub">
-            더 물어볼 것이 있으면 {task.contact.org} {task.contact.phone}으로 전화해 주세요.
+            더 물어볼 것이 있으면 {task.contact.org} {task.contact.phone}
+            {josa(task.contact.phone, "으로", "로")} 전화해 주세요.
           </Text>
           {task.contact.hours ? (
             <Text className="mt-1 text-caption text-ink-sub">
