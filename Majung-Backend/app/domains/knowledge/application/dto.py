@@ -40,3 +40,43 @@ class TaskCard:
     eligibility: tuple[str, ...] = ()
     steps: tuple[str, ...] = ()
     cautions: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class IntakeCardOption:
+    """한 할 일을 신청할 수 있는 경로 하나. 둘 이상이면 화면이 기관명을 앞에 붙여 나열한다."""
+
+    org: str
+    where: str
+    next_step: str
+    docs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
+class IntakeCard:
+    """제도 원본. 모든 사용자에게 같은 값이라 사용자별 판정과 섞지 않는다."""
+
+    institution_id: str
+    name: str
+    summary_easy: str
+    docs: tuple[str, ...]
+    deadline: str | None
+    source_url: str
+    benefit_summary: str
+    eligibility: tuple[str, ...]
+    steps: tuple[str, ...]
+    cautions: tuple[str, ...]
+    options: tuple[IntakeCardOption, ...]
+
+
+@dataclass(frozen=True)
+class IntakeTask:
+    """할 일 하나. 지원 항목 하나이자 화면의 인덱스 탭 하나다."""
+
+    route_id: str
+    route_label: str
+    section_id: str
+    section_label: str
+    # 다른 항목의 선행조건인지 — 사용자별 판정이 아니라 그래프 구조의 사실이다.
+    blocks_others: bool
+    card: IntakeCard
