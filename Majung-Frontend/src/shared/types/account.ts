@@ -66,3 +66,16 @@ export interface UpdateMeRequest {
   /** 참이면 죄목이 즉시 파기된다 (§9.5). */
   crime_category_revoked?: boolean;
 }
+
+/**
+ * `GET /api/tasks` 응답 — 세션을 되살렸을 때 오는 것.
+ *
+ * **진단 답변은 오지 않는다.** 서버에 저장된 것이 판정뿐이기 때문이다 (§9.1).
+ * 그래서 이 응답으로는 할 일을 다시 계산할 수 없고, 계산은 서버가 이미 마쳤다.
+ */
+export interface RestoreResponse {
+  name: string;
+  tasks: IntakeTask[];
+  /** 마친 지원 항목의 번호들. */
+  completed: string[];
+}

@@ -19,6 +19,7 @@ import type {
 } from "../types";
 import type {
   MeResponse,
+  RestoreResponse,
   SignupRequest,
   SignupResponse,
   UpdateMeRequest,
@@ -100,6 +101,41 @@ export async function postSignup(req: SignupRequest): Promise<SignupResponse> {
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as SignupResponse;
+}
+
+/**
+ * GET /api/tasks — 세션 토큰만으로 할 일을 되살린다 (§5.2).
+ *
+ * **답변을 다시 보내지 않는다.** 서버에 남아 있는 것은 답변이 아니라 판정이고,
+ * 카드 본문은 그때그때 지식 베이스에서 만들어진다. 그래서 기기가 진단 답변을
+ * 들고 있지 않아도 같은 목록이 돌아온다.
+ *
+ * 404면 이어서 볼 것이 없다는 뜻이다 — 저장이 꺼져 있던 때 가입한 경우다.
+ */
+export async function getTasks(token: string): Promise<RestoreResponse> {
+  const res = await fetch(`${API_BASE}/api/tasks`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as RestoreResponse;
+}
+
+/**
+ * PUT /api/tasks/completed — 마친 항목을 서버에 남긴다.
+ *
+ * **전체 목록을 보낸다.** 되돌리기가 있어서 더하기만으로는 표현되지 않는다 (§5.2).
+ */
+export async function putCompleted(
+  token: string,
+  completed: readonly string[],
+): Promise<RestoreResponse> {
+  const res = await fetch(`${API_BASE}/api/tasks/completed`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ completed }),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as RestoreResponse;
 }
 
 /** GET /api/me — 내 정보 열람. **죄목 값은 내려오지 않는다** (§2.5). */

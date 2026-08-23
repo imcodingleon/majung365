@@ -37,6 +37,7 @@ export { orgKindLabel } from "./staff";
 export type {
   ConsentInput,
   MeResponse,
+  RestoreResponse,
   SignupRequest,
   SignupResponse,
   UpdateMeRequest,

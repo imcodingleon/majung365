@@ -16,8 +16,14 @@ import type { LocatedPlace } from "@/shared/location";
 import type { IntakeAnswerMap, IntakeTask } from "../types";
 
 type Session = {
-  /** 서버로 보낸 형태(dataKey 기준). 할 일을 다시 계산할 때 쓴다. */
-  answers: IntakeAnswerMap;
+  /**
+   * 서버로 보낸 형태(dataKey 기준). 할 일을 다시 계산할 때 쓴다.
+   *
+   * **되살린 세션에는 없다.** 서버가 답변을 저장하지 않기 때문이다(§9.1) — 남아
+   * 있는 것은 판정이고, 할 일은 서버가 이미 계산해서 보내 준다. 이 값이 없으면
+   * 기기가 목록을 다시 계산하지 않는다는 뜻이며 그것이 정상이다.
+   */
+  answers?: IntakeAnswerMap;
   /**
    * 문항 id 기준의 원본 답.
    *
@@ -37,6 +43,13 @@ type Session = {
    * 이유가 없고, 그 사이 화면이 비어 있는 시간도 없어진다.
    */
   tasks?: readonly IntakeTask[];
+  /**
+   * 되살린 세션에서 마쳐 있던 항목들.
+   *
+   * **기기에만 두면 앱을 닫는 순간 사라진다.** 그러면 다시 들어왔을 때 이미 끝낸 일이
+   * 안 끝난 것으로 보여 두 번 하게 된다. 서버가 이 목록을 들고 있다 (§5.2).
+   */
+  completed?: readonly string[];
   /**
    * 가입할 때 알아낸 지금 있는 곳 (§5.4).
    *

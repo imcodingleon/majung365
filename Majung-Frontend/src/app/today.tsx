@@ -31,6 +31,8 @@ export default function TodayRoute() {
   const server = useServerTasks(
     session?.answers ?? null,
     session?.tasks ? toTasks(session.tasks) : undefined,
+    // 되살린 세션이면 마쳐 있던 항목이 함께 온다 (§5.2).
+    (session?.completed as RouteId[] | undefined) ?? undefined,
   );
   const chat = useTaskThreads();
   const visit = useVisitRequests();

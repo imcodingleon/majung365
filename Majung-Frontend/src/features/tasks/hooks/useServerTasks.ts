@@ -10,7 +10,8 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 
 import type { IntakeAnswerMap } from "@/shared/types";
-import { ApiError, postIntakeAnalyze } from "@/shared/utils/api";
+import { ApiError, postIntakeAnalyze, putCompleted } from "@/shared/utils/api";
+import { loadToken } from "@/shared/utils/tokenStore";
 
 import { toTasks } from "../domain/fromServer";
 import type { RouteId, Task } from "../domain/task";
@@ -41,15 +42,24 @@ function merge(seen: readonly Task[], fresh: readonly Task[]): readonly Task[] {
   return [...kept, ...fresh.filter((t) => !known.has(t.id))];
 }
 
-export function useServerTasks(answers: IntakeAnswerMap | null, initial?: readonly Task[]) {
+export function useServerTasks(
+  answers: IntakeAnswerMap | null,
+  initial?: readonly Task[],
+  initialCompleted?: readonly RouteId[],
+) {
   const [state, setState] = useState<State>({
     // 가입 응답에 할 일이 함께 왔으면 그것으로 시작한다. 화면이 비는 순간이 없어진다.
     all: initial ?? [],
     loading: false,
     error: null,
   });
-  /** 마친 항목. 다음 요청에 함께 보내 서버가 목록을 다시 계산하게 한다. */
-  const [completed, setCompleted] = useState<readonly RouteId[]>([]);
+  /**
+   * 마친 항목.
+   *
+   * **서버에도 남긴다.** 기기에만 두면 앱을 닫는 순간 마친 표시가 사라져, 되살린
+   * 화면에서 이미 끝낸 일을 다시 하게 된다.
+   */
+  const [completed, setCompleted] = useState<readonly RouteId[]>(initialCompleted ?? []);
 
   const load = useCallback(
     async (done: readonly RouteId[]) => {
@@ -81,6 +91,35 @@ export function useServerTasks(answers: IntakeAnswerMap | null, initial?: readon
     void load(completed);
     // completed가 바뀔 때마다 다시 부른다. 선행 조건이 풀려 새 항목이 생길 수 있다.
   }, [load, completed]);
+
+  /**
+   * 마친 항목을 서버에 남긴다.
+   *
+   * **화면을 먼저 바꾸고 뒤에서 보낸다.** 완료를 누른 뒤 서버 응답을 기다리게 하면
+   * 그 사이 화면이 멈춘 것처럼 보인다. 실패하면 그때 알린다 — 조용히 넘기면
+   * 마쳤다고 믿은 것이 다음에 들어왔을 때 되살아난다.
+   */
+  const firstSync = useRef(true);
+  useEffect(() => {
+    if (firstSync.current) {
+      firstSync.current = false;
+      return;
+    }
+    const ids = completed.map((id) => String(id));
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return;
+      try {
+        await putCompleted(token, ids);
+      } catch (err) {
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : "끝낸 표시를 저장하지 못했어요. 다음에 들어오시면 다시 보일 수 있어요.";
+        setState((s) => ({ ...s, error: message }));
+      }
+    })();
+  }, [completed]);
 
   /** 마쳤는지를 항목에 실어 화면으로 넘긴다. 화면이 완료 집합을 따로 들 필요가 없어진다. */
   const tasks = useMemo<readonly Task[]>(
