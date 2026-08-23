@@ -162,6 +162,8 @@ class IntakeTaskOut(BaseModel):
     section_id: str
     section_label: str
     blocks_others: bool
+    # 이 항목으로 방문 요청을 보낼 수 있는가(§7). 통장·증명서·빚은 받을 담당자가 없다.
+    can_request_visit: bool
     card: IntakeCardOut
 
 
@@ -179,6 +181,7 @@ def to_task_out(t: IntakeTask) -> IntakeTaskOut:
         section_id=t.section_id,
         section_label=t.section_label,
         blocks_others=t.blocks_others,
+        can_request_visit=t.can_request_visit,
         card=IntakeCardOut(
             institution_id=t.card.institution_id,
             name=t.card.name,

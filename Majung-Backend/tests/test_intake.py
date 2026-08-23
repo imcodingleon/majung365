@@ -353,3 +353,26 @@ def test_real_data_splits_debt_by_stage() -> None:
     assert card_id("STOPPED") == "debt-restart"
     # 아직 시작 안 한 사람에게는 기본 대표가 맞다.
     assert card_id("STARTING") == "debt-credit-recovery"
+
+
+def test_visit_availability_comes_from_the_org_mapping() -> None:
+    """**화면이 이 표를 복사해 들고 있으면 언젠가 갈린다.**
+
+    통장은 은행, 증명서는 교정시설, 빚은 법원이라 우리 담당자가 없다. 화면이
+    그것을 모르면 §7 기능이 어느 카드에도 안 나오거나, 받을 수 없는 항목에
+    버튼이 뜬다. 실제로 방문 요청 기능이 화면에서 통째로 안 보이고 있었다.
+    """
+    usecase = _usecase_with_graph()
+    answers = {
+        "accommodationStatus": "NO_PLACE",   # R1 공단
+        "identityStatus": "NONE",            # R9 주민센터
+        "bankAccountStatus": "NONE",         # R10 은행 — 받을 담당자가 없다
+        "debtProcedureStage": "STARTING",    # R14 법원 — 없다
+        "releaseCertificateStatus": "NONE",  # R13 교정시설 — 없다
+    }
+    got = {t.route_id: t.can_request_visit for t in usecase.run(answers)}
+    assert got.get("R1") is True
+    assert got.get("R9") is True
+    assert got.get("R10") is False
+    assert got.get("R14") is False
+    assert got.get("R13") is False

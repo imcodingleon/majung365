@@ -29,6 +29,7 @@ from app.domains.shared.routes import (
     section_label_for,
     tab_label_for,
 )
+from app.domains.staff.domain.entity import org_for
 
 logger = logging.getLogger("majung.intake")
 
@@ -126,6 +127,8 @@ class IntakeUseCase:
                 section_id=v.section_id.value,
                 section_label=section_label_for(v.section_id),
                 blocks_others=v.blocks_others,
+                # 받을 담당자가 있는 항목인지는 기관 매핑이 정본이다(§7).
+                can_request_visit=org_for(v.route_id) is not None,
                 card=self._card_for(v),
             )
             for v in verdicts
