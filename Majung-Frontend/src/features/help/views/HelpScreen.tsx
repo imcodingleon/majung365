@@ -4,6 +4,7 @@ import { useState } from "react";
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
 import { COUNSEL_LINES, EMERGENCY_LINES, type HelpLine } from "../domain/contacts";
@@ -59,17 +60,7 @@ export function HelpScreen({ onClose }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-        <Text className="text-lg font-extrabold text-ink-strong">도움 연결</Text>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">✕</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="도움 연결" closeHint="도움 연결 화면 닫기" onClose={onClose} />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6">
         <Text className="text-[23px] font-extrabold leading-[32px] text-ink-strong">

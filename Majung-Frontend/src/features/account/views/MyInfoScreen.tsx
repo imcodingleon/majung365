@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 import { CRIME_CATEGORIES, type CrimeCategoryId } from "@/shared/types/crime";
 
@@ -45,17 +46,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-        <Text className="text-lg font-extrabold text-ink-strong">내 정보</Text>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">✕</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="내 정보" closeHint="내 정보 화면 닫기" onClose={onClose} />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
         <View className="rounded-2xl bg-white px-4">
