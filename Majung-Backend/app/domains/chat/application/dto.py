@@ -36,6 +36,11 @@ class CardData:
     next_step: str
     deadline: str | None
     source_url: str
+    # 결과 카드 확장(§4.1). 값이 없으면 화면이 그 자리를 만들지 않는다.
+    benefit_summary: str = ""
+    eligibility: tuple[str, ...] = ()
+    steps: tuple[str, ...] = ()
+    cautions: tuple[str, ...] = ()
 
 
 # ── SSE 이벤트 (UseCase가 yield) ──

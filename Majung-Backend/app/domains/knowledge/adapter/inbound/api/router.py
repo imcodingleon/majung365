@@ -45,6 +45,10 @@ class TaskCardOut(BaseModel):
     duration_days: int
     is_fallback: bool
     resolved_states: dict[str, str]
+    benefit_summary: str
+    eligibility: list[str]
+    steps: list[str]
+    cautions: list[str]
 
 
 def _to_command(body: AnalyzeIn) -> AnalyzeCommand:
@@ -85,4 +89,8 @@ async def analyze(body: AnalyzeIn, request: Request) -> TaskCardOut:
         duration_days=card.duration_days,
         is_fallback=card.is_fallback,
         resolved_states={nid: st.value for nid, st in card.resolved_states.items()},
+        benefit_summary=card.benefit_summary,
+        eligibility=list(card.eligibility),
+        steps=list(card.steps),
+        cautions=list(card.cautions),
     )

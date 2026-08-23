@@ -35,3 +35,8 @@ class TaskCard:
     # 이번 계산에 쓰인 그래프 전체 노드 상태 스냅샷. "완료 처리" 시 프론트가 이 노드만 O로 바꿔
     # 그대로 재전송하면 재계산이 된다 — LLM(C6) 재호출 없이 다음 과제를 구할 수 있다.
     resolved_states: dict[str, NodeState]
+    # 결과 카드 확장(§4.1). KB에서 그대로 실어 나른다.
+    benefit_summary: str = ""
+    eligibility: tuple[str, ...] = ()
+    steps: tuple[str, ...] = ()
+    cautions: tuple[str, ...] = ()

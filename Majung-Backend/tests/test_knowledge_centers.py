@@ -181,3 +181,48 @@ def test_district_office_zipcodes_are_five_digits() -> None:
     assert seoul_junggu and all(o.zipcode.startswith("0") for o in seoul_junggu), (
         "서울 우편번호는 0으로 시작한다 — 앞자리가 잘렸다는 신호다"
     )
+
+
+# ── 결과 카드 확장 필드 (기획서 §4.1 · §12-14) ──
+
+
+def test_extension_fields_default_to_empty() -> None:
+    """스키마만 먼저 두고 값은 확정된 것부터 채운다. 지금은 전부 비어 있는 것이 정상이다."""
+    repo = JsonInstitutionRepository()
+    for inst in repo.all():
+        assert isinstance(inst.benefit_summary, str)
+        assert isinstance(inst.eligibility, tuple)
+        assert isinstance(inst.steps, tuple)
+        assert isinstance(inst.cautions, tuple)
+
+
+def test_extension_fields_load_when_present(tmp_path: Path) -> None:
+    """값이 들어오면 그대로 실린다 — 문구가 확정되면 데이터만 채우면 된다."""
+    repo = JsonInstitutionRepository()
+    rows = []
+    for i in repo.all():
+        row = {
+            "id": i.id,
+            "route_ids": [r.value for r in i.route_ids],
+            "lead_for": [r.value for r in i.lead_for],
+            "name": i.name,
+            "summary_easy": i.summary_easy,
+            "where": i.where,
+            "docs": list(i.docs),
+            "next_step": i.next_step,
+            "deadline": i.deadline,
+            "source_url": i.source_url,
+        }
+        if i.id == "startup-koreha-support":
+            row["benefit_summary"] = "연이율 2.5%로 최대 5천만원, 최대 6년"
+            row["cautions"] = ["임차보증금의 50% 이상은 본인이 준비해야 해요"]
+            row["eligibility"] = ["빚 문제로 법원에 이름이 올라가 있으면 어려울 수 있어요"]
+        rows.append(row)
+
+    path = tmp_path / "institutions.json"
+    path.write_text(json.dumps({"institutions": rows}, ensure_ascii=False), encoding="utf-8")
+
+    loaded = JsonInstitutionRepository(path).by_id("startup-koreha-support")
+    assert loaded is not None
+    assert "5천만원" in loaded.benefit_summary
+    assert loaded.cautions and loaded.eligibility

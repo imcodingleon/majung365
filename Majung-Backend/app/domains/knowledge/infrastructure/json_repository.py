@@ -27,6 +27,10 @@ class JsonInstitutionRepository:
                 next_step=row.get("next_step", ""),
                 deadline=row.get("deadline"),
                 source_url=row.get("source_url", ""),
+                benefit_summary=row.get("benefit_summary", ""),
+                eligibility=tuple(row.get("eligibility", [])),
+                steps=tuple(row.get("steps", [])),
+                cautions=tuple(row.get("cautions", [])),
             )
             for row in raw["institutions"]
         ]

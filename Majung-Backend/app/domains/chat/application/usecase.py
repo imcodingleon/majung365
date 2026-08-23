@@ -152,4 +152,8 @@ class ChatUseCase:
             next_step=inst.next_step,
             deadline=inst.deadline,
             source_url=inst.source_url,
+            benefit_summary=inst.benefit_summary,
+            eligibility=inst.eligibility,
+            steps=inst.steps,
+            cautions=inst.cautions,
         )
