@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 type Props = {
@@ -29,20 +30,17 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
       <View className="flex-1 justify-center px-6">
-        {/* 이 배너를 지우지 말 것. 인증으로 오해한 채 배포하면 출소자 명단이 열린다. */}
-        <View className="mb-8 rounded-xl border border-alert-line bg-alert-soft px-4 py-4">
-          <Text className="text-body font-extrabold text-alert">시연용 화면입니다</Text>
-          <Text className="mt-1 text-caption text-alert-ink">
-            실제 로그인이 아니고 담당자 계정 체계도 아직 없습니다. 실제 자료도 연결되어 있지
-            않습니다.
-          </Text>
-        </View>
+        {/* **로그인은 이제 진짜다.** 서버가 확인하고 계정도 발급되어 있다.
+            아직 예시인 것은 요청 목록뿐이라 배너를 그만큼만 남긴다. 실제 자료가 붙으면 지운다. */}
+        <NoteBox tone="warn" title="아직 준비 중인 화면입니다" className="mb-8">
+          <NoteLine tone="warn">로그인은 실제로 동작하지만 요청 목록은 예시입니다.</NoteLine>
+        </NoteBox>
 
         <Text className="text-display font-extrabold text-ink-strong">
           담당자 화면
         </Text>
         <Text className="mb-8 mt-2 text-body-lg text-ink-sub">
-          한국법무보호복지공단 담당자용입니다.
+          공단·행정복지센터 담당자용입니다.
         </Text>
 
         <Text className="mb-2 text-body-lg font-extrabold text-ink-strong">아이디</Text>

@@ -80,6 +80,8 @@ export function useTaskThreads(initial: Threads = {}) {
 
       const replyId = `${taskId}-${seq + 1}`;
       let streamed = "";
+      /** 카드가 한 장이라도 왔는지. 본문이 비어도 카드가 있으면 빈 응답이 아니다. */
+      let gotCard = false;
       let started = false;
 
       abort.current?.abort();
@@ -115,12 +117,25 @@ export function useTaskThreads(initial: Threads = {}) {
             });
           },
           onCard: (card) => {
+            gotCard = true;
             append(taskId, cardToMessage(`${replyId}-card`, card));
           },
           onError: (message) => {
             append(taskId, { id: `${replyId}-err`, role: "assistant", text: message });
           },
           onDone: () => {
+            // **답변도 카드도 없이 끝나는 응답이 있다.** 모델이 항목은 맞혔는데 질문 유형을
+            // 다르게 판정하면 카드가 통째로 빠지고 본문도 비어 온다(backend 확인, 2026-08-23).
+            //
+            // 그때 화면에는 사용자가 보낸 말만 남는다. **저리터러시 사용자는 화면이 비면
+            // 자기가 잘못 눌렀다고 생각한다.** 빈 채로 두지 않고 못 찾았다고 말한다.
+            if (!streamed.trim() && !gotCard) {
+              append(taskId, {
+                id: `${replyId}-empty`,
+                role: "assistant",
+                text: "지금은 답을 찾지 못했어요.\n사람에게 물어보시는 편이 빠를 수 있어요.",
+              });
+            }
             setThreads((prev) => ({
               ...prev,
               [taskId]: (prev[taskId] ?? []).map((m) =>

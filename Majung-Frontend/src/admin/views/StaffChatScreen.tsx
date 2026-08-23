@@ -11,6 +11,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
 export type StaffMessage = {
@@ -40,24 +41,19 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-      <View className="flex-row items-center gap-3 border-b border-line px-4 py-3">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="뒤로"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">‹</Text>
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-caption text-ink-muted">방문 조율</Text>
-          <Text className="mt-1 text-body-lg font-extrabold text-ink-strong">{peerName}</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title={peerName}
+        eyebrow="방문 조율"
+        leading="back"
+        closeHint="요청 상세로 돌아가기"
+        onClose={onBack}
+      />
 
-      <View className="border-b border-line bg-alert-soft px-4 py-2">
-        <Text className="text-caption font-bold text-alert">
-          시연용 화면 · 아직 실제로 전송되지 않습니다
+      {/* 실제로 전송되지 않는다는 사실을 화면이 숨기지 않는다. 담당자가 보냈다고 믿고
+          기다리면 그 사이에 사용자는 답을 못 받는다. 서버 연결이 붙으면 이 띠를 지운다 */}
+      <View className="border-b border-line px-4 py-2" style={{ backgroundColor: COLORS.alertSoft }}>
+        <Text className="text-caption font-bold" style={{ color: COLORS.alert }}>
+          아직 실제로 전송되지 않습니다
         </Text>
       </View>
 

@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox } from "@/shared/components/NoteBox";
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
 import {
@@ -97,20 +98,13 @@ export function RequestDetailScreen({
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <View className="flex-row items-center gap-3 border-b border-line bg-white px-5 py-4">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="목록으로"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">‹</Text>
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-heading font-extrabold text-ink-strong">{request.name}</Text>
-          <Text className="text-caption text-ink-muted">{statusLabel(request.status)}</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title={request.name}
+        eyebrow={statusLabel(request.status)}
+        leading="back"
+        closeHint="요청 목록으로 돌아가기"
+        onClose={onBack}
+      />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
         <View className="rounded-2xl bg-white px-4">

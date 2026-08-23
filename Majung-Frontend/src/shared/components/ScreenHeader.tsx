@@ -14,20 +14,35 @@ type Props = {
   onClose: () => void;
   /** 화면 낭독기가 읽을 문장. 그냥 "닫기"로는 무엇이 닫히는지 모른다. */
   closeHint?: string;
+  /**
+   * 나가는 모양.
+   *
+   * `close`는 덮어씌운 화면을 걷는 것이고 `back`은 앞 화면으로 돌아가는 것이다.
+   * **모양이 다르면 뜻도 다르게 읽힌다** — ✕는 끝내는 것, ‹는 되짚는 것이다.
+   */
+  leading?: "close" | "back";
   /** 오른쪽에 놓을 것. 없으면 자리를 만들지 않는다. */
   right?: React.ReactNode;
 };
 
-export function ScreenHeader({ title, eyebrow, onClose, closeHint, right }: Props) {
+export function ScreenHeader({
+  title,
+  eyebrow,
+  onClose,
+  closeHint,
+  leading = "close",
+  right,
+}: Props) {
+  const back = leading === "back";
   return (
     <View className="flex-row items-center gap-2 border-b border-line bg-white px-3 py-3">
       <Pressable
         onPress={onClose}
         accessibilityRole="button"
-        accessibilityLabel={closeHint ?? `${title} 닫기`}
+        accessibilityLabel={closeHint ?? (back ? "앞 화면으로" : `${title} 닫기`)}
         className="size-10 items-center justify-center rounded-full active:opacity-70"
       >
-        <Text className="text-2xl text-ink-muted">✕</Text>
+        <Text className="text-2xl text-ink-muted">{back ? "‹" : "✕"}</Text>
       </Pressable>
 
       <View className="flex-1 px-1">
