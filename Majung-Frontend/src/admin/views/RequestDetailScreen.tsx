@@ -85,8 +85,13 @@ function Button({
 function proposalSlots(request: StaffRequest): readonly { label: string; iso: string }[] {
   // **서버 값을 그대로 믿지 않는다.** 파싱되지 않는 시각이 오면 Invalid Date가 되고,
   // 그 뒤 `toISOString()`이 RangeError를 던져 **요청 상세 화면이 렌더 도중에 터진다.**
+  // **1지망 날짜를 기준으로 삼되 오늘보다 앞설 수는 없다.** 20일에 들어온 21일 요청을
+  // 담당자가 27일에 열면 24·25·26일이 후보로 나오고, 그것을 고르면 **이미 지난 날짜가
+  // 제안으로 올라가 사용자 화면에 뜬다.**
   const parsed = request.firstChoiceAt ? new Date(request.firstChoiceAt) : null;
-  const base = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+  const wanted = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
+  const today = new Date();
+  const base = wanted.getTime() > today.getTime() ? wanted : today;
 
   const out: { label: string; iso: string }[] = [];
   const cursor = new Date(base.getFullYear(), base.getMonth(), base.getDate());

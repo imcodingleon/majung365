@@ -46,12 +46,17 @@ export class ApiError extends Error {
 }
 
 const DEFAULT_ERROR = "지금 잠시 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
+const INVALID_ERROR = "보내려는 내용이 너무 많거나 형식이 맞지 않아요. 고르신 항목을 줄여서 다시 보내 주세요.";
 
 /** 응답 body(JSON detail)에서 사용자용 문구를 최대한 뽑아낸다. */
 async function errorMessage(res: Response): Promise<string> {
   try {
     const data = (await res.json()) as { detail?: unknown };
     if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
+    // **FastAPI의 검증 오류(422)는 `detail`이 배열이다.** 위 문자열 검사에서 걸러져
+    // 통신 오류 문구가 나가면, 사용자는 연결 탓인 줄 알고 다시 누르기만 반복한다.
+    // 배열 안의 문구는 영어라 그대로 보여줄 수 없으므로 무엇을 해야 하는지만 말한다.
+    if (Array.isArray(data.detail)) return INVALID_ERROR;
   } catch {
     // JSON 아님 — 기본 문구로
   }

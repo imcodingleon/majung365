@@ -99,7 +99,13 @@ export function useVisitRequests() {
     [requests],
   );
 
-  const closeForm = useCallback(() => setFormTaskId(null), []);
+  const closeForm = useCallback(() => {
+    setFormTaskId(null);
+    // **앞선 실패 문구를 다음 화면까지 끌고 가지 않는다.** 상한에 걸려 거절당한 뒤
+    // 다른 항목의 알림 화면을 열면, 아무것도 보내지 않았는데 그 문구가 보내기 단추
+    // 위에 그대로 떠 있었다.
+    setError(null);
+  }, []);
   const dismissBlocked = useCallback(() => setBlocked(null), []);
 
   const submit = useCallback(
@@ -157,21 +163,23 @@ export function useVisitRequests() {
    * 안 됐는지 알 수 없고, 화면에 이미 "다시 보내기"가 붙는 자리가 있다.
    */
   const cancel = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       const target = requests.find((r) => r.id === id);
-      if (!target || !canCancel(target.status)) return;
+      if (!target || !canCancel(target.status)) return false;
 
       const token = await loadToken();
       if (!token) {
         setError("다시 로그인해 주세요.");
-        return;
+        return false;
       }
       setError(null);
       try {
         const updated = await cancelVisit(token, id);
         setRequests((prev) => prev.map((r) => (r.id === id ? toRequest(updated) : r)));
+        return true;
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "지금은 물리지 못했어요.");
+        return false;
       }
     },
     [requests],

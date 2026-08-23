@@ -16,6 +16,7 @@ import { sharedItems } from "../domain/request";
 import {
   answeredSections,
   buildSharedAnswers,
+  droppedSharedAnswers,
   defaultSections,
   type SharedAnswer,
 } from "../domain/sharedAnswers";
@@ -146,6 +147,12 @@ export function VisitRequestSheet({
 
   const shared = useMemo(
     () => (answers && shareOn ? buildSharedAnswers(answers, picked) : []),
+    [answers, shareOn, picked],
+  );
+  // 한 번에 보낼 수 있는 줄 수가 정해져 있다. 넘치면 뒤쪽 분야의 답이 빠지는데,
+  // 말없이 빠지면 사용자는 켠 것이 다 간 줄로 안다. 몇 줄이 빠지는지 그대로 알린다.
+  const dropped = useMemo(
+    () => (answers && shareOn ? droppedSharedAnswers(answers, picked) : 0),
     [answers, shareOn, picked],
   );
 
@@ -363,6 +370,14 @@ export function VisitRequestSheet({
                 </View>
               ) : null}
             </View>
+          ) : null}
+
+          {/* **빠지는 답이 있으면 보내기 전에 말한다.** 켠 분야의 답이 조용히 사라지면
+              사용자는 창구에서 그 이야기를 다시 해야 하는 줄 모른 채 간다 (§7.6). */}
+          {dropped > 0 ? (
+            <NoteBox tone="warn" className="mt-4">
+              {`한 번에 보낼 수 있는 양을 넘었어요. 지금 켜신 것 중 ${dropped}줄은 담당자에게 가지 않아요. 분야를 몇 개 꺼 주시면 나머지가 모두 갑니다.`}
+            </NoteBox>
           ) : null}
 
           {/* 무엇이 담당자에게 가는지 전송 직전에 보여준다 (§7.4). */}

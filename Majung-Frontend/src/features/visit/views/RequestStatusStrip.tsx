@@ -30,7 +30,12 @@ type Props = {
   /** 취소된 요청을 다시 보낸다. */
   onResend?: () => void;
   /** 보낸 요청을 물린다. 못 가게 되는 일은 실제로 생기고, 그때 담당자가 헛되이 기다린다. */
-  onCancel?: () => void;
+  /**
+   * 요청을 물린다. **성공 여부를 돌려줘야 한다.** 실패했는데 확인 문구가 그대로
+   * 떠 있으면 사용자는 물린 줄 알고 나가고, 담당자는 그 시간을 계속 비워 둔다 —
+   * 이 기능을 만든 이유가 바로 그 상황이었다.
+   */
+  onCancel?: () => Promise<boolean> | void;
 };
 
 type Tone = "info" | "done" | "warn";
@@ -136,7 +141,15 @@ export function RequestStatusStrip({
               담당자가 시간을 비워 두었어요. 정말 안 가시겠어요?
             </Text>
             <View className="flex-row gap-2">
-              <SmallButton label="네, 안 갈래요" filled onPress={onCancel} />
+              <SmallButton
+                label="네, 안 갈래요"
+                filled
+                onPress={() => {
+                  void Promise.resolve(onCancel()).then((ok) => {
+                    if (ok === false) setConfirming(false);
+                  });
+                }}
+              />
               <SmallButton label="아니요" onPress={() => setConfirming(false)} />
             </View>
           </View>

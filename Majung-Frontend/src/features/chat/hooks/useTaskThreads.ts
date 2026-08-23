@@ -14,7 +14,7 @@ import type { CardData, Turn, EvidenceEvent } from "@/shared/types";
 import { ApiError, deleteChatHistory, getChatHistory, streamChat } from "@/shared/utils/api";
 import { loadToken } from "@/shared/utils/tokenStore";
 
-import type { ChatMessage } from "../domain/chatMessage";
+import { SEARCH_NOTICE, type ChatMessage } from "../domain/chatMessage";
 
 type Threads = Record<string, ChatMessage[]>;
 
@@ -138,8 +138,14 @@ export function useTaskThreads(initial: Threads = {}) {
       /** 카드가 한 장이라도 왔는지. 본문이 비어도 카드가 있으면 빈 응답이 아니다. */
       let gotCard = false;
       let started = false;
-      /** 서버가 알려준 근거 단계. 답변 텍스트보다 먼저 온다 (§6.4). */
-      let stage: EvidenceEvent["stage"] = "confirmed";
+      /**
+       * 서버가 알려준 근거 단계. 답변 텍스트보다 먼저 온다 (§6.4).
+       *
+       * **모를 때는 비워 둔다.** 예전 기본값이 `"confirmed"`여서, 서버가 근거 프레임을
+       * 보내지 않는 경로에서는 근거가 없는데도 "확인한 자료를 참고했어요"가 붙었다.
+       * 확실성을 모를 때 가장 강한 쪽으로 기우는 것은 이 배지를 둔 이유에 반한다.
+       */
+      let stage: EvidenceEvent["stage"] | null = null;
 
       abort.current?.abort();
       const controller = new AbortController();
@@ -167,7 +173,15 @@ export function useTaskThreads(initial: Threads = {}) {
                       text: streamed,
                       streaming: true,
                       // 어디서 온 답인지를 말풍선이 직접 드러낸다 (§6.4).
-                      evidence: { stage: stage === "web" ? "web" : "rag", org: sourceLabel(stage) },
+                      // 근거를 모르면 아무 말도 하지 않는다 — 없는 근거를 있다고 하지 않는다.
+                      ...(stage
+                        ? {
+                            evidence: {
+                              stage: stage === "web" ? ("web" as const) : ("rag" as const),
+                              org: sourceLabel(stage),
+                            },
+                          }
+                        : {}),
                     },
                   ],
                 };
@@ -204,8 +218,12 @@ export function useTaskThreads(initial: Threads = {}) {
                 ),
               }));
             }
-            if (ev.stage === "web" && ev.notice) {
-              append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: ev.notice });
+            if (ev.stage === "web") {
+              // **먼저 알리는 것이 핵심이다** (§6.4 ②단계). 서버가 문구를 비워 보내면
+              // 고지가 통째로 사라지고 답변만 흘러나온 뒤 배지가 뒤따랐다 — 신호가
+              // 정보 뒤로 간다. 이 문장은 대기 안내도 겸하므로 비면 대기 화면도 빈다.
+              const notice = ev.notice?.trim() || SEARCH_NOTICE;
+              append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: notice });
             }
           },
           onCard: (card) => {
@@ -272,7 +290,11 @@ export function useTaskThreads(initial: Threads = {}) {
         await deleteChatHistory(token, taskId);
       } catch {
         // 서버에서 못 지웠어도 화면은 비운 채로 둔다. 되살려 보이면 더 혼란스럽다.
-        // 다시 열 때 서버 사본이 돌아오는데, 그때 사용자가 한 번 더 지울 수 있다.
+        // **대신 다시 불러올 길을 연다.** `loaded`에서 빼지 않으면 `open`이 곧바로
+        // 돌아가 버려(위쪽 `loaded.current.has` 검사), 같은 실행 안에서는 서버 사본이
+        // 영영 오지 않는다. 사용자는 지워졌다고 믿지만 서버에는 남고, 다시 지울
+        // 기회도 오지 않는다 — CLAUDE.md가 "삭제는 즉시 처리한다"로 못 박은 자리다.
+        loaded.current.delete(taskId);
       }
     })();
   }, [openTaskId]);

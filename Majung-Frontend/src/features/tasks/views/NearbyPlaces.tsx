@@ -52,7 +52,11 @@ function pickOffices(
   const mine = offices.filter((o) => o.dong === dong || (stem.length >= 2 && o.dong.startsWith(stem)));
   if (mine.length === 0) return { list: offices.slice(0, 2), mineFirst: false };
   const rest = offices.filter((o) => !mine.includes(o));
-  return { list: [...mine, ...rest].slice(0, 2), mineFirst: true };
+  // **앞으로 당기는 것과 "여기예요"라고 단정하는 것은 다르다** (§5.4 — 없는 것을 있는
+  // 것처럼 보이게 하지 않는다). 어간이 겹치는 정도로 순서를 정하는 것은 도움이 되지만,
+  // 배지는 동 이름이 정확히 같을 때만 붙인다. 경계 데이터가 "불당동"이고 주민센터가
+  // "불당1동"·"불당2동"으로 갈린 경우, 근사치로 붙이면 둘 중 아무 쪽에나 붙는다.
+  return { list: [...mine, ...rest].slice(0, 2), mineFirst: mine[0]?.dong === dong };
 }
 
 /**
