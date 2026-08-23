@@ -30,6 +30,9 @@ yarn-error.*
 .DS_Store
 *.pem
 
+# Google Play service account key (EAS submit)
+google-play-service-account.json
+
 # local env files
 .env*.local
 
