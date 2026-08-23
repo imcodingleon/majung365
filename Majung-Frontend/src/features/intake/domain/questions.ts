@@ -39,13 +39,17 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     kind: "date",
     dataKey: "temporaryStayEndDate",
     allowUnknown: true,
-    showWhen: { questionId: "Q1-1", optionIds: ["NO_PLACE_TONIGHT", "TEMPORARY_UNSTABLE"] },
+    // **NO_PLACE_TONIGHT은 조건에서 뺐다.** 계약 문서(intake-questions.md Q1-1-1)는 둘 다
+    // 넣으라고 적혀 있지만, 오늘 밤 잘 곳이 없다고 답한 사람에게 "지금 머무는 곳은 언제까지"를
+    // 물으면 답할 수 있는 질문이 아니다. 머무는 곳이 없다는 것이 방금 그 사람의 답이다.
+    // 그 경우 급한 정도는 이미 정해져 있어 종료일을 받을 이유도 없다 (2026-08-23).
+    showWhen: { questionId: "Q1-1", optionIds: ["TEMPORARY_UNSTABLE"] },
   },
   {
     id: "Q1-2",
     sectionId: "housing",
     routeId: "R4",
-    prompt: "가족과 오래 살 집을 구하려고 하나요? 맞는 것을 모두 골라 주세요.",
+    prompt: "가족과 오래 살 집을 구하려고 하나요?",
     kind: "multi",
     dataKey: "housingConditionIds",
     options: [
@@ -210,7 +214,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-1-1",
     sectionId: "identity",
     routeId: "R9",
-    prompt: "신분증은 지금 어떤 상태인가요?",
+    prompt: "신분증은 지금 어떤 상황인가요?",
     help: "주민등록증을 신청한 다음 주민센터에 말하면 임시 신분증을 받을 수 있어요. 사진이 붙어 있고 30일 동안 쓸 수 있어요. 공식 이름은 ‘주민등록증 발급신청 확인서’예요.",
     kind: "single",
     dataKey: "identityDetail",
@@ -266,7 +270,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-2-2",
     sectionId: "identity",
     routeId: "R10",
-    prompt: "통장은 지금 어떤 상태인가요?",
+    prompt: "통장은 지금 어떤 상황인가요?",
     kind: "single",
     dataKey: "bankAccountDetail",
     showWhen: { questionId: "Q3-2", optionIds: ["NONE"] },
@@ -353,7 +357,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q4-2-1",
     sectionId: "employment",
     routeId: "R7",
-    prompt: "장사나 사업을 하려고 준비한 것을 모두 골라주세요.",
+    prompt: "장사나 사업을 하려고 준비한 것이 있나요?",
     kind: "multi",
     dataKey: "startupReadinessIds",
     showWhen: { questionId: "Q4-2", optionIds: ["PREPARING"] },
@@ -362,6 +366,9 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "STARTUP_TRAINING", label: "창업교육을 받았어요" },
       { id: "LIVING_BASE", label: "사업할 곳을 정했어요" },
       { id: "OWN_FUNDS", label: "내가 낼 돈을 준비할 수 있어요" },
+      // 넷 중 하나도 해당하지 않는 사람이 고를 것이 없으면 다음 문항으로 넘어갈 수 없다.
+      // 다른 복수선택 문항(Q1-2)과 같은 자리에 같은 선택지를 둔다.
+      { ...UNKNOWN, exclusive: true },
     ],
   },
 
