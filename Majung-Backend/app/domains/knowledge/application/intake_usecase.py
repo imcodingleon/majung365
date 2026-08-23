@@ -48,6 +48,7 @@ class IntakeUseCase:
         # 없으면 항목의 기본 대표를 쓴다 — 갈림이 없는 항목이 대부분이다.
         self._nodes = graph_nodes or {}
         self._validate_overrides()
+        self._validate_graph_refs()
 
     def _validate_overrides(self) -> None:
         """규칙표가 가리키는 제도가 KB에 있는지 부팅 때 확인한다.
@@ -66,6 +67,31 @@ class IntakeUseCase:
         ]
         if broken:
             raise ValueError(f"규칙표가 KB에 없는 제도를 가리킨다: {broken}")
+
+    def _validate_graph_refs(self) -> None:
+        """그래프가 가리키는 제도가 **그 항목의 제도인지** 확인한다.
+
+        **존재하는지만 보면 부족하다.** `id_card` 노드(R9)가 주민등록 재등록을
+        가리킨 적이 있는데, 그 제도가 R11로 옮겨간 뒤에도 노드는 그대로였다.
+        id는 KB에 살아 있으니 존재 검사는 통과하고, 신분증을 물은 사람에게 다른
+        절차가 안내됐다. 카드를 옮길 때 그래프를 함께 고치지 않으면 생기는 일이다.
+
+        **그래프가 대표를 이기는 구조라 이 어긋남은 조용히 새 카드를 덮어쓴다.**
+        """
+        broken: list[str] = []
+        for node in self._nodes.values():
+            covered = set(node.route_ids)
+            for path in node.obtain:
+                found = self._institutions.by_id(path.kb_ref)
+                if found is None:
+                    broken.append(f"{node.id}→{path.kb_ref}(KB에 없음)")
+                elif not covered & {r.value for r in found.route_ids}:
+                    broken.append(
+                        f"{node.id}({','.join(covered)})→{path.kb_ref}"
+                        f"({','.join(r.value for r in found.route_ids)})"
+                    )
+        if broken:
+            raise ValueError(f"그래프가 다른 항목의 제도를 가리킨다: {broken}")
 
     def reachable_kb_refs(self) -> frozenset[str]:
         """초기 진단 화면에 실제로 나갈 수 있는 제도들.

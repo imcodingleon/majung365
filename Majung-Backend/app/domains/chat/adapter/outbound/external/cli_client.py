@@ -126,6 +126,14 @@ def _rows(data: dict[str, Any], key: str) -> list[dict[str, Any]]:
     return [row for row in value if isinstance(row, dict)]
 
 
+def _state_of(raw: object) -> NodeState:
+    """모델이 낸 상태 문자열을 값으로. 모르면 X다."""
+    try:
+        return NodeState(str(raw))
+    except ValueError:
+        return NodeState.X
+
+
 class CliChatLlm:
     """`claude -p`로 답을 받는 ChatLlm 구현. 검증용."""
 
@@ -146,7 +154,10 @@ class CliChatLlm:
             data = _extract_json(raw)
             qtype = QuestionType(str(data.get("question_type", "daily")))
             priorities = tuple(
-                RoutePriority(route=RouteId(str(row["route"])))
+                RoutePriority(
+                    route=RouteId(str(row["route"])),
+                    state=_state_of(row.get("state")),
+                )
                 for row in _rows(data, "priorities")
                 if "route" in row
             )

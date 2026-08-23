@@ -81,6 +81,12 @@ _TRIAGE_SCHEMA = {
                         "type": "string",
                         "enum": [r.value for r in RouteId],
                     },
+                    # 사용자가 말한 상태. 초기 진단이 문항으로 아는 것을 여기서는
+                    # 문장으로 안다. 안 오면 서버가 X로 둔다.
+                    "state": {
+                        "type": "string",
+                        "enum": ["O", "X", "BLOCKED"],
+                    },
                 },
                 "required": ["route"],
                 "additionalProperties": False,
@@ -113,6 +119,14 @@ def _to_messages(
     for m in msgs:
         assert_masked(m["content"])  # 전송 직전 안전망 — 새 경로가 마스킹을 건너뛰면 여기서 막힌다
     return msgs
+
+
+def _state_of(raw: object) -> NodeState:
+    """모델이 낸 상태 문자열을 값으로. **모르면 X다** — 말하지 않은 것을 짐작하지 않는다."""
+    try:
+        return NodeState(str(raw))
+    except ValueError:
+        return NodeState.X
 
 
 class ClaudeChatLlm:
@@ -154,7 +168,10 @@ class ClaudeChatLlm:
             data = json.loads(text)
             qtype = QuestionType(data["question_type"])
             priorities = tuple(
-                RoutePriority(route=RouteId(p["route"]))
+                RoutePriority(
+                    route=RouteId(p["route"]),
+                    state=_state_of(p.get("state")),
+                )
                 for p in data.get("priorities", [])
             )
             return TriageResult(question_type=qtype, priorities=priorities)

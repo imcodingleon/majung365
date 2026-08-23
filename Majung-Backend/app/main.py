@@ -144,6 +144,7 @@ def create_app() -> FastAPI:
         institutions=institutions,
         blocking_routes=routes_blocking_others(graph_nodes),
         passages=JsonRagRepository(cards=institutions.all()).index(),
+        graph_nodes=graph_nodes,
     )
     # llm은 StateExtractorLlm(C6)도 구조적으로 만족한다(extract_node_state 메서드 보유)
     app.state.intake_usecase = IntakeUseCase(

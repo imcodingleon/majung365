@@ -36,6 +36,7 @@ from app.domains.chat.domain.triage import (
 )
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
+from app.domains.knowledge.domain.graph_engine import GraphNode, kb_ref_for_route
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.retrieval import Passage, PassageIndex
 from app.domains.knowledge.domain.sources import verified_note
@@ -58,6 +59,7 @@ class ChatUseCase:
         institutions: InstitutionRepository,
         blocking_routes: frozenset[str] = frozenset(),
         passages: PassageIndex | None = None,
+        graph_nodes: dict[str, GraphNode] | None = None,
     ) -> None:
         self._llm = llm
         self._institutions = institutions
@@ -66,6 +68,8 @@ class ChatUseCase:
         self._blocking_routes = blocking_routes
         # 수집한 근거 문서. 없으면 KB 카드만으로 ①단계를 판정한다.
         self._passages = passages
+        # 상태별로 대표가 갈리는 항목은 그래프가 정한다(§4.1). 초기 진단과 같은 자리다.
+        self._nodes = graph_nodes or {}
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -222,7 +226,7 @@ class ChatUseCase:
         for p in triage.priorities:
             # 항목당 카드 1장. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
             # 카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다.
-            lead = self._institutions.lead_of(p.route)
+            lead = self._lead_for(p)
             if lead.id in seen:
                 continue
             companions = tuple(self._institutions.companions_of(p.route))
@@ -231,6 +235,29 @@ class ChatUseCase:
             if len(picked) >= _MAX_CARDS:
                 break
         return picked
+
+    def _lead_for(self, priority: RoutePriority) -> Institution:
+        """그 사람에게 맞는 대표 제도.
+
+        **탭과 챗이 같은 카드를 내야 한다.** 초기 진단에서 "압류를 막아주는 통장"을
+        본 사람이 챗에서 "은행 계좌 다시 만들기"를 보면 같은 서비스가 같은 사람에게
+        다르게 말하는 셈이다. 갈림 규칙은 그래프의 for_state가 정본이므로(§4.1)
+        초기 진단과 같은 함수에 물어본다.
+
+        상태를 모르면(X) 그래프가 기본 경로를 주고, 그것이 없으면 항목의 대표다.
+        """
+        kb_ref = kb_ref_for_route(self._nodes, priority.route.value, priority.state)
+        if kb_ref:
+            found = self._institutions.by_id(kb_ref)
+            if found is not None:
+                return found
+            logger.warning(
+                "그래프의 kb_ref가 KB에 없다 — route=%s state=%s kb_ref=%s",
+                priority.route.value,
+                priority.state.value,
+                kb_ref,
+            )
+        return self._institutions.lead_of(priority.route)
 
     def _as_injection(self, inst: Institution) -> str:
         docs = ", ".join(inst.docs) if inst.docs else "특별한 서류 없이 문의 가능"
