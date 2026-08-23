@@ -23,8 +23,10 @@ from app.domains.account.domain.entity import (
     CRIME_CONSENT_KIND,
     Account,
     Consent,
+    PRIVACY_CONSENT_KIND,
 )
 from app.domains.account.domain.tokens import utcnow
+from app.domains.shared.clock import today_kst
 from app.domains.knowledge.adapter.inbound.api.router import IntakeTaskOut, to_task_out
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
@@ -107,6 +109,14 @@ def _to_command(body: SignupIn, today: date) -> SignupCommand:
             raise HTTPException(status_code=400, detail="답변 값이 올바르지 않아요.")
         answers[key] = value
 
+    if not _privacy_consented(body):
+        # **동의 없이 저장하지 않는다.** 여기서 막지 않으면 개인정보가 먼저
+        # 들어가고 동의는 영영 오지 않는다 — 받아 두고 나중에 받는 순서는
+        # 성립하지 않는다(§3.1·§9). 죄목처럼 항목만 버리는 것으로는 안 된다.
+        raise HTTPException(
+            status_code=400, detail="개인정보 수집·이용에 동의해야 시작할 수 있어요."
+        )
+
     now = utcnow()
     return SignupCommand(
         name=body.name.strip(),
@@ -117,6 +127,13 @@ def _to_command(body: SignupIn, today: date) -> SignupCommand:
         # 동의하지 않았으면 죄목을 받지 않는다. 값이 와도 버린다 —
         # 동의 없이 저장된 죄목은 있어서는 안 된다.
         crime_category=body.crime_category if _crime_consented(body) else None,
+    )
+
+
+def _privacy_consented(body: SignupIn) -> bool:
+    """필수 동의가 있는가. **이름은 도메인이 정하고 여기서는 가져다 쓴다.**"""
+    return any(
+        c.kind == PRIVACY_CONSENT_KIND and c.agreed for c in body.consents
     )
 
 
@@ -143,7 +160,7 @@ def signup(body: SignupIn, request: Request) -> SignupOut:
             status_code=503, detail="지금은 가입을 받을 수 없어요. 잠시 후 다시 시도해 주세요."
         )
 
-    result = usecase.run(_to_command(body, date.today()))
+    result = usecase.run(_to_command(body, today_kst()))
     return SignupOut(
         user_id=str(result.account.id),
         session_token=result.session_token,
@@ -184,7 +201,7 @@ def read_me(request: Request, account: CurrentAccount) -> MeOut:
         name=account.name,
         birth_date=account.birth_date,
         release_date=account.release_date,
-        days_since_release=account.days_since_release(date.today()),
+        days_since_release=account.days_since_release(today_kst()),
         has_crime_category=has_crime,
     )
 

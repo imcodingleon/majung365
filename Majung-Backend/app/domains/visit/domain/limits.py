@@ -15,6 +15,7 @@ from dataclasses import dataclass
 from datetime import date
 from enum import StrEnum
 
+from app.domains.shared.clock import to_kst_date
 from app.domains.visit.domain.entity import VisitRequest
 
 # 정상 사용자가 하루에 방문 예약을 셋 넘게 잡을 일이 드물다. 넘치면 다음 날 이어서 보낸다.
@@ -84,5 +85,10 @@ def check(
 
 
 def _sent_on(request: VisitRequest, day: date) -> bool:
-    """그날 보낸 요청인가. created_at이 없으면(아직 저장 전) 세지 않는다."""
-    return request.created_at is not None and request.created_at.date() == day
+    """그날 보낸 요청인가. created_at이 없으면(아직 저장 전) 세지 않는다.
+
+    **created_at은 UTC이고 day는 한국 날짜다.** 환산하지 않고 비교하면 상한이
+    한국 시각 오전 9시에 리셋된다 — 밤에 셋을 채운 사람에게 "내일 이어서 보낼
+    수 있어요"라고 안내하고는 다음 날 아침 9시까지 막았다(shared/clock.py).
+    """
+    return request.created_at is not None and to_kst_date(request.created_at) == day

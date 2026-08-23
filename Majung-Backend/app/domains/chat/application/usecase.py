@@ -200,10 +200,16 @@ class ChatUseCase:
             pinned = RouteId(route_id)
         except ValueError:
             return triage
+        # **모델이 판정한 상태를 지키고 자리만 앞으로 옮긴다.**
+        #
+        # 여기서 RoutePriority(route=pinned)를 새로 만들면 state가 기본값으로
+        # 되돌아간다. R10 카드에서 "통장이 압류돼서 못 써요"라고 하면 triage는
+        # BLOCKED을 내는데 핀이 그것을 X로 덮어써서 "계좌를 새로 만드세요" 계열
+        # 대표가 나갔다 — RoutePriority에 state를 둔 이유가 바로 그 시나리오다.
+        found = next((p for p in triage.priorities if p.route == pinned), None)
+        head = found if found is not None else RoutePriority(route=pinned)
         rest = tuple(p for p in triage.priorities if p.route != pinned)
-        return replace(
-            triage, priorities=(RoutePriority(route=pinned), *rest)[:_MAX_ROUTES]
-        )
+        return replace(triage, priorities=(head, *rest)[:_MAX_ROUTES])
 
     def _local_office(self, triage: TriageResult) -> LocalOfficeAnswer:
         """사용자가 말한 동의 주민센터. 말하지 않았으면 찾지 않는다."""

@@ -11,6 +11,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from uuid import UUID
 
+from app.domains.shared.clock import to_kst_date
 from app.domains.shared.routes import RouteId
 from app.domains.staff.domain.entity import Staff, org_for
 from app.domains.visit.domain.entity import VisitRequest, VisitStatus, can_move
@@ -69,7 +70,7 @@ class VisitUseCase:
             raise VisitError("same_time", "1지망과 2지망을 다르게 골라 주세요.")
 
         # **상한은 서버가 센다**(§7.5). 기기에서 세는 값은 우회된다.
-        verdict = check_limits(self.visits.by_user(user_id), route_id, now.date())
+        verdict = check_limits(self.visits.by_user(user_id), route_id, to_kst_date(now))
         if not verdict.allowed:
             raise VisitError("limit", verdict.message, verdict)
 
@@ -146,10 +147,20 @@ class VisitUseCase:
             # 창구에서 다시 물어야 하고, 그 순간이 이 서비스가 없애려는 장벽이다.
             raise VisitError("no_place", "어디로 오면 되는지 함께 알려 주세요.")
         if target == VisitStatus.CONFIRMED and confirmed_for is None:
-            # **안 보내면 1지망으로 채운다.** 대부분 1지망으로 확정되고, 매번
-            # 입력하게 하면 빼먹었을 때 확정 자체가 막힌다. 장소를 필수로 둔 것과
-            # 다른 판단인데, 장소는 서버가 알 수 없는 정보이고 시각은 이미 있다.
-            confirmed_for = current.preferred_at_1
+            # **안 보내면 채운다.** 대부분 1지망으로 확정되고, 매번 입력하게 하면
+            # 빼먹었을 때 확정 자체가 막힌다. 장소를 필수로 둔 것과 다른 판단인데,
+            # 장소는 서버가 알 수 없는 정보이고 시각은 이미 있다.
+            #
+            # **다만 조율 중이었다면 1지망이 아니다.** 그 상태에 이른 이유가 바로
+            # 1지망이 안 된다는 것이라, 거절된 시각으로 확정되고도 오류가 나지
+            # 않았다. 담당자 화면에는 확정으로 보이고 사용자는 안 되는 시각을
+            # 안내받는다.
+            confirmed_for = (
+                current.proposed_at
+                if current.status is VisitStatus.RESCHEDULE_PROPOSED
+                and current.proposed_at is not None
+                else current.preferred_at_1
+            )
         if target == VisitStatus.RESCHEDULE_PROPOSED and proposed_at is None:
             raise VisitError("no_time", "제안할 시간을 함께 보내 주세요.")
 

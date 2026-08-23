@@ -129,7 +129,7 @@ async def chat(
         # 사용자가 한 말은 먼저 남긴다. 답이 실패해도 물어본 것은 남아야
         # 다시 열었을 때 무엇을 묻다 말았는지 안다.
         if account and messages:
-            messages.append(account.id, body.route_id, "user", command.message)
+            messages.append(account.id, command.route_id, "user", command.message)
 
         answer: list[str] = []
         async for ev in usecase.run(command):
@@ -198,7 +198,7 @@ async def chat(
             elif isinstance(ev, DoneEvent):
                 if account and messages and answer:
                     messages.append(
-                        account.id, body.route_id, "assistant", "".join(answer)
+                        account.id, command.route_id, "assistant", "".join(answer)
                     )
                 yield {"event": "done", "data": "{}"}
 

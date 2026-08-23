@@ -61,7 +61,10 @@ class SupabaseMessageRepository:
             .select("role, content_enc, created_at")
             .eq("user_id", str(user_id))
             .eq("route_id", route_id)
-            .order("created_at", desc=False)
+            # **최근 것부터 가져와 다시 뒤집는다.** 오름차순 + limit이면 가장
+            # 오래된 100건이 오고, 100건을 넘긴 사람은 방을 열 때마다 맨 처음
+            # 대화만 보게 된다 — 저장하기로 한 이유(§6.3)가 그대로 무효가 된다.
+            .order("created_at", desc=True)
             .limit(_MAX_HISTORY)
             .execute()
         )
@@ -83,6 +86,8 @@ class SupabaseMessageRepository:
                     at=datetime.fromisoformat(str(row["created_at"]).replace("Z", "+00:00")),
                 )
             )
+        # 최근 것부터 받았으니 화면이 읽는 순서(시간순)로 되돌린다.
+        messages.reverse()
         return messages
 
     def clear(self, user_id: UUID, route_id: str) -> None:

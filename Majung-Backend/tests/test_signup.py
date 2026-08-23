@@ -178,15 +178,23 @@ def test_endpoint_rejects_future_release_date(client) -> None:  # type: ignore[n
 
 
 def test_endpoint_drops_crime_without_consent(client) -> None:  # type: ignore[no-untyped-def]
-    """동의 없이 저장된 죄목은 있어서는 안 된다. 값이 와도 버린다."""
-    from app.domains.account.adapter.inbound.api.router import SignupIn, _to_command
+    """동의 없이 저장된 죄목은 있어서는 안 된다. 값이 와도 버린다.
+
+    **필수 동의는 하고 죄목 동의만 안 한 경우다.** 둘 다 없으면 가입 자체가
+    막혀서(§3.1) 죄목을 버리는지 확인할 수 없다 — 확인하려는 것이 가려진다.
+    """
+    from app.domains.account.adapter.inbound.api.router import (
+        ConsentIn,
+        SignupIn,
+        _to_command,
+    )
 
     body = SignupIn(
         name="김판수",
         birth_date=date(1975, 3, 2),
         release_date=date(2026, 8, 3),
         answers={},
-        consents=[],
+        consents=[ConsentIn(kind="privacy", agreed=True)],
         # 화면이 쓰는 값이다. 한글 라벨이 아니라 id로 온다.
         crime_category="property",
     )

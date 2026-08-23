@@ -17,6 +17,7 @@ from datetime import date
 from fastapi import Header, HTTPException, Request
 
 from app.domains.account.domain.entity import Account
+from app.domains.shared.clock import today_kst
 
 logger = logging.getLogger("majung.account")
 
@@ -47,7 +48,9 @@ def current_account(
     if not token:
         return None
 
-    today = date.today()
+    # **한국의 오늘이다.** UTC 날짜로 세면 새벽에 접속한 사람이
+    # 전날 접속한 것으로 기록된다(shared/clock.py 참고).
+    today = today_kst()
     session = sessions.resolve(token, today)
     if session is None:
         return None
