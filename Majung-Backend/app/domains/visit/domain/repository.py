@@ -43,6 +43,7 @@ class VisitRepository(Protocol):
         *,
         staff_id: UUID | None = None,
         meeting_place: str | None = None,
+        confirmed_for: datetime | None = None,
         proposed_at: datetime | None = None,
         cancel_reason: str | None = None,
         now: datetime | None = None,

@@ -99,7 +99,10 @@ class VisitOut(BaseModel):
     # 확정되면 이 둘이 함께 채워진다. **하나만 있으면 의미가 없다.**
     staff_name: str
     meeting_place: str
+    # 확정 처리를 누른 시각. **만나기로 한 시각이 아니다** — 화면에 쓰지 않는다.
     confirmed_at: datetime | None
+    # 만나기로 한 시각(§7.1). 확정 문구가 쓸 값이다.
+    confirmed_for: datetime | None
     proposed_at: datetime | None
     cancel_reason: str
     # 담당자가 확인하기 전에는 채팅을 열지 않는다(§7.3-4).
@@ -132,6 +135,7 @@ def _to_out(r: VisitRequest) -> VisitOut:
         staff_name=r.assigned_staff_name,
         meeting_place=r.meeting_place,
         confirmed_at=r.confirmed_at,
+        confirmed_for=r.confirmed_for,
         proposed_at=r.proposed_at,
         cancel_reason=r.cancel_reason,
         chat_available=r.chat_available,
@@ -211,6 +215,7 @@ class StaffVisitOut(BaseModel):
     prepared_docs: list[str]
     note: str
     meeting_place: str
+    confirmed_for: datetime | None
     created_at: datetime | None
     # 사용자가 동의하고 보낸 진단 답변(§7.4). 동의가 없으면 빈 목록이다.
     shared_answers: list[SharedAnswerOut] = []
@@ -220,6 +225,8 @@ class StaffActionIn(BaseModel):
     status: str
     # 확정할 때 반드시 함께 온다. 장소가 없으면 확정이 성립하지 않는다.
     meeting_place: str = Field(default="", max_length=100)
+    # 만나기로 한 시각. 안 보내면 서버가 1지망으로 채운다.
+    confirmed_for: datetime | None = None
     proposed_at: datetime | None = None
     cancel_reason: str = Field(default="", max_length=200)
 
@@ -235,6 +242,7 @@ def _staff_out(r: VisitRequest, user_name: str) -> StaffVisitOut:
         prepared_docs=list(r.prepared_docs),
         note=r.note,
         meeting_place=r.meeting_place,
+        confirmed_for=r.confirmed_for,
         created_at=r.created_at,
         shared_answers=[
             SharedAnswerOut(
@@ -320,6 +328,7 @@ def act_on_visit(
             request_id,
             target,
             meeting_place=body.meeting_place,
+            confirmed_for=body.confirmed_for,
             proposed_at=body.proposed_at,
             cancel_reason=body.cancel_reason,
             now=datetime.now(UTC),

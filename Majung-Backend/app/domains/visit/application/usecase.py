@@ -127,6 +127,7 @@ class VisitUseCase:
         target: VisitStatus,
         *,
         meeting_place: str,
+        confirmed_for: datetime | None,
         proposed_at: datetime | None,
         cancel_reason: str,
         now: datetime,
@@ -144,6 +145,11 @@ class VisitUseCase:
             # **장소 없는 확정은 받지 않는다.** 시간만 정해지고 어디로 갈지 모르면
             # 창구에서 다시 물어야 하고, 그 순간이 이 서비스가 없애려는 장벽이다.
             raise VisitError("no_place", "어디로 오면 되는지 함께 알려 주세요.")
+        if target == VisitStatus.CONFIRMED and confirmed_for is None:
+            # **안 보내면 1지망으로 채운다.** 대부분 1지망으로 확정되고, 매번
+            # 입력하게 하면 빼먹었을 때 확정 자체가 막힌다. 장소를 필수로 둔 것과
+            # 다른 판단인데, 장소는 서버가 알 수 없는 정보이고 시각은 이미 있다.
+            confirmed_for = current.preferred_at_1
         if target == VisitStatus.RESCHEDULE_PROPOSED and proposed_at is None:
             raise VisitError("no_time", "제안할 시간을 함께 보내 주세요.")
 
@@ -152,6 +158,7 @@ class VisitUseCase:
             target,
             staff_id=staff.id,
             meeting_place=meeting_place.strip() or None,
+            confirmed_for=confirmed_for,
             proposed_at=proposed_at,
             cancel_reason=cancel_reason.strip() or None,
             now=now,

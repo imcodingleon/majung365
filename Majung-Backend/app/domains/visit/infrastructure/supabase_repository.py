@@ -65,6 +65,7 @@ class SupabaseVisitRepository:
             assigned_staff_name=staff_name,
             meeting_place=str(row.get("meeting_place") or ""),
             confirmed_at=_parse_ts(row.get("confirmed_at")),
+            confirmed_for=_parse_ts(row.get("confirmed_for")),
             proposed_at=_parse_ts(row.get("proposed_at")),
             cancel_reason=str(row.get("cancel_reason") or ""),
             user_read_at=_parse_ts(row.get("user_read_at")),
@@ -214,6 +215,7 @@ class SupabaseVisitRepository:
         *,
         staff_id: UUID | None = None,
         meeting_place: str | None = None,
+        confirmed_for: datetime | None = None,
         proposed_at: datetime | None = None,
         cancel_reason: str | None = None,
         now: datetime | None = None,
@@ -228,6 +230,9 @@ class SupabaseVisitRepository:
             patch["assigned_staff_id"] = str(staff_id) if staff_id else None
             patch["meeting_place"] = meeting_place
             patch["confirmed_at"] = (now or datetime.now()).isoformat()
+            # **만나기로 한 시각.** confirmed_at(확정을 누른 시각)과 다르다.
+            if confirmed_for is not None:
+                patch["confirmed_for"] = confirmed_for.isoformat()
         if proposed_at is not None:
             patch["proposed_at"] = proposed_at.isoformat()
         if cancel_reason is not None:

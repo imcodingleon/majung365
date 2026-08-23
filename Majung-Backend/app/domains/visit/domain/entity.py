@@ -86,7 +86,10 @@ class VisitRequest:
     assigned_staff_id: UUID | None = None
     assigned_staff_name: str = ""
     meeting_place: str = ""
+    # 확정 처리를 누른 시각. **만나기로 한 시각이 아니다.**
     confirmed_at: datetime | None = None
+    # 만나기로 한 시각(§7.1). 담당자가 보내지 않으면 1지망으로 채운다.
+    confirmed_for: datetime | None = None
 
     proposed_at: datetime | None = None
     cancel_reason: str = ""

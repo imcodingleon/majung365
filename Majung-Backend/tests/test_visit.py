@@ -89,6 +89,7 @@ class FakeVisitRepository:
         *,
         staff_id: UUID | None = None,
         meeting_place: str | None = None,
+        confirmed_for: datetime | None = None,
         proposed_at: datetime | None = None,
         cancel_reason: str | None = None,
         now: datetime | None = None,
@@ -100,6 +101,7 @@ class FakeVisitRepository:
             patch["assigned_staff_name"] = "경기지부 담당자"
             patch["meeting_place"] = meeting_place or ""
             patch["confirmed_at"] = now
+            patch["confirmed_for"] = confirmed_for
         if proposed_at is not None:
             patch["proposed_at"] = proposed_at
         if cancel_reason is not None:
@@ -253,6 +255,7 @@ def test_confirm_without_place_is_refused() -> None:
         sent.id,
         VisitStatus.ACKNOWLEDGED,
         meeting_place="",
+        confirmed_for=None,
         proposed_at=None,
         cancel_reason="",
         now=NOW,
@@ -264,6 +267,7 @@ def test_confirm_without_place_is_refused() -> None:
             sent.id,
             VisitStatus.CONFIRMED,
             meeting_place="   ",
+            confirmed_for=None,
             proposed_at=None,
             cancel_reason="",
             now=NOW,
@@ -281,6 +285,7 @@ def test_confirm_carries_staff_name_and_place() -> None:
         sent.id,
         VisitStatus.ACKNOWLEDGED,
         meeting_place="",
+        confirmed_for=None,
         proposed_at=None,
         cancel_reason="",
         now=NOW,
@@ -290,6 +295,7 @@ def test_confirm_carries_staff_name_and_place() -> None:
         sent.id,
         VisitStatus.CONFIRMED,
         meeting_place="경기지부 2층 상담실",
+        confirmed_for=None,
         proposed_at=None,
         cancel_reason="",
         now=NOW,
@@ -308,6 +314,7 @@ def test_reschedule_needs_a_proposed_time() -> None:
         sent.id,
         VisitStatus.ACKNOWLEDGED,
         meeting_place="",
+        confirmed_for=None,
         proposed_at=None,
         cancel_reason="",
         now=NOW,
@@ -318,6 +325,7 @@ def test_reschedule_needs_a_proposed_time() -> None:
             sent.id,
             VisitStatus.RESCHEDULE_PROPOSED,
             meeting_place="",
+            confirmed_for=None,
             proposed_at=None,
             cancel_reason="",
             now=NOW,
@@ -335,6 +343,7 @@ def test_other_org_cannot_touch_the_request() -> None:
             sent.id,
             VisitStatus.ACKNOWLEDGED,
             meeting_place="",
+            confirmed_for=None,
             proposed_at=None,
             cancel_reason="",
             now=NOW,
@@ -365,6 +374,7 @@ def test_every_staff_read_is_logged() -> None:
         sent.id,
         VisitStatus.ACKNOWLEDGED,
         meeting_place="",
+        confirmed_for=None,
         proposed_at=None,
         cancel_reason="",
         now=NOW,
@@ -433,3 +443,62 @@ def test_answers_are_sorted_by_relevance_to_the_visit() -> None:
     assert order[0] == "R9", "그 방문의 항목이 맨 위여야 한다"
     # R11도 주민센터 일이라 R14(법원)보다 앞에 온다.
     assert order.index("R11") < order.index("R14")
+
+
+# ── 만나기로 한 시각 (기획서 §7.1) ──
+
+
+def _confirm(usecase, visit, staff, **kwargs):  # type: ignore[no-untyped-def]
+    usecase.act(
+        staff, visit.id, VisitStatus.ACKNOWLEDGED,
+        meeting_place="", confirmed_for=None, proposed_at=None,
+        cancel_reason="", now=NOW,
+    )
+    params = {
+        "meeting_place": "2층 상담실",
+        "confirmed_for": None,
+        "proposed_at": None,
+        "cancel_reason": "",
+        "now": NOW,
+    }
+    params.update(kwargs)
+    return usecase.act(staff, visit.id, VisitStatus.CONFIRMED, **params)
+
+
+def test_confirmed_time_defaults_to_the_first_choice() -> None:
+    """**안 보내면 1지망으로 채운다.**
+
+    대부분 1지망으로 확정되고, 매번 입력하게 하면 빼먹었을 때 확정 자체가 막힌다.
+    장소를 필수로 둔 것과 다른 판단인데, 장소는 서버가 알 수 없는 정보이고
+    시각은 이미 1지망이 있기 때문이다.
+    """
+    usecase, _, _ = make_usecase()
+    sent = send(usecase, "R1")
+    confirmed = _confirm(usecase, sent, make_staff())
+    assert confirmed.confirmed_for == SOON
+
+
+def test_confirmed_time_can_differ_from_both_choices() -> None:
+    """**담당자가 조율한 시간으로 확정할 수 있다.**
+
+    1·2지망 중에서만 고르게 하면 전화로 조율한 결과를 담을 자리가 없다.
+    """
+    usecase, _, _ = make_usecase()
+    sent = send(usecase, "R1")
+    other = SOON + timedelta(days=3)
+    confirmed = _confirm(usecase, sent, make_staff(), confirmed_for=other)
+    assert confirmed.confirmed_for == other
+
+
+def test_confirmed_at_is_not_the_meeting_time() -> None:
+    """**둘을 섞으면 새벽에 만나자는 안내가 나간다.**
+
+    화면이 confirmed_at을 만나는 시각으로 쓰다가 "8월 24일 오전으로 정해졌어요"가
+    나온 적이 있다. 확정을 누른 시각이 15:10Z, 곧 한국 시각 자정 10분이었다.
+    """
+    usecase, _, _ = make_usecase()
+    sent = send(usecase, "R1")
+    confirmed = _confirm(usecase, sent, make_staff())
+    assert confirmed.confirmed_at == NOW
+    assert confirmed.confirmed_for == SOON
+    assert confirmed.confirmed_at != confirmed.confirmed_for
