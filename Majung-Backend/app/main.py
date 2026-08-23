@@ -140,10 +140,13 @@ def create_app() -> FastAPI:
         )
     else:
         cipher = make_field_cipher(settings)  # 키가 없으면 여기서 부팅이 멈춘다
+        app.state.account_repo = SupabaseAccountRepository(supabase, cipher)
+        app.state.crime_repo = SupabaseCrimeRepository(supabase, cipher)
+        app.state.session_repo = SupabaseSessionRepository(supabase)
         app.state.signup_usecase = SignupUseCase(
-            accounts=SupabaseAccountRepository(supabase, cipher),
-            crimes=SupabaseCrimeRepository(supabase, cipher),
-            sessions=SupabaseSessionRepository(supabase),
+            accounts=app.state.account_repo,
+            crimes=app.state.crime_repo,
+            sessions=app.state.session_repo,
             intake=app.state.intake_usecase,
         )
         logger.info("💾 저장 기능 켜짐 — 가입 정보는 암호화해 저장한다")

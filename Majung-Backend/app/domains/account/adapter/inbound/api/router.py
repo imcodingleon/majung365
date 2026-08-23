@@ -1,4 +1,4 @@
-"""POST /api/signup — 가입 인바운드 어댑터.
+"""POST /api/signup · GET·PATCH·DELETE /api/me — 계정 인바운드 어댑터.
 
 기획서 §2.4·§3.1. 개인정보와 27문항 답변을 한 번에 받고, 세션 토큰과 첫 할 일
 목록을 돌려준다.
@@ -10,18 +10,23 @@
 """
 
 from datetime import date
+from typing import Annotated
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from app.domains.account.adapter.inbound.api.deps import require_account
 from app.domains.account.application.usecase import SignupCommand
-from app.domains.account.domain.entity import Consent
+from app.domains.account.domain.entity import Account, Consent
 from app.domains.account.domain.tokens import utcnow
 from app.domains.knowledge.adapter.inbound.api.router import IntakeTaskOut, to_task_out
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
 
 router = APIRouter(prefix="/api", tags=["account"])
+
+# 세션으로 확인된 사용자. Depends를 기본값에 두면 린터가 잡으므로 Annotated로 쓴다.
+CurrentAccount = Annotated[Account, Depends(require_account)]
 
 _MAX_NAME = 40
 _MAX_ANSWER_KEYS = 40
@@ -113,3 +118,69 @@ def signup(body: SignupIn, request: Request) -> SignupOut:
         session_token=result.session_token,
         tasks=[to_task_out(t) for t in result.tasks],
     )
+
+
+# ── 내 정보 (§9.4 법적 요구) ──
+#
+# 열람·수정·삭제는 개인정보보호법이 보장하는 권리다. 기능이 없으면 위법이다.
+# **죄목만 지우는 것과 계정 전체 삭제를 구분한다** — 죄목 동의를 철회했다고
+# 계정까지 사라지면 27문항을 다시 답해야 한다.
+
+
+class MeOut(BaseModel):
+    user_id: str
+    name: str
+    birth_date: date
+    release_date: date
+    days_since_release: int
+    # 죄목 동의 여부. **값 자체는 여기서 내보내지 않는다** — 화면에 띄우면
+    # 어깨 너머로 보인다. 무엇을 지울 수 있는지만 알려준다.
+    has_crime_category: bool
+
+
+class MeUpdateIn(BaseModel):
+    """수정할 항목만 보낸다. 이름·생일·출소날짜는 바꿀 수 있고 죄목은 철회만 된다."""
+
+    crime_category_revoked: bool = False
+
+
+@router.get("/me", response_model=MeOut)
+def read_me(request: Request, account: CurrentAccount) -> MeOut:
+    crimes = getattr(request.app.state, "crime_repo", None)
+    has_crime = bool(crimes and crimes.by_user(account.id))
+    return MeOut(
+        user_id=str(account.id),
+        name=account.name,
+        birth_date=account.birth_date,
+        release_date=account.release_date,
+        days_since_release=account.days_since_release(date.today()),
+        has_crime_category=has_crime,
+    )
+
+
+@router.patch("/me", response_model=MeOut)
+def update_me(
+    body: MeUpdateIn,
+    request: Request,
+    account: CurrentAccount,
+) -> MeOut:
+    """지금은 죄목 철회만 받는다.
+
+    이름·생일·출소날짜 수정은 암호화된 컬럼을 다시 쓰는 일이라 별도로 붙인다.
+    철회를 먼저 두는 이유는 **동의 철회가 법적 권리**이고 지연되면 안 되기 때문이다.
+    """
+    crimes = getattr(request.app.state, "crime_repo", None)
+    if body.crime_category_revoked and crimes is not None:
+        crimes.revoke(account.id)  # 그 행만 지운다. 계정은 남는다(§9.5)
+    return read_me(request, account)
+
+
+@router.delete("/me", status_code=204)
+def delete_me(request: Request, account: CurrentAccount) -> None:
+    """즉시 파기(§9.4). 죄목·동의·세션이 함께 지워진다(on delete cascade).
+
+    **사전 통지는 하지 않는다** — 연락처를 받지 않아 닿을 수단이 없고,
+    지우겠다는 사람에게 다시 묻는 것도 이 서비스의 태도가 아니다.
+    """
+    accounts = request.app.state.account_repo
+    accounts.delete(account.id)
