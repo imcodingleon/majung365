@@ -28,6 +28,9 @@ from app.domains.chat.adapter.outbound.external.cli_client import CliChatLlm
 from app.domains.chat.adapter.outbound.external.mock_client import MockChatLlm
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.application.usecase import ChatUseCase
+from app.domains.chat.infrastructure.message_repository import (
+    SupabaseMessageRepository,
+)
 from app.domains.knowledge.adapter.inbound.api.router import router as onboarding_router
 from app.domains.knowledge.application.intake_usecase import IntakeUseCase
 from app.domains.knowledge.application.usecase import AnalyzeUseCase
@@ -143,6 +146,7 @@ def create_app() -> FastAPI:
         app.state.account_repo = SupabaseAccountRepository(supabase, cipher)
         app.state.crime_repo = SupabaseCrimeRepository(supabase, cipher)
         app.state.session_repo = SupabaseSessionRepository(supabase)
+        app.state.message_repo = SupabaseMessageRepository(supabase, cipher)
         app.state.signup_usecase = SignupUseCase(
             accounts=app.state.account_repo,
             crimes=app.state.crime_repo,
