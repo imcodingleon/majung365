@@ -11,7 +11,8 @@
 온다고 가정하면 안 된다. 사용자가 철회한 정보를 붙들지 않으려는 설계다.
 """
 
-from dataclasses import dataclass
+from collections.abc import Mapping
+from dataclasses import dataclass, field
 
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId, SectionId, section_of
@@ -37,6 +38,16 @@ class IntakeRule:
     # **`resolved_options`와 짝을 이루는 나머지 반쪽이다.** 저쪽이 "이 답이면 O"를
     # 맡으니 이쪽이 "이 답이면 △"를 맡는다. 새 개념이 아니라 비어 있던 자리다.
     blocked_options: frozenset[str] = frozenset()
+    # 답변별 대표 제도. **4값에 담기지 않는 갈림을 여기서 다룬다.**
+    #
+    # 보유 상태 넷은 "갖췄나·못 갖췄나·있는데 못 쓰나·모르나"만 말한다. 채무 절차가
+    # 법원에서 진행 중인지 신용회복위원회인지 멈췄는지는 그중 어느 것도 아니다.
+    # `BLOCKED`를 "진행 중"으로 돌려쓰면 그 값의 뜻이 늘어나 나중에 어느 의미로 쓴
+    # 것인지 알 수 없게 된다.
+    #
+    # **그래프가 답할 수 있는 갈림은 여기 적지 않는다.** 같은 사실이 두 군데 적히면
+    # 언젠가 한쪽만 고치는 날이 온다. 겹치면 그래프가 이긴다(§4.1).
+    lead_by_option: Mapping[str, str] = field(default_factory=dict)
 
 
 @dataclass(frozen=True)
@@ -51,6 +62,8 @@ class IntakeVerdict:
     # 사용자가 지금 어떤 상태인가. **그래프가 경로를 고르는 입력이다.**
     # 답이 왔는데 해결도 막힘도 아니면 아직 없는 것(X)으로 본다.
     state: NodeState = NodeState.X
+    # 규칙표가 답변을 보고 지정한 제도. 그래프가 답하지 못하는 갈림에만 채워진다.
+    lead_override: str = ""
 
 
 def _matches(answer: object, options: frozenset[str]) -> bool:
@@ -77,6 +90,14 @@ def _state_of(answer: object, rule: IntakeRule) -> NodeState:
     if _matches(answer, rule.blocked_options):
         return NodeState.BLOCKED
     return NodeState.X
+
+
+def _lead_override(answer: object, rule: IntakeRule) -> str:
+    """답변이 제도를 직접 가리키는 경우. **복수선택에는 쓰지 않는다** —
+    둘을 고르면 어느 쪽 제도인지 정할 근거가 없고, 조용히 하나를 고르면 안 된다."""
+    if not rule.lead_by_option or not isinstance(answer, str):
+        return ""
+    return rule.lead_by_option.get(answer, "")
 
 
 def judge(
@@ -106,6 +127,7 @@ def judge(
                 section_id=section_of(rule.route_id),
                 blocks_others=rule.route_id.value in blocking_routes,
                 state=state,
+                lead_override=_lead_override(answers[rule.data_key], rule),
             )
         )
 

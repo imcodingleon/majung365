@@ -86,17 +86,23 @@ class IntakeUseCase:
         사람에게 "계좌를 새로 만드세요"가 나가면 첫 화면부터 틀린 것을 읽는다.
         그 갈림은 그래프의 `for_state`가 정본이므로 여기서 물어본다.
 
-        그래프에 답이 없으면(노드가 없거나 갈림이 없으면) 항목의 기본 대표를 쓴다.
+        그래프에 답이 없으면(노드가 없거나 갈림이 없으면) 규칙표가 답변별로 지정한
+        제도를 본다. 진행 단계처럼 4값에 담기지 않는 갈림이 그 자리다. 둘 다 없으면
+        항목의 기본 대표를 쓴다.
         """
-        kb_ref = kb_ref_for_route(self._nodes, verdict.route_id.value, verdict.state)
-        if kb_ref:
+        graph_ref = kb_ref_for_route(self._nodes, verdict.route_id.value, verdict.state)
+        # **그래프가 먼저다**(§4.1). 겹치는 항목이 생겨도 조용히 갈리지 않게 한다.
+        for kb_ref, origin in ((graph_ref, "그래프"), (verdict.lead_override, "규칙표")):
+            if not kb_ref:
+                continue
             found = self._institutions.by_id(kb_ref)
             if found is not None:
                 return found
-            # 그래프가 가리킨 제도가 KB에 없다. 데이터가 어긋난 것이라 조용히 넘기지
-            # 않는다 — 기본 대표로 답하되 무엇이 어긋났는지 남긴다.
+            # 가리킨 제도가 KB에 없다. 데이터가 어긋난 것이라 조용히 넘기지 않는다 —
+            # 기본 대표로 답하되 무엇이 어긋났는지 남긴다.
             logger.warning(
-                "그래프의 kb_ref가 KB에 없다 — route=%s state=%s kb_ref=%s",
+                "%s의 kb_ref가 KB에 없다 — route=%s state=%s kb_ref=%s",
+                origin,
                 verdict.route_id.value,
                 verdict.state.value,
                 kb_ref,

@@ -18,6 +18,7 @@ class JsonIntakeRuleRepository:
                 data_key=row["data_key"],
                 resolved_options=frozenset(row.get("resolved_options", [])),
                 blocked_options=frozenset(row.get("blocked_options", [])),
+                lead_by_option=dict(row.get("lead_by_option", {})),
             )
             for row in raw["rules"]
         )

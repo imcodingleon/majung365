@@ -171,3 +171,83 @@ def test_answer_cannot_be_both_resolved_and_blocked(tmp_path: Path) -> None:
     broken.write_text(json.dumps({"rules": rules}, ensure_ascii=False), encoding="utf-8")
     with pytest.raises(ValueError, match="해결과 막힘에 모두"):
         JsonIntakeRuleRepository(broken)
+
+
+# ── 4값에 담기지 않는 갈림은 규칙표가 지정한다 (기획서 §4.1) ──
+
+
+def _usecase_with_rules(*rules: IntakeRule) -> IntakeUseCase:
+    """규칙을 직접 끼워 넣는다. 로더는 14개를 다 요구하므로 여기서는 우회한다."""
+    return IntakeUseCase(
+        JsonInstitutionRepository(),
+        rules,
+        graph_nodes=JsonGraphRepository().nodes(),
+    )
+
+
+def test_rule_table_picks_the_card_when_the_graph_cannot() -> None:
+    """**진행 단계는 O/X/△/? 넷 중 어느 것도 아니다.**
+
+    "법원에 신청해 진행 중"을 BLOCKED로 돌려쓰면 그 값의 뜻이 늘어나 나중에 어느
+    의미로 쓴 것인지 알 수 없게 된다. 그래서 그래프가 답하지 못하는 갈림은
+    규칙표가 제도를 직접 가리킨다.
+    """
+    usecase = _usecase_with_rules(
+        IntakeRule(
+            route_id=RouteId.R14,
+            data_key="debtProcedureStage",
+            lead_by_option={"COURT_PROCESS": "debt-legal-aid"},
+        )
+    )
+    court = usecase.run({"debtProcedureStage": "COURT_PROCESS"})
+    assert court[0].card.institution_id == "debt-legal-aid"
+
+    # 표에 없는 답은 기본 대표 그대로다.
+    other = usecase.run({"debtProcedureStage": "NOT_STARTED"})
+    assert other[0].card.institution_id == "debt-credit-recovery"
+
+
+def test_graph_wins_when_both_answer() -> None:
+    """겹치면 그래프가 이긴다. 같은 갈림이 두 군데 적히는 날이 와도
+    조용히 어느 한쪽으로 갈리지 않게 한다."""
+    usecase = _usecase_with_rules(
+        IntakeRule(
+            route_id=RouteId.R10,
+            data_key="bankAccountStatus",
+            blocked_options=frozenset({"UNUSABLE"}),
+            # 그래프는 BLOCKED에 unblock을 준다. 규칙표가 다른 것을 가리켜도 진다.
+            lead_by_option={"UNUSABLE": "identity-bank-account"},
+        )
+    )
+    tasks = usecase.run({"bankAccountStatus": "UNUSABLE"})
+    assert tasks[0].card.institution_id == "identity-bank-account-unblock"
+
+
+def test_multiple_choice_never_picks_a_card() -> None:
+    """둘을 고르면 어느 쪽 제도인지 정할 근거가 없다. 조용히 하나를 고르지 않는다."""
+    usecase = _usecase_with_rules(
+        IntakeRule(
+            route_id=RouteId.R14,
+            data_key="debtProcedureStage",
+            lead_by_option={"COURT_PROCESS": "debt-legal-aid"},
+        )
+    )
+    tasks = usecase.run({"debtProcedureStage": ["COURT_PROCESS", "STOPPED"]})
+    assert tasks[0].card.institution_id == "debt-credit-recovery"
+
+
+def test_unknown_card_id_falls_back_and_warns(
+    caplog: pytest.LogCaptureFixture,
+) -> None:
+    """규칙표가 KB에 없는 제도를 가리키면 기본 대표로 답하되 조용히 넘기지 않는다."""
+    usecase = _usecase_with_rules(
+        IntakeRule(
+            route_id=RouteId.R14,
+            data_key="debtProcedureStage",
+            lead_by_option={"COURT_PROCESS": "없는-제도"},
+        )
+    )
+    with caplog.at_level("WARNING"):
+        tasks = usecase.run({"debtProcedureStage": "COURT_PROCESS"})
+    assert tasks[0].card.institution_id == "debt-credit-recovery"
+    assert "없는-제도" in caplog.text
