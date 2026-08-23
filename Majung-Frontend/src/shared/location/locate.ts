@@ -15,7 +15,7 @@
 //
 // 데이터는 행정안전부 행정동 경계(2021)다. 원본 30.5MB를 허용 오차 약 44m로 단순화하고
 // 좌표를 정수 차이값으로 담아 1.6MB로 줄였다(gzip 543KB). 판정은 100회에 6ms다.
-import dongsData from "../data/dongs.json";
+import dongsData from "./dongs.json";
 
 /**
  * 위치로 알아낸 곳. **경계 데이터가 준 그대로 담는다.**

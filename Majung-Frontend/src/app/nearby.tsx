@@ -7,7 +7,7 @@ import { router } from "expo-router";
 
 import { NearbyScreen } from "@/features/institutions/views/NearbyScreen";
 import type { NearbyResult } from "@/features/institutions/domain/institution";
-import { useRegionLookup } from "@/features/institutions/hooks/useRegionLookup";
+import { useRegionLookup } from "@/shared/location";
 import { ApiError, getDistrictOffices, getInstitutions } from "@/shared/utils/api";
 
 export default function NearbyRoute() {

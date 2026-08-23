@@ -11,6 +11,8 @@
 // 여기는 가입 화면에서 홈으로 값을 넘기는 통로일 뿐이며 앱을 닫으면 사라진다.
 import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
 
+import type { LocatedPlace } from "@/shared/location";
+
 import type { IntakeAnswerMap, IntakeTask } from "../types";
 
 type Session = {
@@ -35,6 +37,16 @@ type Session = {
    * 이유가 없고, 그 사이 화면이 비어 있는 시간도 없어진다.
    */
   tasks?: readonly IntakeTask[];
+  /**
+   * 가입할 때 알아낸 지금 있는 곳 (§5.4).
+   *
+   * **여기 담기는 것은 좌표가 아니라 동 이름이다.** 좌표는 기기 안에서 동으로 바뀐
+   * 직후에 버려지고 이 세션에도 오지 않는다.
+   *
+   * **저장하지 않는다.** 앱을 닫으면 사라지고 다시 물어본다 — 서버에 두면
+   * 출소자 명단에 사는 동네가 붙는다.
+   */
+  place?: LocatedPlace;
 };
 
 let current: Session | null = null;

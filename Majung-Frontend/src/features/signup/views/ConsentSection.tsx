@@ -24,6 +24,13 @@ type Props = {
   onToggle: (id: ConsentId) => void;
   onToggleAll: (next: boolean) => void;
   onOpenDetail: (id: ConsentId) => void;
+  /**
+   * 위치 동의를 켠 뒤의 상태 한 줄. 알아낸 곳이거나, 알아보는 중이거나, 실패한 이유다.
+   *
+   * **체크만 되고 아무 표시가 없으면 사용자는 무엇이 됐는지 모른다.** 기기 권한 팝업은
+   * 화면 밖에서 뜨고 사라지므로, 그 결과가 화면 안에 남아야 한다.
+   */
+  locationNote?: string | null;
 };
 
 function CheckBox({ checked, large }: { checked: boolean; large?: boolean }) {
@@ -42,7 +49,14 @@ function CheckBox({ checked, large }: { checked: boolean; large?: boolean }) {
   );
 }
 
-export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDetail }: Props) {
+export function ConsentSection({
+  crime,
+  state,
+  onToggle,
+  onToggleAll,
+  onOpenDetail,
+  locationNote,
+}: Props) {
   const items = visibleConsents(crime);
   // "전체 동의"를 눌러도 각 항목이 개별로 체크된 상태가 그대로 보여야 한다 (§3.4-5).
   const allChecked = items.every((c) => state[c.id]);
@@ -116,6 +130,15 @@ export function ConsentSection({ crime, state, onToggle, onToggleAll, onOpenDeta
           {item.limitNote ? (
             <Text className="ml-9 mt-2 text-caption text-ink-muted">
               {item.limitNote}
+            </Text>
+          ) : null}
+
+          {item.id === "location" && locationNote ? (
+            <Text
+              className="ml-9 mt-2 text-caption font-bold"
+              style={{ color: COLORS.brand }}
+            >
+              {locationNote}
             </Text>
           ) : null}
         </View>

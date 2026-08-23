@@ -36,12 +36,23 @@ export function useSignupForm() {
     setConsent((prev) => ({ ...prev, [id]: !prev[id] }));
   }, []);
 
+  /**
+   * 위치 동의를 되돌린다.
+   *
+   * **기기가 위치를 거부하면 체크도 풀어야 한다.** 켜져 있는데 위치가 안 잡히는 상태로
+   * 두면, 사용자는 나중에 왜 근처 기관이 안 나오는지 알 길이 없다.
+   */
+  const clearLocationConsent = useCallback(() => {
+    setConsent((prev) => ({ ...prev, location: false }));
+  }, []);
+
   const toggleAllConsent = useCallback(
     (next: boolean) => {
       setConsent({
         privacy: next,
         crime: needsCrimeConsent(crime) ? next : false,
         share: next,
+        location: next,
       });
     },
     [crime],
@@ -65,6 +76,7 @@ export function useSignupForm() {
     selectCrime,
     consent,
     toggleConsent,
+    clearLocationConsent,
     toggleAllConsent,
     /** 개인정보 입력이 다 찼는지. */
     personalReady,

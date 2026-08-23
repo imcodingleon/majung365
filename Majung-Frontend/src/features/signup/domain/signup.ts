@@ -16,7 +16,14 @@ export type { CrimeCategory, CrimeCategoryId };
 export { CRIME_CATEGORIES, needsCrimeConsent };
 
 
-export type ConsentId = "privacy" | "crime" | "share";
+/**
+ * 동의 항목.
+ *
+ * **`location`은 서버로 가지 않는다.** 나머지 셋은 무엇을 모으고 누구에게 주는지에
+ * 대한 동의라 기록이 남아야 하지만, 위치는 모으지도 보내지도 않아서 서버가 기록할
+ * 대상 자체가 없다. 기기가 위치를 읽어도 되는지만 정한다.
+ */
+export type ConsentId = "privacy" | "crime" | "share" | "location";
 
 export type ConsentItem = {
   id: ConsentId;
@@ -58,11 +65,26 @@ export const CONSENT_ITEMS: readonly ConsentItem[] = [
     required: false,
     limitNote: "동의하지 않으면 담당자에게 방문을 미리 알릴 수 없어요. 나중에 다시 정하실 수 있어요.",
   },
+  // **다른 항목과 성격이 다르다.** 위치는 모으지도 저장하지도 않는다 — 기기에서
+  // 동 이름으로 바꾸고 좌표는 그 자리에서 버린다(§5.4). 그래서 "수집·이용"이 아니라
+  // "이용"이고, 문구도 저장한다고 쓰지 않는다. 쓰면 거짓이 된다.
+  {
+    id: "location",
+    label: "위치 정보 이용 동의",
+    plain: "지금 계신 곳 가까운 기관을 알려드리는 데 써요.",
+    required: false,
+    limitNote: "위치는 저장하지 않고 어디로도 보내지 않아요. 동의하지 않으셔도 지역을 직접 고르실 수 있어요.",
+  },
 ];
 
 export type ConsentState = Record<ConsentId, boolean>;
 
-export const EMPTY_CONSENT: ConsentState = { privacy: false, crime: false, share: false };
+export const EMPTY_CONSENT: ConsentState = {
+  privacy: false,
+  crime: false,
+  share: false,
+  location: false,
+};
 
 /** 지금 화면에 보여야 하는 동의 항목. 수집하지 않는 정보에 동의를 받을 이유가 없다 (§3.4-2). */
 export function visibleConsents(crime: CrimeCategoryId | null): readonly ConsentItem[] {
@@ -105,8 +127,12 @@ export function toSignupRequest(input: {
   const release = toIsoDate(input.releaseDate);
   if (!birth || !release || !input.name.trim()) return null;
 
-  const consents: ConsentInput[] = visibleConsents(input.crime).map((c) => ({
-    kind: c.id,
+  // **위치 동의는 서버로 보내지 않는다.** 위치를 모으지도 보내지도 않으므로 서버가
+  // 기록할 대상이 없다. 보내면 "무언가 수집한다"는 잘못된 기록이 남는다.
+  const consents: ConsentInput[] = visibleConsents(input.crime)
+    .filter((c) => c.id !== "location")
+    .map((c) => ({
+    kind: c.id as ConsentInput["kind"],
     agreed: input.consent[c.id],
   }));
 

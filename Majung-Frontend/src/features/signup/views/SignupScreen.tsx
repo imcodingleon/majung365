@@ -5,7 +5,7 @@
 //
 // 죄목 문항은 ①에 속하며 ②의 6분야 격자와 시각적으로 구분되어야 한다. 섞이면 죄목 동의의
 // 별도 동의 성격이 흐려진다 (§3.7).
-import { useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -15,6 +15,9 @@ import { Button } from "@/shared/components/Button";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { ChoiceButton } from "@/shared/components/ChoiceButton";
 import { COLORS } from "@/shared/theme/colors";
+
+import { districtLabel, type LocatedPlace } from "@/shared/location";
+import { useRegionLookup } from "@/shared/location";
 
 import {
   CRIME_CATEGORIES,
@@ -45,6 +48,13 @@ type Props = {
     releaseDate: DateParts;
     crime: CrimeCategoryId | null;
     consent: ConsentState;
+    /**
+     * 위치 동의를 켜고 실제로 알아낸 곳. 동의하지 않았거나 못 알아냈으면 없다.
+     *
+     * **서버로 가지 않는다.** 라우트가 세션에만 담고, 할 일 카드가 근처 기관을
+     * 짚을 때 쓴다 (§5.4).
+     */
+    place?: LocatedPlace;
   }) => void;
   /** 서버에 보내는 중. 두 번 누르는 것을 막는다. */
   submitting?: boolean;
@@ -80,6 +90,47 @@ export function SignupScreen({
 }: Props) {
   const form = useSignupForm();
   const [detailId, setDetailId] = useState<ConsentId | null>(null);
+  const lookup = useRegionLookup();
+
+  // 위치 동의를 켜면 그 자리에서 기기 위치를 묻는다. 나중에 따로 물으면 사용자는
+  // 자기가 무엇에 동의했는지와 지금 뜬 팝업을 잇지 못한다.
+  const toggleConsent = useCallback(
+    (id: ConsentId) => {
+      if (id === "location" && !form.consent.location) {
+        void lookup.locate();
+      }
+      form.toggleConsent(id);
+    },
+    [form, lookup],
+  );
+
+  const toggleAllConsent = useCallback(
+    (next: boolean) => {
+      if (next && !form.consent.location) void lookup.locate();
+      form.toggleAllConsent(next);
+    },
+    [form, lookup],
+  );
+
+  // **기기가 거부하면 체크도 푼다.** 켜져 있는데 위치가 안 잡히는 상태로 두면
+  // 사용자는 나중에 왜 근처 기관이 안 나오는지 알 길이 없다.
+  useEffect(() => {
+    if (lookup.state.status === "denied" || lookup.state.status === "failed") {
+      form.clearLocationConsent();
+    }
+  }, [lookup.state.status, form]);
+
+  const located = lookup.state.status === "resolved" ? lookup.state.place : null;
+  const locationNote =
+    lookup.state.status === "locating"
+      ? "지금 계신 곳을 알아보고 있어요…"
+      : lookup.state.status === "denied"
+        ? "위치를 쓰지 못했어요. 나중에 지역을 직접 고르실 수 있어요."
+        : lookup.state.status === "failed"
+          ? lookup.state.reason
+          : located
+            ? `${located.sido} ${districtLabel(located.district)} ${located.dong}`
+            : null;
 
   // 6개 분야를 모두 마쳐야 가입이 완료된다 (§3.7 · §13 startApp).
   const canSubmit = form.personalReady && form.consentReady && intakeDone;
@@ -152,9 +203,10 @@ export function SignupScreen({
         <ConsentSection
           crime={form.crime}
           state={form.consent}
-          onToggle={form.toggleConsent}
-          onToggleAll={form.toggleAllConsent}
+          onToggle={toggleConsent}
+          onToggleAll={toggleAllConsent}
           onOpenDetail={setDetailId}
+          locationNote={locationNote}
         />
 
         {!intakeDone ? (
@@ -178,6 +230,7 @@ export function SignupScreen({
               releaseDate: form.releaseDate,
               crime: form.crime,
               consent: form.consent,
+              place: form.consent.location && located ? located : undefined,
             })
           }
           disabled={!canSubmit || submitting}

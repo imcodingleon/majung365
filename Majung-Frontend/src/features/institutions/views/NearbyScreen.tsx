@@ -13,9 +13,9 @@ import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { DistrictOffice, Institution, NearbyResult } from "../domain/institution";
-import { districtLabel, type LocatedPlace } from "../domain/locate";
+import { districtLabel, type LocatedPlace } from "@/shared/location";
 import type { SelectedRegion } from "../domain/region";
-import type { LookupState } from "../hooks/useRegionLookup";
+import type { LookupState } from "@/shared/location";
 
 import { RegionPicker } from "./RegionPicker";
 

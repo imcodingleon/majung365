@@ -15,8 +15,8 @@
 import * as Location from "expo-location";
 import { useCallback, useState } from "react";
 
-import { placeAt, type LocatedPlace } from "../domain/locate";
-import { type SelectedRegion } from "../domain/region";
+import { placeAt, type LocatedPlace } from "./locate";
+import { type SelectedRegion } from "@/features/institutions/domain/region";
 
 export type LookupState =
   | { status: "idle" }
