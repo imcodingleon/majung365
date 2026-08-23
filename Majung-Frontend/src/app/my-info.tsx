@@ -40,8 +40,8 @@ export default function MyInfoRoute() {
           name: me.name,
           birth: me.birth_date,
           releaseDate: me.release_date,
-          // 값이 아니라 있는지 여부만 온다. 화면은 지울 수 있는지만 알면 된다.
-          crime: me.has_crime_category ? ("other" as CrimeCategoryId) : null,
+          // 값이 아니라 있는지 여부만 온다 (§2.5). **그 자리를 무엇으로도 채우지 않는다.**
+          hasCrime: me.has_crime_category,
           sharesWithStaff: true,
         });
       } catch (err) {
@@ -67,7 +67,7 @@ export default function MyInfoRoute() {
         if (scope === "crime") {
           // 죄목만 철회한다. 다른 정보는 그대로 남는다 (§9.5).
           await patchMe(token, { crime_category_revoked: true });
-          setProfile((p) => (p ? { ...p, crime: null } : p));
+          setProfile((p) => (p ? { ...p, hasCrime: false } : p));
           return;
         }
         // 모든 정보 삭제. **서버에서 지운 다음 기기의 열쇠도 지운다** — 순서가 바뀌면
@@ -101,6 +101,8 @@ export default function MyInfoRoute() {
         if (crime === null) void erase("crime");
       }}
       onErase={erase}
+      // 이 화면을 덮고 열지 않고 밀어 넣는다. 다시 하기를 그만두면 여기로 돌아온다.
+      onRetake={() => router.push("/retake")}
       onClose={close}
     />
   );
