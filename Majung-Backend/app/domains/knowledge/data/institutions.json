@@ -247,13 +247,39 @@
       "contact_key": "1670-7004"
     },
     {
-      "id": "housing-emergency-welfare-housing",
+      "id": "housing-koreha-rental",
       "route_ids": [
         "R4"
       ],
       "lead_for": [
         "R4"
       ],
+      "name": "법무보호복지공단 주거지원",
+      "summary_easy": "가족과 함께 오래 살 집이 필요하면 공단이 LH 임차주택을 싸게 쓰도록 도와줘요. 함께 살 가족이 있고 모두 집이 없어야 신청할 수 있어요.",
+      "where": "한국법무보호복지공단 관할 지부",
+      "docs": [
+        "출소 사실 확인 서류 또는 기관의뢰서",
+        "신분 확인 서류",
+        "주민등록등본",
+        "지방세 세목별 과세증명서",
+        "지금 사는 곳 사진과 임대차계약서",
+        "가족사진"
+      ],
+      "next_step": "공단 지부에 '주거지원 상담'을 먼저 받으세요. 요건과 준비 서류를 알려줘요.",
+      "deadline": null,
+      "source_url": "https://koreha.or.kr/sub/02_01_6.do?MN1=3&MN2=247&MN3=248&MN=248",
+      "contact_key": "1670-7004",
+      "source_urls": [
+        "https://koreha.or.kr/sub/02_01_6.do?MN1=3&MN2=247&MN3=248&MN=248"
+      ],
+      "verified_at": "2026-08-22"
+    },
+    {
+      "id": "housing-emergency-welfare-housing",
+      "route_ids": [
+        "R4"
+      ],
+      "lead_for": [],
       "name": "긴급복지 주거지원",
       "summary_easy": "지낼 곳이 필요하면 긴급복지제도로 임시 거처나 주거비를 지원받을 수 있어요.",
       "where": "주민센터 또는 보건복지상담센터(129)",
@@ -268,7 +294,10 @@
         "https://www.mohw.go.kr/menu.es?mid=a10708010100"
       ],
       "verified_at": "2026-08-22",
-      "contact_key": "129"
+      "contact_key": "129",
+      "companion_for": [
+        "R4"
+      ]
     },
     {
       "id": "employment-koreha-job",

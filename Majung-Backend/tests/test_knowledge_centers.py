@@ -33,7 +33,7 @@ _ROUTE_LEAD: dict[RouteId, str] = {
     RouteId.R1: "housing-koreha-residence",
     RouteId.R2: "welfare-koreha-emergency",
     RouteId.R3: "health-koreha-basic",
-    RouteId.R4: "housing-emergency-welfare-housing",
+    RouteId.R4: "housing-koreha-rental",
     RouteId.R6: "employment-koreha-job",
     RouteId.R7: "startup-koreha-support",
     RouteId.R8: "health-mental-support",
