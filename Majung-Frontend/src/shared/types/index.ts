@@ -6,6 +6,7 @@ export type {
   ChatRole,
   ChatStreamHandlers,
   EvidenceEvent,
+  StoredChatTurn,
   NodeAnswerInput,
   NodeStateValue,
   RouteOut,

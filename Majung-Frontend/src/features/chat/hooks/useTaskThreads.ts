@@ -11,7 +11,8 @@
 import { useCallback, useRef, useState } from "react";
 
 import type { CardData, Turn, EvidenceEvent } from "@/shared/types";
-import { ApiError, streamChat } from "@/shared/utils/api";
+import { ApiError, deleteChatHistory, getChatHistory, streamChat } from "@/shared/utils/api";
+import { loadToken } from "@/shared/utils/tokenStore";
 
 import type { ChatMessage } from "../domain/chatMessage";
 
@@ -56,10 +57,50 @@ export function useTaskThreads(initial: Threads = {}) {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   /** 답변을 기다리는 중인 방. 입력을 잠근다. */
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** 지난 대화를 이미 불러온 방. 열 때마다 다시 부르지 않는다. */
+  const loaded = useRef<Set<string>>(new Set());
   /** 열려 있는 방의 스트림. 방을 닫거나 새로 보내면 끊는다. */
   const abort = useRef<AbortController | null>(null);
 
-  const open = useCallback((taskId: string) => setOpenTaskId(taskId), []);
+  /**
+   * 대화방을 연다. **저장된 지난 대화를 함께 불러온다** (§6.3).
+   *
+   * 예선에서는 대화를 남기지 않았는데, 남지 않으면 어제 받은 안내가 사라져서
+   * 본선에서 뒤집었다. 서버가 보관만 하고 화면이 안 읽으면 뒤집은 뜻이 없다.
+   *
+   * **이미 화면에 있는 방은 다시 안 불러온다.** 열 때마다 부르면 방금 나눈 대화가
+   * 서버 사본으로 덮이고, 스트리밍 중이던 답이 사라진다.
+   */
+  const open = useCallback(
+    (taskId: string) => {
+      setOpenTaskId(taskId);
+      if (loaded.current.has(taskId)) return;
+      loaded.current.add(taskId);
+      void (async () => {
+        const token = await loadToken();
+        if (!token) return;
+        try {
+          const past = await getChatHistory(token, taskId);
+          if (past.length === 0) return;
+          setThreads((prev) => {
+            // 그 사이에 말을 걸었으면 덮지 않는다.
+            if ((prev[taskId] ?? []).length > 0) return prev;
+            return {
+              ...prev,
+              [taskId]: past.map((turn, i) => ({
+                id: `${taskId}-past-${i}`,
+                role: turn.role,
+                text: turn.content,
+              })),
+            };
+          });
+        } catch {
+          // 못 불러와도 새 대화는 할 수 있다. 조용히 넘긴다.
+        }
+      })();
+    },
+    [],
+  );
 
   const close = useCallback(() => {
     abort.current?.abort();
@@ -190,12 +231,29 @@ export function useTaskThreads(initial: Threads = {}) {
     [append, openTaskId, threads],
   );
 
-  // 경고로 막는 대신 지울 수 있게 한다 (§6.3-2).
+  /**
+   * 이 대화를 지운다 (§6.3-2).
+   *
+   * **서버에서도 지운다.** 화면에서만 비우면 앱을 다시 켤 때 되살아나고, 사용자는
+   * 지웠다고 믿은 것이 남아 있는 상태가 된다. 자동 로그인 상태에서 기기를 잡은
+   * 사람이 읽을 수 있는 것이 이 대화이므로, 지운다고 했으면 실제로 지워져야 한다.
+   */
   const clear = useCallback(() => {
     if (!openTaskId) return;
+    const taskId = openTaskId;
     abort.current?.abort();
     setBusyId(null);
-    setThreads((prev) => ({ ...prev, [openTaskId]: [] }));
+    setThreads((prev) => ({ ...prev, [taskId]: [] }));
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return;
+      try {
+        await deleteChatHistory(token, taskId);
+      } catch {
+        // 서버에서 못 지웠어도 화면은 비운 채로 둔다. 되살려 보이면 더 혼란스럽다.
+        // 다시 열 때 서버 사본이 돌아오는데, 그때 사용자가 한 번 더 지울 수 있다.
+      }
+    })();
   }, [openTaskId]);
 
   return {

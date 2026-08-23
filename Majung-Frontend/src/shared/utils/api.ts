@@ -14,6 +14,7 @@ import type {
   Institution,
   ChatStreamHandlers,
   EvidenceEvent,
+  StoredChatTurn,
   TaskCard,
 } from "../types";
 import type {
@@ -312,6 +313,33 @@ export async function postAnalyze(req: AnalyzeRequest): Promise<TaskCard> {
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as TaskCard;
+}
+
+/**
+ * GET /api/chat/{route_id} — 그 할 일에서 나눈 지난 대화 (§6.3).
+ *
+ * **저장을 꺼두면 빈 배열이 온다.** 오류가 아니므로 화면은 대화가 없는 것으로 다룬다.
+ */
+export async function getChatHistory(token: string, routeId: string): Promise<StoredChatTurn[]> {
+  const res = await fetch(`${API_BASE}/api/chat/${encodeURIComponent(routeId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StoredChatTurn[];
+}
+
+/**
+ * DELETE /api/chat/{route_id} — 이 대화를 지운다 (§6.3-2).
+ *
+ * **지울 길이 있어야 저장이 성립한다.** 자동 로그인 상태에서 기기를 잡은 사람이
+ * 대화를 읽을 수 있고, 거기에는 사용자가 가장 사적으로 말한 것이 들어 있다.
+ */
+export async function deleteChatHistory(token: string, routeId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/chat/${encodeURIComponent(routeId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
 }
 
 /**

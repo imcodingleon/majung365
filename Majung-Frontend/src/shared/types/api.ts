@@ -165,6 +165,19 @@ export interface EvidenceEvent {
   notice: string;
 }
 
+/**
+ * 저장된 대화 한 줄 (§6.3).
+ *
+ * **서버가 암호화해 보관한다.** 예선에서는 대화를 남기지 않았는데, 남지 않으면
+ * 어제 받은 안내가 사라져서 본선에서 뒤집었다.
+ */
+export interface StoredChatTurn {
+  role: "user" | "assistant";
+  content: string;
+  /** 보낸 시각(ISO). */
+  at: string;
+}
+
 export interface ChatStreamHandlers {
   /** triage 결과(급한 지원 항목 2~3개) 도착 */
   onTriage?: (routes: RouteOut[]) => void;
