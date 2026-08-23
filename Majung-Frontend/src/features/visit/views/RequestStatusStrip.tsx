@@ -11,7 +11,7 @@ import {
   canCancel,
   canOpenStaffChat,
   cancelNeedsConfirm,
-  statusMessage,
+  statusLines,
   type VisitRequest,
 } from "../domain/request";
 
@@ -30,7 +30,12 @@ type Props = {
   /** 취소된 요청을 다시 보낸다. */
   onResend?: () => void;
   /** 보낸 요청을 물린다. 못 가게 되는 일은 실제로 생기고, 그때 담당자가 헛되이 기다린다. */
-  onCancel?: () => void;
+  /**
+   * 요청을 물린다. **성공 여부를 돌려줘야 한다.** 실패했는데 확인 문구가 그대로
+   * 떠 있으면 사용자는 물린 줄 알고 나가고, 담당자는 그 시간을 계속 비워 둔다 —
+   * 이 기능을 만든 이유가 바로 그 상황이었다.
+   */
+  onCancel?: () => Promise<boolean> | void;
 };
 
 type Tone = "info" | "done" | "warn";
@@ -50,26 +55,28 @@ function toneOf(request: VisitRequest): Tone {
 function SmallButton({
   label,
   filled,
+  danger,
   onPress,
 }: {
   label: string;
   filled?: boolean;
+  /** 되돌릴 수 없는 쪽. 문구만으로는 무게가 전해지지 않아 색으로도 알린다. */
+  danger?: boolean;
   onPress: () => void;
 }) {
+  const bg = danger ? COLORS.alert : filled ? COLORS.brand : COLORS.surface;
+  const line = danger ? COLORS.alert : filled ? COLORS.brand : COLORS.line;
   return (
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
       accessibilityLabel={label}
       className="rounded-lg border-[1.5px] px-4 py-3 active:opacity-90"
-      style={{
-        backgroundColor: filled ? COLORS.brand : COLORS.surface,
-        borderColor: filled ? COLORS.brand : COLORS.line,
-      }}
+      style={{ backgroundColor: bg, borderColor: line }}
     >
       <Text
         className="text-caption font-extrabold"
-        style={{ color: filled ? COLORS.surface : COLORS.inkSub }}
+        style={{ color: danger || filled ? COLORS.surface : COLORS.inkSub }}
       >
         {label}
       </Text>
@@ -96,17 +103,24 @@ export function RequestStatusStrip({
       className="mb-4 rounded-xl border px-4 py-4"
       style={{ backgroundColor: tone.bg, borderColor: tone.line }}
     >
-      <Text
-        className="leading-[25px]"
-        style={{
-          color: tone.ink,
-          // 확정 문구는 실제로 찾아가야 할 정보를 담고 있으므로 더 크고 굵게 낸다.
-          fontSize: confirmed ? 16 : 14.5,
-          fontWeight: confirmed ? "800" : "600",
-        }}
-      >
-        {statusMessage(request)}
-      </Text>
+      {/* 첫 줄이 지금 상태이고 뒤따르는 줄은 부연이다. 무게를 달리해 눈으로 갈리게 한다. */}
+      <View className="gap-1">
+        {statusLines(request).map((line, i) => (
+          <Text
+            key={line}
+            className="leading-[24px]"
+            style={{
+              color: tone.ink,
+              // 확정 문구는 실제로 찾아가야 할 정보를 담고 있으므로 더 크고 굵게 낸다.
+              fontSize: confirmed ? 16 : 14.5,
+              fontWeight: i === 0 ? (confirmed ? "800" : "700") : "600",
+              opacity: i === 0 ? 1 : 0.85,
+            }}
+          >
+            {line}
+          </Text>
+        ))}
+      </View>
 
       {request.status === "reschedule_proposed" && onAcceptProposal && onDeclineProposal ? (
         <View className="mt-3 flex-row gap-2">
@@ -136,7 +150,15 @@ export function RequestStatusStrip({
               담당자가 시간을 비워 두었어요. 정말 안 가시겠어요?
             </Text>
             <View className="flex-row gap-2">
-              <SmallButton label="네, 안 갈래요" filled onPress={onCancel} />
+              <SmallButton
+                label="네, 취소할래요"
+                danger
+                onPress={() => {
+                  void Promise.resolve(onCancel()).then((ok) => {
+                    if (ok === false) setConfirming(false);
+                  });
+                }}
+              />
               <SmallButton label="아니요" onPress={() => setConfirming(false)} />
             </View>
           </View>
@@ -144,11 +166,12 @@ export function RequestStatusStrip({
           <Pressable
             onPress={() => (cancelNeedsConfirm(request.status) ? setConfirming(true) : onCancel())}
             accessibilityRole="button"
-            accessibilityLabel="이 요청 물리기"
-            className="mt-3 self-start px-1 py-2 active:opacity-60"
+            accessibilityLabel="이 방문 요청 취소하기"
+            className="mt-3 self-start rounded-lg border-[1.5px] px-4 py-3 active:opacity-80"
+            style={{ backgroundColor: COLORS.alertSoft, borderColor: COLORS.alertLine }}
           >
-            <Text className="text-caption font-bold underline" style={{ color: tone.ink }}>
-              안 가게 됐어요
+            <Text className="text-caption font-extrabold" style={{ color: COLORS.alert }}>
+              취소하기
             </Text>
           </Pressable>
         )

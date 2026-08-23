@@ -48,7 +48,15 @@ export function useStaffVisits(token: string | null) {
     async (
       id: string,
       status: VisitStatus,
-      extra?: { meeting_place?: string; proposed_at?: string; cancel_reason?: string },
+      // `confirmed_for`가 빠져 있었다. 호출 쪽이 전개 연산자로 넣어 초과 속성 검사를
+      // 비껴가는 바람에 타입 검사가 통과했고, 값은 실행 시점에만 서버까지 갔다.
+      // 키를 잘못 적거나 `extra`를 구조 분해로 고치면 조용히 사라지는 자리였다.
+      extra?: {
+        meeting_place?: string;
+        proposed_at?: string;
+        confirmed_for?: string;
+        cancel_reason?: string;
+      },
     ): Promise<boolean> => {
       if (!token) return false;
       try {

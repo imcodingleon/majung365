@@ -22,9 +22,18 @@ export type NearbyKind = "office" | "institution" | "none";
  *
  * R9는 반대다. 전국 어느 주민센터에서나 되므로 가까운 곳을 짚는 것이 정확한 답이다.
  */
+/**
+ * 안내할 기관이 없는 항목.
+ *
+ * **R10은 은행, R13은 교정시설, R14는 법원이다.** 우리가 가진 데이터에 없고 서버도
+ * 그 갈래를 모르므로, 물으면 그 지역과 무관한 것이 돌아와 카드에 그려진다.
+ * 이 항목들의 창구 안내는 카드 본문이 맡는다.
+ */
+const NO_NEARBY = new Set(["R10", "R11", "R13", "R14"]);
+
 export function nearbyKindFor(routeId: string): NearbyKind {
   if (routeId === "R9") return "office";
-  if (routeId === "R11") return "none";
+  if (NO_NEARBY.has(routeId)) return "none";
   return "institution";
 }
 

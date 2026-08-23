@@ -84,7 +84,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     sectionId: "housing",
     routeId: "R11",
     prompt: "지금 지내는 곳이 주민등록 주소와 같나요?",
-    help: "늘 지낼 곳이 없다면 주민등록과 상관없이 ‘일정하게 지내는 곳이 없어요’를 골라 주세요.",
+    help: "장기 거주지가 없다면 주민등록과 상관없이 ‘일정하게 지내는 곳이 없어요’를 골라 주세요.",
     kind: "single",
     dataKey: "addressStatus",
     options: [

@@ -106,7 +106,9 @@ export function ConsentSection({
                   className="font-extrabold"
                   style={{ color: item.required ? COLORS.brand : COLORS.inkSub }}
                 >
-                  {item.required ? "[필수] " : "[선택] "}
+                  {/* §3.4-2 — 화면 표기는 "[필수]"가 아니라 "꼭 필요해요"다.
+                      법률 용어를 그대로 내면 저리터러시 사용자가 읽고 겁먹는다. */}
+                  {item.required ? "꼭 필요해요 · " : "[선택] "}
                 </Text>
                 <Text className="font-bold">{item.label}</Text>
               </Text>

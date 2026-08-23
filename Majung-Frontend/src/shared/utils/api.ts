@@ -19,6 +19,7 @@ import type {
 } from "../types";
 import type {
   MeResponse,
+  RestoreResponse,
   SignupRequest,
   SignupResponse,
   UpdateMeRequest,
@@ -34,14 +35,6 @@ import type {
 /** 노출 허용 변수만 사용(EXPO_PUBLIC_). 미설정 시 로컬 기본값. */
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/**
- * 음성 감정 적응형 RAG(SER) 서비스 베이스 URL. PC의 SER 서버 → 폰 테스트 시 cloudflared 터널 HTTPS.
- * 기존 백엔드(EC2)와 분리 — SER 모델이 무거워 PC/GPU에서 자체호스팅.
- */
-/**
- * 🔒 터널 접근용 '약한 게이트' 토큰(선택). EXPO_PUBLIC_이라 번들에 노출됨 → 진짜 비밀 아님.
- * 실제 방어: CORS 오리진 제한 + 테스트할 때만 터널 on + 서버 오디오 무영속. 데모 한정 사용.
- */
 
 /** 서버가 준 사용자용 문구(detail)를 담는 오류. UI는 message를 그대로 보여줘도 됨. */
 export class ApiError extends Error {
@@ -54,21 +47,23 @@ export class ApiError extends Error {
 }
 
 const DEFAULT_ERROR = "지금 잠시 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요.";
+const INVALID_ERROR = "보내려는 내용이 너무 많거나 형식이 맞지 않아요. 고르신 항목을 줄여서 다시 보내 주세요.";
 
 /** 응답 body(JSON detail)에서 사용자용 문구를 최대한 뽑아낸다. */
 async function errorMessage(res: Response): Promise<string> {
   try {
     const data = (await res.json()) as { detail?: unknown };
     if (typeof data.detail === "string" && data.detail.trim()) return data.detail;
+    // **FastAPI의 검증 오류(422)는 `detail`이 배열이다.** 위 문자열 검사에서 걸러져
+    // 통신 오류 문구가 나가면, 사용자는 연결 탓인 줄 알고 다시 누르기만 반복한다.
+    // 배열 안의 문구는 영어라 그대로 보여줄 수 없으므로 무엇을 해야 하는지만 말한다.
+    if (Array.isArray(data.detail)) return INVALID_ERROR;
   } catch {
     // JSON 아님 — 기본 문구로
   }
   return DEFAULT_ERROR;
 }
 
-/**
- * POST {SER}/analyze — 음성(Blob) + 현재위치 → 감정×구체성 적응형 응답.
- * multipart. Content-Type은 브라우저가 boundary와 함께 자동 설정하므로 지정하지 않는다.
 /**
  * POST /api/intake/analyze — 초기 진단 답변 → 할 일 목록 (§3.8·§4.1).
  *
@@ -106,6 +101,41 @@ export async function postSignup(req: SignupRequest): Promise<SignupResponse> {
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as SignupResponse;
+}
+
+/**
+ * GET /api/tasks — 세션 토큰만으로 할 일을 되살린다 (§5.2).
+ *
+ * **답변을 다시 보내지 않는다.** 서버에 남아 있는 것은 답변이 아니라 판정이고,
+ * 카드 본문은 그때그때 지식 베이스에서 만들어진다. 그래서 기기가 진단 답변을
+ * 들고 있지 않아도 같은 목록이 돌아온다.
+ *
+ * 404면 이어서 볼 것이 없다는 뜻이다 — 저장이 꺼져 있던 때 가입한 경우다.
+ */
+export async function getTasks(token: string): Promise<RestoreResponse> {
+  const res = await fetch(`${API_BASE}/api/tasks`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as RestoreResponse;
+}
+
+/**
+ * PUT /api/tasks/completed — 마친 항목을 서버에 남긴다.
+ *
+ * **전체 목록을 보낸다.** 되돌리기가 있어서 더하기만으로는 표현되지 않는다 (§5.2).
+ */
+export async function putCompleted(
+  token: string,
+  completed: readonly string[],
+): Promise<RestoreResponse> {
+  const res = await fetch(`${API_BASE}/api/tasks/completed`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ completed }),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as RestoreResponse;
 }
 
 /** GET /api/me — 내 정보 열람. **죄목 값은 내려오지 않는다** (§2.5). */

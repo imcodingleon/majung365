@@ -65,6 +65,12 @@ const ROUTE_ORG: Record<string, string> = {
  * 신분·행정은 R9·R10 중 R9가 주민센터라 절반이고, 주거는 셋 중 둘이 공단이라
  * 주민센터 방문에서는 꺼진다.
  */
+/**
+ * 한 번에 보낼 수 있는 답변 줄 수. **백엔드 계약(`max_length=20`)과 같은 값이다.**
+ * 서버가 바뀌면 여기도 같은 커밋에서 바꾼다.
+ */
+export const MAX_SHARED_ANSWERS = 20;
+
 export function defaultSections(routeId: string): SectionId[] {
   const org = ROUTE_ORG[routeId];
   if (!org) return [];
@@ -107,5 +113,29 @@ export function buildSharedAnswers(
       });
     }
   }
-  return rows;
+  // **서버 상한을 넘기지 않는다.** 계약이 `max_length=20`이라 21줄째부터 422가 되는데,
+  // FastAPI의 422는 `detail`이 배열이라 사용자에게는 "연결이 원활하지 않아요"로 보인다.
+  // 그러면 무엇을 줄여야 하는지 모른 채 다시 누르기만 하게 된다. 문항이 25개이므로
+  // 다섯 분야만 켜도 넘는다 — 화면이 미리 막고(§7.4-1) 여기서 한 번 더 자른다.
+  return rows.slice(0, MAX_SHARED_ANSWERS);
+}
+
+/**
+ * 상한 때문에 빠지는 줄 수. 0이면 전부 간다.
+ *
+ * **자르는 것을 조용히 하지 않으려고 둔다.** 사용자가 켠 분야의 답이 말없이 사라지면
+ * "보이는 것이 곧 보내는 것"(§3.8)이 깨진다. 화면이 이 값으로 미리 알린다.
+ */
+export function droppedSharedAnswers(
+  answers: IntakeAnswers,
+  sections: readonly SectionId[],
+): number {
+  let total = 0;
+  for (const section of SECTIONS) {
+    if (!sections.includes(section.id)) continue;
+    for (const question of visibleQuestions(INTAKE_QUESTIONS, section.id, answers)) {
+      if (answerLabel(question, answers)) total += 1;
+    }
+  }
+  return Math.max(0, total - MAX_SHARED_ANSWERS);
 }

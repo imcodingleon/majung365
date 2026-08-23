@@ -43,11 +43,29 @@ function optionLines(task: IntakeTask): string[] {
   });
 }
 
+/**
+ * 준비물 이름을 창구에서 쓰는 말로 바꾼다.
+ *
+ * **지식 베이스는 법령·고시의 문구를 그대로 담고 있어 같은 것을 여러 이름으로 부른다.**
+ * 실제로 "신분 확인 서류"와 "신분증"이 함께 들어 있다. 사용자는 이것을 챙겨서
+ * 창구에 가야 하는데, 설명하는 말투("~을 확인할 수 있는 서류")로는 무엇을 들고
+ * 가야 하는지 알 수 없고 창구에서 그 이름으로 말할 수도 없다.
+ *
+ * **지식 베이스 쪽은 근거 문구를 그대로 둔다.** 바꾸는 것은 화면에 나가는 이름뿐이다.
+ */
+const DOC_NAMES: Record<string, string> = {
+  "신분 확인 서류": "신분증",
+  "출소 사실을 확인할 수 있는 서류": "출소확인서",
+  "수용증명서 또는 신분 확인 서류(있는 대로)": "수용증명서 또는 신분증 (있는 대로)",
+};
+
 /** 신청 경로 여럿의 준비물을 합친다. 같은 서류가 겹치면 한 번만 낸다. */
 function mergedDocs(task: IntakeTask): string[] {
-  const seen = new Set<string>(task.card.docs);
+  const seen = new Set<string>();
+  const add = (d: string) => seen.add(DOC_NAMES[d] ?? d);
+  for (const d of task.card.docs) add(d);
   for (const o of task.card.options) {
-    for (const d of o.docs) seen.add(d);
+    for (const d of o.docs) add(d);
   }
   return [...seen];
 }

@@ -43,11 +43,25 @@ export type VisitRequest = {
 /** 이 말로 끝나면 직함이 이미 붙은 것이다. 뒤에 "담당자"를 또 붙이지 않는다. */
 const TITLE_TAIL = /(담당자|주무관|팀장|과장|계장|주임|선생님|상담사|사회복지사)$/;
 
+/**
+ * 상태 문구를 문장 단위로 나눈다.
+ *
+ * **한 줄에 한 가지만 담는다** (§3.9-⑦). "담당자에게 전달했어요. 확인되면
+ * 알려드릴게요."가 한 덩어리로 감기면 어디가 지금 상태이고 어디가 앞으로 될 일인지
+ * 눈으로 갈리지 않는다. 확정 문구는 더하다 — 시간과 만날 사람이 한 줄에 뭉친다.
+ */
+export function statusLines(request: VisitRequest): string[] {
+  return statusMessage(request)
+    .split(". ")
+    .map((part, i, all) => (i < all.length - 1 ? `${part}.` : part))
+    .filter((part) => part.length > 0);
+}
+
 /** 각 상태에서 사용자가 보는 문장 (§7.1). */
 export function statusMessage(request: VisitRequest): string {
   switch (request.status) {
     case "sent":
-      return "담당자에게 전달했어요. 확인하면 알려드릴게요.";
+      return "담당자에게 전달했어요. 확인되면 알려드릴게요.";
     case "acknowledged":
       return "담당자가 확인했어요.";
     case "confirmed": {
@@ -60,10 +74,17 @@ export function statusMessage(request: VisitRequest): string {
       // 직함이 섞인 값을 주기도 하고, 그때 뒤에 "담당자"를 또 붙이면
       // **"담당자 담당자를 찾으세요"**가 된다. 이름만 왔을 때만 직함을 붙인다 —
       // 한국 이름은 띄어쓰지 않으므로 공백이 있으면 이미 직함이 붙은 것으로 본다.
-      const who = c.staffName.trim();
+      // 서버가 이름을 안 줄 수 있다. 그대로 부르면 화면 전체가 터진다.
+      const who = (c.staffName ?? "").trim();
       const bare = who.length > 0 && !who.includes(" ") && !TITLE_TAIL.test(who);
       const whom = bare ? `${who} 담당자` : who;
-      const where = `${c.place}에서 ${whom}${josa(whom, "을", "를")} 찾으세요.`;
+      // 만날 사람도 장소도 없으면 그 문장을 아예 만들지 않는다. "에서 를 찾으세요"보다
+      // 시간만 알리는 편이 낫다.
+      const place = (c.place ?? "").trim();
+      if (!who && !place) return "방문 시간이 정해졌어요. 담당자에게 확인해 주세요.";
+      const where = place
+        ? `${place}에서 ${whom}${josa(whom, "을", "를")} 찾으세요.`
+        : `${whom}${josa(whom, "을", "를")} 찾으세요.`;
       // 시각이 비면 시각 이야기를 빼고 만다. 넣으면 "정해진 시간으로 정해졌어요"가 된다.
       if (!c.whenLabel) return `방문 시간이 정해졌어요. ${where}`;
       return `${c.whenLabel}${josa(c.whenLabel, "으로", "로")} 정해졌어요. ${where}`;
@@ -118,7 +139,12 @@ export function countSentToday(requests: readonly VisitRequest[], now: Date = ne
       d.getDate() === now.getDate()
     );
   };
-  return requests.filter((r) => r.createdAt && sameDay(r.createdAt)).length;
+  // **취소·완료된 것은 세지 않는다.** 세면 보내고 취소한 뒤 다시 보낼 때 하루 세 건
+  // 중 두 건이 소모되고, 상한이 도움이 아니라 벌칙이 된다. 서버도 답을 기다리는
+  // 것만 센다.
+  return requests.filter(
+    (r) => r.createdAt && sameDay(r.createdAt) && r.status !== "cancelled" && r.status !== "completed",
+  ).length;
 }
 
 export function blockReason(

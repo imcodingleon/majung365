@@ -13,7 +13,7 @@
 // 둘. **웹에는 그 함수의 구현이 없다.** 그냥 오류를 던진다. 심사·시연을 웹으로 하면
 // 그 자리에서 기능이 죽는다.
 import * as Location from "expo-location";
-import { useCallback, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 
 import { placeAt, type LocatedPlace } from "./locate";
 import { type SelectedRegion } from "@/features/institutions/domain/region";
@@ -82,13 +82,19 @@ export function useRegionLookup() {
     setState({ status: "idle" });
   }, []);
 
-  /** 위치로 알아낸 곳. 직접 고른 지역이 있으면 그쪽이 이긴다. */
-  const place: LocatedPlace | null =
-    picked !== null
-      ? { sido: picked.sido, district: picked.district ?? "", dong: "" }
-      : state.status === "resolved"
-        ? state.place
-        : null;
+  /**
+   * 위치로 알아낸 곳. 직접 고른 지역이 있으면 그쪽이 이긴다.
+   *
+   * **매 렌더마다 새 객체를 만들지 않는다.** 직접 고른 경우 여기서 객체를 새로 만들면,
+   * 이 값을 의존성으로 삼는 효과가 끝없이 다시 돈다 — 기관 안내 화면이 서버를 무한히
+   * 부르게 된다. 값이 같으면 같은 객체를 돌려준다.
+   */
+  const place = useMemo<LocatedPlace | null>(() => {
+    if (picked !== null) {
+      return { sido: picked.sido, district: picked.district ?? "", dong: "" };
+    }
+    return state.status === "resolved" ? state.place : null;
+  }, [picked, state]);
 
   return { state, place, locate, pick, reset };
 }

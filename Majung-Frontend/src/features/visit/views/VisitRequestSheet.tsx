@@ -2,7 +2,7 @@
 //
 // 미리 알려두면 방문했을 때 설명할 필요 없이 바로 도와줄 수 있다. 창구에서 신분이 드러나는
 // 순간이 실질적 장벽이라는 인터뷰 결과의 해법이 이것이다.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -16,6 +16,7 @@ import { sharedItems } from "../domain/request";
 import {
   answeredSections,
   buildSharedAnswers,
+  droppedSharedAnswers,
   defaultSections,
   type SharedAnswer,
 } from "../domain/sharedAnswers";
@@ -65,38 +66,99 @@ function SlotPicker({
   disabledId: string | null;
   onSelect: (id: string) => void;
 }) {
+  // **날짜를 먼저 고르고 오전·오후를 고른다.** 열 개를 한 번에 늘어놓으면 같은 말이
+  // 열 번 반복되어 무엇이 다른지 눈으로 갈리지 않는다 (§3.9-⑦ 한 번에 한 가지).
+  const dates = useMemo(() => {
+    const seen = new Map<string, { date: string; dateLabel: string; dayShort: string }>();
+    for (const slot of slots) {
+      if (!seen.has(slot.date)) {
+        seen.set(slot.date, { date: slot.date, dateLabel: slot.dateLabel, dayShort: slot.dayShort });
+      }
+    }
+    return [...seen.values()];
+  }, [slots]);
+
+  const selectedDate = slots.find((s) => s.id === selected)?.date ?? null;
+  const [openDate, setOpenDate] = useState<string | null>(null);
+  // 고른 것이 있으면 그 날짜를 편다. 아직 없으면 사용자가 누른 날짜를 편다.
+  const shownDate = selectedDate ?? openDate;
+  const halves = slots.filter((s) => s.date === shownDate);
+
   return (
-    <View className="flex-row flex-wrap gap-2">
-      {slots.map((slot) => {
-        const isSelected = selected === slot.id;
-        const isDisabled = disabledId === slot.id;
-        return (
-          <Pressable
-            key={slot.id}
-            onPress={() => onSelect(slot.id)}
-            disabled={isDisabled}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: isSelected, disabled: isDisabled }}
-            accessibilityLabel={slot.label}
-            className="rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
-            style={{
-              backgroundColor: isSelected ? COLORS.brandSoft : COLORS.surface,
-              borderColor: isSelected ? COLORS.brand : COLORS.line,
-              opacity: isDisabled ? 0.4 : 1,
-            }}
-          >
-            <Text
-              className="text-body"
+    <View className="gap-3">
+      <View className="flex-row flex-wrap gap-2">
+        {dates.map((d) => {
+          const isOpen = shownDate === d.date;
+          const hasPick = selectedDate === d.date;
+          return (
+            <Pressable
+              key={d.date}
+              onPress={() => setOpenDate(isOpen ? null : d.date)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: hasPick, expanded: isOpen }}
+              accessibilityLabel={`${d.dateLabel} ${d.dayShort}요일`}
+              className="items-center rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
               style={{
-                color: isSelected ? COLORS.brand : COLORS.inkStrong,
-                fontWeight: isSelected ? "800" : "600",
+                backgroundColor: hasPick ? COLORS.brandSoft : COLORS.surface,
+                borderColor: hasPick || isOpen ? COLORS.brand : COLORS.line,
               }}
             >
-              {slot.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text
+                className="text-body"
+                style={{
+                  color: hasPick || isOpen ? COLORS.brand : COLORS.inkStrong,
+                  fontWeight: hasPick ? "800" : "600",
+                }}
+              >
+                {d.dateLabel}
+              </Text>
+              <Text
+                className="text-caption"
+                style={{ color: hasPick || isOpen ? COLORS.brand : COLORS.inkMuted }}
+              >
+                {d.dayShort}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* 날짜를 고르기 전에는 오전·오후를 보이지 않는다. 자리를 미리 잡아 두면
+          대부분의 시간 동안 빈 칸이 남는다 */}
+      {halves.length > 0 ? (
+        <View className="flex-row gap-2">
+          {halves.map((slot) => {
+            const isSelected = selected === slot.id;
+            const isDisabled = disabledId === slot.id;
+            return (
+              <Pressable
+                key={slot.id}
+                onPress={() => onSelect(slot.id)}
+                disabled={isDisabled}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+                accessibilityLabel={slot.label}
+                className="flex-1 items-center rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
+                style={{
+                  backgroundColor: isSelected ? COLORS.brandSoft : COLORS.surface,
+                  borderColor: isSelected ? COLORS.brand : COLORS.line,
+                  opacity: isDisabled ? 0.4 : 1,
+                }}
+              >
+                <Text
+                  className="text-body"
+                  style={{
+                    color: isSelected ? COLORS.brand : COLORS.inkStrong,
+                    fontWeight: isSelected ? "800" : "600",
+                  }}
+                >
+                  {slot.half}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }
@@ -133,14 +195,25 @@ export function VisitRequestSheet({
 
   // 방문 목적과 같은 기관에서 처리하는 분야만 처음에 켠다 (§7.4-1).
   // 주민센터에 가는 사람에게 공단 것까지 보낼 이유가 없다.
-  useMemo(() => {
-    if (!routeId) return;
-    const suggested = defaultSections(routeId).filter((id) => available.includes(id));
-    setPicked(suggested);
+  //
+  // **처음 한 번만 정한다.** 렌더 중에 상태를 바꾸면(useMemo 안의 setState가 그렇다)
+  // 사용자가 직접 켜고 끈 것이 초기값으로 되돌아간다. 어느 분야를 보낼지는
+  // 사용자가 하는 결정이므로 한 번 손대면 그쪽이 이긴다.
+  const suggested = useRef<string | null>(null);
+  useEffect(() => {
+    if (!routeId || suggested.current === routeId) return;
+    suggested.current = routeId;
+    setPicked(defaultSections(routeId).filter((id) => available.includes(id)));
   }, [routeId, available]);
 
   const shared = useMemo(
     () => (answers && shareOn ? buildSharedAnswers(answers, picked) : []),
+    [answers, shareOn, picked],
+  );
+  // 한 번에 보낼 수 있는 줄 수가 정해져 있다. 넘치면 뒤쪽 분야의 답이 빠지는데,
+  // 말없이 빠지면 사용자는 켠 것이 다 간 줄로 안다. 몇 줄이 빠지는지 그대로 알린다.
+  const dropped = useMemo(
+    () => (answers && shareOn ? droppedSharedAnswers(answers, picked) : 0),
     [answers, shareOn, picked],
   );
 
@@ -358,6 +431,14 @@ export function VisitRequestSheet({
                 </View>
               ) : null}
             </View>
+          ) : null}
+
+          {/* **빠지는 답이 있으면 보내기 전에 말한다.** 켠 분야의 답이 조용히 사라지면
+              사용자는 창구에서 그 이야기를 다시 해야 하는 줄 모른 채 간다 (§7.6). */}
+          {dropped > 0 ? (
+            <NoteBox tone="warn" className="mt-4">
+              {`한 번에 보낼 수 있는 양을 넘었어요. 지금 켜신 것 중 ${dropped}줄은 담당자에게 가지 않아요. 분야를 몇 개 꺼 주시면 나머지가 모두 갑니다.`}
+            </NoteBox>
           ) : null}
 
           {/* 무엇이 담당자에게 가는지 전송 직전에 보여준다 (§7.4). */}

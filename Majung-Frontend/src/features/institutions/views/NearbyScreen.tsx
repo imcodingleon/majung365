@@ -13,7 +13,13 @@ import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { DistrictOffice, Institution, NearbyResult } from "../domain/institution";
-import { districtLabel, type LocatedPlace } from "@/shared/location";
+import {
+  byDistanceFrom,
+  districtLabel,
+  officesByDistance,
+  sameSido,
+  type LocatedPlace,
+} from "@/shared/location";
 import type { SelectedRegion } from "../domain/region";
 import type { LookupState } from "@/shared/location";
 
@@ -97,18 +103,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 /**
  * 그 사람이 사는 동의 주민센터를 앞에 둔다. 나머지는 같은 구 안의 다른 동이다.
  *
- * **동 이름이 정확히 맞지 않을 수 있다.** 경계 데이터가 "불당동"인데 주민센터는
- * "불당1동"·"불당2동"으로 나뉘어 있는 식이다 — 행정동이 갈라진 시점이 서로 다르다.
- * 그래서 앞부분이 겹치면 같은 동네로 본다. 틀려도 걸어갈 거리이고, 못 찾는 것보다 낫다.
+ * **이름을 맞춰 보던 것을 거리로 바꿨다.** 경계 데이터가 "불당동"인데 주민센터는
+ * "불당1동"·"불당2동"으로 나뉘어 있는 식이라 이름으로는 어긋난다 — 행정동이 갈라진
+ * 시점이 서로 다르다. 주민센터는 동을 알고 있어서 거리를 정확히 잴 수 있다.
  */
 function sortOffices(
   offices: readonly DistrictOffice[],
-  dong: string,
+  place: LocatedPlace,
 ): readonly DistrictOffice[] {
-  if (!dong) return offices;
-  const stem = dong.replace(/\d+(동|가)$/, "").replace(/동$/, "");
-  const mine = offices.filter((o) => o.dong === dong || (stem.length >= 2 && o.dong.startsWith(stem)));
-  return mine.length > 0 ? [...mine, ...offices.filter((o) => !mine.includes(o))] : offices;
+  return officesByDistance(place, offices);
 }
 
 /**
@@ -123,8 +126,12 @@ function centersFor(
   district: string,
 ): readonly Institution[] {
   const all = institutions.filter((x) => x.kind === "mental_health");
-  // 여기도 폴백을 두지 않는다. 다른 구의 센터를 짚으면 헛걸음이다.
-  return all.filter((x) => district.startsWith(x.district) || x.district.startsWith(district));
+  // **빈 값이면 아무것도 안 낸다.** `"".startsWith("")`가 참이라, 시군구를 모르는
+  // 상태에서 거르면 **전국 센터가 다 통과한다** — 막으려던 것이 그대로 일어난다.
+  if (!district) return [];
+  return all.filter(
+    (x) => x.district && (district.startsWith(x.district) || x.district.startsWith(district)),
+  );
 }
 
 /**
@@ -136,17 +143,21 @@ function centersFor(
  */
 function branchesFor(
   institutions: readonly Institution[],
-  sido: string,
+  place: LocatedPlace,
 ): readonly Institution[] {
-  const shortSido = sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
   const all = institutions.filter((x) => x.kind !== "mental_health");
   // **그 광역에 없으면 아무것도 안 낸다.** 허그상담소는 전국에 세 곳뿐(원주·천안·통영)
   // 이라 서울에는 없는데, 폴백으로 하나를 내면 **서울 사람에게 원주로 가라고 하는 셈**이다.
   // 없는 것을 없다고 두고, 화면 아래 대표번호로 넘긴다.
   //
   // 한 광역에 지부가 여럿이면(서울만 넷) 어느 구가 관할인지 서버도 모른다. 이 화면은
-  // 둘러보는 자리이므로 그 광역의 것을 다 보인다.
-  return all.filter((x) => x.sido === shortSido || x.sido === sido);
+  // 둘러보는 자리이므로 그 광역의 것을 다 보이되, **가까운 것을 위에 둔다.** 순서를
+  // 그대로 두면 군포 사람에게 화성 지부가 맨 위에 왔다. 거리는 기기가 들고 있는 경계
+  // 데이터로 재므로 좌표가 어디로도 나가지 않는다 (§5.4).
+  return byDistanceFrom(
+    place,
+    all.filter((x) => sameSido(x.sido, place)),
+  );
 }
 
 export function NearbyScreen({
@@ -261,7 +272,7 @@ export function NearbyScreen({
                     순서가 없으면 자기 것을 찾지 못한다 */}
                 {result.offices.length > 0 ? (
                   <Section title="주민센터">
-                    {sortOffices(result.offices, place.dong)
+                    {sortOffices(result.offices, place)
                       .slice(0, 3)
                       .map((o, i) => (
                         <PlaceCard
@@ -287,9 +298,9 @@ export function NearbyScreen({
                   </Section>
                 ) : null}
 
-                {branchesFor(result.institutions, place.sido).length > 0 ? (
+                {branchesFor(result.institutions, place).length > 0 ? (
                   <Section title="법무보호복지공단">
-                    {branchesFor(result.institutions, place.sido).map((x) => (
+                    {branchesFor(result.institutions, place).map((x) => (
                       <PlaceCard key={x.name} name={x.name} address={x.address} phone={x.phone} />
                     ))}
                   </Section>

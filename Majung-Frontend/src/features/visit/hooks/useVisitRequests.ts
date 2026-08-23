@@ -75,7 +75,10 @@ export function useVisitRequests() {
         const found = await getVisits(token);
         if (alive) setRequests(found.map(toRequest));
       } catch {
-        // 목록을 못 읽어도 새 요청을 보내는 데는 지장이 없다. 조용히 넘긴다.
+        // **조용히 넘기지 않는다.** 목록을 못 읽으면 화면이 중복도 미확정 건수도
+        // 못 보므로, 이미 보낸 항목에 한 번 더 보내게 된다. 막는 것은 서버뿐이고
+        // 사용자는 왜 막혔는지 모른다.
+        if (alive) setError("보낸 요청을 불러오지 못했어요. 화면을 다시 열어 주세요.");
       }
     })();
     return () => {
@@ -96,26 +99,36 @@ export function useVisitRequests() {
     [requests],
   );
 
-  const closeForm = useCallback(() => setFormTaskId(null), []);
+  const closeForm = useCallback(() => {
+    setFormTaskId(null);
+    // **앞선 실패 문구를 다음 화면까지 끌고 가지 않는다.** 상한에 걸려 거절당한 뒤
+    // 다른 항목의 알림 화면을 열면, 아무것도 보내지 않았는데 그 문구가 보내기 단추
+    // 위에 그대로 떠 있었다.
+    setError(null);
+  }, []);
   const dismissBlocked = useCallback(() => setBlocked(null), []);
 
   const submit = useCallback(
     async (draft: Draft) => {
-      if (!formTaskId) return;
+      if (!formTaskId || sending) return;
+      // **잠금을 토큰 읽기 앞에 건다.** 뒤에 두면 토큰을 읽는 동안 버튼이 살아 있어,
+      // 한 번 더 누르면 방문 요청이 두 건 만들어진다.
+      setSending(true);
+      setError(null);
       const token = await loadToken();
       if (!token) {
         setError("다시 로그인해 주세요.");
+        setSending(false);
         return;
       }
 
       const first = slotToIso(draft.firstChoice);
       if (!first) {
         setError("가실 수 있는 때를 다시 골라 주세요.");
+        setSending(false);
         return;
       }
 
-      setSending(true);
-      setError(null);
       try {
         const created = await postVisit(token, {
           route_id: formTaskId,
@@ -140,7 +153,7 @@ export function useVisitRequests() {
         setSending(false);
       }
     },
-    [formTaskId],
+    [formTaskId, sending],
   );
 
   /**
@@ -150,21 +163,23 @@ export function useVisitRequests() {
    * 안 됐는지 알 수 없고, 화면에 이미 "다시 보내기"가 붙는 자리가 있다.
    */
   const cancel = useCallback(
-    async (id: string) => {
+    async (id: string): Promise<boolean> => {
       const target = requests.find((r) => r.id === id);
-      if (!target || !canCancel(target.status)) return;
+      if (!target || !canCancel(target.status)) return false;
 
       const token = await loadToken();
       if (!token) {
         setError("다시 로그인해 주세요.");
-        return;
+        return false;
       }
       setError(null);
       try {
         const updated = await cancelVisit(token, id);
         setRequests((prev) => prev.map((r) => (r.id === id ? toRequest(updated) : r)));
+        return true;
       } catch (err) {
         setError(err instanceof ApiError ? err.message : "지금은 물리지 못했어요.");
+        return false;
       }
     },
     [requests],

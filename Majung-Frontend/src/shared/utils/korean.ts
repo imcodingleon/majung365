@@ -42,3 +42,15 @@ export function hasFinalConsonant(word: string): boolean {
 export function josa(word: string, withFinal: string, withoutFinal: string): string {
   return hasFinalConsonant(word) ? withFinal : withoutFinal;
 }
+
+/**
+ * 여러 낱말을 "와/과"로 잇는다.
+ *
+ * **여기도 앞말에 따라 갈린다.** "신분증과 통장"은 맞지만 "통장과"는 "통장와"가
+ * 되어야 할 자리가 아니고, 반대로 받침 없는 말 뒤에 "과"를 붙이면 어색해진다.
+ */
+export function joinKorean(words: readonly string[]): string {
+  return words.reduce((acc, word, i) =>
+    i === 0 ? word : `${acc}${josa(acc, "과", "와")} ${word}`,
+  "");
+}
