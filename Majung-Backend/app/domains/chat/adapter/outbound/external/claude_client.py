@@ -6,6 +6,8 @@
   상태(O/X/BLOCKED) 일괄 판정. knowledge 도메인이 쓰지만, "Claude 호출은
   claude_client.py에서만" 규칙 때문에 여기 둔다.
 보안: 사용자 입력 원문을 로그에 남기지 않는다. API 키는 settings 경유.
+**사용자가 쓴 텍스트는 전부 마스킹을 거쳐 나간다**(infrastructure/security/masking.py).
+이 파일이 Claude로 나가는 유일한 출구이므로, 여기서 새면 다른 방어가 의미 없다.
 """
 
 import json
@@ -28,6 +30,7 @@ from app.domains.chat.domain.triage import (
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
 from app.infrastructure.config.settings import Settings
+from app.infrastructure.security.masking import assert_masked, mask_text
 from app.infrastructure.tls import make_async_http_client
 
 logger = logging.getLogger("majung.claude")
@@ -89,16 +92,26 @@ _TRIAGE_SCHEMA = {
 }
 
 
-def _to_messages(history: list[Turn], message: str) -> list[dict[str, str]]:
+def _to_messages(
+    history: list[Turn], message: str, *, name: str | None = None
+) -> list[dict[str, str]]:
+    """대화를 SDK 형식으로 바꾸면서 마스킹한다.
+
+    마스킹을 이 함수 안에서 하는 이유는 외부 호출이 전부 여기를 지나기 때문이다.
+    호출부에서 따로 부르게 하면 새 메서드를 추가하는 사람이 잊는다.
+    assistant 턴도 마스킹한다 — 이전 답변이 사용자 이름을 되받아 적었을 수 있다.
+    """
     msgs = [
-        {"role": t.role, "content": t.content}
+        {"role": t.role, "content": mask_text(t.content, name=name)}
         for t in history
         if t.role in ("user", "assistant")
     ]
     # 첫 메시지는 user여야 한다 — 앞쪽 assistant 턴 제거
     while msgs and msgs[0]["role"] == "assistant":
         msgs.pop(0)
-    msgs.append({"role": "user", "content": message})
+    msgs.append({"role": "user", "content": mask_text(message, name=name)})
+    for m in msgs:
+        assert_masked(m["content"])  # 전송 직전 안전망 — 새 경로가 마스킹을 건너뛰면 여기서 막힌다
     return msgs
 
 
@@ -188,6 +201,9 @@ class ClaudeChatLlm:
         self, nodes: dict[str, str], narrative: str
     ) -> dict[str, NodeState]:
         self._record_call()
+        # 온보딩 자유서술은 사용자가 자기 사정을 길게 쓰는 자리라 이름·연락처가 가장 잘 섞인다.
+        masked_narrative = mask_text(narrative)
+        assert_masked(masked_narrative)
         node_list = "\n".join(f"- {nid}: {name}" for nid, name in nodes.items())
         create_kwargs: dict[str, Any] = {
             "model": self._model,
@@ -198,7 +214,7 @@ class ClaudeChatLlm:
                 "format": {"type": "json_schema", "schema": _NARRATIVE_EXTRACT_SCHEMA},
             },
             "system": _NARRATIVE_EXTRACT_SYSTEM_TEMPLATE.format(node_list=node_list),
-            "messages": [{"role": "user", "content": narrative}],
+            "messages": [{"role": "user", "content": masked_narrative}],
         }
         resp = await self._client.messages.create(**create_kwargs)
         text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
