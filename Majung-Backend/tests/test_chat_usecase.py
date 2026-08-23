@@ -9,7 +9,15 @@ from app.domains.chat.application.dto import (
     TriageEvent,
 )
 from app.domains.chat.application.usecase import ChatUseCase
-from app.domains.chat.domain.triage import QuestionType, RoutePriority, TriageResult
+from app.domains.chat.domain.triage import (
+    REASON_TEXTS,
+    QuestionType,
+    ReasonCode,
+    RoutePriority,
+    TriageResult,
+)
+from app.domains.knowledge.domain.graph_engine import routes_blocking_others
+from app.domains.knowledge.infrastructure.graph_repository import JsonGraphRepository
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
 from app.domains.shared.routes import RouteId
 from tests.fakes import FakeLlm
@@ -27,8 +35,8 @@ async def test_support_flow_order_and_cards() -> None:
     triage = TriageResult(
         question_type=QuestionType.SUPPORT,
         priorities=(
-            RoutePriority(route=RouteId.R9, reason="통장·신분증부터 필요해요"),
-            RoutePriority(route=RouteId.R2, reason="당장 생계가 급해요"),
+            RoutePriority(route=RouteId.R9),
+            RoutePriority(route=RouteId.R2),
         ),
     )
     llm = FakeLlm(triage)
@@ -86,10 +94,74 @@ async def test_stream_failure_yields_error_after_triage() -> None:
 async def test_injected_context_has_kb_facts_not_hallucinated() -> None:
     triage = TriageResult(
         question_type=QuestionType.SUPPORT,
-        priorities=(RoutePriority(route=RouteId.R1, reason="잘 곳이 없어요"),),
+        priorities=(RoutePriority(route=RouteId.R1),),
     )
     llm = FakeLlm(triage)
     await _collect(ChatUseCase(llm, _repo()), "잘 곳이 없어요")
     # 주입 컨텍스트에 '확인된 정보'와 숙식 KB 항목이 들어가야 한다
     assert llm.last_context is not None
     assert "확인된 정보" in llm.last_context
+
+
+# ── 사유는 모델이 아니라 서버가 데이터에서 도출한다 (기획서 §12-22) ──
+
+
+def _blocking() -> frozenset[str]:
+    return routes_blocking_others(JsonGraphRepository().nodes())
+
+
+async def test_reason_comes_from_graph_not_from_model() -> None:
+    """선행조건인 항목에는 사유가 붙는다. 모델은 이 문장에 관여하지 않는다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R9),),  # 신분증 — 여러 항목의 선행조건
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "신분증이 없어요")
+
+    banner = events[0]
+    assert isinstance(banner, TriageEvent)
+    assert banner.routes[0].reason == REASON_TEXTS[ReasonCode.BLOCKS_OTHERS]
+
+
+async def test_reason_is_empty_when_screen_already_says_it() -> None:
+    """사유의 기본값은 '없음'이다. 화면이 이미 말하는 것을 문장으로 되풀이하지 않는다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R12),),  # 생계급여 — 선행조건도 아니고 서류도 필요
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "생활비가 없어요")
+
+    banner = events[0]
+    assert isinstance(banner, TriageEvent)
+    assert banner.routes[0].reason == ""
+
+
+async def test_no_documents_reason() -> None:
+    """준비물이 없다는 사실은 카드에 드러나지 않는다 — '필요 서류'는 있을 때만 나온다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R8),),  # 심리상담 — 전화 한 통, 서류 없음
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "많이 힘들어요")
+
+    banner = events[0]
+    assert isinstance(banner, TriageEvent)
+    assert banner.routes[0].reason == REASON_TEXTS[ReasonCode.NO_DOCUMENTS]
+
+
+async def test_reason_text_never_carries_user_input() -> None:
+    """사유는 고정 문구 집합에서만 나온다 — 사용자가 말한 죄목이 실릴 자리가 없다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=tuple(RoutePriority(route=r) for r in (RouteId.R9, RouteId.R8, RouteId.R12)),
+    )
+    events = await _collect(
+        ChatUseCase(FakeLlm(triage), _repo(), _blocking()),
+        "사기로 3년 살고 나왔는데 통장이 없어요",
+    )
+
+    banner = events[0]
+    assert isinstance(banner, TriageEvent)
+    allowed = set(REASON_TEXTS.values()) | {""}
+    for route in banner.routes:
+        assert route.reason in allowed, f"고정 문구가 아닌 사유가 나왔다: {route.reason}"

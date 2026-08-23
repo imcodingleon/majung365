@@ -70,24 +70,6 @@ _DEFAULT_PRIORITIES: tuple[RouteId, ...] = (RouteId.R13, RouteId.R9, RouteId.R2)
 # 공단 긴급지원은 위기 상황(숙식·신분)의 동반 항목 → 단독이면 긴급지원도 함께 챙긴다
 _EMERGENCY_COMPANIONS = (RouteId.R1, RouteId.R9)
 
-# triage 카드에 붙는 '왜 급한지'(쉬운 말)
-_REASONS: dict[RouteId, str] = {
-    RouteId.R1: "오늘 지낼 곳을 먼저 정하면 한결 마음이 놓여요.",
-    RouteId.R2: "당장 먹고 자는 생계부터 도움을 받을 수 있어요.",
-    RouteId.R3: "몸이 아픈 건 미루지 않아도 돼요. 지원받을 방법이 있어요.",
-    RouteId.R4: "오래 지낼 집도 함께 마련할 수 있어요.",
-    RouteId.R6: "일자리는 상담부터 천천히 준비할 수 있어요.",
-    RouteId.R7: "직접 무언가를 시작해 보고 싶다면 창업 상담도 받을 수 있어요.",
-    RouteId.R8: "많이 힘든 마음, 혼자 두지 않아도 돼요.",
-    RouteId.R9: "신분증이 있어야 다른 신청도 시작할 수 있어요.",
-    RouteId.R10: "통장이 있어야 지원금을 받을 수 있어요.",
-    RouteId.R11: "주소가 있어야 주민센터에서 받을 수 있는 도움이 많아져요.",
-    RouteId.R12: "매달 받는 생활비를 신청할 수 있는지 확인해 볼 수 있어요.",
-    RouteId.R13: "이 서류 한 장이면 다른 신청들이 훨씬 수월해져요.",
-    RouteId.R14: "빚은 갚는 방법을 새로 짤 수 있어요.",
-    RouteId.R15: "병원비 걱정은 건강보험을 살리면 크게 줄어요.",
-}
-
 # 첫 문장(공감) — 가장 급한 항목 기준
 _OPENING: dict[RouteId, str] = {
     RouteId.R1: "오늘 지낼 곳이 없어 많이 불안하셨겠어요.",
@@ -176,7 +158,7 @@ class MockChatLlm:
     async def triage(self, message: str, history: list[Turn]) -> TriageResult:
         await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 타이핑 인디케이터 노출
         qtype, routes = _detect(message)
-        priorities = tuple(RoutePriority(route=r, reason=_REASONS[r]) for r in routes)
+        priorities = tuple(RoutePriority(route=r) for r in routes)
         return TriageResult(question_type=qtype, priorities=priorities)
 
     async def stream_guidance(

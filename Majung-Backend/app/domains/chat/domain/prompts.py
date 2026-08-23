@@ -55,7 +55,8 @@ TRIAGE_INSTRUCTION = f"""당신은 마중365의 상황 분류기입니다. 사�
 1) question_type:
    - "support": 신분·주거·생계·취업·건강/마음·권리구제 같은 '지원 제도 안내'가 도움이 되는 상황
    - "daily": 디지털 사용법·일상 방법·감정 토로 등 폭넓은 일반 질문(제도 안내가 핵심이 아닌 경우)
-2) support일 때, 아래 지원 항목 중 지금 가장 급한 것을 2~3개, 급한 순서로 고르고 각각 왜 급한지 쉬운 말로 한 줄.
+2) support일 때, 아래 지원 항목 중 지금 가장 급한 것을 2~3개, 급한 순서로 고르세요.
+   **왜 급한지는 쓰지 않습니다.** 그 설명은 서버가 데이터를 보고 붙입니다.
    항목 코드(분야별로 묶어 둡니다):
 {_ROUTE_CATALOG}
 3) daily면 priorities는 비워도 됩니다.
@@ -73,7 +74,7 @@ def build_guidance_context(
     """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약)."""
     lines: list[str] = []
     if triage.priorities:
-        prio = ", ".join(f"{label_for(p.route)}({p.reason})" for p in triage.priorities)
+        prio = ", ".join(label_for(p.route) for p in triage.priorities)
         lines.append(f"[지금 급한 일] {prio}")
     if injected_cards:
         lines.append("[확인된 정보 — 이 사실만 근거로 쉬운 말로 안내]")

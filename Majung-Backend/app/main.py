@@ -18,6 +18,7 @@ from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.application.usecase import ChatUseCase
 from app.domains.knowledge.adapter.inbound.api.router import router as onboarding_router
 from app.domains.knowledge.application.usecase import AnalyzeUseCase
+from app.domains.knowledge.domain.graph_engine import routes_blocking_others
 from app.domains.knowledge.infrastructure.graph_repository import JsonGraphRepository
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
 from app.infrastructure.config.settings import Settings, get_settings
@@ -87,10 +88,15 @@ def create_app() -> FastAPI:
     gate = AccessGate(settings)
     _assert_gate_safe(gate, settings)
 
-    app.state.chat_usecase = ChatUseCase(llm=llm, institutions=institutions)
+    graph_nodes = JsonGraphRepository().nodes()
+    app.state.chat_usecase = ChatUseCase(
+        llm=llm,
+        institutions=institutions,
+        blocking_routes=routes_blocking_others(graph_nodes),
+    )
     # llm은 StateExtractorLlm(C6)도 구조적으로 만족한다(extract_node_state 메서드 보유)
     app.state.analyze_usecase = AnalyzeUseCase(
-        llm=llm, institutions=institutions, graph_nodes=JsonGraphRepository().nodes()
+        llm=llm, institutions=institutions, graph_nodes=graph_nodes
     )
     app.state.gate = gate
     app.state.spend = spend

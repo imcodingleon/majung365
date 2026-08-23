@@ -1,6 +1,7 @@
 """Anthropic 구현 — ChatLlm 포트 + StateExtractorLlm 포트(C6). anthropic import는 이 파일에서만.
 
 - triage: 구조화 출력(json_schema)으로 지원 항목(R1~R15) 분류. 빠르게(thinking 끔).
+  **왜 급한지는 모델에게 묻지 않는다** — 자유 문구에 사용자가 말한 죄목이 실린다.
 - stream_guidance: 스트리밍으로 쉬운 말 안내. daily 질문이면 공공 도메인 웹 검색 허용.
 - extract_narrative_states: 온보딩 마지막 자유서술 1건 → 언급된 그래프 노드들의
   상태(O/X/BLOCKED) 일괄 판정. knowledge 도메인이 쓰지만, "Claude 호출은
@@ -80,9 +81,8 @@ _TRIAGE_SCHEMA = {
                         "type": "string",
                         "enum": [r.value for r in RouteId],
                     },
-                    "reason": {"type": "string"},
                 },
-                "required": ["route", "reason"],
+                "required": ["route"],
                 "additionalProperties": False,
             },
         },
@@ -154,7 +154,7 @@ class ClaudeChatLlm:
             data = json.loads(text)
             qtype = QuestionType(data["question_type"])
             priorities = tuple(
-                RoutePriority(route=RouteId(p["route"]), reason=str(p.get("reason", "")))
+                RoutePriority(route=RouteId(p["route"]))
                 for p in data.get("priorities", [])
             )
             return TriageResult(question_type=qtype, priorities=priorities)

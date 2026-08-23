@@ -23,10 +23,15 @@ from app.domains.chat.application.dto import (
 )
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.domain.prompts import build_guidance_context
-from app.domains.chat.domain.triage import QuestionType, TriageResult
+from app.domains.chat.domain.triage import (
+    QuestionType,
+    ReasonCode,
+    TriageResult,
+    reason_text,
+)
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.repository import InstitutionRepository
-from app.domains.shared.routes import label_for
+from app.domains.shared.routes import RouteId, label_for
 
 logger = logging.getLogger("majung.chat")
 
@@ -34,9 +39,17 @@ _MAX_CARDS = 3
 
 
 class ChatUseCase:
-    def __init__(self, llm: ChatLlm, institutions: InstitutionRepository) -> None:
+    def __init__(
+        self,
+        llm: ChatLlm,
+        institutions: InstitutionRepository,
+        blocking_routes: frozenset[str] = frozenset(),
+    ) -> None:
         self._llm = llm
         self._institutions = institutions
+        # 다른 항목의 선행조건인 항목들. 그래프 구조에서 미리 뽑아 주입받는다 —
+        # 챗이 그래프 전체를 알 필요는 없고 이 사실만 있으면 된다.
+        self._blocking_routes = blocking_routes
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -81,9 +94,26 @@ class ChatUseCase:
     # ── helpers ──
     def _to_route_out(self, triage: TriageResult) -> tuple[RouteOut, ...]:
         return tuple(
-            RouteOut(key=p.route.value, label=label_for(p.route), rank=i + 1, reason=p.reason)
+            RouteOut(
+                key=p.route.value,
+                label=label_for(p.route),
+                rank=i + 1,
+                reason=reason_text(self._reason_for(p.route)),
+            )
             for i, p in enumerate(triage.priorities)
         )
+
+    def _reason_for(self, route: RouteId) -> ReasonCode | None:
+        """왜 이 항목이 먼저인지를 데이터에서 도출한다. 대부분은 비는 것이 정상이다 —
+        화면이 이미 말하고 있는 것을 문장으로 되풀이하지 않는다.
+        모델에게 맡기지 않는 이유는 사용자가 말한 죄목이 이유에 실려 화면에 남기 때문이다.
+        """
+        if route.value in self._blocking_routes:
+            return ReasonCode.BLOCKS_OTHERS
+        lead = self._institutions.lead_of(route)
+        if not lead.docs:
+            return ReasonCode.NO_DOCUMENTS
+        return None
 
     def _match_cards(self, triage: TriageResult) -> list[Institution]:
         if triage.question_type != QuestionType.SUPPORT:
