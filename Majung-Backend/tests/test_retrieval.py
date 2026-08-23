@@ -4,6 +4,9 @@
 사용자가 그것을 제도 안내로 믿는다.
 """
 
+import json
+from pathlib import Path
+
 from app.domains.chat.application.dto import ChatCommand, EvidenceEvent
 from app.domains.chat.application.usecase import ChatUseCase
 from app.domains.chat.domain.evidence import EvidenceStage
@@ -105,3 +108,52 @@ async def test_without_evidence_it_still_falls_back_to_web() -> None:
 def test_short_sections_are_not_indexed() -> None:
     """목차나 안내 문구는 근거가 되지 않는다."""
     assert _rag.count() > 50
+
+
+def test_blocked_pages_are_not_indexed(tmp_path: Path) -> None:
+    """**정부24가 자동 수집을 거부하면 그 거부 안내문이 본문 자리에 들어온다.**
+
+    실제로 "서비스 접속이 차단되었습니다"가 R9·R11·R15의 근거로 저장되어 있었다.
+    89자짜리는 길이 조건을 통과해서, 사용자 화면에 그 문구가 근거로 표시될 수 있었다.
+    """
+    data = tmp_path / "docs.jsonl"
+    blocked_body = (
+        "비정상 서비스 접속으로 차단되었습니다. 매크로 및 기타 유사 프로그램은 "
+        "일반 사용자들의 서비스 이용 시 지연 또는 에러를 유발할 수 있으므로 이용을 제한합니다"
+    )
+    normal_body = (
+        "출소예정자에게 출소 후 지원 사업을 안내하고 자립대책 마련을 위한 사전상담을 "
+        "실시한다. 출소 2개월 이내로 사회복귀에 필요한 자립계획 수립이 필요한 사람이 대상이다."
+    )
+    lines = [
+        # ① warnings로 표시된 차단본
+        {
+            "id": "차단_경고있음",
+            "source_url": "https://www.gov.kr/x",
+            "sections": {"본문": blocked_body},
+            "warnings": [
+                "서버가 자동 수집을 차단했습니다. 우회하지 않고 사람이 직접 확인해야 합니다."
+            ],
+        },
+        # ② 경고가 없어도 본문 첫머리로 잡는다
+        {
+            "id": "차단_경고없음",
+            "source_url": "https://www.gov.kr/y",
+            "sections": {"본문": blocked_body},
+            "warnings": [],
+        },
+        # ③ 정상 문서는 그대로 들어간다
+        {
+            "id": "정상",
+            "source_url": "https://www.koreha.or.kr/z",
+            "sections": {"본문": normal_body},
+            "warnings": ["본문이 105자뿐입니다. 선택자를 확인해야 합니다."],
+        },
+    ]
+    data.write_text(
+        "\n".join(json.dumps(d, ensure_ascii=False) for d in lines), encoding="utf-8"
+    )
+
+    repo = JsonRagRepository(data)
+    # 셋 중 정상 문서 하나만 남는다.
+    assert repo.count() == 1, "차단 안내문이 근거로 들어가면 안 된다"
