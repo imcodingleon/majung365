@@ -66,9 +66,13 @@ class VisitChatUseCase:
         *,
         client_msg_id: str = "",
         staff_id: UUID | None = None,
-    ) -> Message:
+    ) -> tuple[Message, bool]:
         """보낸다. 방이 열려 있는지 다시 본다 —
-        입장한 뒤 담당자가 요청을 취소했을 수 있다."""
+        입장한 뒤 담당자가 요청을 취소했을 수 있다.
+
+        두 번째 값은 새로 저장했는지다. 재전송이면 False이고, 그때는 에코를
+        다시 보내지 않는다.
+        """
         ensure_open(visit)
         body = clean_body(raw_body)
         return self.messages.add(

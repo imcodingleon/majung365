@@ -58,7 +58,7 @@ class MessageRepository(Protocol):
         body: str,
         client_msg_id: str = "",
         sender_staff_id: UUID | None = None,
-    ) -> Message: ...
+    ) -> tuple[Message, bool]: ...
 
     def history(
         self, visit_id: UUID, *, before: datetime | None = None

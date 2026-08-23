@@ -59,13 +59,18 @@ class SupabaseMessageRepository:
         body: str,
         client_msg_id: str = "",
         sender_staff_id: UUID | None = None,
-    ) -> Message:
+    ) -> tuple[Message, bool]:
         """보낸다. 같은 `client_msg_id`가 이미 있으면 그것을 돌려준다 —
-        **재전송이 대화를 두 번 채우면 안 된다.**"""
+        **재전송이 대화를 두 번 채우면 안 된다.**
+
+        새로 저장했는지를 함께 돌려준다. 부르는 쪽이 그것을 알아야 **재전송에
+        에코를 다시 보내지 않는다** — 저장은 막혀도 에코가 두 번 가면 화면에
+        말풍선이 둘이 된다.
+        """
         if client_msg_id:
             existing = self._by_client_id(visit_id, client_msg_id)
             if existing is not None:
-                return existing
+                return existing, False
 
         result = (
             self._db.table("visit_message")
@@ -87,7 +92,7 @@ class SupabaseMessageRepository:
         if saved is None:
             # 방금 암호화한 것을 바로 못 읽으면 키 설정이 잘못된 것이다.
             raise RuntimeError("저장한 메시지를 다시 읽지 못했다")
-        return saved
+        return saved, True
 
     def _by_client_id(self, visit_id: UUID, client_msg_id: str) -> Message | None:
         result = (

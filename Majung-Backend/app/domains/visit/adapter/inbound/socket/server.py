@@ -167,7 +167,7 @@ def create_socket_app(app: Any) -> socketio.ASGIApp:
         role: SenderRole = session["role"]
         staff_id = session["actor"].id if role == SenderRole.STAFF else None
         try:
-            saved = usecase.send(
+            saved, is_new = usecase.send(
                 visit,
                 role,
                 str(data.get("body", "")),
@@ -185,8 +185,11 @@ def create_socket_app(app: Any) -> socketio.ASGIApp:
             )
             return {"ok": False}
 
-        await sio.emit("new_message", _payload(saved), room=_room(visit_id))
-        return {"ok": True, "id": str(saved.id)}
+        if is_new:
+            await sio.emit("new_message", _payload(saved), room=_room(visit_id))
+        # 재전송이면 저장도 에코도 하지 않는다. 보낸 쪽은 같은 id를 받으므로
+        # 임시 말풍선을 그대로 확정 처리할 수 있다.
+        return {"ok": True, "id": str(saved.id), "resent": not is_new}
 
     async def mark_read(sid: str, data: dict[str, Any]) -> dict[str, Any]:
         usecase = _usecase()

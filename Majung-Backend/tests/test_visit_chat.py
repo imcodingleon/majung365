@@ -39,11 +39,11 @@ class FakeMessageRepository:
         body: str,
         client_msg_id: str = "",
         sender_staff_id: UUID | None = None,
-    ) -> Message:
+    ) -> tuple[Message, bool]:
         if client_msg_id:
             for existing in self.rows:
                 if existing.visit_id == visit_id and existing.client_msg_id == client_msg_id:
-                    return existing
+                    return existing, False
         saved = Message(
             id=uuid4(),
             visit_id=visit_id,
@@ -54,7 +54,7 @@ class FakeMessageRepository:
             sender_staff_id=sender_staff_id,
         )
         self.rows.append(saved)
-        return saved
+        return saved, True
 
     def history(
         self, visit_id: UUID, *, before: datetime | None = None
@@ -189,10 +189,17 @@ def test_resend_does_not_pile_up() -> None:
     누르면 같은 말이 두 번 쌓인다. clientMsgId로 같은 것을 알아본다."""
     visit = make_visit()
     usecase, messages = make_usecase(visit)
-    first = usecase.send(visit, SenderRole.USER, "서류 뭐 가져가요?", client_msg_id="tmp-1")
-    again = usecase.send(visit, SenderRole.USER, "서류 뭐 가져가요?", client_msg_id="tmp-1")
+    first, new_first = usecase.send(
+        visit, SenderRole.USER, "서류 뭐 가져가요?", client_msg_id="tmp-1"
+    )
+    again, new_again = usecase.send(
+        visit, SenderRole.USER, "서류 뭐 가져가요?", client_msg_id="tmp-1"
+    )
     assert first.id == again.id
     assert len(messages.rows) == 1
+    # **에코를 두 번 보내면 말풍선이 둘이 된다.** 저장이 막히는 것만으로는 부족하다.
+    assert new_first is True
+    assert new_again is False
 
 
 def test_empty_message_is_refused() -> None:
