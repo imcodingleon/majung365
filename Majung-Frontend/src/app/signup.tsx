@@ -10,6 +10,7 @@ import { SECTIONS, type SectionId } from "@/features/intake/domain/sections";
 import { useIntake } from "@/features/intake/hooks/useIntake";
 import { QuestionList, SectionBoxes } from "@/features/intake";
 import { SignupScreen } from "@/features/signup";
+import { markSignedUp } from "@/shared/utils/storage";
 
 export default function SignupRoute() {
   const intake = useIntake();
@@ -43,6 +44,7 @@ export default function SignupRoute() {
         // 서버 전송은 백엔드 계약이 정해지면 이 값을 그대로 실어 보낸다.
         // 개인정보라 로그에 남기지 않는다.
         void intake.toPayload();
+        markSignedUp();
         router.replace("/today");
       }}
     />

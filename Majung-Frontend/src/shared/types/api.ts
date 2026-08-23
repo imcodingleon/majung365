@@ -49,50 +49,6 @@ export interface Center {
   tags: string[];
 }
 
-/** 음성 감정 적응형 RAG(SER 서비스) POST /analyze 응답. */
-export interface VoiceEmotion {
-  /** angry|disgusted|fearful|sad|neutral|happy 등 top 라벨 */
-  top: string;
-  /** top 점수 0~1 */
-  score: number;
-  /** negative | calm */
-  group: string;
-  /** 격앙·고통 점수(부정 합 + 고각성 절반). group 판정 근거 */
-  distress: number;
-  /** 전체 감정 점수 맵 */
-  scores: Record<string, number>;
-}
-
-/** 현재 위치 기반 추천(관할 구 주민센터 + 최근접 공단). 위치 미제공 시 null. */
-export interface VoiceLocation {
-  gu: string;
-  jumin_center_hint: string;
-  nearest_koreha: {
-    name: string;
-    address: string | null;
-    phone: string | null;
-    distance_km: number;
-  } | null;
-}
-
-export interface VoiceResult {
-  /** 음성 전사(STT) */
-  transcript: string;
-  emotion: VoiceEmotion;
-  /** specific | vague */
-  specificity: string;
-  /** 감지된 영역. 별도 SER 서비스가 자체 분류로 채우는 값이라
-   *  백엔드 지원 항목(RouteOut.key)과는 다른 축이다. */
-  area: string;
-  /** 매칭된 제도명(없으면 null) */
-  matched: string | null;
-  /** calm+specific | calm+vague | negative+specific | negative+vague */
-  policy: string;
-  location: VoiceLocation | null;
-  /** 감정×구체성 적응형 응답 */
-  response: string;
-}
-
 export type ChatRole = "user" | "assistant";
 
 /** 대화 히스토리 한 턴. */
