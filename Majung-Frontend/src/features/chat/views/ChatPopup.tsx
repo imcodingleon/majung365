@@ -23,6 +23,7 @@ import { josa } from "@/shared/utils/korean";
 import type { ChatMessage } from "../domain/chatMessage";
 
 import { EvidenceBadge } from "./EvidenceBadge";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
   visible: boolean;
@@ -158,7 +159,7 @@ export function ChatPopup({
   };
 
   return (
-    <Modal
+    <FramedModal
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
@@ -340,6 +341,6 @@ export function ChatPopup({
           )}
         </KeyboardAvoidingView>
       </SafeAreaView>
-    </Modal>
+    </FramedModal>
   );
 }

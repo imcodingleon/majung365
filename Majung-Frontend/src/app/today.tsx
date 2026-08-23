@@ -6,7 +6,7 @@
 // **할 일 목록은 서버가 만든다.** 초기 진단 답변을 보내면 지원 항목이 정해져 돌아온다.
 // 완료 처리도 서버가 목록을 다시 계산하는 방식이라 기기는 마친 항목만 들고 있으면 된다.
 import { useCallback, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
+import { Pressable, Text, View } from "react-native";
 import { Redirect } from "expo-router";
 
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
@@ -22,6 +22,7 @@ import { RequestStatusStrip } from "@/features/visit/views/RequestStatusStrip";
 import { VisitRequestSheet } from "@/features/visit/views/VisitRequestSheet";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { getSession } from "@/shared/utils/session";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 export default function TodayRoute() {
   const session = getSession();
@@ -117,7 +118,7 @@ export default function TodayRoute() {
       ) : null}
 
       {/* 상한에 닿아도 그냥 막지 않는다. 왜 막혔는지 알려준다 (§7.5). */}
-      <Modal
+      <FramedModal
         visible={visit.blocked !== null}
         animationType="fade"
         transparent
@@ -138,16 +139,16 @@ export default function TodayRoute() {
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </FramedModal>
 
-      <Modal
+      <FramedModal
         visible={helpOpen}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => setHelpOpen(false)}
       >
         <HelpScreen onClose={() => setHelpOpen(false)} />
-      </Modal>
+      </FramedModal>
     </>
   );
 }

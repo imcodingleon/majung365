@@ -3,7 +3,7 @@
 // 미리 알려두면 방문했을 때 설명할 필요 없이 바로 도와줄 수 있다. 창구에서 신분이 드러나는
 // 순간이 실질적 장벽이라는 인터뷰 결과의 해법이 이것이다.
 import { useMemo, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox } from "@/shared/components/NoteBox";
@@ -20,6 +20,7 @@ import {
   type SharedAnswer,
 } from "../domain/sharedAnswers";
 import { buildTimeSlots, type TimeSlot } from "../domain/timeSlots";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
   visible: boolean;
@@ -162,7 +163,7 @@ export function VisitRequestSheet({
   };
 
   return (
-    <Modal
+    <FramedModal
       visible={visible}
       animationType="slide"
       presentationStyle="fullScreen"
@@ -409,6 +410,6 @@ export function VisitRequestSheet({
           ) : null}
         </ScrollView>
       </SafeAreaView>
-    </Modal>
+    </FramedModal>
   );
 }

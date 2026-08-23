@@ -5,7 +5,7 @@
 //
 // **서버 호출은 여기서 한다.** 화면은 값을 모아 넘기기만 하고 렌더에 집중한다.
 import { useCallback, useState } from "react";
-import { Modal } from "react-native";
+import {  } from "react-native";
 import { router } from "expo-router";
 
 import { HelpScreen } from "@/features/help";
@@ -18,6 +18,7 @@ import { SignupScreen } from "@/features/signup";
 import { ApiError, postSignup } from "@/shared/utils/api";
 import { startSession } from "@/shared/utils/session";
 import { saveToken } from "@/shared/utils/tokenStore";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 export default function SignupRoute() {
   const intake = useIntake();
@@ -93,14 +94,14 @@ export default function SignupRoute() {
         />
       ) : null}
 
-      <Modal
+      <FramedModal
         visible={helpOpen}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => setHelpOpen(false)}
       >
         <HelpScreen onClose={() => setHelpOpen(false)} />
-      </Modal>
+      </FramedModal>
     </>
   );
 }

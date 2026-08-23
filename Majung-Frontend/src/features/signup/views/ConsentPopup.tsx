@@ -10,10 +10,11 @@
 //
 // ⚠️ **본문은 법률 검토 대기 상태다.** 항목 구성과 형식은 법정 고지 요건을 따랐으나,
 // 문구 확정은 검토를 거쳐야 한다. 검토가 끝나면 이 파일의 CLAUSES 값만 교체한다.
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { ConsentId } from "../domain/signup";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
   /** 열려 있는 동의 항목. 닫혀 있으면 null. */
@@ -130,7 +131,7 @@ export function ConsentPopup({ consentId, onClose }: Props) {
   const clauses = consentId ? CLAUSES[consentId] : [];
 
   return (
-    <Modal
+    <FramedModal
       visible={consentId !== null}
       animationType="slide"
       presentationStyle="fullScreen"
@@ -178,6 +179,6 @@ export function ConsentPopup({ consentId, onClose }: Props) {
           </View>
         </ScrollView>
       </SafeAreaView>
-    </Modal>
+    </FramedModal>
   );
 }

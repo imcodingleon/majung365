@@ -6,7 +6,7 @@
 //
 // 되돌아갈 수 있어야 한다. 잘못 골랐을 때 처음부터 다시 해야 한다면 도중에 그만두게 된다.
 import { useEffect, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { COLORS } from "@/shared/theme/colors";
@@ -19,6 +19,7 @@ import { urgentNoticeFor, type UrgentNotice as Notice } from "../domain/urgent";
 import { QuestionBody } from "./QuestionBody";
 import { SectionIcon } from "./SectionIcon";
 import { UrgentNotice } from "./UrgentNotice";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
   /** 열려 있는 분야. 닫혀 있으면 null. */
@@ -92,7 +93,7 @@ export function QuestionFlow({
   if (!sectionId) return null;
 
   return (
-    <Modal
+    <FramedModal
       visible
       animationType="slide"
       presentationStyle="fullScreen"
@@ -196,6 +197,6 @@ export function QuestionFlow({
       </SafeAreaView>
 
       <UrgentNotice notice={urgent} onClose={() => setUrgent(null)} />
-    </Modal>
+    </FramedModal>
   );
 }

@@ -4,11 +4,12 @@
 //
 // **확인 절차를 두지 않는다.** 번호를 누르는 순간이 곧 거는 순간이다. 도움 연결 화면과
 // 같은 방식이며, 급한 사람에게 한 단계를 더 요구하지 않는다는 §5.3의 원칙 때문이다.
-import { Linking, Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 
 import { COLORS } from "@/shared/theme/colors";
 
 import type { UrgentNotice as Notice } from "../domain/urgent";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
   notice: Notice | null;
@@ -24,7 +25,7 @@ export function UrgentNotice({ notice, onClose }: Props) {
   };
 
   return (
-    <Modal visible animationType="fade" transparent onRequestClose={onClose}>
+    <FramedModal visible animationType="fade" transparent onRequestClose={onClose}>
       <View className="flex-1 items-center justify-center bg-black/50 px-6">
         <View
           className="w-full overflow-hidden rounded-3xl bg-white"
@@ -67,6 +68,6 @@ export function UrgentNotice({ notice, onClose }: Props) {
           </View>
         </View>
       </View>
-    </Modal>
+    </FramedModal>
   );
 }

@@ -10,12 +10,13 @@
 // **직접 만든다.** 날짜 선택기 라이브러리는 웹과 안드로이드·iOS에서 각각 다른 화면을 띄우는데,
 // 그러면 저리터러시 사용자가 만나는 화면을 우리가 통제하지 못한다. 여기서는 세 화면이 같아야 한다.
 import { useMemo, useRef, useState } from "react";
-import { Modal, Pressable, ScrollView, Text, View } from "react-native";
+import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { deferClose } from "@/shared/utils/deferClose";
 
 import { COLORS } from "../theme/colors";
 import type { DateParts } from "../types/date";
+import { FramedModal } from "./FramedModal";
 
 type Props = {
   value: DateParts;
@@ -171,7 +172,7 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
         />
       </View>
 
-      <Modal visible={open !== null} animationType="slide" transparent onRequestClose={() => setOpen(null)}>
+      <FramedModal visible={open !== null} animationType="slide" transparent onRequestClose={() => setOpen(null)}>
         {/* 바깥을 눌러도 닫힌다. 고르지 않고 빠져나올 길이 있어야 한다.
             바깥과 시트를 형제로 둔다 — 겹쳐 두면 버튼 안에 버튼이 들어가 웹에서 깨진다. */}
         <View className="flex-1 justify-end">
@@ -239,7 +240,7 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
             </ScrollView>
           </View>
         </View>
-      </Modal>
+      </FramedModal>
     </>
   );
 }
