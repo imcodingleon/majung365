@@ -10,6 +10,7 @@ from uuid import UUID
 
 from app.domains.staff.domain.entity import OrgKind
 from app.domains.visit.domain.entity import VisitRequest, VisitStatus
+from app.domains.visit.domain.message import Message, SenderRole
 
 
 class VisitRepository(Protocol):
@@ -44,3 +45,23 @@ class VisitRepository(Protocol):
         cancel_reason: str | None = None,
         now: datetime | None = None,
     ) -> None: ...
+
+
+class MessageRepository(Protocol):
+    """채팅 메시지 저장소. 어댑터가 Supabase를 직접 알지 않도록 모양만 정한다."""
+
+    def add(
+        self,
+        *,
+        visit_id: UUID,
+        sender_role: SenderRole,
+        body: str,
+        client_msg_id: str = "",
+        sender_staff_id: UUID | None = None,
+    ) -> Message: ...
+
+    def history(
+        self, visit_id: UUID, *, before: datetime | None = None
+    ) -> list[Message]: ...
+
+    def mark_read(self, visit_id: UUID, role: SenderRole, now: datetime) -> None: ...

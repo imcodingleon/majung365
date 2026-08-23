@@ -61,6 +61,8 @@ class SupabaseVisitRepository:
             confirmed_at=_parse_ts(row.get("confirmed_at")),
             proposed_at=_parse_ts(row.get("proposed_at")),
             cancel_reason=str(row.get("cancel_reason") or ""),
+            user_read_at=_parse_ts(row.get("user_read_at")),
+            staff_read_at=_parse_ts(row.get("staff_read_at")),
         )
 
     def _rows(self, result: object) -> list[dict[str, Any]]:

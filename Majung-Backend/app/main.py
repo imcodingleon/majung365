@@ -48,7 +48,12 @@ from app.domains.staff.infrastructure.supabase_repository import (
     SupabaseStaffSessionRepository,
 )
 from app.domains.visit.adapter.inbound.api.router import router as visit_router
+from app.domains.visit.adapter.inbound.socket.server import create_socket_app
+from app.domains.visit.application.chat_usecase import VisitChatUseCase
 from app.domains.visit.application.usecase import VisitUseCase
+from app.domains.visit.infrastructure.message_repository import (
+    SupabaseMessageRepository as SupabaseVisitMessageRepository,
+)
 from app.domains.visit.infrastructure.supabase_repository import SupabaseVisitRepository
 from app.infrastructure.config.settings import Settings, get_settings
 from app.infrastructure.security.gate import AccessGate
@@ -94,6 +99,7 @@ def create_app() -> FastAPI:
 
     # Rate limit
     app.state.limiter = limiter
+    app.state.cors_origins = settings.cors_origins_list
     # slowapi 핸들러 시그니처는 Starlette 타입과 미세 불일치(외부 라이브러리 경계)
     app.add_exception_handler(RateLimitExceeded, _rate_limit_exceeded_handler)  # type: ignore[arg-type]
 
@@ -174,6 +180,12 @@ def create_app() -> FastAPI:
             visits=app.state.visit_repo,
             access_log=app.state.access_log_repo,
         )
+        # 담당자 채팅(§7.3). 저장이 켜졌을 때만 연다 —
+        # 대화를 남기지 못하는 채팅은 열어 두어도 소용이 없다.
+        app.state.visit_chat_usecase = VisitChatUseCase(
+            visits=app.state.visit_repo,
+            messages=SupabaseVisitMessageRepository(supabase, cipher),
+        )
         app.state.signup_usecase = SignupUseCase(
             accounts=app.state.account_repo,
             crimes=app.state.crime_repo,
@@ -203,4 +215,6 @@ def create_app() -> FastAPI:
     return app
 
 
-app = create_app()
+# **Socket.IO가 FastAPI를 감싼다.** REST는 그대로 지나가고 /socket.io만 소켓이
+# 받는다. uvicorn이 실행하는 것은 이 앱이다.
+app = create_socket_app(create_app())

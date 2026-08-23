@@ -77,6 +77,11 @@ class VisitRequest:
     proposed_at: datetime | None = None
     cancel_reason: str = ""
 
+    # ── 채팅 읽음 표시 (§7.3) ──
+    # 참여자가 요청한 사람과 담당 기관 둘뿐이라 별도 테이블 대신 여기에 둔다.
+    user_read_at: datetime | None = None
+    staff_read_at: datetime | None = None
+
     @property
     def is_open(self) -> bool:
         return self.status in OPEN_STATUSES
