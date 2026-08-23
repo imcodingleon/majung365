@@ -105,3 +105,87 @@ export function placeAt(longitude: number, latitude: number): LocatedPlace | nul
   }
   return null;
 }
+
+/**
+ * 두 지점의 대략적인 거리. 단위는 킬로미터다.
+ *
+ * **정확한 거리가 필요한 자리가 아니다.** 기관 여럿 중 어느 쪽이 가까운지만 가리면
+ * 되므로, 위도에 따라 좁아지는 경도를 코사인으로 보정하는 정도로 충분하다.
+ */
+function roughKm(a: readonly [number, number], b: readonly [number, number]): number {
+  const midLat = (((a[1] + b[1]) / 2) * Math.PI) / 180;
+  const dx = (a[0] - b[0]) * Math.cos(midLat);
+  const dy = a[1] - b[1];
+  return Math.sqrt(dx * dx + dy * dy) * 111;
+}
+
+/** 경계 여럿을 감싸는 상자의 한가운데. */
+function centerOf(areas: readonly Area[]): [number, number] | null {
+  if (areas.length === 0) return null;
+  let w = Infinity;
+  let s = Infinity;
+  let e = -Infinity;
+  let n = -Infinity;
+  for (const area of areas) {
+    const [aw, as, ae, an] = area.b as [number, number, number, number];
+    if (aw < w) w = aw;
+    if (as < s) s = as;
+    if (ae > e) e = ae;
+    if (an > n) n = an;
+  }
+  return [(w + e) / 2 / SCALE, (s + n) / 2 / SCALE];
+}
+
+/** 사용자가 있는 곳의 한가운데. 동을 알면 동 기준, 모르면 시군구 기준이다. */
+export function placeCenter(place: LocatedPlace): [number, number] | null {
+  const inDistrict = AREAS.filter((a) => a.s === place.sido && a.g === place.district);
+  if (inDistrict.length === 0) return null;
+  const exact = place.dong ? inDistrict.filter((a) => a.d === place.dong) : [];
+  return centerOf(exact.length > 0 ? exact : inDistrict);
+}
+
+/**
+ * 주소 문자열이 가리키는 시군구의 한가운데.
+ *
+ * **주소는 도로명까지만 있고 동이 없다.** 공단 지부 서른여덟 곳이 전부 그렇다.
+ * 그래서 시군구 단위로만 짚을 수 있는데, 넓은 시(화성시 같은)는 그만큼 오차가 커진다.
+ * 어느 쪽이 더 가까운지를 가리는 데에는 쓸 수 있지만 **"몇 킬로미터"라고 말할 수는
+ * 없다.** 정확한 거리가 필요해지면 기관마다 좌표를 받아야 한다.
+ *
+ * 경계 데이터의 시군구는 "수원시장안구"처럼 붙여 쓰므로 주소에서도 공백을 지우고 맞춘다.
+ * 겹치는 것 중에는 가장 긴 것을 고른다 — "수원시"와 "수원시장안구"가 함께 맞으면
+ * 구까지 아는 쪽이 정확하다.
+ */
+export function addressCenter(address: string): [number, number] | null {
+  const flat = address.replace(/\s+/g, "");
+  let bestKey: string | null = null;
+  for (const area of AREAS) {
+    const key = `${area.s}${area.g}`;
+    if (flat.startsWith(key) && (bestKey === null || key.length > bestKey.length)) {
+      bestKey = key;
+    }
+  }
+  if (bestKey === null) return null;
+  return centerOf(AREAS.filter((a) => `${a.s}${a.g}` === bestKey));
+}
+
+/**
+ * 사용자가 있는 곳에서 가까운 순으로 세운다.
+ *
+ * **주소를 못 읽은 것은 뒤로 보내되 버리지 않는다.** 지금은 전부 읽히지만, 데이터가
+ * 늘면서 형식이 다른 것이 들어와도 목록에서 사라지지는 않아야 한다.
+ */
+export function byDistanceFrom<T extends { address: string }>(
+  place: LocatedPlace,
+  items: readonly T[],
+): readonly T[] {
+  const from = placeCenter(place);
+  if (!from) return items;
+  return [...items]
+    .map((item) => {
+      const at = addressCenter(item.address);
+      return { item, km: at ? roughKm(from, at) : Infinity };
+    })
+    .sort((a, b) => a.km - b.km)
+    .map((x) => x.item);
+}

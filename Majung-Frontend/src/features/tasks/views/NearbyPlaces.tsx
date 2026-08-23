@@ -7,7 +7,7 @@
 // 자리를 비워 두는 것이 맞다 — 빈 상자는 "여기 뭔가 있어야 하는데"로 읽힌다.
 import { Text, View } from "react-native";
 
-import type { LocatedPlace } from "@/shared/location";
+import { byDistanceFrom, type LocatedPlace } from "@/shared/location";
 import { COLORS } from "@/shared/theme/colors";
 import type { DistrictOffice, Institution } from "@/shared/types";
 
@@ -69,7 +69,11 @@ function pickOffices(
  *   안 거르면 **송파구 사람에게 도봉구 지부가 나온다.**
  * - 정신건강복지센터는 시군구 단위라 그 구의 것만 맞다.
  *
- * 서버가 가까운 것을 앞에 두고 보내므로, 갈래마다 맞는 것을 걸러 앞에서부터 쓴다.
+ * **가까운 순으로 세우는 것은 여기서 한다.** 서버는 좌표를 모르고(§5.4 — 좌표를
+ * 보내지 않는다) 어느 시군구가 어느 지부 관할인지도 모른다. 그래서 광역만 맞으면
+ * 순서 그대로 첫 번째를 쓰고 있었는데, **군포 사람에게 화성 병점의 지부가 나왔다.**
+ * 경기도에만 지부가 넷이라 그런 일이 계속 생긴다. 기기가 경계 데이터를 들고 있으니
+ * 여기서 거리를 재면 좌표를 어디로도 보내지 않고 가까운 곳을 짚을 수 있다.
  */
 function pickInstitutions(
   institutions: readonly Institution[],
@@ -89,12 +93,11 @@ function pickInstitutions(
   // **그 지역에 없으면 아무것도 안 낸다.** 허그상담소는 전국 세 곳뿐이라 서울에는
   // 없는데, 폴백으로 하나를 내면 서울 사람에게 원주로 가라고 하는 셈이 된다.
   // 카드에는 대표번호가 이미 있어 전화로 물을 수 있다.
-  const list = fit;
+  const list = byDistanceFrom(place, fit);
 
-  // **공단은 한 곳만 낸다.** 한 광역에 지부가 여럿인데(서울만 넷) 어느 구가 어느 지부
-  // 관할인지는 서버도 모른다. 둘을 늘어놓으면 사용자가 고르게 되고, 그것은 "어디로 가면
-  // 되는지 짚어주는" 것이 아니다(§5.4). 정확한 지부는 카드에 이미 있는 대표번호로
-  // 확인할 수 있다.
+  // **공단은 한 곳만 낸다.** 둘을 늘어놓으면 사용자가 고르게 되고, 그것은 "어디로 가면
+  // 되는지 짚어주는" 것이 아니다(§5.4). 이제 가장 가까운 것이 앞에 온다. 다만 가까운
+  // 것과 관할인 것은 다를 수 있어서, 화면이 전화로 확인하라는 말을 함께 낸다.
   return list[0] && !isCenter(list[0]) ? list.slice(0, 1) : list.slice(0, 2);
 }
 
@@ -103,6 +106,8 @@ export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props)
 
   const picked = offices.length > 0 ? pickOffices(offices, place.dong) : null;
   const shown = pickInstitutions(institutions, place);
+  // 공단 지부는 거리로 골랐을 뿐 관할까지 확인한 것이 아니다. 그 사실을 숨기지 않는다.
+  const branchShown = !picked && shown.some((x) => x.kind !== "mental_health");
 
   if (!picked && shown.length === 0) return null;
 
@@ -131,6 +136,16 @@ export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props)
       {anyBranch ? (
         <Text className="mt-3 text-caption text-ink-sub">
           어느 주민센터에서나 하실 수 있어요. 가까운 곳으로 가세요.
+        </Text>
+      ) : null}
+
+      {/* **가까운 것과 맡은 곳이 다를 수 있다** (§5.4 — 없는 것을 있는 것처럼 보이게
+          하지 않는다). 거리는 잴 수 있지만 어느 지부가 이 동네를 맡는지는 우리도
+          모른다. 헛걸음이 되는 자리라 아는 만큼만 말하고 전화로 넘긴다 */}
+      {branchShown ? (
+        <Text className="mt-3 text-caption text-ink-sub">
+          거리가 가까운 곳이에요. 이곳이 맡은 지역이 맞는지는 가시기 전에 전화로 확인해
+          주세요.
         </Text>
       ) : null}
     </View>

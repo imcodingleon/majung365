@@ -13,7 +13,7 @@ import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { DistrictOffice, Institution, NearbyResult } from "../domain/institution";
-import { districtLabel, type LocatedPlace } from "@/shared/location";
+import { byDistanceFrom, districtLabel, type LocatedPlace } from "@/shared/location";
 import type { SelectedRegion } from "../domain/region";
 import type { LookupState } from "@/shared/location";
 
@@ -140,8 +140,9 @@ function centersFor(
  */
 function branchesFor(
   institutions: readonly Institution[],
-  sido: string,
+  place: LocatedPlace,
 ): readonly Institution[] {
+  const sido = place.sido;
   const shortSido = sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
   const all = institutions.filter((x) => x.kind !== "mental_health");
   // **그 광역에 없으면 아무것도 안 낸다.** 허그상담소는 전국에 세 곳뿐(원주·천안·통영)
@@ -149,8 +150,13 @@ function branchesFor(
   // 없는 것을 없다고 두고, 화면 아래 대표번호로 넘긴다.
   //
   // 한 광역에 지부가 여럿이면(서울만 넷) 어느 구가 관할인지 서버도 모른다. 이 화면은
-  // 둘러보는 자리이므로 그 광역의 것을 다 보인다.
-  return all.filter((x) => x.sido === shortSido || x.sido === sido);
+  // 둘러보는 자리이므로 그 광역의 것을 다 보이되, **가까운 것을 위에 둔다.** 순서를
+  // 그대로 두면 군포 사람에게 화성 지부가 맨 위에 왔다. 거리는 기기가 들고 있는 경계
+  // 데이터로 재므로 좌표가 어디로도 나가지 않는다 (§5.4).
+  return byDistanceFrom(
+    place,
+    all.filter((x) => x.sido === shortSido || x.sido === sido),
+  );
 }
 
 export function NearbyScreen({
@@ -291,9 +297,9 @@ export function NearbyScreen({
                   </Section>
                 ) : null}
 
-                {branchesFor(result.institutions, place.sido).length > 0 ? (
+                {branchesFor(result.institutions, place).length > 0 ? (
                   <Section title="법무보호복지공단">
-                    {branchesFor(result.institutions, place.sido).map((x) => (
+                    {branchesFor(result.institutions, place).map((x) => (
                       <PlaceCard key={x.name} name={x.name} address={x.address} phone={x.phone} />
                     ))}
                   </Section>
