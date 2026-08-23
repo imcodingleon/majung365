@@ -21,19 +21,27 @@ import type { StaffMessage } from "../views/StaffChatScreen";
 
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
 
-/** 서버가 주는 메시지 한 건. */
+/**
+ * 서버가 주는 메시지 한 건.
+ *
+ * **필드 이름은 실제 응답을 보고 맞췄다.** 계약 문서에는 `sender`·`client_msg_id`로
+ * 적혀 있었는데 서버는 `senderRole`·`clientMsgId`를 보낸다. 이름이 어긋나면
+ * 오류 없이 `undefined`가 되어 **말풍선이 전부 한쪽에 붙는다.**
+ */
 type ServerMessage = {
   id: string;
+  visitId: string;
   body: string;
-  /** 보낸 쪽. 서버가 담당자인지 출소자인지 알려준다. */
-  sender: "staff" | "client";
-  client_msg_id?: string;
+  /** 보낸 쪽. 담당자인지 출소자인지 서버가 알려준다. */
+  senderRole: "staff" | "client";
+  createdAt: string;
+  clientMsgId?: string;
 };
 
 type JoinResult = { ok: true; messages: ServerMessage[] } | { ok: false; reason: string };
 
 function toMessage(m: ServerMessage): StaffMessage {
-  return { id: m.id, from: m.sender, text: m.body };
+  return { id: m.id, from: m.senderRole, text: m.body };
 }
 
 export function useVisitChat(visitId: string | null, token: string | null) {
@@ -72,12 +80,15 @@ export function useVisitChat(visitId: string | null, token: string | null) {
 
     socket.on("new_message", (m: ServerMessage) => {
       setMessages((prev) => {
-        // 내가 보낸 것의 에코면 임시 말풍선을 진짜로 바꾼다.
-        if (m.client_msg_id && pending.current.has(m.client_msg_id)) {
-          pending.current.delete(m.client_msg_id);
-          return prev.map((x) => (x.id === m.client_msg_id ? toMessage(m) : x));
-        }
+        // **같은 메시지가 두 번 올 수 있다.** 서버는 재전송을 저장하지 않지만(같은 id가
+        // 돌아온다) 에코는 두 번 보낸다. 실측으로 확인했다(2026-08-23).
         if (prev.some((x) => x.id === m.id)) return prev;
+
+        // 내가 보낸 것의 에코면 임시 말풍선을 진짜로 바꾼다.
+        if (m.clientMsgId && pending.current.has(m.clientMsgId)) {
+          pending.current.delete(m.clientMsgId);
+          return prev.map((x) => (x.id === m.clientMsgId ? toMessage(m) : x));
+        }
         return [...prev, toMessage(m)];
       });
     });
