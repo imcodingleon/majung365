@@ -4,9 +4,25 @@
 // **제도 원본과 사용자별 판정을 한 구조에 담지 않는다.** 계약은 서버가 정하고, 화면
 // 타입은 인덱스 탭이 필요로 하는 모양이다. 둘을 하나로 합치면 계약이 바뀔 때마다
 // 화면이 흔들린다.
-import type { IntakeTask } from "@/shared/types";
+import type { IntakeCardOption, IntakeTask } from "@/shared/types";
 
-import type { RouteContact, Task } from "./task";
+import type { DeskGuide, RouteContact, Task } from "./task";
+
+/** 값이 있을 때만 요소가 생긴다. 자리를 먼저 잡아두면 대부분의 카드에 빈 공간이 생긴다. */
+function deskOf(option: IntakeCardOption): DeskGuide | undefined {
+  if (!option.desk_place || !option.desk_say) return undefined;
+  return { place: option.desk_place, say: option.desk_say };
+}
+
+function contactOf(option: IntakeCardOption): RouteContact | undefined {
+  if (!option.contact_org || !option.contact_phone) return undefined;
+  return {
+    org: option.contact_org,
+    phone: option.contact_phone,
+    dial: option.contact_phone.replace(/[^0-9]/g, ""),
+    hours: option.contact_hours || undefined,
+  };
+}
 
 /**
  * 카드의 신청 경로를 화면 안내 줄로 편다.
@@ -21,7 +37,9 @@ function optionLines(task: IntakeTask): string[] {
   const many = options.length > 1;
   return options.flatMap((o) => {
     const head = many ? `${o.org} — ` : "";
-    return [o.where ? `${head}${o.where}` : "", o.next_step].filter(Boolean);
+    // 창구 안내가 있으면 where는 그쪽이 대신한다. 같은 말을 두 번 내지 않는다.
+    const where = deskOf(o) ? "" : o.where;
+    return [where ? `${head}${where}` : "", o.next_step].filter(Boolean);
   });
 }
 
@@ -34,8 +52,13 @@ function mergedDocs(task: IntakeTask): string[] {
   return [...seen];
 }
 
-export function toTask(item: IntakeTask, contact?: RouteContact): Task {
-  const info = [item.card.summary_easy, ...optionLines(item)].filter(Boolean);
+export function toTask(item: IntakeTask): Task {
+  // 창구 안내와 연락처는 첫 경로 것을 쓴다. 여럿일 때는 각 경로의 안내가 info 줄에 들어간다.
+  const first = item.card.options[0];
+
+  const info = [item.card.summary_easy, ...optionLines(item)];
+  // 확인 날짜는 안내 끝에 붙인다. 제도는 바뀌므로 언제 확인한 것인지가 드러나야 한다 (§6.4).
+  if (item.card.verified_note) info.push(item.card.verified_note);
 
   return {
     id: item.route_id,
@@ -44,12 +67,13 @@ export function toTask(item: IntakeTask, contact?: RouteContact): Task {
     // 어디서 하는 일인지만 낸다. 소요 시간은 검증된 값이 아니라 화면에 내지 않는다.
     meta: item.section_label,
     must: item.blocks_others,
-    info,
+    info: info.filter(Boolean),
     docs: mergedDocs(item),
-    contact,
+    desk: first ? deskOf(first) : undefined,
+    contact: first ? contactOf(first) : undefined,
   };
 }
 
 export function toTasks(items: readonly IntakeTask[]): Task[] {
-  return items.map((item) => toTask(item));
+  return items.map(toTask);
 }

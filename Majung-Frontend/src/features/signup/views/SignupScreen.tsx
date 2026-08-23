@@ -29,7 +29,8 @@ type Props = {
   sectionBoxes: React.ReactNode;
   /** 6개 분야를 모두 마쳤는지 (§3.7). */
   intakeDone: boolean;
-  onSubmit: () => void;
+  /** 가입 완료. 인사말에 쓸 이름을 함께 넘긴다 (§2.5-1). */
+  onSubmit: (name: string) => void;
 };
 
 function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
@@ -194,7 +195,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onSubmit }: Props) {
         ) : null}
 
         <Pressable
-          onPress={onSubmit}
+          onPress={() => onSubmit(form.name.trim())}
           disabled={!canSubmit}
           accessibilityRole="button"
           accessibilityState={{ disabled: !canSubmit }}

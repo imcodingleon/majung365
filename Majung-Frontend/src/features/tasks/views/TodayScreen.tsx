@@ -8,13 +8,21 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { RouteId, Task } from "../domain/task";
-import { useTodayTasks } from "../hooks/useTodayTasks";
 
 import { TaskCard } from "./TaskCard";
 import { TaskRow } from "./TaskRow";
 
 type Props = {
   tasks: readonly Task[];
+  /** 지금 열려 있는 탭. 완료하면 다음 미완료 항목으로 옮겨간다 (§5.2). */
+  openId: RouteId | null;
+  onToggle: (taskId: RouteId) => void;
+  /** 완료 처리. 서버가 목록을 다시 계산해 마친 항목을 뺀다 */
+  onComplete: (taskId: RouteId) => void;
+  /** 아직 마치지 않은 선행 필수 항목의 제목들. */
+  pendingMust: readonly string[];
+  /** 강조 배지가 붙는 항목. */
+  headId: RouteId | null;
   /** 인사말에 쓸 이름. 가입할 때 받은 값이며 이름만으로는 위험이 낮다 (§2.5-1). */
   userName?: string;
   /** 할 일별 AI 채팅 팝업을 연다. */
@@ -31,6 +39,11 @@ type Props = {
 
 export function TodayScreen({
   tasks,
+  openId,
+  onToggle,
+  onComplete,
+  pendingMust,
+  headId,
   userName,
   onOpenChat,
   onOpenHelp,
@@ -38,16 +51,14 @@ export function TodayScreen({
   renderStatusStrip,
   hideNotifyFor,
 }: Props) {
-  const { openId, toggle, complete, isDone, done, pendingMust, headId } = useTodayTasks({ tasks });
-
   const scrollRef = useRef<ScrollView>(null);
   const rowOffsets = useRef<Record<string, number>>({});
 
   // 완료 후 다음 탭이 열릴 때 그 위치로 스크롤한다. 열렸는데 화면 밖이면 열린 줄 모른다 (§5.2).
   const handleComplete = useCallback(
     (id: RouteId) => {
-      complete(id);
-      const next = tasks.find((t) => t.id !== id && !isDone(t.id));
+      onComplete(id);
+      const next = tasks.find((t) => t.id !== id);
       const y = next ? rowOffsets.current[next.id] : undefined;
       if (y !== undefined) {
         setTimeout(
@@ -56,7 +67,7 @@ export function TodayScreen({
         );
       }
     },
-    [complete, isDone, tasks],
+    [onComplete, tasks],
   );
 
   return (
@@ -81,9 +92,9 @@ export function TodayScreen({
 
       <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="px-5 pb-16 pt-5">
         <Text className="mb-5 text-[13px] leading-[21px] text-ink-muted">
-          전체 {tasks.length}개 중{" "}
-          <Text className="font-extrabold text-folder-done">{done}개 완료</Text>
-          {" — 서두르지 않아도 괜찮아요."}
+          {tasks.length > 0
+            ? `아직 ${tasks.length}개 남았어요 — 서두르지 않아도 괜찮아요.`
+            : ""}
         </Text>
 
         {tasks.map((task, index) => (
@@ -96,14 +107,14 @@ export function TodayScreen({
             <TaskRow
               task={task}
               index={index}
-              done={isDone(task.id)}
+              done={false}
               open={openId === task.id}
               highlighted={task.id === headId}
-              onToggle={() => toggle(task.id)}
+              onToggle={() => onToggle(task.id)}
             >
               <TaskCard
                 task={task}
-                done={isDone(task.id)}
+                done={false}
                 pendingMust={pendingMust}
                 onOpenChat={() => onOpenChat(task.id)}
                 onNotifyStaff={
@@ -118,7 +129,7 @@ export function TodayScreen({
           </View>
         ))}
 
-        {done === tasks.length ? (
+        {tasks.length === 0 ? (
           <View className="mt-6 rounded-2xl border border-folder-done-line bg-folder-done-bg px-5 py-6">
             <Text className="text-center text-lg font-extrabold text-folder-done-ink">
               오늘 할 일을 다 마치셨어요.

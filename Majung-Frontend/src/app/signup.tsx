@@ -10,7 +10,7 @@ import { SECTIONS, type SectionId } from "@/features/intake/domain/sections";
 import { useIntake } from "@/features/intake/hooks/useIntake";
 import { QuestionList, SectionBoxes } from "@/features/intake";
 import { SignupScreen } from "@/features/signup";
-import { markSignedUp } from "@/shared/utils/storage";
+import { startSession } from "@/shared/utils/session";
 
 export default function SignupRoute() {
   const intake = useIntake();
@@ -39,12 +39,10 @@ export default function SignupRoute() {
         />
       }
       intakeDone={allSectionsDone(SECTIONS, intake.progress)}
-      onSubmit={() => {
+      onSubmit={(name) => {
         // 보이지 않는 답은 보내지 않는다 (§3.8). 답을 바꿔 닫힌 꼬리질문의 답은 여기서 빠진다.
-        // 서버 전송은 백엔드 계약이 정해지면 이 값을 그대로 실어 보낸다.
         // 개인정보라 로그에 남기지 않는다.
-        void intake.toPayload();
-        markSignedUp();
+        startSession({ answers: intake.toPayload(), name });
         router.replace("/today");
       }}
     />

@@ -27,6 +27,17 @@ export interface IntakeCardOption {
   where: string;
   next_step: string;
   docs: string[];
+  /**
+   * 창구 안내 (§6.4). 갈 곳이 하나로 정해지는 항목에만 있다.
+   * 전화를 걸면 무엇을 물어야 할지 또 판단해야 하지만 창구에서는 한 문장만 말하면 된다.
+   */
+  desk_place: string;
+  desk_say: string;
+  /** 담당 기관 연락처 (§6.4 ③단계). **서버가 붙인다. LLM이 만들지 않는다.** */
+  contact_org: string;
+  contact_phone: string;
+  /** 상담 가능 시간이 확인된 곳만 채워진다. 132처럼 점심에 끊기는 번호가 있다. */
+  contact_hours: string;
 }
 
 export interface IntakeCard {
@@ -42,6 +53,15 @@ export interface IntakeCard {
   steps: string[];
   cautions: string[];
   options: IntakeCardOption[];
+  /** 근거 문서 출처들. */
+  source_urls: string[];
+  /**
+   * "마중365가 2026년 8월 23일에 확인한 내용이에요."
+   *
+   * **기관이 갱신한 날짜가 아니라 우리가 확인한 날짜다.** "○월 ○일 기준"이라고 적으면
+   * 기관이 그날 확인했다는 뜻으로 읽힌다 (§6.4).
+   */
+  verified_note: string;
 }
 
 export interface IntakeTask {
