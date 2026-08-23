@@ -43,11 +43,25 @@ export type VisitRequest = {
 /** 이 말로 끝나면 직함이 이미 붙은 것이다. 뒤에 "담당자"를 또 붙이지 않는다. */
 const TITLE_TAIL = /(담당자|주무관|팀장|과장|계장|주임|선생님|상담사|사회복지사)$/;
 
+/**
+ * 상태 문구를 문장 단위로 나눈다.
+ *
+ * **한 줄에 한 가지만 담는다** (§3.9-⑦). "담당자에게 전달했어요. 확인되면
+ * 알려드릴게요."가 한 덩어리로 감기면 어디가 지금 상태이고 어디가 앞으로 될 일인지
+ * 눈으로 갈리지 않는다. 확정 문구는 더하다 — 시간과 만날 사람이 한 줄에 뭉친다.
+ */
+export function statusLines(request: VisitRequest): string[] {
+  return statusMessage(request)
+    .split(". ")
+    .map((part, i, all) => (i < all.length - 1 ? `${part}.` : part))
+    .filter((part) => part.length > 0);
+}
+
 /** 각 상태에서 사용자가 보는 문장 (§7.1). */
 export function statusMessage(request: VisitRequest): string {
   switch (request.status) {
     case "sent":
-      return "담당자에게 전달했어요. 확인하면 알려드릴게요.";
+      return "담당자에게 전달했어요. 확인되면 알려드릴게요.";
     case "acknowledged":
       return "담당자가 확인했어요.";
     case "confirmed": {

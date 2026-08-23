@@ -18,6 +18,11 @@ type Props = {
   onOpenChat: () => void;
   onNotifyStaff?: () => void;
   onComplete: () => void;
+  /**
+   * 완료를 되돌린다. **실수로 누르는 일이 실제로 일어난다.**
+   * 되돌릴 길이 없으면 그 항목의 안내와 연락처를 다시 볼 수 없게 된다.
+   */
+  onUncomplete?: () => void;
   /** 보낸 방문 요청의 상태 표시 (§7.1). 라우트가 조립해 넣는다. */
   statusStrip?: React.ReactNode;
   /**
@@ -35,6 +40,7 @@ export function TaskCard({
   onOpenChat,
   onNotifyStaff,
   onComplete,
+  onUncomplete,
   statusStrip,
   nearby,
 }: Props) {
@@ -110,7 +116,16 @@ export function TaskCard({
             onPress={onNotifyStaff}
           />
         ) : null}
-        <Button icon="✅" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
+        {task.done ? (
+          <Button
+            icon="↩️"
+            label="아직 안 끝났어요"
+            tone="secondary"
+            onPress={onUncomplete ?? onComplete}
+          />
+        ) : (
+          <Button icon="✅" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
+        )}
       </View>
 
       {/* **안내 목록 밖, 버튼 아래에 둔다** (§6.4). 목록에 섞으면 ✓가 붙어 할 일처럼

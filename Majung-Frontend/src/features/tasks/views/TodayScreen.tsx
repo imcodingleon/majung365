@@ -22,6 +22,8 @@ type Props = {
   onToggle: (taskId: RouteId) => void;
   /** 완료 처리. 서버가 목록을 다시 계산해 마친 항목을 뺀다 */
   onComplete: (taskId: RouteId) => void;
+  /** 완료를 되돌린다. 실수로 누른 것을 되살리는 길이다. */
+  onUncomplete?: (taskId: RouteId) => void;
   /** 아직 마치지 않은 선행 필수 항목의 제목들. */
   pendingMust: readonly string[];
   /** 강조 배지가 붙는 항목. */
@@ -62,8 +64,8 @@ type Props = {
 /**
  * 진행 표시 (2026-08-23 시안).
  *
- * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. 마친 것을 세는 것이 아니라
- * **남은 것에서 거꾸로 센다** — 서버가 마친 항목을 목록에서 빼기 때문이다.
+ * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. **마친 것을 그대로 센다** —
+ * 마친 항목이 목록에 남게 된 뒤로(§5.2) 거꾸로 셀 이유가 없어졌다.
  */
 function Progress({ done, total }: { done: number; total: number }) {
   const ratio = total > 0 ? Math.min(1, done / total) : 0;
@@ -92,6 +94,7 @@ export function TodayScreen({
   openId,
   onToggle,
   onComplete,
+  onUncomplete,
   pendingMust,
   headId,
   userName,
@@ -112,7 +115,9 @@ export function TodayScreen({
   const handleComplete = useCallback(
     (id: RouteId) => {
       onComplete(id);
-      const next = tasks.find((t) => t.id !== id);
+      // **다음 미완료 항목으로 간다** (§5.2). 그냥 "다음 항목"을 잡으면 이미 마친
+      // 것으로 되돌아가 무엇을 해야 하는지 다시 판단하게 된다.
+      const next = tasks.find((t) => t.id !== id && !t.done);
       const y = next ? rowOffsets.current[next.id] : undefined;
       if (y !== undefined) {
         setTimeout(
@@ -134,7 +139,7 @@ export function TodayScreen({
       />
 
       <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="px-5 pb-16 pt-5">
-        <Progress done={Math.max(0, (total ?? tasks.length) - tasks.length)} total={total ?? tasks.length} />
+        <Progress done={tasks.filter((t) => t.done).length} total={total ?? tasks.length} />
 
         <Text className="text-body text-ink-sub">
           {userName ? `${userName}님, 어서 오세요.` : "어서 오세요."}
@@ -154,7 +159,7 @@ export function TodayScreen({
             <TaskRow
               task={task}
               index={index}
-              done={false}
+              done={Boolean(task.done)}
               open={openId === task.id}
               highlighted={task.id === headId}
               onToggle={() => onToggle(task.id)}
@@ -169,6 +174,7 @@ export function TodayScreen({
                     : undefined
                 }
                 onComplete={() => handleComplete(task.id)}
+                onUncomplete={onUncomplete ? () => onUncomplete(task.id) : undefined}
                 statusStrip={renderStatusStrip?.(task.id)}
                 nearby={renderNearby?.(task.id)}
               />

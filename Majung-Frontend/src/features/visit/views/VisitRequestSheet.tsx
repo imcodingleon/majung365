@@ -66,38 +66,99 @@ function SlotPicker({
   disabledId: string | null;
   onSelect: (id: string) => void;
 }) {
+  // **날짜를 먼저 고르고 오전·오후를 고른다.** 열 개를 한 번에 늘어놓으면 같은 말이
+  // 열 번 반복되어 무엇이 다른지 눈으로 갈리지 않는다 (§3.9-⑦ 한 번에 한 가지).
+  const dates = useMemo(() => {
+    const seen = new Map<string, { date: string; dateLabel: string; dayShort: string }>();
+    for (const slot of slots) {
+      if (!seen.has(slot.date)) {
+        seen.set(slot.date, { date: slot.date, dateLabel: slot.dateLabel, dayShort: slot.dayShort });
+      }
+    }
+    return [...seen.values()];
+  }, [slots]);
+
+  const selectedDate = slots.find((s) => s.id === selected)?.date ?? null;
+  const [openDate, setOpenDate] = useState<string | null>(null);
+  // 고른 것이 있으면 그 날짜를 편다. 아직 없으면 사용자가 누른 날짜를 편다.
+  const shownDate = selectedDate ?? openDate;
+  const halves = slots.filter((s) => s.date === shownDate);
+
   return (
-    <View className="flex-row flex-wrap gap-2">
-      {slots.map((slot) => {
-        const isSelected = selected === slot.id;
-        const isDisabled = disabledId === slot.id;
-        return (
-          <Pressable
-            key={slot.id}
-            onPress={() => onSelect(slot.id)}
-            disabled={isDisabled}
-            accessibilityRole="radio"
-            accessibilityState={{ selected: isSelected, disabled: isDisabled }}
-            accessibilityLabel={slot.label}
-            className="rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
-            style={{
-              backgroundColor: isSelected ? COLORS.brandSoft : COLORS.surface,
-              borderColor: isSelected ? COLORS.brand : COLORS.line,
-              opacity: isDisabled ? 0.4 : 1,
-            }}
-          >
-            <Text
-              className="text-body"
+    <View className="gap-3">
+      <View className="flex-row flex-wrap gap-2">
+        {dates.map((d) => {
+          const isOpen = shownDate === d.date;
+          const hasPick = selectedDate === d.date;
+          return (
+            <Pressable
+              key={d.date}
+              onPress={() => setOpenDate(isOpen ? null : d.date)}
+              accessibilityRole="radio"
+              accessibilityState={{ selected: hasPick, expanded: isOpen }}
+              accessibilityLabel={`${d.dateLabel} ${d.dayShort}요일`}
+              className="items-center rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
               style={{
-                color: isSelected ? COLORS.brand : COLORS.inkStrong,
-                fontWeight: isSelected ? "800" : "600",
+                backgroundColor: hasPick ? COLORS.brandSoft : COLORS.surface,
+                borderColor: hasPick || isOpen ? COLORS.brand : COLORS.line,
               }}
             >
-              {slot.label}
-            </Text>
-          </Pressable>
-        );
-      })}
+              <Text
+                className="text-body"
+                style={{
+                  color: hasPick || isOpen ? COLORS.brand : COLORS.inkStrong,
+                  fontWeight: hasPick ? "800" : "600",
+                }}
+              >
+                {d.dateLabel}
+              </Text>
+              <Text
+                className="text-caption"
+                style={{ color: hasPick || isOpen ? COLORS.brand : COLORS.inkMuted }}
+              >
+                {d.dayShort}
+              </Text>
+            </Pressable>
+          );
+        })}
+      </View>
+
+      {/* 날짜를 고르기 전에는 오전·오후를 보이지 않는다. 자리를 미리 잡아 두면
+          대부분의 시간 동안 빈 칸이 남는다 */}
+      {halves.length > 0 ? (
+        <View className="flex-row gap-2">
+          {halves.map((slot) => {
+            const isSelected = selected === slot.id;
+            const isDisabled = disabledId === slot.id;
+            return (
+              <Pressable
+                key={slot.id}
+                onPress={() => onSelect(slot.id)}
+                disabled={isDisabled}
+                accessibilityRole="radio"
+                accessibilityState={{ selected: isSelected, disabled: isDisabled }}
+                accessibilityLabel={slot.label}
+                className="flex-1 items-center rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
+                style={{
+                  backgroundColor: isSelected ? COLORS.brandSoft : COLORS.surface,
+                  borderColor: isSelected ? COLORS.brand : COLORS.line,
+                  opacity: isDisabled ? 0.4 : 1,
+                }}
+              >
+                <Text
+                  className="text-body"
+                  style={{
+                    color: isSelected ? COLORS.brand : COLORS.inkStrong,
+                    fontWeight: isSelected ? "800" : "600",
+                  }}
+                >
+                  {slot.half}
+                </Text>
+              </Pressable>
+            );
+          })}
+        </View>
+      ) : null}
     </View>
   );
 }

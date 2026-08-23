@@ -6,8 +6,22 @@
 export type TimeSlot = {
   /** 저장·전송에 쓰는 값. 예: "2026-08-25-am" */
   id: string;
-  /** 화면에 보이는 말. 예: "8월 25일 월요일 오전" */
+  /** 확정 문구와 담당자 화면에 쓰는 말. 예: "8월 25일 월요일 오전" */
   label: string;
+  /**
+   * 아래 셋은 **고르는 화면을 위한 것**이다.
+   *
+   * 열 개를 한꺼번에 늘어놓으면 "8월 25일 월요일 오전"이 열 번 반복되어 무엇이
+   * 다른지 눈으로 갈리지 않는다. 날짜를 먼저 고르고 오전·오후를 고르면 한 번에
+   * 다섯 개와 두 개만 보면 된다.
+   */
+  date: string;
+  /** 날짜 칩에 크게 들어가는 말. 예: "8월 25일" */
+  dateLabel: string;
+  /** 날짜 칩에 작게 붙는 요일 한 글자. 예: "월" */
+  dayShort: string;
+  /** "오전" 또는 "오후". */
+  half: string;
 };
 
 const WEEKDAY_NAMES = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
@@ -32,8 +46,18 @@ export function buildTimeSlots(from: Date, days = 5): readonly TimeSlot[] {
     const dayName = WEEKDAY_NAMES[weekday];
     const datePart = `${cursor.getFullYear()}-${String(month).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
 
-    slots.push({ id: `${datePart}-am`, label: `${month}월 ${day}일 ${dayName} 오전` });
-    slots.push({ id: `${datePart}-pm`, label: `${month}월 ${day}일 ${dayName} 오후` });
+    const dateLabel = `${month}월 ${day}일`;
+    const dayShort = dayName.charAt(0);
+    for (const half of ["오전", "오후"]) {
+      slots.push({
+        id: `${datePart}-${half === "오전" ? "am" : "pm"}`,
+        label: `${dateLabel} ${dayName} ${half}`,
+        date: datePart,
+        dateLabel,
+        dayShort,
+        half,
+      });
+    }
   }
 
   return slots;

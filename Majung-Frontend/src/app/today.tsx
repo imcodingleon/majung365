@@ -41,7 +41,9 @@ export default function TodayRoute() {
   // **열린 카드 하나만 부른다** (§5.4). 위치는 가입할 때 알아낸 것이며 세션에만 있다.
 
   const tasks = server.tasks;
-  const headId = tasks[0]?.id ?? null;
+  // **아직 안 한 것 중 첫 번째가 "지금 할 것"이다.** 마친 항목도 목록에 남으므로(§5.2)
+  // 그냥 첫 항목을 잡으면 이미 끝낸 일이 계속 강조된다.
+  const headId = tasks.find((t) => !t.done)?.id ?? null;
   // **`openId`가 아니라 실제로 열린 것을 본다.** 아무것도 안 고른 처음에는 `openId`가
   // 비어 있고 첫 항목이 열린 채로 시작하는데(§5.2), 그때 `openId`만 보면 근처 기관을
   // 부르지 않아 **가장 많이 보게 되는 첫 화면에서만 비는** 상태가 된다.
@@ -54,9 +56,21 @@ export default function TodayRoute() {
 
   const complete = useCallback(
     (id: RouteId) => {
-      // 서버가 목록을 다시 계산해 마친 항목을 뺀다. 그러면 다음 항목이 맨 위로 온다.
       server.complete(id);
-      setOpenId(null);
+      // **마친 탭이 닫히면서 다음 미완료 탭이 열린다** (§5.2). 전부 닫아 버리면
+      // 무엇부터 해야 하는지 사용자가 다시 판단해야 하는데, 이 서비스의 전제가
+      // "한 번에 하나만, 판단하지 않게"다. 마지막 하나였으면 모두 닫는다.
+      const next = tasks.find((t) => t.id !== id && !t.done);
+      setOpenId(next?.id ?? null);
+    },
+    [server, tasks],
+  );
+
+  /** 되돌리면 그 탭을 다시 연다. 무엇이 되살아났는지 눈으로 확인할 수 있어야 한다. */
+  const uncomplete = useCallback(
+    (id: RouteId) => {
+      server.uncomplete(id);
+      setOpenId(id);
     },
     [server],
   );
@@ -74,6 +88,7 @@ export default function TodayRoute() {
         openId={openId ?? headId}
         onToggle={toggle}
         onComplete={complete}
+        onUncomplete={uncomplete}
         onOpenNearby={() => router.push("/nearby")}
         onOpenMyInfo={() => router.push("/my-info")}
         renderNearby={(taskId) =>
