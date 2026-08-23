@@ -141,7 +141,6 @@ export function TodayScreen({
             >
               <TaskCard
                 task={task}
-                done={false}
                 pendingMust={pendingMust}
                 onOpenChat={() => onOpenChat(task.id)}
                 onNotifyStaff={

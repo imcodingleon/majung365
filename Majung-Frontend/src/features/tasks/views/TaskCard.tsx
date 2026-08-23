@@ -2,8 +2,9 @@
 // 채팅은 이 카드 안에 그리지 않는다. "AI 챗봇과 대화하기"를 누르면 화면 전체를 덮는 팝업이 열린다.
 //
 // 카드 머리(제목·번호·기관)는 TaskRow가 그린다. 여기는 그 아래 내용만 맡는다.
-import { Pressable, Text, View } from "react-native";
+import { Text, View } from "react-native";
 
+import { Button } from "@/shared/components/Button";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
@@ -11,7 +12,6 @@ import type { Task } from "../domain/task";
 
 type Props = {
   task: Task;
-  done: boolean;
   /** 아직 마치지 않은 선행 필수 항목들. 있으면 먼저 하도록 유도한다. 차단이 아니라 유도다 (§5.2). */
   pendingMust: readonly string[];
   onOpenChat: () => void;
@@ -21,57 +21,8 @@ type Props = {
   statusStrip?: React.ReactNode;
 };
 
-function GuideNote({ tone, children }: { tone: "hint" | "done"; children: React.ReactNode }) {
-  const style =
-    tone === "done"
-      ? { backgroundColor: COLORS.doneBg, borderColor: COLORS.doneLine, color: COLORS.doneInk }
-      : { backgroundColor: COLORS.noteWarn, borderColor: COLORS.noteWarnLine, color: COLORS.noteWarnInk };
-  return (
-    <View
-      className="mb-4 rounded-xl border px-4 py-3"
-      style={{ backgroundColor: style.backgroundColor, borderColor: style.borderColor }}
-    >
-      <Text className="text-caption font-semibold" style={{ color: style.color }}>
-        {children}
-      </Text>
-    </View>
-  );
-}
-
-function ActionButton({
-  label,
-  tone,
-  onPress,
-}: {
-  label: string;
-  tone: "primary" | "ghost" | "notify";
-  onPress: () => void;
-}) {
-  const filled = tone === "primary";
-  return (
-    <Pressable
-      onPress={onPress}
-      accessibilityRole="button"
-      accessibilityLabel={label}
-      className="items-center rounded-xl border-[1.5px] px-4 py-4 active:opacity-90"
-      style={{
-        backgroundColor: filled ? COLORS.brand : COLORS.surface,
-        borderColor: filled ? COLORS.brand : tone === "notify" ? COLORS.actionLine : COLORS.line,
-      }}
-    >
-      <Text
-        className="text-body-lg font-extrabold"
-        style={{ color: filled ? COLORS.surface : tone === "notify" ? COLORS.action : COLORS.inkSub }}
-      >
-        {label}
-      </Text>
-    </Pressable>
-  );
-}
-
 export function TaskCard({
   task,
-  done,
   pendingMust,
   onOpenChat,
   onNotifyStaff,
@@ -79,18 +30,19 @@ export function TaskCard({
   statusStrip,
 }: Props) {
   // 선행 필수를 남겨 둔 채 뒤 순서를 열었을 때만 유도 문구를 낸다.
-  const showGuide = !task.must && !done && pendingMust.length > 0;
+  //
+  // **완료 상태를 여기서 다루지 않는다.** 서버가 마친 항목을 목록에서 빼기 때문에
+  // 끝낸 카드는 화면에 오지 않는다. 그 자리에 있던 "끝낸 일이에요" 분기는 죽은 코드였다.
+  const showGuide = !task.must && pendingMust.length > 0;
 
   return (
     <View className="px-4 pb-4 pt-4">
+      {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2) */}
       {showGuide ? (
-        <GuideNote tone="hint">
-          🔑 {pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.{"\n"}
-          그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요.
-        </GuideNote>
+        <NoteBox tone="warn" icon="🔑" className="mb-4">
+          {`${pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.\n그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요.`}
+        </NoteBox>
       ) : null}
-
-      {done ? <GuideNote tone="done">🎉 끝낸 일이에요. 잘하셨어요.</GuideNote> : null}
 
       <View className="mb-4">
         {task.info.map((line) => (
@@ -125,18 +77,18 @@ export function TaskCard({
 
       {statusStrip}
 
+      {/* 세 버튼의 순서가 곧 권하는 순서다. 물어보기가 먼저이고 끝냈다는 표시가 마지막이다 */}
       <View className="gap-2">
-        <ActionButton label="💬 AI 챗봇과 대화하기" tone="primary" onPress={onOpenChat} />
+        <Button icon="💬" label="AI 챗봇과 대화하기" onPress={onOpenChat} />
         {task.visitLabel && onNotifyStaff ? (
-          <ActionButton
-            label={`🔔 ${task.visitLabel} 담당자에게 미리 알리기`}
-            tone="notify"
+          <Button
+            icon="🔔"
+            label={`${task.visitLabel} 담당자에게 미리 알리기`}
+            tone="secondary"
             onPress={onNotifyStaff}
           />
         ) : null}
-        {!done ? (
-          <ActionButton label="✅ 이 일을 끝냈어요" tone="ghost" onPress={onComplete} />
-        ) : null}
+        <Button icon="✅" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
       </View>
     </View>
   );

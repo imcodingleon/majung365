@@ -11,6 +11,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/shared/components/AppHeader";
 import { DateField } from "@/shared/components/DateField";
+import { Button } from "@/shared/components/Button";
 import { COLORS } from "@/shared/theme/colors";
 
 import { CRIME_CATEGORIES, type ConsentId, type CrimeCategoryId } from "../domain/signup";
@@ -167,17 +168,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
           </Text>
         ) : null}
 
-        <Pressable
-          onPress={() => onSubmit(form.name.trim())}
-          disabled={!canSubmit}
-          accessibilityRole="button"
-          accessibilityState={{ disabled: !canSubmit }}
-          accessibilityLabel="시작하기"
-          className="mt-4 items-center rounded-2xl py-4 active:opacity-90"
-          style={{ backgroundColor: canSubmit ? COLORS.brand : COLORS.brandMuted }}
-        >
-          <Text className="text-body-lg font-extrabold text-white">시작하기</Text>
-        </Pressable>
+        <Button label="시작하기" onPress={() => onSubmit(form.name.trim())} disabled={!canSubmit} className="mt-4" />
       </ScrollView>
 
       <ConsentPopup consentId={detailId} onClose={() => setDetailId(null)} />
