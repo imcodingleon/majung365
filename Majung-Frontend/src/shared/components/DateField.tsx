@@ -130,7 +130,11 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
     }
     onChange(next);
     // 닫기를 미루지 않으면 이 클릭이 뒤 화면의 죄목까지 누른다. deferClose 참고.
-    deferClose(() => setOpen(null))();
+    //
+    // **그 사이에 다른 칸이 열렸으면 건드리지 않는다.** 미룬 닫기가 뒤늦게 돌면서
+    // 방금 연 팝업을 닫아 버리면, 제목도 단위도 없는 빈 목록이 남는다.
+    const closing = open;
+    deferClose(() => setOpen((cur) => (cur === closing ? null : cur)))();
   };
 
   return (
