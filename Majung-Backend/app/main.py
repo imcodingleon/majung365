@@ -96,7 +96,11 @@ def create_app() -> FastAPI:
             r"http://localhost:\d+" if settings.cors_allow_localhost else None
         ),
         allow_credentials=False,
-        allow_methods=["GET", "POST"],
+        # 실제로 여는 메서드만 적는다. **여기가 늦으면 브라우저에서만 막힌다** —
+        # curl로는 되고 화면에서만 preflight가 400이라 원인을 찾기 어렵다.
+        #   PATCH   내 정보 수정 · 담당자의 방문 요청 상태 변경
+        #   DELETE  내 정보 삭제(§9.4) · 대화 내역 삭제
+        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
         allow_headers=["*"],
     )
 
