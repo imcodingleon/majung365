@@ -40,6 +40,14 @@ type Props = {
   hideNotifyFor?: (taskId: RouteId) => boolean;
   /** 근처 기관 구역 (§5.4). 열린 카드에만 그린다. */
   renderNearby?: (taskId: RouteId) => React.ReactNode;
+  /**
+   * 지역 기관을 따로 찾아보는 화면을 연다 (§5.4).
+   *
+   * **할 일 카드에도 근처 기관이 나오지만 성격이 다르다.** 카드는 "이 일을 하려면
+   * 어디로" 이고, 여기는 "우리 동네에 무엇이 있나"다. 할 일이 다 끝난 사람에게도
+   * 갈 곳은 남는다.
+   */
+  onOpenNearby?: () => void;
   /** 처음 받은 할 일 개수. 진행 표시의 분모다. */
   total?: number;
 };
@@ -86,6 +94,7 @@ export function TodayScreen({
   renderStatusStrip,
   hideNotifyFor,
   renderNearby,
+  onOpenNearby,
   total,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
@@ -158,6 +167,20 @@ export function TodayScreen({
             </TaskRow>
           </View>
         ))}
+
+        {/* **목록 끝에 둔다.** 오늘 할 일보다 먼저 읽힐 것이 아니고, 다 마친
+            사람이 다음으로 눈을 옮기는 자리이기도 하다 */}
+        {onOpenNearby ? (
+          <Pressable
+            onPress={onOpenNearby}
+            accessibilityRole="button"
+            accessibilityLabel="우리 동네 기관 찾아보기"
+            className="mt-6 flex-row items-center justify-center gap-2 rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-80"
+          >
+            <Text className="text-body-lg">📍</Text>
+            <Text className="text-body-lg font-bold text-ink-sub">우리 동네 기관 찾아보기</Text>
+          </Pressable>
+        ) : null}
 
         {tasks.length === 0 ? (
           <View className="mt-6 rounded-2xl border border-folder-done-line bg-folder-done-bg px-5 py-6">

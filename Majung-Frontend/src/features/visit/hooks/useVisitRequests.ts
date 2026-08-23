@@ -8,11 +8,12 @@
 import { useCallback, useEffect, useState } from "react";
 
 import type { SharedAnswerInput, VisitResponse } from "@/shared/types";
-import { ApiError, getVisits, postVisit } from "@/shared/utils/api";
+import { ApiError, cancelVisit, getVisits, postVisit } from "@/shared/utils/api";
 import { loadToken } from "@/shared/utils/tokenStore";
 
 import {
   blockReason,
+  canCancel,
   countSentToday,
   type LimitReason,
   type VisitRequest,
@@ -142,6 +143,33 @@ export function useVisitRequests() {
     [formTaskId],
   );
 
+  /**
+   * 보낸 요청을 물린다.
+   *
+   * **목록에서 지우지 않고 취소된 상태로 남긴다.** 지우면 사용자는 취소가 됐는지
+   * 안 됐는지 알 수 없고, 화면에 이미 "다시 보내기"가 붙는 자리가 있다.
+   */
+  const cancel = useCallback(
+    async (id: string) => {
+      const target = requests.find((r) => r.id === id);
+      if (!target || !canCancel(target.status)) return;
+
+      const token = await loadToken();
+      if (!token) {
+        setError("다시 로그인해 주세요.");
+        return;
+      }
+      setError(null);
+      try {
+        const updated = await cancelVisit(token, id);
+        setRequests((prev) => prev.map((r) => (r.id === id ? toRequest(updated) : r)));
+      } catch (err) {
+        setError(err instanceof ApiError ? err.message : "지금은 물리지 못했어요.");
+      }
+    },
+    [requests],
+  );
+
   /** 그 할 일의 가장 최근 요청. **서버가 최신순으로 주므로 처음 맞는 것이 최신이다.** */
   const requestFor = useCallback(
     (taskId: string) => requests.find((r) => r.taskId === taskId) ?? null,
@@ -151,6 +179,7 @@ export function useVisitRequests() {
   return {
     requests,
     requestFor,
+    cancel,
     formTaskId,
     blocked,
     sending,

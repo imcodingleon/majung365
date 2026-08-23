@@ -7,7 +7,7 @@
 // 완료 처리도 서버가 목록을 다시 계산하는 방식이라 기기는 마친 항목만 들고 있으면 된다.
 import { useCallback, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Redirect } from "expo-router";
+import { Redirect, router } from "expo-router";
 
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
 import { ChatPopup } from "@/features/chat/views/ChatPopup";
@@ -69,6 +69,7 @@ export default function TodayRoute() {
         openId={openId ?? headId}
         onToggle={toggle}
         onComplete={complete}
+        onOpenNearby={() => router.push("/nearby")}
         renderNearby={(taskId) =>
           taskId === openId && !nearby.loading ? (
             <NearbyPlaces
@@ -95,7 +96,13 @@ export default function TodayRoute() {
         renderStatusStrip={(taskId) => {
           const request = visit.requestFor(taskId);
           if (!request) return null;
-          return <RequestStatusStrip request={request} onOpenStaffChat={() => chat.open(taskId)} />;
+          return (
+            <RequestStatusStrip
+              request={request}
+              onOpenStaffChat={() => chat.open(taskId)}
+              onCancel={() => void visit.cancel(request.id)}
+            />
+          );
         }}
       />
 
