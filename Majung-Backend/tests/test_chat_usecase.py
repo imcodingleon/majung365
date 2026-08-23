@@ -170,8 +170,9 @@ async def test_reason_text_never_carries_user_input() -> None:
 # ── R2 병렬 안내 (기획서 §12-15) ──
 
 
-async def test_r2_shows_both_koreha_and_government_paths() -> None:
-    """R2는 공단 긴급지원과 정부 긴급복지가 서로 다른 경로라 하나로 끝내면 안 된다."""
+async def test_r2_offers_both_paths_in_one_card() -> None:
+    """R2는 신청할 곳이 둘이다. 다만 할 일은 하나이므로 카드를 나누지 않고 옵션으로 묶는다 —
+    카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다."""
     triage = TriageResult(
         question_type=QuestionType.SUPPORT,
         priorities=(RoutePriority(route=RouteId.R2),),
@@ -179,9 +180,21 @@ async def test_r2_shows_both_koreha_and_government_paths() -> None:
     events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "생활비가 없어요")
     cards = [e.card for e in events if isinstance(e, CardEvent)]
 
-    ids = [c.institution_id for c in cards]
-    assert ids[0] == "welfare-koreha-emergency", "공단 제도가 먼저다"
-    assert "welfare-emergency-support" in ids, "정부 긴급복지가 함께 나가야 한다"
+    assert len(cards) == 1, "할 일 하나에 카드 하나"
+    orgs = [o.org for o in cards[0].options]
+    assert len(orgs) == 2 and "법무보호복지공단 긴급지원" in orgs[0]
+
+
+async def test_single_path_route_still_has_one_option() -> None:
+    """옵션은 항상 최소 하나다 — 화면이 길이로 분기하지 않아도 된다."""
+    triage = TriageResult(
+        question_type=QuestionType.SUPPORT,
+        priorities=(RoutePriority(route=RouteId.R8),),
+    )
+    events = await _collect(ChatUseCase(FakeLlm(triage), _repo(), _blocking()), "많이 힘들어요")
+    card = [e.card for e in events if isinstance(e, CardEvent)][0]
+    assert len(card.options) == 1
+    assert card.options[0].where == card.where
 
 
 async def test_card_label_names_the_route_it_came_from() -> None:

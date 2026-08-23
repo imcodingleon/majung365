@@ -26,6 +26,21 @@ class RouteOut:
 
 
 @dataclass(frozen=True)
+class CardOption:
+    """한 할 일을 신청할 수 있는 경로 하나.
+
+    할 일은 하나인데 신청할 곳이 둘인 경우가 있다(R2: 공단 긴급지원 · 정부 긴급복지).
+    카드를 둘로 나누면 사용자가 '둘 다 해야 하나'를 판단해야 하는데, 소득·수급 이력에
+    따라 갈려서 **사용자가 판단할 수 없다.** 상담에서 정해질 일이라 한 카드에 묶는다.
+    """
+
+    org: str  # 기관명. 화면이 각 경로 앞에 붙인다
+    where: str
+    next_step: str
+    docs: tuple[str, ...] = ()
+
+
+@dataclass(frozen=True)
 class CardData:
     institution_id: str
     name: str
@@ -41,6 +56,9 @@ class CardData:
     eligibility: tuple[str, ...] = ()
     steps: tuple[str, ...] = ()
     cautions: tuple[str, ...] = ()
+    # 신청 경로. 항상 최소 하나이고, 둘 이상이면 화면이 기관명을 앞에 붙여 나열한다.
+    # where·next_step은 첫 경로와 같은 값이다(단일 경로 화면의 하위 호환).
+    options: tuple[CardOption, ...] = ()
 
 
 # ── SSE 이벤트 (UseCase가 yield) ──

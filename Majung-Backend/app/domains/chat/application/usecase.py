@@ -13,6 +13,7 @@ from collections.abc import AsyncIterator
 from app.domains.chat.application.dto import (
     CardData,
     CardEvent,
+    CardOption,
     ChatCommand,
     ChatEvent,
     DoneEvent,
@@ -68,7 +69,9 @@ class ChatUseCase:
         cards = self._match_cards(triage)
 
         # 3) 쉬운 말 안내 (스트리밍). support면 카드 사실을 주입, daily면 웹 검색 허용
-        context = build_guidance_context(triage, [self._as_injection(c) for c, _ in cards])
+        context = build_guidance_context(
+            triage, [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)]
+        )
         allow_web = triage.question_type == QuestionType.DAILY
 
         try:
@@ -86,8 +89,8 @@ class ChatUseCase:
             return
 
         # 4) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
-        for inst, route in cards:
-            yield CardEvent(card=self._to_card(inst, route))
+        for lead, companions, route in cards:
+            yield CardEvent(card=self._to_card(lead, companions, route))
 
         yield DoneEvent()
 
@@ -115,22 +118,22 @@ class ChatUseCase:
             return ReasonCode.NO_DOCUMENTS
         return None
 
-    def _match_cards(self, triage: TriageResult) -> list[tuple[Institution, RouteId]]:
+    def _match_cards(
+        self, triage: TriageResult
+    ) -> list[tuple[Institution, tuple[Institution, ...], RouteId]]:
         if triage.question_type != QuestionType.SUPPORT:
             return []
-        picked: list[tuple[Institution, RouteId]] = []
+        picked: list[tuple[Institution, tuple[Institution, ...], RouteId]] = []
         seen: set[str] = set()
         for p in triage.priorities:
-            # 항목당 대표 1개가 원칙이고, 동반 제도가 있으면 그 뒤에 붙는다.
-            # 어느 제도가 대표이고 무엇이 동반인지는 KB 데이터가 정한다(lead_for·companion_for).
-            for inst in [
-                self._institutions.lead_of(p.route),
-                *self._institutions.companions_of(p.route),
-            ]:
-                if inst.id in seen or len(picked) >= _MAX_CARDS:
-                    continue
-                picked.append((inst, p.route))
-                seen.add(inst.id)
+            # 항목당 카드 1장. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
+            # 카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다.
+            lead = self._institutions.lead_of(p.route)
+            if lead.id in seen:
+                continue
+            companions = tuple(self._institutions.companions_of(p.route))
+            picked.append((lead, companions, p.route))
+            seen.update({lead.id, *(c.id for c in companions)})
             if len(picked) >= _MAX_CARDS:
                 break
         return picked
@@ -142,7 +145,9 @@ class ChatUseCase:
             f"(어디서: {inst.where} / 서류: {docs} / 다음 단계: {inst.next_step})"
         )
 
-    def _to_card(self, inst: Institution, route: RouteId) -> CardData:
+    def _to_card(
+        self, inst: Institution, companions: tuple[Institution, ...], route: RouteId
+    ) -> CardData:
         """카드 라벨은 이 카드가 나온 항목의 이름이다. 제도가 걸친 항목을 모두 이어붙이면
         R2로 매칭된 정부 긴급복지가 "공단 긴급지원 · 생계급여"로 나와 왜 떴는지 알 수 없다."""
         return CardData(
@@ -159,4 +164,10 @@ class ChatUseCase:
             eligibility=inst.eligibility,
             steps=inst.steps,
             cautions=inst.cautions,
+            options=tuple(
+                CardOption(
+                    org=i.name, where=i.where, next_step=i.next_step, docs=i.docs
+                )
+                for i in (inst, *companions)
+            ),
         )

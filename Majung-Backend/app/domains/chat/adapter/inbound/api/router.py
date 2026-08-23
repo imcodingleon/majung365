@@ -129,6 +129,15 @@ async def chat(
                             "eligibility": list(c.eligibility),
                             "steps": list(c.steps),
                             "cautions": list(c.cautions),
+                            "options": [
+                                {
+                                    "org": o.org,
+                                    "where": o.where,
+                                    "next_step": o.next_step,
+                                    "docs": list(o.docs),
+                                }
+                                for o in c.options
+                            ],
                         },
                         ensure_ascii=False,
                     ),
