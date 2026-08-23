@@ -115,8 +115,13 @@ export default function TodayRoute() {
         }}
       />
 
-      {server.error ? (
-        <NoteBox tone="warn" className="absolute inset-x-4 bottom-6">{server.error}</NoteBox>
+      {/* **방문 요청 실패도 여기서 낸다.** 시트에만 그리면 취소·목록 불러오기처럼
+          시트가 닫힌 상태에서 난 실패는 아무 데도 안 보인다. 사용자는 취소가 됐는지
+          안 됐는지 모른 채 여러 번 누르게 된다 */}
+      {server.error || (!visit.formTaskId && visit.error) ? (
+        <NoteBox tone="warn" className="absolute inset-x-4 bottom-6">
+          {server.error || visit.error}
+        </NoteBox>
       ) : null}
 
       {chatTask ? (

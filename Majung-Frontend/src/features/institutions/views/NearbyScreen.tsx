@@ -123,8 +123,12 @@ function centersFor(
   district: string,
 ): readonly Institution[] {
   const all = institutions.filter((x) => x.kind === "mental_health");
-  // 여기도 폴백을 두지 않는다. 다른 구의 센터를 짚으면 헛걸음이다.
-  return all.filter((x) => district.startsWith(x.district) || x.district.startsWith(district));
+  // **빈 값이면 아무것도 안 낸다.** `"".startsWith("")`가 참이라, 시군구를 모르는
+  // 상태에서 거르면 **전국 센터가 다 통과한다** — 막으려던 것이 그대로 일어난다.
+  if (!district) return [];
+  return all.filter(
+    (x) => x.district && (district.startsWith(x.district) || x.district.startsWith(district)),
+  );
 }
 
 /**

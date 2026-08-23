@@ -125,7 +125,12 @@ export function countSentToday(requests: readonly VisitRequest[], now: Date = ne
       d.getDate() === now.getDate()
     );
   };
-  return requests.filter((r) => r.createdAt && sameDay(r.createdAt)).length;
+  // **취소·완료된 것은 세지 않는다.** 세면 보내고 취소한 뒤 다시 보낼 때 하루 세 건
+  // 중 두 건이 소모되고, 상한이 도움이 아니라 벌칙이 된다. 서버도 답을 기다리는
+  // 것만 센다.
+  return requests.filter(
+    (r) => r.createdAt && sameDay(r.createdAt) && r.status !== "cancelled" && r.status !== "completed",
+  ).length;
 }
 
 export function blockReason(

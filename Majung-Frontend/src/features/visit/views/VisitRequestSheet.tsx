@@ -2,7 +2,7 @@
 //
 // 미리 알려두면 방문했을 때 설명할 필요 없이 바로 도와줄 수 있다. 창구에서 신분이 드러나는
 // 순간이 실질적 장벽이라는 인터뷰 결과의 해법이 이것이다.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useRef, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -133,10 +133,15 @@ export function VisitRequestSheet({
 
   // 방문 목적과 같은 기관에서 처리하는 분야만 처음에 켠다 (§7.4-1).
   // 주민센터에 가는 사람에게 공단 것까지 보낼 이유가 없다.
-  useMemo(() => {
-    if (!routeId) return;
-    const suggested = defaultSections(routeId).filter((id) => available.includes(id));
-    setPicked(suggested);
+  //
+  // **처음 한 번만 정한다.** 렌더 중에 상태를 바꾸면(useMemo 안의 setState가 그렇다)
+  // 사용자가 직접 켜고 끈 것이 초기값으로 되돌아간다. 어느 분야를 보낼지는
+  // 사용자가 하는 결정이므로 한 번 손대면 그쪽이 이긴다.
+  const suggested = useRef<string | null>(null);
+  useEffect(() => {
+    if (!routeId || suggested.current === routeId) return;
+    suggested.current = routeId;
+    setPicked(defaultSections(routeId).filter((id) => available.includes(id)));
   }, [routeId, available]);
 
   const shared = useMemo(

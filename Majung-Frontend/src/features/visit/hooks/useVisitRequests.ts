@@ -75,7 +75,10 @@ export function useVisitRequests() {
         const found = await getVisits(token);
         if (alive) setRequests(found.map(toRequest));
       } catch {
-        // 목록을 못 읽어도 새 요청을 보내는 데는 지장이 없다. 조용히 넘긴다.
+        // **조용히 넘기지 않는다.** 목록을 못 읽으면 화면이 중복도 미확정 건수도
+        // 못 보므로, 이미 보낸 항목에 한 번 더 보내게 된다. 막는 것은 서버뿐이고
+        // 사용자는 왜 막혔는지 모른다.
+        if (alive) setError("보낸 요청을 불러오지 못했어요. 화면을 다시 열어 주세요.");
       }
     })();
     return () => {

@@ -76,7 +76,10 @@ function pickInstitutions(
   const isCenter = (x: Institution) => x.kind === "mental_health";
   const fit = institutions.filter((x) =>
     isCenter(x)
-      ? x.district.startsWith(place.district) || place.district.startsWith(x.district)
+      ? // 빈 값이면 `startsWith("")`가 참이라 전국 센터가 다 통과한다.
+        Boolean(x.district) &&
+        Boolean(place.district) &&
+        (x.district.startsWith(place.district) || place.district.startsWith(x.district))
       : x.sido === shortSido || x.sido === place.sido,
   );
   // **그 지역에 없으면 아무것도 안 낸다.** 허그상담소는 전국 세 곳뿐이라 서울에는
