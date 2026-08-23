@@ -244,3 +244,55 @@ def test_known_values_pass() -> None:
         crime_category="property",
     )
     assert body.crime_category == "property"
+
+
+def test_consented_crime_is_kept() -> None:
+    """**동의했으면 저장되어야 한다.**
+
+    "동의 없으면 버린다"만 확인하고 있어서, 판정 함수가 엉뚱한 값을 보는데도
+    테스트가 통과했다. 검증 목록은 "crime"을 받는데 판정은 "crime_category"를
+    찾아서 **동의하고 보낸 죄목이 조용히 버려졌다.** 오류도 안 나고 저장만
+    안 되니 화면에서도 알 수 없다.
+
+    막는 것을 확인했으면 통과시키는 것도 확인해야 한다.
+    """
+    from app.domains.account.adapter.inbound.api.router import SignupIn, _to_command
+
+    body = SignupIn(
+        name="김판수",
+        birth_date=date(1975, 3, 2),
+        release_date=date(2026, 8, 3),
+        consents=[
+            {"kind": "privacy", "agreed": True},  # type: ignore[list-item]
+            {"kind": "crime", "agreed": True},  # type: ignore[list-item]
+        ],
+        crime_category="property",
+    )
+    assert _to_command(body, date(2026, 8, 23)).crime_category == "property"
+
+
+def test_refused_crime_consent_drops_the_value() -> None:
+    """동의 화면을 보고 거부한 경우다. 값이 와도 버린다."""
+    from app.domains.account.adapter.inbound.api.router import SignupIn, _to_command
+
+    body = SignupIn(
+        name="김판수",
+        birth_date=date(1975, 3, 2),
+        release_date=date(2026, 8, 3),
+        consents=[
+            {"kind": "privacy", "agreed": True},  # type: ignore[list-item]
+            {"kind": "crime", "agreed": False},  # type: ignore[list-item]
+        ],
+        crime_category="property",
+    )
+    assert _to_command(body, date(2026, 8, 23)).crime_category is None
+
+
+def test_consent_kind_names_match_between_check_and_validation() -> None:
+    """**검증 목록과 판정이 같은 이름을 봐야 한다.**
+
+    이 둘이 갈리면 검증은 통과시키고 판정은 못 찾는다 — 조용히 작동을 멈춘다.
+    """
+    from app.domains.account.domain.entity import CONSENT_KINDS, CRIME_CONSENT_KIND
+
+    assert CRIME_CONSENT_KIND in CONSENT_KINDS

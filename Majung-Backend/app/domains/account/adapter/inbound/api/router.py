@@ -20,6 +20,7 @@ from app.domains.account.application.usecase import SignupCommand
 from app.domains.account.domain.entity import (
     CONSENT_KINDS,
     CRIME_CATEGORIES,
+    CRIME_CONSENT_KIND,
     Account,
     Consent,
 )
@@ -120,7 +121,10 @@ def _to_command(body: SignupIn, today: date) -> SignupCommand:
 
 
 def _crime_consented(body: SignupIn) -> bool:
-    return any(c.kind == "crime_category" and c.agreed for c in body.consents)
+    """죄목 동의가 있는가. **이름은 도메인이 정하고 여기서는 가져다 쓴다.**"""
+    return any(
+        c.kind == CRIME_CONSENT_KIND and c.agreed for c in body.consents
+    )
 
 
 @router.post("/signup", response_model=SignupOut)
