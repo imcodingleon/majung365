@@ -35,12 +35,16 @@ from app.domains.chat.domain.triage import (
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.repository import InstitutionRepository
+from app.domains.knowledge.domain.retrieval import Passage, PassageIndex
 from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import RouteId, label_for
 
 logger = logging.getLogger("majung.chat")
 
 _MAX_CARDS = 3
+# 근거 구절에서 프롬프트로 넘길 길이. 문서당 평균 2,300자라 전부 넣으면
+# 세 구절만으로 7천 자가 되고, 관련 없는 대목이 답변에 섞인다.
+_PASSAGE_CHARS = 700
 
 
 class ChatUseCase:
@@ -49,12 +53,15 @@ class ChatUseCase:
         llm: ChatLlm,
         institutions: InstitutionRepository,
         blocking_routes: frozenset[str] = frozenset(),
+        passages: PassageIndex | None = None,
     ) -> None:
         self._llm = llm
         self._institutions = institutions
         # 다른 항목의 선행조건인 항목들. 그래프 구조에서 미리 뽑아 주입받는다 —
         # 챗이 그래프 전체를 알 필요는 없고 이 사실만 있으면 된다.
         self._blocking_routes = blocking_routes
+        # 수집한 근거 문서. 없으면 KB 카드만으로 ①단계를 판정한다.
+        self._passages = passages
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -72,17 +79,22 @@ class ChatUseCase:
         # 2) 카드 매칭 (서버, KB 밖 생성 금지)
         cards = self._match_cards(triage)
 
-        # 3) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
+        # 3) 근거 문서 검색. 카드가 제도의 요약이라면 이쪽은 본문이라,
+        #    "기한이 며칠인가요" 같은 구체적인 질문에 답할 수 있는 것은 이쪽이다.
+        found = self._search_passages(cmd.message, triage)
+
+        # 4) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
         #    **사전 고지가 답변보다 먼저 나간다** — 나중에 "인터넷 정보였습니다"라고
         #    덧붙이면 이미 사용자는 그것을 사실로 받아들인 뒤다.
-        stage = EvidenceStage.CONFIRMED if cards else EvidenceStage.WEB
+        stage = EvidenceStage.CONFIRMED if (cards or found) else EvidenceStage.WEB
         yield EvidenceEvent(stage=stage.value, notice=notice_for(stage))
 
-        # 4) 쉬운 말 안내 (스트리밍)
+        # 5) 쉬운 말 안내 (스트리밍)
         context = build_guidance_context(
             triage,
             [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)],
             stage=stage,
+            passages=[self._as_passage_injection(p) for p in found],
         )
         allow_web = stage == EvidenceStage.WEB
 
@@ -100,7 +112,7 @@ class ChatUseCase:
             yield ErrorEvent()
             return
 
-        # 5) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
+        # 6) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
         for lead, companions, route in cards:
             yield CardEvent(card=self._to_card(lead, companions, route))
 
@@ -117,6 +129,24 @@ class ChatUseCase:
             )
             for i, p in enumerate(triage.priorities)
         )
+
+    def _search_passages(self, message: str, triage: TriageResult) -> list[Passage]:
+        """질문과 관련된 근거 구절. 검색어는 로그에 남기지 않는다."""
+        if self._passages is None:
+            return []
+        routes = frozenset(p.route.value for p in triage.priorities)
+        return [p for p, _ in self._passages.search(message, routes)]
+
+    def _as_passage_injection(self, passage: Passage) -> str:
+        """근거 구절을 프롬프트에 넣을 형태로. 본문이 길어 앞부분만 넣는다 —
+        전부 넣으면 관련 없는 대목까지 따라 들어가고 모델이 엉뚱한 곳을 인용한다.
+
+        기관명을 함께 낸다. 지자체 자료는 특히 중요하다 — 제도 조건이 지역마다
+        다른데 사용자는 그것이 자기 지역 기준이 아니라는 것을 알 방법이 없다.
+        """
+        who = passage.department or passage.title
+        body = passage.text[:_PASSAGE_CHARS].strip()
+        return f"- [{who}] {body}"
 
     def _reason_for(self, route: RouteId) -> ReasonCode | None:
         """왜 이 항목이 먼저인지를 데이터에서 도출한다. 대부분은 비는 것이 정상이다 —

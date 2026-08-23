@@ -75,16 +75,21 @@ def build_guidance_context(
     triage: TriageResult,
     injected_cards: list[str],
     stage: EvidenceStage = EvidenceStage.CONFIRMED,
+    passages: list[str] | None = None,
 ) -> str:
     """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약)."""
     lines: list[str] = []
     if triage.priorities:
         prio = ", ".join(label_for(p.route) for p in triage.priorities)
         lines.append(f"[지금 급한 일] {prio}")
+    if passages:
+        # 근거 문서 본문. 카드가 제도의 요약이라면 이쪽은 원문이라 구체적인 질문에 답한다.
+        lines.append("[수집한 공식 자료 — 이 내용을 근거로 답하고, 어느 기관 자료인지 밝히세요]")
+        lines.extend(passages)
     if injected_cards:
         lines.append("[확인된 정보 — 이 사실만 근거로 쉬운 말로 안내]")
         lines.extend(injected_cards)
-    else:
+    if not injected_cards and not passages:
         lines.append(
             "[확인된 제도 정보 없음 — 제도명·기관명·전화번호·기한 같은 사실은 "
             "확실하지 않으면 지어내지 말고 '정확히는 모른다'고 말하고 "
