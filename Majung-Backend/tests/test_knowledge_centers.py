@@ -237,3 +237,44 @@ def test_tab_labels_fit_the_tab_width() -> None:
     assert set(ROUTE_TAB_LABELS) == set(RouteId), "탭 이름이 없는 항목이 있다"
     too_long = {r.value: t for r, t in ROUTE_TAB_LABELS.items() if len(t) > 5}
     assert not too_long, f"5자를 넘는 탭 이름: {too_long}"
+
+
+def test_unverified_center_data_stops_boot(tmp_path: Path) -> None:
+    """**검수하지 않은 자료를 사용자에게 보내지 않는다.**
+
+    주소가 "(상세 주소 검수 필요)"인 예시 세 건이 /api/centers로 나가고 있었다.
+    화면이 그 API를 안 써서 드러나지 않았을 뿐, 붙이는 순간 사용자가 그 주소로
+    찾아간다. 출소 직후의 헛걸음이 이 서비스가 가장 피하려는 결과다.
+
+    **경고로 두면 아무도 안 본다.** 그 데이터는 여덟 달 가까이 그 상태였고
+    문구를 다듬다 우연히 발견됐다.
+    """
+    from app.domains.centers.infrastructure.json_repository import JsonCenterRepository
+
+    sample = {
+        "id": "x",
+        "category": "주민센터",
+        "name": "어딘가 행정복지센터(예시)",
+        "address": "서울 어딘가 (상세 주소 검수 필요)",
+        "phone": "",
+        "hours": "",
+        "lat": 37.5,
+        "lng": 127.0,
+        "tags": [],
+    }
+    path = tmp_path / "centers.json"
+    path.write_text(
+        json.dumps({"_meta": {}, "centers": [sample]}, ensure_ascii=False),
+        encoding="utf-8",
+    )
+    with pytest.raises(ValueError, match="검수하지 않은"):
+        JsonCenterRepository(path)
+
+
+def test_verified_center_data_boots() -> None:
+    """실제 데이터는 통과한다 — 검증이 정상 자료를 막지 않는다."""
+    from app.domains.centers.infrastructure.json_repository import JsonCenterRepository
+
+    repo = JsonCenterRepository()
+    assert repo.all(), "기관 목록이 비었다"
+    assert all("예시" not in c.name for c in repo.all())
