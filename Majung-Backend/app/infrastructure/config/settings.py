@@ -69,6 +69,12 @@ class Settings(BaseSettings):
     # 평문으로 저장하는 폴백은 두지 않는다(§9.2).
     field_encryption_key: str = ""
 
+    # ── 담당자(관리자 앱) ──
+    # 지부 필터. **켜면 자기 지부로 온 요청만 보인다**(§8.2 접근 통제).
+    # 해커톤 단계에서는 어느 지부로 보냈든 한 화면에서 받아야 시연이 되므로 꺼 둔다.
+    # 코드와 테스트는 둘 다 있고, 확장 시점에 이 값만 켜면 된다.
+    staff_branch_filter: bool = False
+
     # ── 접근 게이트 (남용 방어 ①) ──
     # 데모 진입 코드의 해시(sha256 hex). 평문 코드는 저장하지 않는다.
     demo_access_code_hash: str = ""

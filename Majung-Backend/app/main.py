@@ -41,6 +41,12 @@ from app.domains.knowledge.infrastructure.intake_rules_repository import (
 )
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
 from app.domains.knowledge.infrastructure.rag_repository import JsonRagRepository
+from app.domains.staff.adapter.inbound.api.router import router as staff_router
+from app.domains.staff.infrastructure.supabase_repository import (
+    SupabaseAccessLogRepository,
+    SupabaseStaffRepository,
+    SupabaseStaffSessionRepository,
+)
 from app.infrastructure.config.settings import Settings, get_settings
 from app.infrastructure.security.gate import AccessGate
 from app.infrastructure.security.rate_limit import limiter
@@ -147,6 +153,9 @@ def create_app() -> FastAPI:
         app.state.crime_repo = SupabaseCrimeRepository(supabase, cipher)
         app.state.session_repo = SupabaseSessionRepository(supabase)
         app.state.message_repo = SupabaseMessageRepository(supabase, cipher)
+        app.state.staff_repo = SupabaseStaffRepository(supabase)
+        app.state.staff_session_repo = SupabaseStaffSessionRepository(supabase)
+        app.state.access_log_repo = SupabaseAccessLogRepository(supabase)
         app.state.signup_usecase = SignupUseCase(
             accounts=app.state.account_repo,
             crimes=app.state.crime_repo,
@@ -165,6 +174,7 @@ def create_app() -> FastAPI:
     app.include_router(chat_router)
     app.include_router(centers_router)
     app.include_router(account_router)
+    app.include_router(staff_router)
     app.include_router(onboarding_router)
 
     @app.get("/api/health")
