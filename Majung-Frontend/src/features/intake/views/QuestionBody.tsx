@@ -113,7 +113,7 @@ function DateAnswer({
         <DateField
           value={parts}
           onChange={(next) => onChange(`${next.year}-${next.month}-${next.day}`)}
-          label={question.prompt}
+          label="날짜"
           minYear={thisYear - 2}
           maxYear={thisYear + 1}
           defaultYear={thisYear}

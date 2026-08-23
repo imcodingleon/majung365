@@ -77,24 +77,3 @@ export function consentSatisfied(crime: CrimeCategoryId | null, state: ConsentSt
 // 날짜 값과 검사는 여러 화면이 함께 쓰므로 shared로 올렸다. 가입 화면이 쓰던 이름을 그대로
 // 다시 내보내 부르는 쪽이 바뀌지 않게 한다.
 export { EMPTY_DATE, isValidDate, toIsoDate, type DateParts } from "@/shared/types/date";
-
-/**
- * 개인정보 처리 고지 (§3.5).
- *
- * **고지 내용과 실제 처리가 다르면 신뢰 자체가 무너진다.** 그래서 한 문단으로 뭉뚱그리지 않고
- * 고지가 갖춰야 하는 네 가지(수집 항목·이용 목적·보관 방법·보유 기간)를 항목으로 나눠 낸다.
- * 저리터러시 사용자에게도 줄글보다 짝지어진 표가 읽힌다.
- *
- * 이 자리 역시 동의란과 같은 이유로 격식체다.
- */
-export type NoticeRow = { label: string; value: string };
-
-export const STORAGE_NOTICE_ROWS: readonly NoticeRow[] = [
-  { label: "수집 항목", value: "이름, 생년월일, 출소일, 상황 알아보기 답변" },
-  { label: "이용 목적", value: "맞춤 할 일 안내, 담당 기관 연계" },
-  { label: "보관 방법", value: "암호화 저장" },
-  { label: "보유 기간", value: "마지막 이용일부터 1년" },
-];
-
-/** 표 아래 한 줄. 사용자가 가진 권리를 고지 끝에 둔다. */
-export const STORAGE_NOTICE_RIGHT = "요청하시면 즉시 삭제해 드립니다.";

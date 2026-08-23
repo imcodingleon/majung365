@@ -13,13 +13,7 @@ import { AppHeader } from "@/shared/components/AppHeader";
 import { DateField } from "@/shared/components/DateField";
 import { COLORS } from "@/shared/theme/colors";
 
-import {
-  CRIME_CATEGORIES,
-  STORAGE_NOTICE_RIGHT,
-  STORAGE_NOTICE_ROWS,
-  type ConsentId,
-  type CrimeCategoryId,
-} from "../domain/signup";
+import { CRIME_CATEGORIES, type ConsentId, type CrimeCategoryId } from "../domain/signup";
 import { useSignupForm } from "../hooks/useSignupForm";
 
 import { ConsentPopup } from "./ConsentPopup";
@@ -88,30 +82,6 @@ function CrimeOption({
   );
 }
 
-/** 개인정보 처리 고지. 줄글 대신 항목으로 나눠 무엇을 어디에 쓰는지 짝지어 보여준다 (§3.5). */
-function StorageNotice() {
-  return (
-    <View className="mt-7 rounded-2xl border border-note-info-line bg-note-info px-4 py-4">
-      <Text className="mb-3 text-[15px] font-extrabold text-note-info-ink">
-        개인정보 처리 안내
-      </Text>
-      {STORAGE_NOTICE_ROWS.map((row) => (
-        <View key={row.label} className="mb-2 flex-row">
-          <Text className="w-20 text-[14px] font-bold leading-[22px] text-note-info-ink">
-            {row.label}
-          </Text>
-          <Text className="flex-1 text-[14px] leading-[22px] text-note-info-ink">{row.value}</Text>
-        </View>
-      ))}
-      <View className="mt-1.5 border-t border-note-info-line pt-2.5">
-        <Text className="text-[14px] leading-[22px] text-note-info-ink">
-          {STORAGE_NOTICE_RIGHT}
-        </Text>
-      </View>
-    </View>
-  );
-}
-
 export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }: Props) {
   const form = useSignupForm();
   const [detailId, setDetailId] = useState<ConsentId | null>(null);
@@ -149,7 +119,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
         <DateField
           value={form.birth}
           onChange={form.setBirth}
-          label="생일을 골라 주세요"
+          label="생일"
           minYear={BIRTH_MIN_YEAR}
           maxYear={thisYear}
           defaultYear={BIRTH_DEFAULT_YEAR}
@@ -159,7 +129,7 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
         <DateField
           value={form.releaseDate}
           onChange={form.setReleaseDate}
-          label="출소한 날을 골라 주세요"
+          label="출소한 날"
           minYear={thisYear - RELEASE_SPAN_YEARS}
           maxYear={thisYear + 1}
           defaultYear={thisYear}
@@ -178,8 +148,6 @@ export function SignupScreen({ sectionBoxes, intakeDone, onOpenHelp, onSubmit }:
             />
           ))}
         </View>
-
-        <StorageNotice />
 
         {/* ② 상황 알아보기 — 죄목 문항과 시각적으로 갈라 놓는다 */}
         <View className="my-8 border-t border-line pt-8">{sectionBoxes}</View>
