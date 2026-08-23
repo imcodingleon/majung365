@@ -14,6 +14,8 @@ import { ChatPopup } from "@/features/chat/views/ChatPopup";
 import { HelpScreen } from "@/features/help";
 import type { RouteId } from "@/features/tasks/domain/task";
 import { toTasks } from "@/features/tasks/domain/fromServer";
+import { useNearbyPlaces, nearbyKindFor } from "@/features/tasks/hooks/useNearbyPlaces";
+import { NearbyPlaces } from "@/features/tasks/views/NearbyPlaces";
 import { useServerTasks } from "@/features/tasks/hooks/useServerTasks";
 import { TodayScreen } from "@/features/tasks";
 import { limitMessage } from "@/features/visit/domain/request";
@@ -35,6 +37,9 @@ export default function TodayRoute() {
   const [helpOpen, setHelpOpen] = useState(false);
   // 아코디언 열림은 화면 상태다. 아무것도 안 골랐으면 첫 항목이 열린 채로 시작한다 (§5.2).
   const [openId, setOpenId] = useState<RouteId | null>(null);
+
+  // **열린 카드 하나만 부른다** (§5.4). 위치는 가입할 때 알아낸 것이며 세션에만 있다.
+  const nearby = useNearbyPlaces(openId, session?.place ?? null);
 
   const tasks = server.tasks;
   const headId = tasks[0]?.id ?? null;
@@ -64,6 +69,18 @@ export default function TodayRoute() {
         openId={openId ?? headId}
         onToggle={toggle}
         onComplete={complete}
+        renderNearby={(taskId) =>
+          taskId === openId && !nearby.loading ? (
+            <NearbyPlaces
+              offices={nearby.offices}
+              institutions={nearby.institutions}
+              place={session?.place ?? null}
+              // 신분증은 어느 주민센터에서나 된다. 그 말이 없으면 자기 동 주민센터를
+              // 찾아 멀리 가는 사람이 생긴다 (§5.4)
+              anyBranch={nearbyKindFor(taskId) === "office"}
+            />
+          ) : null
+        }
         pendingMust={pendingMust}
         headId={headId}
         total={server.total}

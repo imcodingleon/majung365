@@ -38,6 +38,8 @@ type Props = {
   renderStatusStrip?: (taskId: RouteId) => React.ReactNode;
   /** 이 할 일에 알리기 버튼을 감출지. 이미 보낸 요청이 있을 때 참이다. */
   hideNotifyFor?: (taskId: RouteId) => boolean;
+  /** 근처 기관 구역 (§5.4). 열린 카드에만 그린다. */
+  renderNearby?: (taskId: RouteId) => React.ReactNode;
   /** 처음 받은 할 일 개수. 진행 표시의 분모다. */
   total?: number;
 };
@@ -83,6 +85,7 @@ export function TodayScreen({
   onNotifyStaff,
   renderStatusStrip,
   hideNotifyFor,
+  renderNearby,
   total,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
@@ -150,6 +153,7 @@ export function TodayScreen({
                 }
                 onComplete={() => handleComplete(task.id)}
                 statusStrip={renderStatusStrip?.(task.id)}
+                nearby={renderNearby?.(task.id)}
               />
             </TaskRow>
           </View>

@@ -20,6 +20,13 @@ type Props = {
   onComplete: () => void;
   /** 보낸 방문 요청의 상태 표시 (§7.1). 라우트가 조립해 넣는다. */
   statusStrip?: React.ReactNode;
+  /**
+   * 근처 기관 구역 (§5.4).
+   *
+   * **카드가 직접 서버를 부르지 않는다.** 카드는 여러 개가 한 화면에 있고, 각자
+   * 부르면 열 몇 번의 요청이 동시에 나간다. 열린 카드 하나만 라우트가 채운다.
+   */
+  nearby?: React.ReactNode;
 };
 
 export function TaskCard({
@@ -29,6 +36,7 @@ export function TaskCard({
   onNotifyStaff,
   onComplete,
   statusStrip,
+  nearby,
 }: Props) {
   // 선행 필수를 남겨 둔 채 뒤 순서를 열었을 때만 유도 문구를 낸다.
   //
@@ -60,6 +68,11 @@ export function TaskCard({
       {task.desk ? (
         <NoteBox tone="info" className="mb-4">{task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.</NoteBox>
       ) : null}
+
+      {/* **창구 안내 바로 아래가 이 자리다.** 위가 "무슨 말을 하면 되는지"이고
+          여기가 "어느 곳으로 가면 되는지"다. §5.4가 "가까운 주민센터라고만 하면
+          사용자는 다시 찾아야 한다"고 적어둔 그 자리다 */}
+      {nearby}
 
       {/* 시안의 회색 안내 상자. 창구 안내(파랑)와 층이 갈리게 색을 낮춘다 —
           갈 곳이 정해진 항목에서는 창구가 먼저 읽혀야 한다 (§6.4) */}
