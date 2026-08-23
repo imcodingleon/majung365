@@ -16,8 +16,8 @@
 | SSH 키 | 로컬 `freedom_project/majung_backend.pem` (ed25519, gitignore됨). 공개키만 AWS import(`majung-backend`) |
 | 앱 디렉토리 | EC2 `/home/ec2-user/majung-backend` |
 | 서비스 | systemd `majung-backend`(uvicorn 127.0.0.1:8000) + `caddy` |
-| LLM | **Mock**(USE_MOCK_LLM=true) — 실 Claude 호출 0, 지출 0 |
-| 게이트 | 비활성(Mock이라 지출 리스크 없음). 실키 전환 시 반드시 활성화 |
+| LLM | **실 Claude API**(2026-08-23 전환). 지출 서킷브레이커와 rate limit이 방어한다 |
+| 게이트 | 비활성. §2.3에서 폐지했고 대체 방어 셋이 맡는다 |
 | IAM 인스턴스 롤 | 없음(훔칠 자격증명 0) / IMDSv2 강제 / EBS 암호화 |
 | Frontend | Vercel `majung365.vercel.app` (Root Directory=Majung-Frontend) |
 | DB | **Supabase** `jaqcgcysacajbjitdrnx` (서울). 모든 테이블 RLS 켜고 정책 없음 = 백엔드 service_role만 접근 |
@@ -94,6 +94,15 @@ Supabase 콘솔이나 MCP로 적용한 뒤 파일로 남긴다.
 비밀번호는 scrypt 해시로만 저장되며 원문은 이 문서에 적지 않는다.
 
 **세션은 8시간이다.** 출소자(90일)와 다른 기준이며 담당자 기기가 공용일 가능성을 전제한다.
+
+## 배포 전 점검
+
+| 항목 | 왜 |
+|---|---|
+| `CORS_ALLOW_LOCALHOST`를 끈다 | 개발 중 Expo 포트를 열어 둔 것이다. 스토어 앱이 localhost에서 붙을 일이 없다 |
+| `ANTHROPIC_API_KEY`를 회전한다 | 개발 중 노출된 적이 있으면 반드시 |
+| `SUPABASE_SERVICE_KEY`를 회전한다 | 같은 이유. RLS를 무시하는 키다 |
+| 남은 테스트 데이터를 지운다 | 실사용자와 섞이기 전에 |
 
 ## 배포 후 확인
 
