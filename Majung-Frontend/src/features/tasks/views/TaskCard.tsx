@@ -5,7 +5,7 @@
 import { Text, View } from "react-native";
 
 import { Button } from "@/shared/components/Button";
-import { NoteBox } from "@/shared/components/NoteBox";
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 import { josa } from "@/shared/utils/korean";
 
@@ -66,7 +66,14 @@ export function TaskCard({
 
       {/* 갈 곳이 하나로 정해지는 항목은 전화번호보다 창구 안내가 먼저 온다 (§6.4). */}
       {task.desk ? (
-        <NoteBox tone="info" className="mb-4">{task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.</NoteBox>
+        // **문자열 조각을 NoteBox에 직접 넘기지 않는다.** NoteBox는 자식이 문자열
+        // 하나일 때만 Text로 감싸는데, 여기는 값이 섞여 조각이 여럿이라 그대로 View의
+        // 자식이 된다. 웹은 견디지만 **안드로이드는 텍스트를 View에 못 넣어 터진다.**
+        <NoteBox tone="info" className="mb-4">
+          <NoteLine tone="info">
+            {task.desk.place}에 가서 “{task.desk.say}”라고 말하면 돼요.
+          </NoteLine>
+        </NoteBox>
       ) : null}
 
       {/* **창구 안내 바로 아래가 이 자리다.** 위가 "무슨 말을 하면 되는지"이고

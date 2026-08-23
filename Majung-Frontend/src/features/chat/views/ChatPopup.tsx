@@ -16,7 +16,7 @@ import {
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { NoteBox } from "@/shared/components/NoteBox";
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 import { josa } from "@/shared/utils/korean";
 
@@ -87,7 +87,13 @@ function Bubble({ message }: { message: ChatMessage }) {
       <Text className="text-body text-ink-strong">{message.text}</Text>
 
       {message.desk ? (
-        <NoteBox tone="info" className="mt-3">{message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.</NoteBox>
+        // 값이 섞인 문장은 NoteLine으로 감싼다. 그대로 두면 조각이 View의 자식이 되어
+        // 안드로이드에서 터진다 — NoteBox는 자식이 문자열 하나일 때만 감싼다.
+        <NoteBox tone="info" className="mt-3">
+          <NoteLine tone="info">
+            {message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.
+          </NoteLine>
+        </NoteBox>
       ) : null}
 
       {/* **확인 날짜가 있는 말풍선에는 배지를 붙이지 않는다.** 카드 말풍선이 그런

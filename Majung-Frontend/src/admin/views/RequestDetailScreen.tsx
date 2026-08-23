@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { NoteBox } from "@/shared/components/NoteBox";
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 import { josa } from "@/shared/utils/korean";
@@ -141,8 +141,12 @@ export function RequestDetailScreen({
         </View>
 
         {missing.length > 0 ? (
-          <NoteBox tone="warn" className="mt-3">{missing.join(" · ")}
-            {josa(missing[missing.length - 1], "을", "를")} 안 가져오십니다. 미리 안내가 필요합니다.</NoteBox>
+          <NoteBox tone="warn" className="mt-3">
+            <NoteLine tone="warn">
+              {missing.join(" · ")}
+              {josa(missing[missing.length - 1], "을", "를")} 안 가져오십니다. 미리 안내가 필요합니다.
+            </NoteLine>
+          </NoteBox>
         ) : null}
 
         {/* 본인이 함께 보내기로 한 답변 (§7.4-1).

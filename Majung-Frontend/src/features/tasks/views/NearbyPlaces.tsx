@@ -55,13 +55,44 @@ function pickOffices(
   return { list: [...mine, ...rest].slice(0, 2), mineFirst: true };
 }
 
+/**
+ * 이 지역에서 안내할 기관 둘까지.
+ *
+ * **갈래마다 지역 단위가 다르다.**
+ *
+ * - 공단 지부·교육원·허그상담소는 **광역 단위**다. `district`가 아예 비어 있고
+ *   `sido`가 짧은 이름("서울")으로 온다. 시군구로 거르면 전부 사라지고,
+ *   안 거르면 **송파구 사람에게 도봉구 지부가 나온다.**
+ * - 정신건강복지센터는 시군구 단위라 그 구의 것만 맞다.
+ *
+ * 서버가 가까운 것을 앞에 두고 보내므로, 갈래마다 맞는 것을 걸러 앞에서부터 쓴다.
+ */
+function pickInstitutions(
+  institutions: readonly Institution[],
+  place: LocatedPlace,
+): readonly Institution[] {
+  // "서울특별시" → "서울". 공단 데이터가 짧은 이름을 쓴다.
+  const shortSido = place.sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
+  const isCenter = (x: Institution) => x.kind === "mental_health";
+  const fit = institutions.filter((x) =>
+    isCenter(x)
+      ? x.district.startsWith(place.district) || place.district.startsWith(x.district)
+      : x.sido === shortSido || x.sido === place.sido,
+  );
+  const list = fit.length > 0 ? fit : institutions;
+
+  // **공단은 한 곳만 낸다.** 한 광역에 지부가 여럿인데(서울만 넷) 어느 구가 어느 지부
+  // 관할인지는 서버도 모른다. 둘을 늘어놓으면 사용자가 고르게 되고, 그것은 "어디로 가면
+  // 되는지 짚어주는" 것이 아니다(§5.4). 정확한 지부는 카드에 이미 있는 대표번호로
+  // 확인할 수 있다.
+  return list[0] && !isCenter(list[0]) ? list.slice(0, 1) : list.slice(0, 2);
+}
+
 export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props) {
   if (!place) return null;
 
   const picked = offices.length > 0 ? pickOffices(offices, place.dong) : null;
-  // 공단 기관은 지역이 안 맞아도 목록에 남는다. 그 지역 것을 앞에 두고 둘까지만 낸다.
-  const centers = institutions.filter((x) => x.district.startsWith(place.district.slice(0, 3)));
-  const shown = (centers.length > 0 ? centers : institutions).slice(0, 2);
+  const shown = pickInstitutions(institutions, place);
 
   if (!picked && shown.length === 0) return null;
 

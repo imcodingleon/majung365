@@ -39,10 +39,15 @@ export default function TodayRoute() {
   const [openId, setOpenId] = useState<RouteId | null>(null);
 
   // **열린 카드 하나만 부른다** (§5.4). 위치는 가입할 때 알아낸 것이며 세션에만 있다.
-  const nearby = useNearbyPlaces(openId, session?.place ?? null);
 
   const tasks = server.tasks;
   const headId = tasks[0]?.id ?? null;
+  // **`openId`가 아니라 실제로 열린 것을 본다.** 아무것도 안 고른 처음에는 `openId`가
+  // 비어 있고 첫 항목이 열린 채로 시작하는데(§5.2), 그때 `openId`만 보면 근처 기관을
+  // 부르지 않아 **가장 많이 보게 되는 첫 화면에서만 비는** 상태가 된다.
+  const shownId = openId ?? headId;
+  const nearby = useNearbyPlaces(shownId, session?.place ?? null);
+
   const pendingMust = tasks.filter((t) => t.must).map((t) => t.title);
 
   const toggle = useCallback((id: RouteId) => setOpenId((prev) => (prev === id ? null : id)), []);
@@ -71,7 +76,7 @@ export default function TodayRoute() {
         onComplete={complete}
         onOpenNearby={() => router.push("/nearby")}
         renderNearby={(taskId) =>
-          taskId === openId && !nearby.loading ? (
+          taskId === shownId && !nearby.loading ? (
             <NearbyPlaces
               offices={nearby.offices}
               institutions={nearby.institutions}

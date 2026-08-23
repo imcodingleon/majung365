@@ -127,6 +127,25 @@ function centersFor(
   return mine.length > 0 ? mine : all.slice(0, 1);
 }
 
+/**
+ * 그 광역의 공단 기관.
+ *
+ * **공단은 시군구가 아니라 광역 단위다.** 응답의 `district`가 아예 비어 있고 `sido`는
+ * 짧은 이름("서울")으로 온다. 거르지 않으면 **송파구 사람에게 도봉구 지부가 나오고**,
+ * 시군구로 거르면 전부 사라진다.
+ */
+function branchesFor(
+  institutions: readonly Institution[],
+  sido: string,
+): readonly Institution[] {
+  const shortSido = sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
+  const all = institutions.filter((x) => x.kind !== "mental_health");
+  const mine = all.filter((x) => x.sido === shortSido || x.sido === sido);
+  // 한 광역에 지부가 여럿이면(서울만 넷) 어느 구가 어느 지부 관할인지 서버도 모른다.
+  // 이 화면은 둘러보는 자리이므로 그 광역의 것을 다 보이되, 다른 광역은 섞지 않는다.
+  return mine.length > 0 ? mine : all.slice(0, 1);
+}
+
 export function NearbyScreen({
   state,
   place,
@@ -265,13 +284,11 @@ export function NearbyScreen({
                   </Section>
                 ) : null}
 
-                {result.institutions.filter((x) => x.kind !== "mental_health").length > 0 ? (
+                {branchesFor(result.institutions, place.sido).length > 0 ? (
                   <Section title="법무보호복지공단">
-                    {result.institutions
-                      .filter((x) => x.kind !== "mental_health")
-                      .map((x) => (
-                        <PlaceCard key={x.name} name={x.name} address={x.address} phone={x.phone} />
-                      ))}
+                    {branchesFor(result.institutions, place.sido).map((x) => (
+                      <PlaceCard key={x.name} name={x.name} address={x.address} phone={x.phone} />
+                    ))}
                   </Section>
                 ) : null}
 
