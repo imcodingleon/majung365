@@ -21,3 +21,8 @@ def safe_ssl_context() -> ssl.SSLContext:
 
 def make_async_http_client() -> httpx.AsyncClient:
     return httpx.AsyncClient(verify=safe_ssl_context())
+
+
+def make_sync_http_client() -> httpx.Client:
+    """동기 클라이언트가 필요한 SDK용(supabase-py). 같은 크래시를 같은 방법으로 피한다."""
+    return httpx.Client(verify=safe_ssl_context())

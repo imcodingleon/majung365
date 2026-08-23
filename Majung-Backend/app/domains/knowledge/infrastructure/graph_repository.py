@@ -19,6 +19,7 @@ def _parse_requirement(row: dict[str, Any]) -> Requirement:
 def _parse_path(row: dict[str, Any]) -> ObtainPath:
     return ObtainPath(
         for_state=tuple(row["for_state"]),
+        route_ids=tuple(row.get("route_ids", [])),
         action=str(row["action"]),
         kb_ref=str(row["kb_ref"]),
         where=str(row["where"]),

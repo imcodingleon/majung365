@@ -8,6 +8,10 @@
 - 카드(제도 사실)는 서버가 KB에서 붙인다. 모델은 제도명·신청처를 지어내지 않는다.
 """
 
+from app.domains.chat.domain.evidence import (
+    WEB_RESULT_OPENING,
+    EvidenceStage,
+)
 from app.domains.chat.domain.triage import TriageResult
 from app.domains.shared.routes import (
     RouteId,
@@ -59,7 +63,19 @@ TRIAGE_INSTRUCTION = f"""당신은 마중365의 상황 분류기입니다. 사�
    **왜 급한지는 쓰지 않습니다.** 그 설명은 서버가 데이터를 보고 붙입니다.
    항목 코드(분야별로 묶어 둡니다):
 {_ROUTE_CATALOG}
-3) daily면 priorities는 비워도 됩니다.
+3) 고른 항목마다 지금 상태를 함께 적으세요. **사용자가 말한 것만 근거로 삼습니다.**
+   - "O": 이미 갖췄다고 말했다
+   - "X": 없다고 말했거나 언급이 없다 (기본값)
+   - "BLOCKED": **있는데 쓸 수 없다고 말했다** (통장이 압류·정지된 경우 등)
+   말하지 않은 것을 짐작하지 마세요. 모르면 "X"입니다.
+4) 사용자가 자기 지역을 말했으면 region에 적으세요. **말한 것만 적습니다.**
+   - "송파구 오금동 사는데" → sido: "", sigungu: "송파구", dong: "오금동"
+   - "서울 사는데" → sido: "서울", sigungu: "", dong: ""
+   - 지역 언급이 없으면 셋 다 빈 문자열
+   짐작해서 채우지 마세요. "오금동"만 말했으면 서울이라고 단정하지 않습니다.
+5) 주민센터·행정복지센터를 찾는 질문은 daily가 아니라 support입니다.
+   그 창구에서 신분증(R9)·주민등록 주소(R11)를 처리하므로 그 항목으로 고르세요.
+6) daily면 priorities는 비워도 됩니다.
 판단·훈계·과거 캐묻기 금지. 사용자의 실제 말에 근거해서만 분류하세요."""
 
 
@@ -70,19 +86,43 @@ def route_display(route: RouteId) -> str:
 def build_guidance_context(
     triage: TriageResult,
     injected_cards: list[str],
+    stage: EvidenceStage = EvidenceStage.CONFIRMED,
+    passages: list[str] | None = None,
 ) -> str:
     """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약)."""
     lines: list[str] = []
     if triage.priorities:
         prio = ", ".join(label_for(p.route) for p in triage.priorities)
         lines.append(f"[지금 급한 일] {prio}")
+    if passages:
+        # 근거 문서 본문. 카드가 제도의 요약이라면 이쪽은 원문이라 구체적인 질문에 답한다.
+        lines.append("[수집한 공식 자료 — 이 내용을 근거로 답하고, 어느 기관 자료인지 밝히세요]")
+        lines.extend(passages)
     if injected_cards:
-        lines.append("[확인된 정보 — 이 사실만 근거로 쉬운 말로 안내]")
-        lines.extend(injected_cards)
-    else:
         lines.append(
-            "[확인된 제도 정보 없음 — 일반 대화로 편하게 도와주되, "
-            "제도명·기관명·전화번호·기한 같은 사실은 확실하지 않으면 지어내지 말고 "
-            "'정확히는 모른다'고 말하고 확인할 곳(주민센터·129 등)을 알려주세요]"
+            "[확인된 정보 — 먼저 이 사실을 근거로 쉬운 말로 안내하세요. "
+            "여기에 답이 없는 것을 물었다면 web_search로 찾아서 답하세요]"
+        )
+        lines.extend(injected_cards)
+    if not injected_cards and not passages:
+        lines.append(
+            "[확인된 제도 정보 없음 — **먼저 web_search로 찾아보세요.** "
+            "지부 위치·전화번호·올해 기준액처럼 우리 자료에 없는 것이 많습니다. "
+            "검색해도 못 찾았을 때만 '정확히는 모른다'고 말하고 확인할 곳"
+            "(주민센터·129 등)을 알려주세요. 어느 쪽이든 지어내지는 마세요]"
+        )
+    # **도구가 있다는 것을 모델이 알아야 쓴다.** 판정을 모델에게 넘긴 뒤에도
+    # 프롬프트가 "이 사실만"이라고 말하고 있어서 검색이 일어나지 않았다.
+    # 회피 답변은 모델이 지시를 충실히 따른 결과였다(2026-08-24).
+    lines.append(
+        "[web_search 도구를 쓸 수 있습니다 — 공공기관 사이트로 제한되어 있어 안전합니다. "
+        "위 자료로 답할 수 없는 질문이면 '모른다'고 끝내지 말고 검색해서 답하세요. "
+        "특히 기관의 지부 위치·연락처, 올해 바뀐 금액·기준, 최신 제도 변경이 그렇습니다]"
+    )
+    if stage == EvidenceStage.WEB:
+        # 인터넷에서 온 답임이 말투에 드러나야 한다. 확실성이 다른데 같은 어조로
+        # 말하면 사용자가 검색 결과를 제도 안내로 믿는다.
+        lines.append(
+            f"[인터넷 검색으로 답하는 상황 — 이렇게 시작하세요: \"{WEB_RESULT_OPENING}\" 어느 기관 사이트에서 나온 내용인지 함께 밝히세요]"
         )
     return "\n".join(lines)

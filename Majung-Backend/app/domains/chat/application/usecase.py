@@ -3,12 +3,13 @@
 '약사 모델': 안내 텍스트는 모델이 생성하되, 제도 카드(사실)는 서버가 KB에서 매칭해 붙인다.
 모델은 제도명·신청처를 지어내지 않는다.
 
-SSE 순서 계약: triage → text(델타*) → card* → done  (오류 시 error)
+SSE 순서 계약: triage → evidence → text(델타*) → card* → done  (오류 시 error)
 대화는 서버에 저장하지 않는다(멀티턴은 클라이언트가 history로 전달, 처리 후 폐기).
 """
 
 import logging
 from collections.abc import AsyncIterator
+from dataclasses import replace
 
 from app.domains.chat.application.dto import (
     CardData,
@@ -18,27 +19,38 @@ from app.domains.chat.application.dto import (
     ChatEvent,
     DoneEvent,
     ErrorEvent,
+    EvidenceEvent,
     RouteOut,
     TextEvent,
     TriageEvent,
 )
 from app.domains.chat.application.port import ChatLlm
+from app.domains.chat.domain.evidence import EvidenceStage, notice_for
+from app.domains.chat.domain.local_office import LocalOfficeAnswer, answer_for
 from app.domains.chat.domain.prompts import build_guidance_context
 from app.domains.chat.domain.triage import (
     QuestionType,
     ReasonCode,
+    RoutePriority,
     TriageResult,
     reason_text,
 )
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
+from app.domains.knowledge.domain.graph_engine import GraphNode, kb_ref_for_route
 from app.domains.knowledge.domain.repository import InstitutionRepository
+from app.domains.knowledge.domain.retrieval import Passage, PassageIndex
 from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import RouteId, label_for
 
 logger = logging.getLogger("majung.chat")
 
 _MAX_CARDS = 3
+# 카드에서 연 대화라도 항목을 무한정 늘리지 않는다.
+_MAX_ROUTES = 3
+# 근거 구절에서 프롬프트로 넘길 길이. 문서당 평균 2,300자라 전부 넣으면
+# 세 구절만으로 7천 자가 되고, 관련 없는 대목이 답변에 섞인다.
+_PASSAGE_CHARS = 700
 
 
 class ChatUseCase:
@@ -47,12 +59,21 @@ class ChatUseCase:
         llm: ChatLlm,
         institutions: InstitutionRepository,
         blocking_routes: frozenset[str] = frozenset(),
+        passages: PassageIndex | None = None,
+        graph_nodes: dict[str, GraphNode] | None = None,
+        district_offices: object | None = None,
     ) -> None:
         self._llm = llm
         self._institutions = institutions
         # 다른 항목의 선행조건인 항목들. 그래프 구조에서 미리 뽑아 주입받는다 —
         # 챗이 그래프 전체를 알 필요는 없고 이 사실만 있으면 된다.
         self._blocking_routes = blocking_routes
+        # 수집한 근거 문서. 없으면 KB 카드만으로 ①단계를 판정한다.
+        self._passages = passages
+        # 상태별로 대표가 갈리는 항목은 그래프가 정한다(§4.1). 초기 진단과 같은 자리다.
+        self._nodes = graph_nodes or {}
+        # 사용자가 자기 입으로 동을 말하면 그 주민센터를 짚어준다(§5.4).
+        self._offices = district_offices
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -65,32 +86,123 @@ class ChatUseCase:
             yield ErrorEvent()
             return
 
+        # **카드에서 연 대화면 그 항목을 앞에 세운다**(§6.1). 사용자가 R14 카드를
+        # 보다가 "다음에 뭘 해야 하나요"라고 물으면, 그 문장만으로는 무슨 얘기인지
+        # 알 수 없다. 화면이 이미 답을 알고 있으니 모델이 다시 맞힐 이유가 없다.
+        triage = self._pin_route(triage, cmd.route_id)
+
         yield TriageEvent(routes=self._to_route_out(triage))
 
         # 2) 카드 매칭 (서버, KB 밖 생성 금지)
         cards = self._match_cards(triage)
 
-        # 3) 쉬운 말 안내 (스트리밍). support면 카드 사실을 주입, daily면 웹 검색 허용
+        # 3) 근거 문서 검색. 카드가 제도의 요약이라면 이쪽은 본문이라,
+        #    "기한이 며칠인가요" 같은 구체적인 질문에 답할 수 있는 것은 이쪽이다.
+        found = self._search_passages(cmd.message, triage, cmd.route_id)
+
+        # 3.5) 사용자가 동을 말했으면 그 주민센터를 찾는다.
+        #      **있는 데이터를 없다고 말하면 안 된다** — "오금동 주민센터"를 물었는데
+        #      "인터넷에서 찾아보세요"라고 답한 적이 있다. 그 순간 서버에 답이 있었다.
+        local = self._local_office(triage)
+        if local.found:
+            found = [*found, self._as_local_passage(local)]
+
+        # 4) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
+        #    **사전 고지가 답변보다 먼저 나간다** — 나중에 "인터넷 정보였습니다"라고
+        #    덧붙이면 이미 사용자는 그것을 사실로 받아들인 뒤다.
+        #    **알려진 한계 (2026-08-24 확인, 고치지 않기로 함).**
+        #
+        #    카드가 질문과 무관해도 확인된 자료로 표시된다. "전기요금 깎아주는
+        #    제도가 있나요"에 우리 KB에 전기요금이 없는데도 배지가 붙었다 —
+        #    triage가 R2·R12를 골라 카드가 생겼기 때문이다.
+        #
+        #    두 가지를 시도했고 둘 다 실패했다.
+        #
+        #    ① 배지를 found 기준으로 좁히기 → 효과 없음. 전기요금 질문도 근거를
+        #       찾는다. "제도"라는 흔한 말과 음절 2-gram만으로 16점을 넘긴다.
+        #    ② 질문의 핵심어가 근거에 있어야 한다는 필터 → 훨씬 나빠짐.
+        #       항목 일치가 11/12에서 5/12로 떨어졌다. "신분증 잃어버렸는데"에서
+        #       가장 드문 말이 "잃어버렸는데"인데 그것은 핵심어가 아니다.
+        #
+        #    MIN_SCORE를 올리면 전기요금(16.1)은 걸리지만 정상 매칭 중에도
+        #    R8(9.9)·R13(8.2)이 함께 사라진다. 임베딩 검색이 근본 해법이지만
+        #    외부 API 미사용 결정과 충돌하고 1GB RAM에 부담이다.
+        #
+        #    **판정 로직은 그냥 두기로 했다.** 답변 본문은 정직하게 "확실히 알지
+        #    못해요"라고 말하고 창구로 보낸다. 배지 하나 때문에 검색 품질을
+        #    떨어뜨리거나 인프라를 바꿀 이득이 없다. 어휘 검색으로는 의미가
+        #    다른지 알 수 없다.
+        #
+        #    **대신 화면 문구를 약하게 했다**(08 세션 제안). 셋 다 검색을 고치는
+        #    쪽이었는데 넷째 길이 있었다 — 주장의 강도를 낮추는 것이다.
+        #
+        #      "확인된 자료예요"        이 답이 그 자료에 근거한다는 주장
+        #      "확인된 자료를 참고했어요"  주장이 약해 어긋나도 거짓이 아니다
+        #
+        #    서버는 confirmed에 문구를 보내지 않는다(notice_for가 빈 문자열).
+        #    화면이 stage를 받아 만들므로 프론트 쪽 변경이다. **웹 단계 문구는
+        #    그대로 둔다** — 둘 다 눅이면 §6.4가 두 단계를 눈으로 구별시키려던
+        #    설계가 무너진다.
+        # **판정을 모델에게 넘겼다 (2026-08-24).** 위 기록은 그대로 두되 결론이
+        # 바뀌었다 — 넷째 길(문구 약화)로는 본문의 회피를 막지 못했다.
+        #
+        # 실사용에서 "군포역 근처 법무보호복지공단 어디야?"에 회피가 나갔다.
+        # 배지는 confirmed였다. 배포 서버에서 재현해 보니 이랬다.
+        #
+        #   "생계급여 기준 중위소득"  →  '생계급여' 문서가 걸림.  2026년 수치 없음
+        #   "군포역 근처 공단"        →  '공단' 문서가 걸림.      지부 위치 없음
+        #   "서울 날씨"              →  아무것도 안 걸림       →  web
+        #
+        # **제도 이름이 든 질문은 반드시 뭔가 걸린다.** 그래서 이 서비스의 본
+        # 영역에서는 웹 검색이 사실상 절대 안 됐고, 정작 웹이 필요 없는 무관한
+        # 질문에서만 열렸다. 완전히 뒤집혀 있었다.
+        #
+        # 코드는 문서에 답이 들어 있는지 알 수 없다 — 읽어야 아는 것이다.
+        # 검색 도구는 모델이 필요할 때 부르는 것인데 코드가 미리 뺏고 있었다.
+        # 이제 근거와 도구를 함께 주고, 부족하면 모델이 검색한다.
+        has_evidence = bool(cards or found)
         context = build_guidance_context(
-            triage, [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)]
+            triage,
+            [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)],
+            stage=EvidenceStage.CONFIRMED if has_evidence else EvidenceStage.WEB,
+            passages=[self._as_passage_injection(p) for p in found],
         )
-        allow_web = triage.question_type == QuestionType.DAILY
+
+        # **배지는 실제로 검색했는지로 정한다.** 추측이 아니라 사실이다.
+        # 첫 텍스트가 나오기 전에 한 번만 내보내므로 §6.4의 "먼저 알린다"가 지켜진다.
+        evidence_sent = False
 
         try:
-            async for delta in self._llm.stream_guidance(
+            async for chunk in self._llm.stream_guidance(
                 message=cmd.message,
                 history=history,
                 context=context,
-                allow_web_search=allow_web,
+                allow_web_search=True,
             ):
-                if delta:
-                    yield TextEvent(delta=delta)
+                if chunk.web_search_started and not evidence_sent:
+                    evidence_sent = True
+                    yield EvidenceEvent(
+                        stage=EvidenceStage.WEB.value,
+                        notice=notice_for(EvidenceStage.WEB),
+                    )
+                if chunk.text:
+                    if not evidence_sent:
+                        # 검색하지 않고 답을 쓰기 시작했다 — 가진 자료로 답한다는 뜻이다.
+                        evidence_sent = True
+                        if has_evidence:
+                            yield EvidenceEvent(
+                                stage=EvidenceStage.CONFIRMED.value,
+                                notice=notice_for(EvidenceStage.CONFIRMED),
+                            )
+                        # 근거도 없고 검색도 안 했으면 배지를 붙이지 않는다.
+                        # 없는 근거를 "확인한 자료"라고 말하는 것이 가장 나쁘다.
+                    yield TextEvent(delta=chunk.text)
         except Exception:
             logger.warning("guidance 스트리밍 실패 (upstream)")
             yield ErrorEvent()
             return
 
-        # 4) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
+        # 6) 카드 (텍스트 뒤에 붙는다 — 챗봇 화면의 제도 카드)
         for lead, companions, route in cards:
             yield CardEvent(card=self._to_card(lead, companions, route))
 
@@ -108,6 +220,101 @@ class ChatUseCase:
             for i, p in enumerate(triage.priorities)
         )
 
+    def _pin_route(self, triage: TriageResult, route_id: str) -> TriageResult:
+        """카드에서 연 대화면 그 항목을 1순위로 올린다.
+
+        **triage를 건너뛰지 않고 순서만 바꾼다.** 사용자가 R14 카드에서 열었더라도
+        "신분증은 어디서 만드나요"를 물을 수 있다. 건너뛰면 그 답을 못 하고, 순서만
+        바꾸면 모델이 고른 것도 뒤에 남아 근거 검색이 둘 다 훑는다.
+        """
+        if not route_id:
+            return triage
+        try:
+            pinned = RouteId(route_id)
+        except ValueError:
+            return triage
+        # **모델이 판정한 상태를 지키고 자리만 앞으로 옮긴다.**
+        #
+        # 여기서 RoutePriority(route=pinned)를 새로 만들면 state가 기본값으로
+        # 되돌아간다. R10 카드에서 "통장이 압류돼서 못 써요"라고 하면 triage는
+        # BLOCKED을 내는데 핀이 그것을 X로 덮어써서 "계좌를 새로 만드세요" 계열
+        # 대표가 나갔다 — RoutePriority에 state를 둔 이유가 바로 그 시나리오다.
+        found = next((p for p in triage.priorities if p.route == pinned), None)
+        head = found if found is not None else RoutePriority(route=pinned)
+        rest = tuple(p for p in triage.priorities if p.route != pinned)
+        return replace(triage, priorities=(head, *rest)[:_MAX_ROUTES])
+
+    def _local_office(self, triage: TriageResult) -> LocalOfficeAnswer:
+        """사용자가 말한 동의 주민센터. 말하지 않았으면 찾지 않는다."""
+        if self._offices is None or not triage.region.has_dong:
+            return LocalOfficeAnswer(injection="")
+        by_dong = getattr(self._offices, "by_dong", None)
+        if not callable(by_dong):
+            return LocalOfficeAnswer(injection="")
+        try:
+            found = by_dong(
+                triage.region.dong,
+                triage.region.sido or None,
+                triage.region.sigungu or None,
+            )
+        except Exception:
+            # 조회 실패가 답변 자체를 막지는 않는다. 검색어는 로그에 남기지 않는다.
+            logger.warning("주민센터 조회 실패")
+            return LocalOfficeAnswer(injection="")
+        return answer_for(triage.region.dong, list(found))
+
+    def _as_local_passage(self, local: LocalOfficeAnswer) -> Passage:
+        """주민센터 안내를 근거 구절 형태로. 확인 날짜는 붙이지 않는다 —
+        행정안전부 원본을 그대로 옮긴 것이고 우리가 따로 확인한 값이 아니다."""
+        return Passage(
+            doc_id="district-office",
+            title="주민센터 안내",
+            section="행정안전부 읍면동 현황",
+            text=local.injection,
+            source_url="",
+            fetched_at="",
+            route_ids=(),
+            department="행정안전부",
+        )
+
+    def _search_passages(
+        self, message: str, triage: TriageResult, pinned: str = ""
+    ) -> list[Passage]:
+        """질문과 관련된 근거 구절. 검색어는 로그에 남기지 않는다.
+
+        **카드에서 연 대화는 그 항목 문서만 본다.** "다음에 뭘 해야 하나요"처럼
+        무엇에 대한 질문인지 문장만으로는 알 수 없을 때, 가중치만으로는 엉뚱한
+        문서가 1순위가 된다. 실제로 R14 카드에서 연 대화에 전입신고 안내가 나갔다.
+        화면이 이미 답을 알고 있으니 추측하게 두지 않는다.
+
+        좁힌 결과가 비면 넓혀서 다시 찾는다 — 그 항목에 근거가 없다고 해서
+        답할 수 있는 문서까지 사라지면 안 된다.
+        """
+        if self._passages is None:
+            return []
+        if pinned:
+            only = frozenset({pinned})
+            narrowed = [
+                p
+                for p, _ in self._passages.search(message, only)
+                if pinned in p.route_ids
+            ]
+            if narrowed:
+                return narrowed
+        routes = frozenset(p.route.value for p in triage.priorities)
+        return [p for p, _ in self._passages.search(message, routes)]
+
+    def _as_passage_injection(self, passage: Passage) -> str:
+        """근거 구절을 프롬프트에 넣을 형태로. 본문이 길어 앞부분만 넣는다 —
+        전부 넣으면 관련 없는 대목까지 따라 들어가고 모델이 엉뚱한 곳을 인용한다.
+
+        기관명을 함께 낸다. 지자체 자료는 특히 중요하다 — 제도 조건이 지역마다
+        다른데 사용자는 그것이 자기 지역 기준이 아니라는 것을 알 방법이 없다.
+        """
+        who = passage.department or passage.title
+        body = passage.text[:_PASSAGE_CHARS].strip()
+        return f"- [{who}] {body}"
+
     def _reason_for(self, route: RouteId) -> ReasonCode | None:
         """왜 이 항목이 먼저인지를 데이터에서 도출한다. 대부분은 비는 것이 정상이다 —
         화면이 이미 말하고 있는 것을 문장으로 되풀이하지 않는다.
@@ -123,14 +330,19 @@ class ChatUseCase:
     def _match_cards(
         self, triage: TriageResult
     ) -> list[tuple[Institution, tuple[Institution, ...], RouteId]]:
-        if triage.question_type != QuestionType.SUPPORT:
+        # **항목을 골랐다는 것 자체가 지원 질문이라는 신호다.**
+        #
+        # 모델이 "나갈 데가 없는데 오늘 밤 어디서 자요"에 R1·R4를 정확히 고르고도
+        # question_type을 daily로 낸 적이 있다. 그때 카드가 통째로 사라지고 답변까지
+        # 비었다. 두 값이 어긋나면 **더 구체적인 쪽(고른 항목)을 믿는다.**
+        if triage.question_type != QuestionType.SUPPORT and not triage.priorities:
             return []
         picked: list[tuple[Institution, tuple[Institution, ...], RouteId]] = []
         seen: set[str] = set()
         for p in triage.priorities:
             # 항목당 카드 1장. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
             # 카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다.
-            lead = self._institutions.lead_of(p.route)
+            lead = self._lead_for(p)
             if lead.id in seen:
                 continue
             companions = tuple(self._institutions.companions_of(p.route))
@@ -139,6 +351,29 @@ class ChatUseCase:
             if len(picked) >= _MAX_CARDS:
                 break
         return picked
+
+    def _lead_for(self, priority: RoutePriority) -> Institution:
+        """그 사람에게 맞는 대표 제도.
+
+        **탭과 챗이 같은 카드를 내야 한다.** 초기 진단에서 "압류를 막아주는 통장"을
+        본 사람이 챗에서 "은행 계좌 다시 만들기"를 보면 같은 서비스가 같은 사람에게
+        다르게 말하는 셈이다. 갈림 규칙은 그래프의 for_state가 정본이므로(§4.1)
+        초기 진단과 같은 함수에 물어본다.
+
+        상태를 모르면(X) 그래프가 기본 경로를 주고, 그것이 없으면 항목의 대표다.
+        """
+        kb_ref = kb_ref_for_route(self._nodes, priority.route.value, priority.state)
+        if kb_ref:
+            found = self._institutions.by_id(kb_ref)
+            if found is not None:
+                return found
+            logger.warning(
+                "그래프의 kb_ref가 KB에 없다 — route=%s state=%s kb_ref=%s",
+                priority.route.value,
+                priority.state.value,
+                kb_ref,
+            )
+        return self._institutions.lead_of(priority.route)
 
     def _as_injection(self, inst: Institution) -> str:
         docs = ", ".join(inst.docs) if inst.docs else "특별한 서류 없이 문의 가능"

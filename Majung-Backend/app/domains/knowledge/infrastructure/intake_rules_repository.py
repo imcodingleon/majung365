@@ -17,6 +17,9 @@ class JsonIntakeRuleRepository:
                 route_id=RouteId(row["route_id"]),
                 data_key=row["data_key"],
                 resolved_options=frozenset(row.get("resolved_options", [])),
+                blocked_options=frozenset(row.get("blocked_options", [])),
+                lead_by_option=dict(row.get("lead_by_option", {})),
+                lead_data_key=row.get("lead_data_key", ""),
             )
             for row in raw["rules"]
         )
@@ -34,6 +37,13 @@ class JsonIntakeRuleRepository:
         keys = [r.data_key for r in self._rules]
         if len(keys) != len(set(keys)):
             raise ValueError("서로 다른 항목이 같은 문항을 보고 있다")
+        for rule in self._rules:
+            # 한 답이 "해결됨"과 "막힘"에 동시에 적히면 어느 쪽인지 알 수 없다.
+            overlap = rule.resolved_options & rule.blocked_options
+            if overlap:
+                raise ValueError(
+                    f"{rule.route_id.value}의 답 {sorted(overlap)}이 해결과 막힘에 모두 있다"
+                )
 
     def all(self) -> tuple[IntakeRule, ...]:
         return self._rules

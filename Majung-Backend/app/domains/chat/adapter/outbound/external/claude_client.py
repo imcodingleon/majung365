@@ -19,6 +19,7 @@ from typing import Any
 from anthropic import AsyncAnthropic
 
 from app.domains.chat.application.dto import Turn
+from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.domain.prompts import (
     TRIAGE_INSTRUCTION,
     build_system_prompt,
@@ -27,6 +28,7 @@ from app.domains.chat.domain.triage import (
     QuestionType,
     RoutePriority,
     TriageResult,
+    UserRegion,
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
@@ -81,10 +83,27 @@ _TRIAGE_SCHEMA = {
                         "type": "string",
                         "enum": [r.value for r in RouteId],
                     },
+                    # 사용자가 말한 상태. 초기 진단이 문항으로 아는 것을 여기서는
+                    # 문장으로 안다. 안 오면 서버가 X로 둔다.
+                    "state": {
+                        "type": "string",
+                        "enum": ["O", "X", "BLOCKED"],
+                    },
                 },
                 "required": ["route"],
                 "additionalProperties": False,
             },
+        },
+        "region": {
+            "type": "object",
+            "description": "사용자가 자기 입으로 말한 지역. 말한 것만 채운다.",
+            "properties": {
+                "sido": {"type": "string"},
+                "sigungu": {"type": "string"},
+                "dong": {"type": "string"},
+            },
+            "required": ["sido", "sigungu", "dong"],
+            "additionalProperties": False,
         },
     },
     "required": ["question_type", "priorities"],
@@ -113,6 +132,25 @@ def _to_messages(
     for m in msgs:
         assert_masked(m["content"])  # 전송 직전 안전망 — 새 경로가 마스킹을 건너뛰면 여기서 막힌다
     return msgs
+
+
+def _region_of(raw: object) -> UserRegion:
+    """모델이 낸 지역. **짐작해서 채우지 않는다** — 없으면 빈 값이다."""
+    if not isinstance(raw, dict):
+        return UserRegion()
+    return UserRegion(
+        sido=str(raw.get("sido", "") or "").strip(),
+        sigungu=str(raw.get("sigungu", "") or "").strip(),
+        dong=str(raw.get("dong", "") or "").strip(),
+    )
+
+
+def _state_of(raw: object) -> NodeState:
+    """모델이 낸 상태 문자열을 값으로. **모르면 X다** — 말하지 않은 것을 짐작하지 않는다."""
+    try:
+        return NodeState(str(raw))
+    except ValueError:
+        return NodeState.X
 
 
 class ClaudeChatLlm:
@@ -154,10 +192,17 @@ class ClaudeChatLlm:
             data = json.loads(text)
             qtype = QuestionType(data["question_type"])
             priorities = tuple(
-                RoutePriority(route=RouteId(p["route"]))
+                RoutePriority(
+                    route=RouteId(p["route"]),
+                    state=_state_of(p.get("state")),
+                )
                 for p in data.get("priorities", [])
             )
-            return TriageResult(question_type=qtype, priorities=priorities)
+            return TriageResult(
+                question_type=qtype,
+                priorities=priorities,
+                region=_region_of(data.get("region")),
+            )
         except Exception:
             # triage 파싱 실패 시 일반 대화로 폴백 — 챗은 계속 답한다
             logger.warning("triage 파싱 실패 — daily 폴백")
@@ -170,9 +215,15 @@ class ClaudeChatLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[GuidanceChunk]:
         self._record_call()
         system = build_system_prompt() + "\n\n" + context
+        # **검색 도구는 항상 준다.** allow_web_search는 이제 "코드가 판정한
+        # 허용"이 아니라 "이 경로에서 검색을 아예 막을 것인가"만 뜻한다.
+        #
+        # 예전에는 코드가 근거 검색 결과만 보고 미리 정했는데, 단어가 겹치는
+        # 문서가 걸리기만 하면 답이 없어도 검색을 막았다. 문서에 답이 들어
+        # 있는지는 읽어야 아는 것이라 코드가 알 수 없다.
         tools = None
         if allow_web_search:
             tools = [
@@ -194,8 +245,14 @@ class ClaudeChatLlm:
             kwargs["tools"] = tools
 
         async with self._client.messages.stream(**kwargs) as stream:
-            async for text in stream.text_stream:
-                yield text
+            async for event in stream:
+                if event.type == "content_block_start":
+                    # 모델이 검색을 시작했다. **텍스트보다 먼저 나가야 하는 신호다.**
+                    if getattr(event.content_block, "type", "") == "server_tool_use":
+                        yield GuidanceChunk(web_search_started=True)
+                elif event.type == "content_block_delta":
+                    if getattr(event.delta, "type", "") == "text_delta":
+                        yield GuidanceChunk(text=event.delta.text)
 
     async def extract_narrative_states(
         self, nodes: dict[str, str], narrative: str

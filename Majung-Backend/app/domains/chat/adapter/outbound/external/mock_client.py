@@ -11,6 +11,7 @@ import asyncio
 import re
 from collections.abc import AsyncIterator
 
+from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.application.dto import Turn
 from app.domains.chat.domain.triage import (
     QuestionType,
@@ -168,7 +169,7 @@ class MockChatLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[GuidanceChunk]:
         qtype, routes = _detect(message)
         text = "".join(_compose(qtype, routes))
         # 어절(공백/줄바꿈) 단위로 흘려 실 LLM 토큰 스트림처럼 보이게.
@@ -176,11 +177,11 @@ class MockChatLlm:
         for ch in text:
             buf += ch
             if ch in (" ", "\n"):
-                yield buf
+                yield GuidanceChunk(text=buf)
                 buf = ""
                 await asyncio.sleep(_WORD_DELAY_SECONDS)
         if buf:
-            yield buf
+            yield GuidanceChunk(text=buf)
 
     async def extract_narrative_states(
         self, nodes: dict[str, str], narrative: str

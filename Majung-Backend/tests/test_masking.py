@@ -199,3 +199,34 @@ def test_assert_masked_allows_hotlines() -> None:
 def test_empty_text_is_safe() -> None:
     assert mask_text("") == ""
     assert_masked("")
+
+
+# ── 우리가 모르는 이름 (실 모델 검증에서 발견한 구멍) ──
+
+
+def test_introduced_name_is_masked_without_knowing_it() -> None:
+    """mask_text(name=...)은 아는 이름만 지운다. 그런데 사용자는 우리가 모르는 이름을 적는다 —
+    프로필이 아직 없거나, 다른 사람 이름이거나.
+
+    실 모델로 돌려보니 "저는 김판수입니다"가 그대로 나가 답변이 "김판수 님"으로 시작했다.
+    """
+    out = mask_text("사기로 3년 살고 나왔는데 신분증이 없어요. 저는 김판수입니다.")
+    assert "김판수" not in out
+    assert MASK_NAME in out
+
+
+def test_strong_intro_does_not_need_a_known_surname() -> None:
+    """"제 이름은 ○○○"은 뒤가 이름임이 구문으로 확실하다. 흔치 않은 성을 놓치면 더 나쁘다."""
+    for text in ("제 이름은 박서준이에요", "이름은 최민호라고 합니다", "이름이 남궁민수입니다"):
+        assert MASK_NAME in mask_text(text), text
+
+
+def test_weak_intro_keeps_ordinary_sentences() -> None:
+    """"저는 ○○"은 이름이 아닌 말이 훨씬 흔하다. 걸러내지 않으면 문장이 무너진다."""
+    for text in (
+        "저는 통장이 없어요",
+        "저는 출소자입니다",
+        "저는 신분증이 없고 집도 없어요",
+        "제가 사기로 3년 살았어요",
+    ):
+        assert mask_text(text) == text, text

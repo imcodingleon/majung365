@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 from enum import StrEnum
 
+from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
 
 
@@ -50,9 +51,39 @@ class RoutePriority:
     """모델은 '무엇이 급한지'만 고른다. '왜 급한지'는 서버가 데이터에서 도출한다."""
 
     route: RouteId
+    # 그 항목이 지금 어떤 상태인가. **초기 진단은 문항으로 아는 것을 챗은 문장으로 안다.**
+    #
+    # "통장이 압류돼서 돈을 못 써요"라고 말한 사람에게 "계좌를 새로 만드세요"가
+    # 나가면 안 되는데, 챗은 초기 진단 답변을 갖고 있지 않다(저장하지 않는다).
+    # 사용자의 말이 그 정보를 가진 유일한 자리다.
+    #
+    # 모델이 안 내면 X로 둔다 — 지금까지와 같은 동작이다.
+    state: NodeState = NodeState.X
+
+
+@dataclass(frozen=True)
+class UserRegion:
+    """사용자가 자기 입으로 말한 지역.
+
+    **§5.4가 "동을 모른다"고 한 것은 위치로 알아내는 경로를 말한 것이다.**
+    좌표를 서버로 보내지 않으니 기기가 알려줄 수 있는 것은 시군구까지인데,
+    사용자가 "송파구 오금동 사는데"라고 말하면 그 제약을 받지 않는다.
+
+    말하지 않은 것은 빈 문자열이다. 짐작해서 채우지 않는다.
+    """
+
+    sido: str = ""
+    sigungu: str = ""
+    dong: str = ""
+
+    @property
+    def has_dong(self) -> bool:
+        return bool(self.dong)
 
 
 @dataclass(frozen=True)
 class TriageResult:
     question_type: QuestionType
     priorities: tuple[RoutePriority, ...]  # 급한 순, 보통 2~3개 (DAILY면 비어도 됨)
+    # 사용자가 말한 지역. 주민센터처럼 동 단위 안내에 쓴다.
+    region: UserRegion = UserRegion()

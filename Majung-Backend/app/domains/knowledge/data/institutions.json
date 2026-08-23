@@ -96,17 +96,19 @@
         "R10"
       ],
       "lead_for": [],
-      "name": "통장 정지 풀기",
-      "summary_easy": "통장을 다시 쓰려면 거래하던 은행에 신분증을 가지고 가서 정지를 풀면 돼요. 정지 사유에 따라 절차가 다를 수 있어요.",
+      "name": "쓰던 통장이 막혔을 때",
+      "summary_easy": "왜 막혔는지에 따라 할 일이 달라요. 은행이 막아 둔 것이면 지점에 가면 풀 수 있지만, 빚 때문에 압류된 것이면 은행에서는 풀 수 없어요. 그럴 때는 압류를 막아주는 통장을 따로 만들어요.",
       "where": "거래하던 은행 지점",
       "docs": [
-        "신분증"
+        "신분 확인 서류",
+        "통장이나 카드",
+        "은행이나 법원에서 받은 안내문 (있으면)"
       ],
-      "next_step": "신분증을 챙겨 거래하던 은행 지점에 방문해 '통장 정지를 풀고 싶다'고 말하세요.",
+      "next_step": "은행 지점에 가서 '통장이 왜 막혔는지 알고 싶어요'라고 물어보세요. 압류 때문이라면 압류를 막아주는 통장을 만들 수 있어요.",
       "deadline": null,
-      "source_url": "https://www.gov.kr",
+      "source_url": "https://www.fsc.go.kr/no010101/82205",
       "desk_place": "거래하던 은행 창구",
-      "desk_say": "통장 정지를 풀러 왔어요",
+      "desk_say": "통장이 왜 막혔는지 알고 싶어요",
       "source_urls": [
         "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA18M02",
         "https://www.fsc.go.kr/no010101/82205"
@@ -116,12 +118,9 @@
     {
       "id": "identity-resident-registration",
       "route_ids": [
-        "R9",
         "R11"
       ],
-      "lead_for": [
-        "R9"
-      ],
+      "lead_for": [],
       "name": "주민등록 재등록",
       "summary_easy": "주민센터에서 주민등록 재등록을 신청할 수 있어요. 다른 신청들도 대부분 여기서 시작돼요.",
       "where": "가까운 주민센터(행정복지센터)",
@@ -139,7 +138,10 @@
       "verified_at": "2026-08-22",
       "contact_key": "110",
       "desk_place": "가까운 주민센터",
-      "desk_say": "주민등록 재등록하러 왔어요"
+      "desk_say": "주민등록 재등록하러 왔어요",
+      "companion_for": [
+        "R11"
+      ]
     },
     {
       "id": "welfare-koreha-emergency",
@@ -247,13 +249,39 @@
       "contact_key": "1670-7004"
     },
     {
-      "id": "housing-emergency-welfare-housing",
+      "id": "housing-koreha-rental",
       "route_ids": [
         "R4"
       ],
       "lead_for": [
         "R4"
       ],
+      "name": "법무보호복지공단 주거지원",
+      "summary_easy": "가족과 함께 오래 살 집이 필요하면 공단이 LH 임차주택을 싸게 쓰도록 도와줘요. 함께 살 가족이 있고 모두 집이 없어야 신청할 수 있어요.",
+      "where": "한국법무보호복지공단 관할 지부",
+      "docs": [
+        "출소 사실 확인 서류 또는 기관의뢰서",
+        "신분 확인 서류",
+        "주민등록등본",
+        "지방세 세목별 과세증명서",
+        "지금 사는 곳 사진과 임대차계약서",
+        "가족사진"
+      ],
+      "next_step": "공단 지부에 '주거지원 상담'을 먼저 받으세요. 요건과 준비 서류를 알려줘요.",
+      "deadline": null,
+      "source_url": "https://koreha.or.kr/sub/02_01_6.do?MN1=3&MN2=247&MN3=248&MN=248",
+      "contact_key": "1670-7004",
+      "source_urls": [
+        "https://koreha.or.kr/sub/02_01_6.do?MN1=3&MN2=247&MN3=248&MN=248"
+      ],
+      "verified_at": "2026-08-22"
+    },
+    {
+      "id": "housing-emergency-welfare-housing",
+      "route_ids": [
+        "R4"
+      ],
+      "lead_for": [],
       "name": "긴급복지 주거지원",
       "summary_easy": "지낼 곳이 필요하면 긴급복지제도로 임시 거처나 주거비를 지원받을 수 있어요.",
       "where": "주민센터 또는 보건복지상담센터(129)",
@@ -268,7 +296,10 @@
         "https://www.mohw.go.kr/menu.es?mid=a10708010100"
       ],
       "verified_at": "2026-08-22",
-      "contact_key": "129"
+      "contact_key": "129",
+      "companion_for": [
+        "R4"
+      ]
     },
     {
       "id": "employment-koreha-job",
@@ -406,7 +437,10 @@
       "source_urls": [
         "https://www.helplaw24.go.kr/"
       ],
-      "verified_at": "2026-08-22"
+      "verified_at": "2026-08-22",
+      "companion_for": [
+        "R14"
+      ]
     },
     {
       "id": "health-koreha-basic",
@@ -456,6 +490,137 @@
       ],
       "verified_at": "2026-08-22",
       "contact_key": "1670-7004"
+    },
+    {
+      "id": "identity-seizure-free-account",
+      "route_ids": [
+        "R10"
+      ],
+      "lead_for": [],
+      "companion_for": [
+        "R10"
+      ],
+      "name": "압류를 막아주는 통장(생계비계좌)",
+      "summary_easy": "빚 때문에 통장이 압류되면 들어온 돈을 쓸 수 없어요. 압류를 막아주는 통장을 만들면 매달 250만원까지는 압류되지 않아요. 2026년 2월부터 전국 어느 금융기관에서나 만들 수 있고, 한 사람이 하나씩 만들 수 있어요.",
+      "where": "가까운 은행·우체국·새마을금고 등 금융기관",
+      "docs": [
+        "신분 확인 서류"
+      ],
+      "next_step": "가까운 은행 창구에 가서 '생계비계좌 만들러 왔어요'라고 말하세요.",
+      "deadline": null,
+      "source_url": "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
+      "desk_place": "가까운 은행 창구",
+      "desk_say": "생계비계좌 만들러 왔어요",
+      "source_urls": [
+        "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
+        "https://obank.kbstar.com/quics?page=C020722&boardId=669&compId=b058336&articleId=142978&bbsMode=view&viewPage=1&articleClass=2&searchCondition=title&searchStr="
+      ],
+      "verified_at": "2026-08-23"
+    },
+    {
+      "id": "identity-welfare-benefit-account",
+      "route_ids": [
+        "R10"
+      ],
+      "lead_for": [],
+      "companion_for": [
+        "R10"
+      ],
+      "name": "기초생활수급자 압류방지 통장(행복지킴이)",
+      "summary_easy": "생계급여를 받고 있다면 급여만 들어오는 전용 통장을 만들 수 있어요. 이 통장에 들어온 급여는 빚이 있어도 압류되지 않아요. 대신 급여 말고 다른 돈은 넣을 수 없어요.",
+      "where": "은행·우체국·신협·새마을금고 등 금융기관",
+      "docs": [
+        "신분 확인 서류",
+        "수급자 증명서"
+      ],
+      "next_step": "수급자 증명서를 받아서 가까운 금융기관 창구에 가서 '행복지킴이 통장 만들러 왔어요'라고 말하세요.",
+      "deadline": null,
+      "source_url": "https://www.easylaw.go.kr/CSP/OnhunqueansInfoRetrieve.laf?onhunqnaAstSeq=97&onhunqueSeq=5742&search_put",
+      "desk_place": "가까운 금융기관 창구",
+      "desk_say": "행복지킴이 통장 만들러 왔어요",
+      "source_urls": [
+        "https://www.easylaw.go.kr/CSP/OnhunqueansInfoRetrieve.laf?onhunqnaAstSeq=97&onhunqueSeq=5742&search_put"
+      ],
+      "verified_at": "2026-08-23"
+    },
+    {
+      "id": "debt-court-in-progress",
+      "route_ids": [
+        "R14"
+      ],
+      "lead_for": [],
+      "name": "법원 개인회생·파산 진행 중일 때",
+      "summary_easy": "법원에서 보내는 서류에 적힌 날짜를 지키는 것이 가장 중요해요. 서류를 더 내라고 하거나 날짜를 정해 알려주는데, 그 날짜를 놓치면 신청이 없던 일이 될 수 있어요.",
+      "where": "신청한 법원 (서울에 주소가 있으면 서울회생법원)",
+      "docs": [
+        "법원에서 받은 통지서나 결정문",
+        "신분 확인 서류"
+      ],
+      "next_step": "법원에서 온 서류를 꺼내 날짜와 낼 것이 적혀 있는지 확인하세요. 무슨 말인지 모르겠으면 서울회생법원 안에 있는 무료 상담센터에서 물어볼 수 있어요.",
+      "deadline": null,
+      "source_url": "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA17M01",
+      "desk_place": "신청한 법원 민원실",
+      "desk_say": "제 사건이 지금 어디까지 진행됐는지 알고 싶어요",
+      "source_urls": [
+        "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA17M01",
+        "https://slb.scourt.go.kr/rel/guide/support/index_f.jsp"
+      ],
+      "verified_at": "2026-08-23"
+    },
+    {
+      "id": "debt-restart",
+      "route_ids": [
+        "R14"
+      ],
+      "lead_for": [],
+      "name": "신청이 멈췄거나 안 됐을 때",
+      "summary_easy": "다시 신청할 수 있어요. 다만 왜 안 됐는지부터 알아야 같은 일이 반복되지 않아요. 신용회복위원회를 거쳐 신청하면 서류 만드는 것을 무료로 도와주고 법원 처리도 더 빨라져요.",
+      "where": "신용회복위원회 (전화 1600-5500) 또는 서울회생법원 무료 상담센터",
+      "docs": [
+        "법원에서 받은 결정문",
+        "신분 확인 서류",
+        "매달 들어오는 돈을 알 수 있는 서류"
+      ],
+      "next_step": "1600-5500(신용회복위원회)에 전화해서 '법원 신청이 안 됐는데 다시 하고 싶다'고 말하세요. 결정문을 가지고 가면 상담이 빨라요.",
+      "deadline": null,
+      "source_url": "https://slb.scourt.go.kr/rel/guide/support/index_a.jsp",
+      "contact_key": "1600-5500",
+      "source_urls": [
+        "https://slb.scourt.go.kr/rel/guide/support/index_a.jsp",
+        "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490",
+        "https://slb.scourt.go.kr/rel/guide/support/index_f.jsp"
+      ],
+      "verified_at": "2026-08-23"
+    },
+    {
+      "id": "identity-id-card-reissue",
+      "route_ids": [
+        "R9"
+      ],
+      "lead_for": [
+        "R9"
+      ],
+      "name": "주민등록증 재발급",
+      "summary_easy": "신분증을 잃어버렸거나 못 쓰게 됐으면 주민센터에서 다시 만들 수 있어요. 만드는 데 2주쯤 걸리는데, 그동안 쓸 수 있는 임시 신분증을 신청한 자리에서 받을 수 있어요. 그 임시 신분증은 30일 동안 쓸 수 있어요.",
+      "where": "가까운 주민센터",
+      "docs": [
+        "6개월 안에 찍은 사진 1장 (가로 3.5cm 세로 4.5cm, 모자 안 쓴 상반신)",
+        "신분 확인 서류",
+        "수수료 5,000원 (칩을 넣으면 10,000원)"
+      ],
+      "next_step": "사진을 챙겨 주민센터에 가서 '주민등록증 재발급하러 왔어요'라고 말하고, '임시 신분증도 받고 싶어요'라고 함께 말하세요.",
+      "deadline": null,
+      "source_url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+      "contact_key": "110",
+      "desk_place": "가까운 주민센터",
+      "desk_say": "주민등록증 재발급하러 왔어요. 임시 신분증도 받고 싶어요",
+      "source_urls": [
+        "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+        "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_2/screen.do",
+        "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_5/screen.do",
+        "https://www.law.go.kr/법령/주민등록법시행령/제41조"
+      ],
+      "verified_at": "2026-08-23"
     }
   ]
 }

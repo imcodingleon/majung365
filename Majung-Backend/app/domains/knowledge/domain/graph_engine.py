@@ -34,6 +34,12 @@ class Requirement:
 @dataclass(frozen=True)
 class ObtainPath:
     for_state: tuple[str, ...]
+    # 이 경로가 어느 지원 항목의 것인가. **한 노드가 두 항목을 겸할 때만 적는다.**
+    #
+    # "잘 곳"(shelter)이 R1 숙식제공과 R4 주거지원을 함께 달고 있는데, 경로를
+    # 항목으로 가르지 않으면 미충족 개수가 같은 두 경로 중 먼저 선언된 쪽이 뽑혀
+    # **R4가 R1과 똑같은 카드를 냈다.** 비어 있으면 노드의 모든 항목에 해당한다.
+    route_ids: tuple[str, ...]
     action: str
     kb_ref: str
     where: str
@@ -87,10 +93,23 @@ def _candidate_paths(node: GraphNode, state: NodeState) -> tuple[ObtainPath, ...
 
 
 def _select_path(
-    node: GraphNode, state: NodeState, satisfied: set[str]
+    node: GraphNode,
+    state: NodeState,
+    satisfied: set[str],
+    route_id: str | None = None,
 ) -> ObtainPath | None:
-    """for_state에 맞는 경로 중, 지금 시점 기준 미충족 선행조건이 가장 적은 경로를 고른다."""
+    """for_state에 맞는 경로 중, 지금 시점 기준 미충족 선행조건이 가장 적은 경로를 고른다.
+
+    route_id를 주면 **그 항목의 경로만 본다.** 한 노드가 두 항목을 겸할 때
+    항목별로 다른 답이 나와야 하는데, 가르지 않으면 먼저 선언된 경로가 둘 다 이긴다.
+    """
     candidates = _candidate_paths(node, state)
+    if route_id is not None:
+        # 항목을 적지 않은 경로는 노드의 모든 항목에 해당한다 — 겸하지 않는
+        # 노드에 일일이 적게 하면 데이터만 늘고 틀릴 자리가 생긴다.
+        owned = [p for p in candidates if not p.route_ids or route_id in p.route_ids]
+        if owned:
+            candidates = owned
     if not candidates:
         return None
 
@@ -204,3 +223,37 @@ def routes_blocking_others(nodes: dict[str, GraphNode]) -> frozenset[str]:
     return frozenset(
         route for nid in required for route in nodes[nid].route_ids if nid in nodes
     )
+
+
+def kb_ref_for_route(
+    nodes: dict[str, GraphNode], route_id: str, state: NodeState
+) -> str | None:
+    """그 지원 항목을 그 상태에서 다룰 때 어느 제도가 대표인가.
+
+    **초기 진단이 상태별 갈림을 그래프에서 받아 가는 자리다**(기획서 §4.1).
+    "통장은 있지만 쓰기 어려워요"에 "계좌를 새로 만드세요"가 나가던 문제를 여기서
+    막는다. 규칙표는 답변을 상태로 옮기는 데까지만 하고, 상태로 제도를 고르는 것은
+    `for_state`가 정본이다.
+
+    노드가 없거나 그 상태에 맞는 경로가 없으면 None이다. 그러면 부르는 쪽이 항목의
+    기본 대표(`lead_of`)를 쓴다 — 갈림이 없는 항목은 노드도 필요 없기 때문이다.
+
+    선행조건 충족 여부는 보지 않는다. 초기 진단은 "무엇부터"가 아니라 "무엇이 할
+    일인가"를 내고, 순서는 `blocks_others`가 이미 맡고 있다.
+    """
+    matched = [n for n in nodes.values() if route_id in n.route_ids]
+    if len(matched) != 1:
+        # 한 항목에 노드가 둘 이상이면 어느 쪽 경로를 따를지 정할 근거가 없다.
+        # 조용히 하나를 고르지 않고 기본 대표로 물러난다.
+        return None
+    # **반대 방향도 막는다** — 한 노드가 항목 둘을 겸하면 항목으로 경로를 가른다.
+    path = _select_path(matched[0], state, satisfied=set(), route_id=route_id)
+    return path.kb_ref if path else None
+
+
+def referenced_kb_refs(nodes: dict[str, GraphNode]) -> frozenset[str]:
+    """그래프의 어느 경로든 가리키는 제도 id 전부.
+
+    KB에 있으나 아무도 가리키지 않는 제도를 찾아내는 데 쓴다.
+    """
+    return frozenset(path.kb_ref for node in nodes.values() for path in node.obtain)

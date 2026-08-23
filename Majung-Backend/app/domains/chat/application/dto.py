@@ -13,6 +13,15 @@ class Turn:
 class ChatCommand:
     message: str
     history: tuple[Turn, ...] = ()
+    # 어느 할 일 카드에서 연 대화인가(§6.1).
+    #
+    # **카드가 대표 경로만 안내하고 세부는 챗봇이 맡기로 했으니, 챗봇이 어느
+    # 카드에서 열렸는지는 알아야 그 역할을 할 수 있다.** 없으면 사용자가 매번
+    # 자기 상황을 처음부터 다시 설명해야 하는데 저리터러시 전제와 어긋난다.
+    #
+    # 항목 코드 하나("R14")일 뿐이라 마스킹 대상이 아니다(§9.3). 초기 진단
+    # 답변까지 보내는 것은 다른 얘기이며 여기서 하지 않는다.
+    route_id: str = ""
 
 
 @dataclass(frozen=True)
@@ -81,6 +90,16 @@ class TriageEvent:
 
 
 @dataclass(frozen=True)
+class EvidenceEvent:
+    """이 답이 어디서 오는지. **웹 검색이면 검색을 시작하기 전에 나간다** —
+    확실성이 낮다는 신호가 정보보다 앞서야 하기 때문이다(기획서 §6.4).
+    """
+
+    stage: str  # confirmed | web
+    notice: str = ""  # 사전 고지. 확인된 자료면 빈 문자열
+
+
+@dataclass(frozen=True)
 class TextEvent:
     delta: str
 
@@ -100,4 +119,6 @@ class ErrorEvent:
     message: str = "지금 잠시 연결이 원활하지 않아요. 잠시 후 다시 시도해 주세요."
 
 
-ChatEvent = TriageEvent | TextEvent | CardEvent | DoneEvent | ErrorEvent
+ChatEvent = (
+    TriageEvent | EvidenceEvent | TextEvent | CardEvent | DoneEvent | ErrorEvent
+)

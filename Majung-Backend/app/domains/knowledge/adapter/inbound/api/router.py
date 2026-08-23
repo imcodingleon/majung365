@@ -10,7 +10,7 @@ Router는 검증·DTO 변환만. 비즈니스 로직은 UseCase에.
 from fastapi import APIRouter, HTTPException, Request
 from pydantic import BaseModel, Field
 
-from app.domains.knowledge.application.dto import AnalyzeCommand, NodeAnswer
+from app.domains.knowledge.application.dto import AnalyzeCommand, IntakeTask, NodeAnswer
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
 from app.infrastructure.config.settings import get_settings
@@ -162,11 +162,55 @@ class IntakeTaskOut(BaseModel):
     section_id: str
     section_label: str
     blocks_others: bool
+    # 이 항목으로 방문 요청을 보낼 수 있는가(§7). 통장·증명서·빚은 받을 담당자가 없다.
+    can_request_visit: bool
     card: IntakeCardOut
 
 
 class IntakeOut(BaseModel):
     tasks: list[IntakeTaskOut]
+
+
+def to_task_out(t: IntakeTask) -> IntakeTaskOut:
+    """할 일 하나를 응답 형태로. 가입(POST /signup)도 같은 형태를 돌려주므로
+    조립을 한곳에 둔다 — 두 곳에서 각자 만들면 한쪽만 필드가 빠지는 날이 온다."""
+    return IntakeTaskOut(
+        route_id=t.route_id,
+        route_label=t.route_label,
+        tab_label=t.tab_label,
+        section_id=t.section_id,
+        section_label=t.section_label,
+        blocks_others=t.blocks_others,
+        can_request_visit=t.can_request_visit,
+        card=IntakeCardOut(
+            institution_id=t.card.institution_id,
+            name=t.card.name,
+            summary_easy=t.card.summary_easy,
+            docs=list(t.card.docs),
+            deadline=t.card.deadline,
+            source_url=t.card.source_url,
+            benefit_summary=t.card.benefit_summary,
+            eligibility=list(t.card.eligibility),
+            steps=list(t.card.steps),
+            cautions=list(t.card.cautions),
+            source_urls=list(t.card.source_urls),
+            verified_note=t.card.verified_note,
+            options=[
+                IntakeCardOptionOut(
+                    org=o.org,
+                    where=o.where,
+                    next_step=o.next_step,
+                    docs=list(o.docs),
+                    desk_place=o.desk_place,
+                    desk_say=o.desk_say,
+                    contact_org=o.contact_org,
+                    contact_phone=o.contact_phone,
+                    contact_hours=o.contact_hours,
+                )
+                for o in t.card.options
+            ],
+        ),
+    )
 
 
 def _validate_answers(body: IntakeIn) -> dict[str, object]:
@@ -199,44 +243,4 @@ def analyze_intake(body: IntakeIn, request: Request) -> IntakeOut:
     completed = frozenset(RouteId(c) for c in body.completed if c in valid)
 
     tasks = usecase.run(answers, completed)
-    return IntakeOut(
-        tasks=[
-            IntakeTaskOut(
-                route_id=t.route_id,
-                route_label=t.route_label,
-                tab_label=t.tab_label,
-                section_id=t.section_id,
-                section_label=t.section_label,
-                blocks_others=t.blocks_others,
-                card=IntakeCardOut(
-                    institution_id=t.card.institution_id,
-                    name=t.card.name,
-                    summary_easy=t.card.summary_easy,
-                    docs=list(t.card.docs),
-                    deadline=t.card.deadline,
-                    source_url=t.card.source_url,
-                    benefit_summary=t.card.benefit_summary,
-                    eligibility=list(t.card.eligibility),
-                    steps=list(t.card.steps),
-                    cautions=list(t.card.cautions),
-                    source_urls=list(t.card.source_urls),
-                    verified_note=t.card.verified_note,
-                    options=[
-                        IntakeCardOptionOut(
-                            org=o.org,
-                            where=o.where,
-                            next_step=o.next_step,
-                            docs=list(o.docs),
-                            desk_place=o.desk_place,
-                            desk_say=o.desk_say,
-                            contact_org=o.contact_org,
-                            contact_phone=o.contact_phone,
-                            contact_hours=o.contact_hours,
-                        )
-                        for o in t.card.options
-                    ],
-                ),
-            )
-            for t in tasks
-        ]
-    )
+    return IntakeOut(tasks=[to_task_out(t) for t in tasks])

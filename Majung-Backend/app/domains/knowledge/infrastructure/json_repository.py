@@ -95,6 +95,20 @@ class JsonInstitutionRepository:
         """대표와 함께 낼 제도들. 대부분의 항목은 비어 있다."""
         return [i for i in self._items if route in i.companion_for]
 
+    def unreachable(self, graph_refs: frozenset[str]) -> list[str]:
+        """화면에 닿을 수 없는 제도. 대표도 동반도 아니고 그래프도 가리키지 않는 것들.
+
+        **`identity-bank-account-unblock`이 실제로 이 상태였다.** R10의 근거로만
+        존재해서 "통장 정지 풀기"가 어떤 화면에도 나가지 않았다. 지원 항목에 걸어
+        두었으니 쓰인다고 믿기 쉬운데, 확인하지 않으면 알 길이 없다.
+        """
+        return [
+            i.id
+            for i in self._items
+            if i.route_ids and not i.lead_for and not i.companion_for
+            and i.id not in graph_refs
+        ]
+
     def all(self) -> list[Institution]:
         return list(self._items)
 
