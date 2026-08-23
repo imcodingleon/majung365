@@ -2,6 +2,7 @@
 // 비즈니스 로직 없음 — 요청 조립 / 응답 파싱 / 오류 정규화만.
 // 비밀 금지: 여기에 API 키를 넣지 않는다. AI 호출은 백엔드가 담당.
 
+import type { IntakeAnswerMap } from "../types/intake";
 import type {
   IntakeAnalyzeRequest,
   IntakeAnalyzeResponse,
@@ -115,6 +116,28 @@ export async function postSignup(req: SignupRequest): Promise<SignupResponse> {
 export async function getTasks(token: string): Promise<RestoreResponse> {
   const res = await fetch(`${API_BASE}/api/tasks`, {
     headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as RestoreResponse;
+}
+
+/**
+ * PUT /api/tasks — 상황 알아보기를 다시 하고 할 일을 새로 받는다 (§3.7).
+ *
+ * **가입 정보는 건드리지 않는다.** 이름·생일·출소날짜·동의는 그대로 두고 분야 답만
+ * 갈아 끼운다. 서버는 여기서도 답변 원문을 저장하지 않고 판정만 남긴다 (§9.1).
+ *
+ * **끝낸 표시는 지워진다.** 할 일이 새로 정해진 것이라, 예전에 마친 표시를 그대로
+ * 두면 이번에 처음 나온 항목이 이미 끝난 것으로 보인다.
+ */
+export async function putIntake(
+  token: string,
+  answers: IntakeAnswerMap,
+): Promise<RestoreResponse> {
+  const res = await fetch(`${API_BASE}/api/tasks`, {
+    method: "PUT",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify({ answers }),
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as RestoreResponse;

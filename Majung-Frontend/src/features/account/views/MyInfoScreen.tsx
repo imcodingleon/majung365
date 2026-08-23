@@ -28,6 +28,8 @@ type Props = {
   onClose: () => void;
   /** 서버 처리에 실패했을 때. */
   error?: string | null;
+  /** 상황 알아보기를 다시 하러 간다 (§3.7). 없으면 그 자리를 만들지 않는다. */
+  onRetake?: () => void;
 };
 
 function Row({ label, value }: { label: string; value: string }) {
@@ -39,14 +41,20 @@ function Row({ label, value }: { label: string; value: string }) {
   );
 }
 
-export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose, error }: Props) {
+export function MyInfoScreen({
+  profile,
+  onChangeCrime,
+  onErase,
+  onClose,
+  onRetake,
+  error,
+}: Props) {
   const [editingCrime, setEditingCrime] = useState(false);
   const [confirming, setConfirming] = useState<EraseScope | null>(null);
 
-  const crimeLabel =
-    profile.crime === null
-      ? "말하지 않기로 하셨어요"
-      : (CRIME_CATEGORIES.find((c) => c.id === profile.crime)?.label ?? "");
+  // **무엇을 고르셨는지는 여기 나오지 않는다** (§2.5 — 화면에 띄우면 어깨 너머로 보인다).
+  // 저장되어 있다는 사실과, 바꾸거나 지울 수 있다는 것만 알면 이 화면의 목적은 이룬다.
+  const crimeLabel = profile.hasCrime ? "말씀해 주셨어요" : "말하지 않기로 하셨어요";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
@@ -87,8 +95,10 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose, error }
               언제든지 바꾸거나 지우실 수 있어요.
             </Text>
             {CRIME_CATEGORIES.map((c) => {
-              const selected =
-                c.id === "undisclosed" ? profile.crime === null : profile.crime === c.id;
+              // **지금 무엇이 골라져 있는지 표시하지 않는다.** 서버가 값을 주지 않으므로
+              // 알 수 없고, 짐작해서 표시하면 그것이 곧 틀린 정보가 된다.
+              // "말하지 않기로 하셨어요"인 것만은 확실하므로 그때만 표시한다.
+              const selected = c.id === "undisclosed" && !profile.hasCrime;
               return (
                 <ChoiceButton
                   key={c.id}
@@ -107,9 +117,32 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose, error }
 
         <NoteBox tone="info" className="mt-6">마지막으로 앱을 쓰신 날부터 1년이 지나면 저절로 지워져요.</NoteBox>
 
+        {/* **지우기 앞에 둔다.** 상황이 달라졌을 때 사람들이 먼저 찾는 것이 이 자리인데,
+            없으면 계정을 지우고 새로 가입하는 쪽으로 간다 — 되돌릴 수 없는 길이다 */}
+        {onRetake ? (
+          <>
+            <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">
+              상황이 달라졌나요
+            </Text>
+            <Pressable
+              onPress={onRetake}
+              accessibilityRole="button"
+              accessibilityLabel="상황 알아보기 다시 하기"
+              className="mb-3 rounded-xl border-[1.5px] border-brand-soft bg-white px-4 py-4 active:opacity-80"
+            >
+              <Text className="text-body-lg font-bold" style={{ color: COLORS.brand }}>
+                상황 다시 알아보기
+              </Text>
+              <Text className="mt-1 text-caption text-ink-muted">
+                지금에 맞게 할 일을 다시 골라 드려요. 끝낸 표시는 지워져요.
+              </Text>
+            </Pressable>
+          </>
+        ) : null}
+
         <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">정보 지우기</Text>
 
-        {profile.crime !== null ? (
+        {profile.hasCrime ? (
           <Pressable
             onPress={() => setConfirming("crime")}
             accessibilityRole="button"
