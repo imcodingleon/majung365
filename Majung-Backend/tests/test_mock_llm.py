@@ -44,7 +44,7 @@ async def test_mock_stream_guidance_yields_text() -> None:
     """안내 스트리밍이 비지 않은 텍스트를 흘려보낸다."""
     llm = MockChatLlm()
     chunks = [
-        c
+        c.text
         async for c in llm.stream_guidance(
             message="잘 곳이 없어요",
             history=[],
@@ -62,7 +62,7 @@ async def test_mock_stream_guidance_health_hotline() -> None:
     llm = MockChatLlm()
     joined = "".join(
         [
-            c
+            c.text
             async for c in llm.stream_guidance(
                 message="다 포기하고 싶어요",
                 history=[],

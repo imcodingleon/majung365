@@ -62,7 +62,8 @@ async def test_support_flow_order_and_cards() -> None:
         assert "신분증" in c.card.route_label or "공단 긴급지원" in c.card.route_label
 
     # support면 웹 검색 비활성
-    assert llm.last_allow_web is False
+    # 검색 도구는 근거가 있어도 준다 — 쓸지는 모델이 정한다(2026-08-24).
+    assert llm.last_allow_web is True
 
 
 async def test_daily_flow_no_cards_web_enabled() -> None:

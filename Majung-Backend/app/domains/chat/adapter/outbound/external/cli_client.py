@@ -21,6 +21,7 @@ import shutil
 from collections.abc import AsyncIterator
 from typing import Any
 
+from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.application.dto import Turn
 from app.domains.chat.domain.prompts import (
     TRIAGE_INSTRUCTION,
@@ -190,7 +191,7 @@ class CliChatLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
-    ) -> AsyncIterator[str]:
+    ) -> AsyncIterator[GuidanceChunk]:
         # 웹 검색은 켜지 않는다. CLI에서는 도메인 화이트리스트를 강제할 수 없어서,
         # 공공 도메인 한정이라는 규칙(MUST 9)이 깨진다. 검증 목적에는 텍스트면 충분하다.
         parts = [build_system_prompt(), context]
@@ -204,11 +205,11 @@ class CliChatLlm:
         for ch in text:
             buf += ch
             if ch in (" ", "\n"):
-                yield buf
+                yield GuidanceChunk(text=buf)
                 buf = ""
                 await asyncio.sleep(_WORD_DELAY_SECONDS)
         if buf:
-            yield buf
+            yield GuidanceChunk(text=buf)
 
     async def extract_narrative_states(
         self, nodes: dict[str, str], narrative: str

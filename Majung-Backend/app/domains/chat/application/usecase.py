@@ -143,27 +143,60 @@ class ChatUseCase:
         #    화면이 stage를 받아 만들므로 프론트 쪽 변경이다. **웹 단계 문구는
         #    그대로 둔다** — 둘 다 눅이면 §6.4가 두 단계를 눈으로 구별시키려던
         #    설계가 무너진다.
-        stage = EvidenceStage.CONFIRMED if (cards or found) else EvidenceStage.WEB
-        yield EvidenceEvent(stage=stage.value, notice=notice_for(stage))
-
-        # 5) 쉬운 말 안내 (스트리밍)
+        # **판정을 모델에게 넘겼다 (2026-08-24).** 위 기록은 그대로 두되 결론이
+        # 바뀌었다 — 넷째 길(문구 약화)로는 본문의 회피를 막지 못했다.
+        #
+        # 실사용에서 "군포역 근처 법무보호복지공단 어디야?"에 회피가 나갔다.
+        # 배지는 confirmed였다. 배포 서버에서 재현해 보니 이랬다.
+        #
+        #   "생계급여 기준 중위소득"  →  '생계급여' 문서가 걸림.  2026년 수치 없음
+        #   "군포역 근처 공단"        →  '공단' 문서가 걸림.      지부 위치 없음
+        #   "서울 날씨"              →  아무것도 안 걸림       →  web
+        #
+        # **제도 이름이 든 질문은 반드시 뭔가 걸린다.** 그래서 이 서비스의 본
+        # 영역에서는 웹 검색이 사실상 절대 안 됐고, 정작 웹이 필요 없는 무관한
+        # 질문에서만 열렸다. 완전히 뒤집혀 있었다.
+        #
+        # 코드는 문서에 답이 들어 있는지 알 수 없다 — 읽어야 아는 것이다.
+        # 검색 도구는 모델이 필요할 때 부르는 것인데 코드가 미리 뺏고 있었다.
+        # 이제 근거와 도구를 함께 주고, 부족하면 모델이 검색한다.
+        has_evidence = bool(cards or found)
         context = build_guidance_context(
             triage,
             [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)],
-            stage=stage,
+            stage=EvidenceStage.CONFIRMED if has_evidence else EvidenceStage.WEB,
             passages=[self._as_passage_injection(p) for p in found],
         )
-        allow_web = stage == EvidenceStage.WEB
+
+        # **배지는 실제로 검색했는지로 정한다.** 추측이 아니라 사실이다.
+        # 첫 텍스트가 나오기 전에 한 번만 내보내므로 §6.4의 "먼저 알린다"가 지켜진다.
+        evidence_sent = False
 
         try:
-            async for delta in self._llm.stream_guidance(
+            async for chunk in self._llm.stream_guidance(
                 message=cmd.message,
                 history=history,
                 context=context,
-                allow_web_search=allow_web,
+                allow_web_search=True,
             ):
-                if delta:
-                    yield TextEvent(delta=delta)
+                if chunk.web_search_started and not evidence_sent:
+                    evidence_sent = True
+                    yield EvidenceEvent(
+                        stage=EvidenceStage.WEB.value,
+                        notice=notice_for(EvidenceStage.WEB),
+                    )
+                if chunk.text:
+                    if not evidence_sent:
+                        # 검색하지 않고 답을 쓰기 시작했다 — 가진 자료로 답한다는 뜻이다.
+                        evidence_sent = True
+                        if has_evidence:
+                            yield EvidenceEvent(
+                                stage=EvidenceStage.CONFIRMED.value,
+                                notice=notice_for(EvidenceStage.CONFIRMED),
+                            )
+                        # 근거도 없고 검색도 안 했으면 배지를 붙이지 않는다.
+                        # 없는 근거를 "확인한 자료"라고 말하는 것이 가장 나쁘다.
+                    yield TextEvent(delta=chunk.text)
         except Exception:
             logger.warning("guidance 스트리밍 실패 (upstream)")
             yield ErrorEvent()

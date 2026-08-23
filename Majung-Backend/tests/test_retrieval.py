@@ -74,7 +74,8 @@ async def test_passages_make_the_answer_confirmed() -> None:
 
     evidence = next(e for e in events if isinstance(e, EvidenceEvent))
     assert evidence.stage == EvidenceStage.CONFIRMED
-    assert llm.last_allow_web is False
+    # 검색 도구는 이제 근거가 있어도 준다 — 쓸지는 모델이 정한다.
+    assert llm.last_allow_web is True
 
 
 async def test_passage_text_reaches_the_prompt_with_its_source() -> None:
@@ -101,8 +102,11 @@ async def test_without_evidence_it_still_falls_back_to_web() -> None:
     events = [
         e async for e in usecase.run(ChatCommand(message="오늘 점심 뭐 먹을까요"))
     ]
-    evidence = next(e for e in events if isinstance(e, EvidenceEvent))
-    assert evidence.stage == EvidenceStage.WEB
+    # **배지는 검색을 실제로 했을 때만 붙는다**(2026-08-24). 근거가 없더라도
+    # 모델이 검색하지 않고 답했으면 "인터넷에서 찾아봤다"고 말할 수 없다.
+    # 검색 도구는 주어졌고, 쓸지는 모델이 정한다.
+    assert llm.last_allow_web is True
+    assert not [e for e in events if isinstance(e, EvidenceEvent)]
 
 
 def test_short_sections_are_not_indexed() -> None:
