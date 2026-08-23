@@ -12,6 +12,8 @@
 import { useMemo, useRef, useState } from "react";
 import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 
+import { deferClose } from "@/shared/utils/deferClose";
+
 import { COLORS } from "../theme/colors";
 import type { DateParts } from "../types/date";
 
@@ -127,7 +129,8 @@ export function DateField({ value, onChange, label, minYear, maxYear, defaultYea
       if (Number(next.day) > last) next.day = String(last);
     }
     onChange(next);
-    setOpen(null);
+    // 닫기를 미루지 않으면 이 클릭이 뒤 화면의 죄목까지 누른다. deferClose 참고.
+    deferClose(() => setOpen(null))();
   };
 
   return (

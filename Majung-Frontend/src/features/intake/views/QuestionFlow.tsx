@@ -10,6 +10,7 @@ import { Modal, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { COLORS } from "@/shared/theme/colors";
+import { deferClose } from "@/shared/utils/deferClose";
 
 import { isAnswered, type IntakeAnswers, type IntakeQuestion } from "../domain/questionTypes";
 import type { SectionId } from "../domain/sections";
@@ -76,10 +77,13 @@ export function QuestionFlow({
   const answered = question ? isAnswered(question, answers) : false;
   const last = step >= total - 1;
 
+  // 닫기를 미루지 않으면 이 클릭이 뒤 화면의 분야 격자까지 눌러 다른 팝업이 열린다.
+  const close = deferClose(onClose);
+
   const goPrev = () => setStep((prev) => Math.max(0, prev - 1));
   const goNext = () => {
     if (last) {
-      onClose();
+      close();
       return;
     }
     setStep((prev) => prev + 1);
@@ -106,7 +110,7 @@ export function QuestionFlow({
           </View>
           <Text className="flex-1 text-heading font-extrabold text-ink-strong">{sectionLabel}</Text>
           <Pressable
-            onPress={onClose}
+            onPress={close}
             accessibilityRole="button"
             accessibilityLabel="닫기. 답하신 것은 그대로 남아요"
             className="rounded-xl border border-line px-4 py-3 active:opacity-70"
@@ -149,9 +153,12 @@ export function QuestionFlow({
         </ScrollView>
 
         <View className="border-t border-line px-5 pb-2 pt-3">
+          {/* **버튼이 왜 흐린지를 말한다.** 원래 "답을 고르시면 다음으로 넘어가요"였는데,
+              고르면 저절로 넘어간다고 읽혀 사용자가 화면을 보며 기다리게 된다.
+              실제로는 답을 골라야 버튼이 켜지고, 넘기는 것은 사용자가 한다 */}
           {!answered && question ? (
             <Text className="mb-3 text-center text-caption text-ink-muted">
-              답을 고르시면 다음으로 넘어가요.
+              답을 고르시면 다음으로 갈 수 있어요.
             </Text>
           ) : null}
 
