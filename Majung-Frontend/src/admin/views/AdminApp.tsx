@@ -1,44 +1,80 @@
 // 담당자 화면 묶음 (§8.3).
 //
-// ⚠️ **시연용이다.** 실제 인증도, 실데이터 연결도 없다. §12-3이 정해지면 이 폴더는
-// 별도 앱으로 떼어내고 §8.2의 네 가지 전제 조건(계정 체계·접근 통제·열람 감사 로그·
-// 자동 로그아웃)으로 대체한다.
+// **로그인은 서버가 확인한다** (§8.2). 계정은 운영 쪽에서 발급하며 가입 화면이 없다.
+// 목록 데이터는 아직 화면 안의 예시다 — 서버 목록 API가 붙으면 그 자리만 바뀐다.
+//
+// **열람 제한은 서버가 한다.** 다른 기관의 요청은 목록에 아예 오지 않고, id를 알아내
+// 수정을 시도해도 거부된다. 화면이 거르는 것이 아니다.
 //
 // 화면 전환을 라우트가 아니라 상태로 한다. 떼어낼 때 이 폴더만 옮기면 되게 하려는 것이다.
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import { View } from "react-native";
 
 import type { VisitStatus } from "@/shared/types/visit";
 
-import { DEMO_REQUESTS } from "../domain/demoRequests";
 import type { ConfirmInput, StaffRequest } from "../domain/staffRequest";
 import { useAdminSession } from "../hooks/useAdminSession";
+import { useStaffVisits } from "../hooks/useStaffVisits";
+import { useVisitChat } from "../hooks/useVisitChat";
 
 import { AdminLoginScreen } from "./AdminLoginScreen";
 import { RequestDetailScreen } from "./RequestDetailScreen";
 import { RequestListScreen } from "./RequestListScreen";
-import { StaffChatScreen, type StaffMessage } from "./StaffChatScreen";
+import { StaffChatScreen } from "./StaffChatScreen";
+
+/**
+ * 방문 조율 채팅방.
+ *
+ * **훅을 조건부로 부르지 않으려고 컴포넌트를 나눴다.** 채팅이 닫혀 있을 때 소켓을
+ * 붙들고 있으면 담당자가 목록만 보는 동안에도 연결이 살아 있게 된다.
+ */
+function StaffChatRoom({
+  request,
+  token,
+  onTouch,
+  onBack,
+}: {
+  request: StaffRequest;
+  token: string | null;
+  onTouch: () => void;
+  onBack: () => void;
+}) {
+  const chat = useVisitChat(request.id, token);
+
+  // 방을 열면 읽음으로 표시한다. 상대는 자기 말이 닿았는지 알아야 기다릴 수 있다.
+  useEffect(() => {
+    if (chat.connected && !chat.blocked) chat.markRead();
+  }, [chat.connected, chat.blocked, chat.markRead]);
+
+  return (
+    <StaffChatScreen
+      peerName={request.name}
+      messages={chat.messages}
+      blocked={chat.blocked}
+      connected={chat.connected}
+      onSend={(text) => {
+        onTouch();
+        chat.send(text);
+      }}
+      onBack={onBack}
+    />
+  );
+}
 
 export function AdminApp() {
   const session = useAdminSession();
-  const [requests, setRequests] = useState<StaffRequest[]>([...DEMO_REQUESTS]);
+  const token = session.session?.session_token ?? null;
+  const visits = useStaffVisits(token);
   const [openId, setOpenId] = useState<string | null>(null);
   const [chatOpen, setChatOpen] = useState(false);
-  const [threads, setThreads] = useState<Record<string, StaffMessage[]>>({});
 
-  const open = requests.find((r) => r.id === openId) ?? null;
-
-  const patch = useCallback(
-    (id: string, next: Partial<StaffRequest> & { status?: VisitStatus }) => {
-      setRequests((prev) => prev.map((r) => (r.id === id ? { ...r, ...next } : r)));
-    },
-    [],
-  );
+  const open = visits.requests.find((r) => r.id === openId) ?? null;
 
   if (!session.signedIn) {
     return (
       <AdminLoginScreen
-        failed={session.failed}
+        error={session.error}
+        busy={session.busy}
         timedOut={session.timedOut}
         onSignIn={session.signIn}
       />
@@ -54,18 +90,10 @@ export function AdminApp() {
   if (open && chatOpen) {
     return (
       <View className="flex-1" onTouchStart={session.touch}>
-        <StaffChatScreen
-          peerName={open.name}
-          messages={threads[open.id] ?? []}
-          onSend={touched<string>((text) => {
-            setThreads((prev) => {
-              const room = prev[open.id] ?? [];
-              return {
-                ...prev,
-                [open.id]: [...room, { id: `${open.id}-${room.length + 1}`, from: "staff", text }],
-              };
-            });
-          })}
+        <StaffChatRoom
+          request={open}
+          token={session.session?.session_token ?? null}
+          onTouch={session.touch}
           onBack={touched<void>(() => setChatOpen(false))}
         />
       </View>
@@ -77,17 +105,30 @@ export function AdminApp() {
       <View className="flex-1" onTouchStart={session.touch}>
         <RequestDetailScreen
           request={open}
-          onAcknowledge={touched<void>(() => patch(open.id, { status: "acknowledged" }))}
+          onAcknowledge={touched<void>(() => void visits.act(open.id, "acknowledged"))}
           onConfirm={touched<ConfirmInput>((input) => {
-            // 만날 사람과 장소는 출소자 화면의 확정 문구가 된다 (§7.1).
-            // 서버 연결이 붙으면 여기서 그 값을 함께 보낸다.
-            patch(open.id, { status: "confirmed" });
-            void input;
+            // **장소만 보낸다. 담당자 이름은 서버가 채운다.**
+            //
+            // 합쳐 보내면 담당자가 교체될 때 옛 이름이 장소 문자열에 박혀 남는다.
+            // 서버는 요청을 처리한 담당자 id를 기록하고, 출소자 화면에는 `staff_name`과
+            // `meeting_place`가 따로 내려간다 — §7.1이 요구하는 "만날 사람과 만날 장소"다.
+            //
+            // 장소 없이 확정하면 서버가 거부한다. 그것이 이 기능의 핵심이기 때문이다.
+            void visits.act(open.id, "confirmed", {
+              meeting_place: input.place,
+              // **만나기로 한 시각을 함께 보낸다.** 안 보내면 서버가 1지망으로 채우므로,
+              // 담당자가 2지망으로 확정해도 출소자 화면에는 1지망이 뜬다.
+              ...(input.whenIso ? { confirmed_for: input.whenIso } : {}),
+            });
           })}
-          onProposeReschedule={touched<string>(() =>
-            patch(open.id, { status: "reschedule_proposed" }),
+          // **제안한 시각을 함께 보낸다.** 담당자가 적은 시각을 버리고 상태만 바꾸면,
+          // 출소자 화면에 "담당자가 다른 시간을 이야기했어요"만 뜨고 **언제인지가 빠진다.**
+          onProposeReschedule={touched<string>((time) =>
+            void visits.act(open.id, "reschedule_proposed", { proposed_at: time }),
           )}
-          onCancel={touched<string>(() => patch(open.id, { status: "cancelled" }))}
+          onCancel={touched<string>((reason) =>
+            void visits.act(open.id, "cancelled", { cancel_reason: reason }),
+          )}
           onOpenChat={touched<void>(() => setChatOpen(true))}
           onBack={touched<void>(() => setOpenId(null))}
         />
@@ -98,7 +139,18 @@ export function AdminApp() {
   return (
     <View className="flex-1" onTouchStart={session.touch}>
       <RequestListScreen
-        requests={requests}
+        requests={visits.requests}
+        loading={visits.loading}
+        error={visits.error}
+        staff={
+          session.session
+            ? {
+                displayName: session.session.display_name,
+                orgKind: session.session.org_kind,
+                branch: session.session.branch,
+              }
+            : null
+        }
         onOpen={touched<string>((id) => setOpenId(id))}
         onSignOut={() => session.signOut()}
       />

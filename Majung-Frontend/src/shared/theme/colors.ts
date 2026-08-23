@@ -17,11 +17,24 @@ export const COLORS = {
   inkBody: "#333c4e",
   inkMuted: "#939393",
 
+  /**
+   * 웹에서 모바일 프레임 바깥. **앱에는 없는 색이다.**
+   *
+   * 프레임 안(연한 회백)보다 어두워야 경계가 보이고, 너무 어두우면 화면이 액자처럼
+   * 갇혀 보인다. 잉크 계열의 가장 옅은 단계를 쓴다.
+   */
+  frameOutside: "#e8eaef",
+
   line: "#f1f1f1",
   lineStrong: "#dfe3ec",
   surface: "#ffffff",
   card: "#fbfcfe",
   bubble: "#f1f3f8",
+
+  // 채팅 첫 마디 칩. 브랜드 파랑과 층을 갈라 **누르면 보내지는 것**임을 나타낸다 —
+  // 파랑으로 두면 이미 오간 말풍선과 섞인다.
+  chip: "#ffdcc0",
+  chipInk: "#874700",
 
   noteInfo: "#eef7ff",
   noteInfoLine: "#cfe6ff",

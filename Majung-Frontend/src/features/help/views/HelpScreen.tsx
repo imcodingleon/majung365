@@ -4,6 +4,8 @@ import { useState } from "react";
 import { Linking, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
+import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { COUNSEL_LINES, EMERGENCY_LINES, type HelpLine } from "../domain/contacts";
@@ -32,7 +34,7 @@ function LineButton({
       onPress={call}
       accessibilityRole="button"
       accessibilityLabel={`${line.label}에 전화하기. ${line.when}. ${line.org}`}
-      className="mb-2.5 flex-row items-center rounded-2xl border-[1.5px] px-4 py-4 active:opacity-90"
+      className="mb-3 flex-row items-center rounded-2xl border-[1.5px] px-4 py-4 active:opacity-90"
       style={{
         backgroundColor: emergency ? COLORS.alertSoft : COLORS.surface,
         borderColor: emergency ? COLORS.alertLine : COLORS.brandSoft,
@@ -41,13 +43,13 @@ function LineButton({
       <Text className="mr-3 text-2xl">📞</Text>
       <View className="flex-1">
         <Text
-          className="text-[22px] font-extrabold"
+          className="text-title font-extrabold"
           style={{ color: emergency ? COLORS.alert : COLORS.brand }}
         >
           {line.label}
         </Text>
-        <Text className="mt-1 text-base leading-[24px] text-ink-body">{line.when}</Text>
-        <Text className="mt-0.5 text-[13px] text-ink-muted">{line.org}</Text>
+        <Text className="mt-1 text-body-lg text-ink-body">{line.when}</Text>
+        <Text className="mt-1 text-caption text-ink-muted">{line.org}</Text>
       </View>
     </Pressable>
   );
@@ -59,23 +61,13 @@ export function HelpScreen({ onClose }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-        <Text className="text-lg font-extrabold text-ink-strong">도움 연결</Text>
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">✕</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="도움 연결" closeHint="도움 연결 화면 닫기" onClose={onClose} />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6">
-        <Text className="text-[23px] font-extrabold leading-[32px] text-ink-strong">
+        <Text className="text-title font-extrabold text-ink-strong">
           지금 도움이 필요하신가요?
         </Text>
-        <Text className="mb-6 mt-2 text-base leading-[26px] text-ink-sub">
+        <Text className="mb-6 mt-2 text-body-lg text-ink-sub">
           어떤 상황인지 정리해서 말하지 않아도 괜찮아요.
         </Text>
 
@@ -83,18 +75,18 @@ export function HelpScreen({ onClose }: Props) {
           <LineButton key={line.dial} line={line} tone="counsel" onFail={setFailedLabel} />
         ))}
 
-        <View className="mt-4 rounded-xl bg-white px-4 py-3.5">
-          <Text className="text-sm leading-[24px] text-ink-sub">
+        <View className="mt-4 rounded-xl bg-white px-4 py-4">
+          <Text className="text-caption text-ink-sub">
             번호를 누르면 전화 앱이 열려요.
           </Text>
-          <Text className="mt-1 text-sm leading-[24px] text-ink-sub">
+          <Text className="mt-1 text-caption text-ink-sub">
             통화 내용은 이 화면에 남지 않아요.
           </Text>
         </View>
 
         {/* 상담과 긴급신고는 성격이 다르므로 영역을 나눈다 */}
         <View className="mt-8 border-t border-line pt-6">
-          <Text className="mb-3 text-lg font-extrabold text-alert">
+          <Text className="mb-3 text-heading font-extrabold text-alert">
             생명이 위급하거나 큰 사고라면
           </Text>
           {EMERGENCY_LINES.map((line) => (
@@ -103,12 +95,10 @@ export function HelpScreen({ onClose }: Props) {
         </View>
 
         {failedLabel ? (
-          <View className="mt-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
-            <Text className="text-sm font-semibold leading-[24px] text-note-warn-ink">
-              이 기기에서는 전화 앱이 열리지 않았어요.{"\n"}
-              다른 전화기로 {failedLabel}번을 눌러 주세요.
-            </Text>
-          </View>
+          <NoteBox tone="warn" className="mt-6">
+            <NoteLine tone="warn">이 기기에서는 전화 앱이 열리지 않았어요.{"\n"}
+              다른 전화기로 {failedLabel}번을 눌러 주세요.</NoteLine>
+          </NoteBox>
         ) : null}
       </ScrollView>
     </SafeAreaView>

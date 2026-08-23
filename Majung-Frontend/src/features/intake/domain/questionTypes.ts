@@ -123,6 +123,32 @@ export function isAnswered(question: IntakeQuestion, answers: IntakeAnswers): bo
  * `dataKey`를 공유하는 문항(Q3-2-1·Q3-2-2)에서는 이 규칙이 없으면 어느 문항의 답인지도
  * 구분되지 않는다. 다만 규칙 자체는 공유하지 않는 문항에도 그대로 적용된다.
  */
+/**
+ * 고른 답을 사람이 읽는 문장으로. 담당자에게 보낼 때 쓴다 (§7.4-1).
+ *
+ * **id가 아니라 문구로 보낸다.** 담당자 화면은 문항 정의를 알 수 없고, `NOT_NEEDED`가
+ * 무슨 뜻인지도 모른다. 문항 문구의 정본이 여기 있으므로 여기서 만든다.
+ *
+ * 답이 없으면 빈 문자열이다 — 답하지 않은 문항은 보내지 않는다.
+ */
+export function answerLabel(question: IntakeQuestion, answers: IntakeAnswers): string {
+  const answer = answers[question.id];
+  if (answer === undefined) return "";
+
+  if (question.kind === "date") {
+    if (answer === DATE_UNKNOWN) return "잘 모르겠어요";
+    const [y = "", m = "", d = ""] = String(answer).split("-");
+    return y && m && d ? `${y}년 ${Number(m)}월 ${Number(d)}일` : "";
+  }
+
+  const picked = Array.isArray(answer) ? answer : [answer];
+  const labels = picked
+    .map((id) => (question.options ?? []).find((o) => o.id === id)?.label)
+    .filter((x): x is string => Boolean(x));
+  // 여럿 고른 답은 쉼표로 잇는다. 담당자가 한 줄로 읽는다.
+  return labels.join(", ");
+}
+
 export function answersToSend(
   questions: readonly IntakeQuestion[],
   answers: IntakeAnswers,

@@ -6,32 +6,48 @@
 // **할 일 목록은 서버가 만든다.** 초기 진단 답변을 보내면 지원 항목이 정해져 돌아온다.
 // 완료 처리도 서버가 목록을 다시 계산하는 방식이라 기기는 마친 항목만 들고 있으면 된다.
 import { useCallback, useState } from "react";
-import { Modal, Pressable, Text, View } from "react-native";
-import { Redirect } from "expo-router";
+import { Pressable, Text, View } from "react-native";
+import { Redirect, router } from "expo-router";
 
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
 import { ChatPopup } from "@/features/chat/views/ChatPopup";
 import { HelpScreen } from "@/features/help";
 import type { RouteId } from "@/features/tasks/domain/task";
+import { toTasks } from "@/features/tasks/domain/fromServer";
+import { useNearbyPlaces, nearbyKindFor } from "@/features/tasks/hooks/useNearbyPlaces";
+import { NearbyPlaces } from "@/features/tasks/views/NearbyPlaces";
 import { useServerTasks } from "@/features/tasks/hooks/useServerTasks";
 import { TodayScreen } from "@/features/tasks";
 import { limitMessage } from "@/features/visit/domain/request";
 import { useVisitRequests } from "@/features/visit/hooks/useVisitRequests";
 import { RequestStatusStrip } from "@/features/visit/views/RequestStatusStrip";
 import { VisitRequestSheet } from "@/features/visit/views/VisitRequestSheet";
+import { NoteBox } from "@/shared/components/NoteBox";
 import { getSession } from "@/shared/utils/session";
+import { FramedModal } from "@/shared/components/FramedModal";
 
 export default function TodayRoute() {
   const session = getSession();
-  const server = useServerTasks(session?.answers ?? null);
+  const server = useServerTasks(
+    session?.answers ?? null,
+    session?.tasks ? toTasks(session.tasks) : undefined,
+  );
   const chat = useTaskThreads();
   const visit = useVisitRequests();
   const [helpOpen, setHelpOpen] = useState(false);
   // 아코디언 열림은 화면 상태다. 아무것도 안 골랐으면 첫 항목이 열린 채로 시작한다 (§5.2).
   const [openId, setOpenId] = useState<RouteId | null>(null);
 
+  // **열린 카드 하나만 부른다** (§5.4). 위치는 가입할 때 알아낸 것이며 세션에만 있다.
+
   const tasks = server.tasks;
   const headId = tasks[0]?.id ?? null;
+  // **`openId`가 아니라 실제로 열린 것을 본다.** 아무것도 안 고른 처음에는 `openId`가
+  // 비어 있고 첫 항목이 열린 채로 시작하는데(§5.2), 그때 `openId`만 보면 근처 기관을
+  // 부르지 않아 **가장 많이 보게 되는 첫 화면에서만 비는** 상태가 된다.
+  const shownId = openId ?? headId;
+  const nearby = useNearbyPlaces(shownId, session?.place ?? null);
+
   const pendingMust = tasks.filter((t) => t.must).map((t) => t.title);
 
   const toggle = useCallback((id: RouteId) => setOpenId((prev) => (prev === id ? null : id)), []);
@@ -58,8 +74,23 @@ export default function TodayRoute() {
         openId={openId ?? headId}
         onToggle={toggle}
         onComplete={complete}
+        onOpenNearby={() => router.push("/nearby")}
+        onOpenMyInfo={() => router.push("/my-info")}
+        renderNearby={(taskId) =>
+          taskId === shownId && !nearby.loading ? (
+            <NearbyPlaces
+              offices={nearby.offices}
+              institutions={nearby.institutions}
+              place={session?.place ?? null}
+              // 신분증은 어느 주민센터에서나 된다. 그 말이 없으면 자기 동 주민센터를
+              // 찾아 멀리 가는 사람이 생긴다 (§5.4)
+              anyBranch={nearbyKindFor(taskId) === "office"}
+            />
+          ) : null
+        }
         pendingMust={pendingMust}
         headId={headId}
+        total={server.total}
         userName={session.name}
         onOpenChat={chat.open}
         onOpenHelp={() => setHelpOpen(true)}
@@ -71,14 +102,21 @@ export default function TodayRoute() {
         renderStatusStrip={(taskId) => {
           const request = visit.requestFor(taskId);
           if (!request) return null;
-          return <RequestStatusStrip request={request} onOpenStaffChat={() => chat.open(taskId)} />;
+          return (
+            <RequestStatusStrip
+              request={request}
+              onOpenStaffChat={() => chat.open(taskId)}
+              onCancel={() => void visit.cancel(request.id)}
+              // 취소된 요청을 다시 보낸다. 폼을 다시 열어 시간부터 고르게 한다 —
+              // 같은 시간으로 자동 재전송하면 그때가 안 되어 취소한 경우 되풀이된다.
+              onResend={() => visit.openForm(taskId)}
+            />
+          );
         }}
       />
 
       {server.error ? (
-        <View className="absolute inset-x-4 bottom-6 rounded-xl border border-note-warn-line bg-note-warn px-4 py-3.5">
-          <Text className="text-sm leading-[23px] text-note-warn-ink">{server.error}</Text>
-        </View>
+        <NoteBox tone="warn" className="absolute inset-x-4 bottom-6">{server.error}</NoteBox>
       ) : null}
 
       {chatTask ? (
@@ -103,13 +141,17 @@ export default function TodayRoute() {
           userName={session.name}
           purpose={visitTask.title}
           docs={visitTask.docs ?? []}
+          answers={session.rawAnswers}
+          routeId={visitTask.id}
           onSubmit={visit.submit}
           onClose={visit.closeForm}
+          sending={visit.sending}
+          error={visit.error}
         />
       ) : null}
 
       {/* 상한에 닿아도 그냥 막지 않는다. 왜 막혔는지 알려준다 (§7.5). */}
-      <Modal
+      <FramedModal
         visible={visit.blocked !== null}
         animationType="fade"
         transparent
@@ -117,29 +159,29 @@ export default function TodayRoute() {
       >
         <View className="flex-1 items-center justify-center bg-black/40 px-8">
           <View className="w-full rounded-2xl bg-white px-5 py-6">
-            <Text className="text-base leading-[27px] text-ink-strong">
+            <Text className="text-body-lg text-ink-strong">
               {visit.blocked ? limitMessage(visit.blocked) : ""}
             </Text>
             <Pressable
               onPress={visit.dismissBlocked}
               accessibilityRole="button"
               accessibilityLabel="알겠어요"
-              className="mt-5 items-center rounded-xl bg-brand py-3.5 active:opacity-90"
+              className="mt-5 items-center rounded-xl bg-brand py-4 active:opacity-90"
             >
-              <Text className="text-base font-extrabold text-white">알겠어요</Text>
+              <Text className="text-body-lg font-extrabold text-white">알겠어요</Text>
             </Pressable>
           </View>
         </View>
-      </Modal>
+      </FramedModal>
 
-      <Modal
+      <FramedModal
         visible={helpOpen}
         animationType="slide"
         presentationStyle="fullScreen"
         onRequestClose={() => setHelpOpen(false)}
       >
         <HelpScreen onClose={() => setHelpOpen(false)} />
-      </Modal>
+      </FramedModal>
     </>
   );
 }

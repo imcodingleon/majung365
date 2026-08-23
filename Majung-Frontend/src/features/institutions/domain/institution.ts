@@ -9,25 +9,29 @@
  */
 export type BranchKind = "branch" | "head" | "training" | "hug";
 
-export type Institution = {
-  name: string;
-  address: string;
-  phone: string;
-  /** 공단 기관이면 종류가 붙는다. 정신건강복지센터에는 없다. */
-  kind?: BranchKind;
-  /** 같은 시군구에 여러 센터가 있을 때의 구분. 예: "아동청소년" */
-  note?: string;
+import type { DistrictOffice, Institution } from "@/shared/types";
+
+export type { DistrictOffice, Institution };
+
+/** 한 지역에서 안내할 것. 서버가 시도·시군구를 받아 돌려준다. */
+export type NearbyResult = {
+  /** 그 시군구의 주민센터 전체. 위치로 알아낸 동으로 좁혀 쓴다. */
+  offices: readonly DistrictOffice[];
+  /**
+   * 공단 기관과 지역 센터.
+   *
+   * **공단 기관은 지역이 안 맞아도 들어 있다.** 전국에 몇 곳뿐이라 지역으로 거르면
+   * 사라지고, 그러면 주 경로가 화면에서 없어진다. `kind`로 갈라 그린다.
+   */
+  institutions: readonly Institution[];
 };
 
-/** 한 지역에서 안내할 기관 묶음. 서버가 시군구를 받아 돌려준다. */
-export type RegionInstitutions = {
-  /** 공단 지부. 광역 단위라 시군구를 몰라도 짚을 수 있다. */
-  branches: readonly Institution[];
-  /** 기초정신건강복지센터. 시군구를 알아야 한다. */
-  centers: readonly Institution[];
-  /** 마중365가 이 목록을 확인한 날짜(YYYY-MM-DD). */
-  checkedAt?: string;
-};
+// **확인 날짜 필드를 두지 않는다.** 이 목록의 데이터에는 확인 날짜가 없다.
+// 자리를 만들어 두면 다른 데서 가져온 날짜가 채워지고, 그것이 이 목록을 확인한
+// 날짜인 것처럼 화면에 나간다. 실제로 그렇게 되어 있었다.
+//
+// 서버가 항목마다 검증 여부와 날짜를 실어 주면 그때 항목 단위로 둔다 —
+// 지금 이 목록은 공식 검증된 것과 예시가 섞여 있어 묶음 하나로 말할 수 없다.
 
 /** 어느 지원 항목에서 어떤 공단 기관을 안내할지 (§5.4). */
 export function branchKindFor(routeId: string): BranchKind {

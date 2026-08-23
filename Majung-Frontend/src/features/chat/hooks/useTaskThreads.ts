@@ -6,18 +6,29 @@
 // **아직 기기 안에만 남는다.** §6.3은 서버에 암호화 저장으로 확정했지만 조회·삭제 API가
 // 아직 없다. 붙으면 이 훅이 서버에서 불러오고 지운다.
 //
-// **방(routeId)은 아직 서버로 가지 않는다.** POST /chat이 방을 구분하지 않는다.
-// 계약이 생기면 요청에 실어 보낸다.
+// **방(routeId)을 서버로 보낸다.** 어느 할 일 카드에서 연 대화인지 알아야 챗봇이 그
+// 항목의 근거부터 훑는다. triage를 건너뛰는 것은 아니고 순서만 바뀐다 (2026-08-23).
 import { useCallback, useRef, useState } from "react";
 
-import type { CardData, Turn } from "@/shared/types";
-import { ApiError, streamChat } from "@/shared/utils/api";
+import type { CardData, Turn, EvidenceEvent } from "@/shared/types";
+import { ApiError, deleteChatHistory, getChatHistory, streamChat } from "@/shared/utils/api";
+import { loadToken } from "@/shared/utils/tokenStore";
 
 import type { ChatMessage } from "../domain/chatMessage";
 
 type Threads = Record<string, ChatMessage[]>;
 
 /** 서버가 준 제도 카드를 말풍선에 담는다. 카드 전용 렌더는 §4.1 결과 카드 작업이다. */
+/**
+ * 배지에 적을 출처.
+ *
+ * **§6.4가 요구하는 것은 출처 기관명인데 서버가 아직 그 필드를 주지 않는다.**
+ * 그때까지 어느 갈래인지만 밝힌다 — 빈 문자열을 두면 배지에 빈 줄이 생긴다.
+ */
+function sourceLabel(stage: EvidenceEvent["stage"]): string {
+  return stage === "web" ? "인터넷 검색" : "마중365가 모아둔 자료";
+}
+
 function cardToMessage(id: string, card: CardData): ChatMessage {
   // 창구 안내(desk)로 옮기지 않는다. §6.4의 창구 안내는 "주민센터에 가서 '전입신고
   // 하러 왔어요'라고 말하면 돼요" 형태인데, KB의 next_step은 그런 짧은 대사가 아니라
@@ -30,11 +41,13 @@ function cardToMessage(id: string, card: CardData): ChatMessage {
     id,
     role: "assistant",
     text: lines,
-    // 서버가 KB에서 찾아준 것이므로 확인된 자료다 (§6.4 ①단계).
+    // 서버가 KB에서 찾아준 것이므로 확인한 자료다 (§6.4 ①단계).
     //
     // ⚠️ org에 제도명이 들어간다. §6.4가 요구하는 것은 **출처 기관명**이고 응답에 아직
-    // 그 필드가 없다. 계약에 기관명과 확인 날짜(fetched_at)가 실리면 여기를 바꾼다.
+    // 그 필드가 없다. 계약에 기관명이 실리면 여기를 바꾼다.
     evidence: { stage: "rag", org: card.name },
+    // 서버가 완성 문장으로 준다. 카드마다 자기 날짜를 갖는다.
+    verifiedNote: card.verified_note || undefined,
   };
 }
 
@@ -44,10 +57,50 @@ export function useTaskThreads(initial: Threads = {}) {
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   /** 답변을 기다리는 중인 방. 입력을 잠근다. */
   const [busyId, setBusyId] = useState<string | null>(null);
+  /** 지난 대화를 이미 불러온 방. 열 때마다 다시 부르지 않는다. */
+  const loaded = useRef<Set<string>>(new Set());
   /** 열려 있는 방의 스트림. 방을 닫거나 새로 보내면 끊는다. */
   const abort = useRef<AbortController | null>(null);
 
-  const open = useCallback((taskId: string) => setOpenTaskId(taskId), []);
+  /**
+   * 대화방을 연다. **저장된 지난 대화를 함께 불러온다** (§6.3).
+   *
+   * 예선에서는 대화를 남기지 않았는데, 남지 않으면 어제 받은 안내가 사라져서
+   * 본선에서 뒤집었다. 서버가 보관만 하고 화면이 안 읽으면 뒤집은 뜻이 없다.
+   *
+   * **이미 화면에 있는 방은 다시 안 불러온다.** 열 때마다 부르면 방금 나눈 대화가
+   * 서버 사본으로 덮이고, 스트리밍 중이던 답이 사라진다.
+   */
+  const open = useCallback(
+    (taskId: string) => {
+      setOpenTaskId(taskId);
+      if (loaded.current.has(taskId)) return;
+      loaded.current.add(taskId);
+      void (async () => {
+        const token = await loadToken();
+        if (!token) return;
+        try {
+          const past = await getChatHistory(token, taskId);
+          if (past.length === 0) return;
+          setThreads((prev) => {
+            // 그 사이에 말을 걸었으면 덮지 않는다.
+            if ((prev[taskId] ?? []).length > 0) return prev;
+            return {
+              ...prev,
+              [taskId]: past.map((turn, i) => ({
+                id: `${taskId}-past-${i}`,
+                role: turn.role,
+                text: turn.content,
+              })),
+            };
+          });
+        } catch {
+          // 못 불러와도 새 대화는 할 수 있다. 조용히 넘긴다.
+        }
+      })();
+    },
+    [],
+  );
 
   const close = useCallback(() => {
     abort.current?.abort();
@@ -80,7 +133,11 @@ export function useTaskThreads(initial: Threads = {}) {
 
       const replyId = `${taskId}-${seq + 1}`;
       let streamed = "";
+      /** 카드가 한 장이라도 왔는지. 본문이 비어도 카드가 있으면 빈 응답이 아니다. */
+      let gotCard = false;
       let started = false;
+      /** 서버가 알려준 근거 단계. 답변 텍스트보다 먼저 온다 (§6.4). */
+      let stage: EvidenceEvent["stage"] = "confirmed";
 
       abort.current?.abort();
       const controller = new AbortController();
@@ -88,7 +145,9 @@ export function useTaskThreads(initial: Threads = {}) {
       setBusyId(taskId);
 
       void streamChat(
-        { message: text, history },
+        // 방(taskId)이 곧 지원 항목 코드다. 어느 카드에서 연 대화인지 서버가 알아야
+        // 근거를 그쪽부터 훑는다.
+        { message: text, history, route_id: taskId },
         {
           onText: (delta) => {
             streamed += delta;
@@ -100,7 +159,14 @@ export function useTaskThreads(initial: Threads = {}) {
                   ...prev,
                   [taskId]: [
                     ...current,
-                    { id: replyId, role: "assistant", text: streamed, streaming: true },
+                    {
+                      id: replyId,
+                      role: "assistant",
+                      text: streamed,
+                      streaming: true,
+                      // 어디서 온 답인지를 말풍선이 직접 드러낸다 (§6.4).
+                      evidence: { stage: stage === "web" ? "web" : "rag", org: sourceLabel(stage) },
+                    },
                   ],
                 };
               }
@@ -112,13 +178,35 @@ export function useTaskThreads(initial: Threads = {}) {
               };
             });
           },
+          // **답변보다 먼저 온다** (§6.4). 웹 검색으로 넘어가면 그 사실을 답변 앞에
+          // 내야 한다 — 나중에 "인터넷 정보였습니다"라고 덧붙이면 이미 사실로 받아들인
+          // 뒤다. 사전 고지는 로딩 안내도 겸한다(검색이 붙으면 응답이 느려진다).
+          onEvidence: (ev) => {
+            stage = ev.stage;
+            if (ev.stage === "web" && ev.notice) {
+              append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: ev.notice });
+            }
+          },
           onCard: (card) => {
+            gotCard = true;
             append(taskId, cardToMessage(`${replyId}-card`, card));
           },
           onError: (message) => {
             append(taskId, { id: `${replyId}-err`, role: "assistant", text: message });
           },
           onDone: () => {
+            // **답변도 카드도 없이 끝나는 응답이 있다.** 모델이 항목은 맞혔는데 질문 유형을
+            // 다르게 판정하면 카드가 통째로 빠지고 본문도 비어 온다(backend 확인, 2026-08-23).
+            //
+            // 그때 화면에는 사용자가 보낸 말만 남는다. **저리터러시 사용자는 화면이 비면
+            // 자기가 잘못 눌렀다고 생각한다.** 빈 채로 두지 않고 못 찾았다고 말한다.
+            if (!streamed.trim() && !gotCard) {
+              append(taskId, {
+                id: `${replyId}-empty`,
+                role: "assistant",
+                text: "지금은 답을 찾지 못했어요.\n사람에게 물어보시는 편이 빠를 수 있어요.",
+              });
+            }
             setThreads((prev) => ({
               ...prev,
               [taskId]: (prev[taskId] ?? []).map((m) =>
@@ -143,12 +231,29 @@ export function useTaskThreads(initial: Threads = {}) {
     [append, openTaskId, threads],
   );
 
-  // 경고로 막는 대신 지울 수 있게 한다 (§6.3-2).
+  /**
+   * 이 대화를 지운다 (§6.3-2).
+   *
+   * **서버에서도 지운다.** 화면에서만 비우면 앱을 다시 켤 때 되살아나고, 사용자는
+   * 지웠다고 믿은 것이 남아 있는 상태가 된다. 자동 로그인 상태에서 기기를 잡은
+   * 사람이 읽을 수 있는 것이 이 대화이므로, 지운다고 했으면 실제로 지워져야 한다.
+   */
   const clear = useCallback(() => {
     if (!openTaskId) return;
+    const taskId = openTaskId;
     abort.current?.abort();
     setBusyId(null);
-    setThreads((prev) => ({ ...prev, [openTaskId]: [] }));
+    setThreads((prev) => ({ ...prev, [taskId]: [] }));
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return;
+      try {
+        await deleteChatHistory(token, taskId);
+      } catch {
+        // 서버에서 못 지웠어도 화면은 비운 채로 둔다. 되살려 보이면 더 혼란스럽다.
+        // 다시 열 때 서버 사본이 돌아오는데, 그때 사용자가 한 번 더 지울 수 있다.
+      }
+    })();
   }, [openTaskId]);
 
   return {

@@ -7,6 +7,9 @@ import { useCallback, useRef } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { AppHeader } from "@/shared/components/AppHeader";
+import { COLORS } from "@/shared/theme/colors";
+
 import type { RouteId, Task } from "../domain/task";
 
 import { TaskCard } from "./TaskCard";
@@ -35,7 +38,54 @@ type Props = {
   renderStatusStrip?: (taskId: RouteId) => React.ReactNode;
   /** 이 할 일에 알리기 버튼을 감출지. 이미 보낸 요청이 있을 때 참이다. */
   hideNotifyFor?: (taskId: RouteId) => boolean;
+  /** 근처 기관 구역 (§5.4). 열린 카드에만 그린다. */
+  renderNearby?: (taskId: RouteId) => React.ReactNode;
+  /**
+   * 지역 기관을 따로 찾아보는 화면을 연다 (§5.4).
+   *
+   * **할 일 카드에도 근처 기관이 나오지만 성격이 다르다.** 카드는 "이 일을 하려면
+   * 어디로" 이고, 여기는 "우리 동네에 무엇이 있나"다. 할 일이 다 끝난 사람에게도
+   * 갈 곳은 남는다.
+   */
+  onOpenNearby?: () => void;
+  /**
+   * 내 정보 열람·수정·삭제 화면을 연다 (§2.5·§9.4).
+   *
+   * **저장하는 이상 지울 길이 있어야 한다.** 기획서가 "만들지 않을 수 없다"고 적어둔
+   * 화면이고 법적 요구사항이기도 한데, 들어갈 문이 없으면 없는 것과 같다.
+   */
+  onOpenMyInfo?: () => void;
+  /** 처음 받은 할 일 개수. 진행 표시의 분모다. */
+  total?: number;
 };
+
+/**
+ * 진행 표시 (2026-08-23 시안).
+ *
+ * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. 마친 것을 세는 것이 아니라
+ * **남은 것에서 거꾸로 센다** — 서버가 마친 항목을 목록에서 빼기 때문이다.
+ */
+function Progress({ done, total }: { done: number; total: number }) {
+  const ratio = total > 0 ? Math.min(1, done / total) : 0;
+  return (
+    <View className="mb-5">
+      <View className="mb-2 flex-row items-end justify-between">
+        <Text className="text-body font-extrabold" style={{ color: COLORS.brand }}>
+          진행 상황
+        </Text>
+        <Text className="text-body font-bold text-ink-sub">
+          {done} / {total}
+        </Text>
+      </View>
+      <View className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: COLORS.line }}>
+        <View
+          className="h-full rounded-full"
+          style={{ backgroundColor: COLORS.brand, width: `${ratio * 100}%` }}
+        />
+      </View>
+    </View>
+  );
+}
 
 export function TodayScreen({
   tasks,
@@ -50,6 +100,10 @@ export function TodayScreen({
   onNotifyStaff,
   renderStatusStrip,
   hideNotifyFor,
+  renderNearby,
+  onOpenNearby,
+  onOpenMyInfo,
+  total,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const rowOffsets = useRef<Record<string, number>>({});
@@ -73,28 +127,21 @@ export function TodayScreen({
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top"]}>
       {/* 도움 연결은 스크롤해도 사라지지 않는다. 할 일 진행과 무관하게 언제든 닿아야 한다 (§5.3). */}
-      <View className="flex-row items-center gap-3 border-b border-line bg-white px-5 py-3">
-        <View className="flex-1">
-          <Text className="text-[15px] text-ink-muted">
-            {userName ? `${userName}님, 어서 오세요` : "어서 오세요"}
-          </Text>
-          <Text className="mt-0.5 text-[21px] font-extrabold text-ink-strong">오늘의 할 일</Text>
-        </View>
-        <Pressable
-          onPress={onOpenHelp}
-          accessibilityRole="button"
-          accessibilityLabel="도움이 필요해요. 전화 상담 번호를 봐요"
-          className="rounded-full bg-sun-500 px-4 py-2.5 active:opacity-90"
-        >
-          <Text className="text-[15px] font-extrabold text-white">도움이 필요해요</Text>
-        </Pressable>
-      </View>
+      <AppHeader
+        actionLabel="도움이 필요해요"
+        actionHint="도움이 필요해요. 전화 상담 번호를 봐요"
+        onAction={onOpenHelp}
+      />
 
       <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="px-5 pb-16 pt-5">
-        <Text className="mb-5 text-[13px] leading-[21px] text-ink-muted">
-          {tasks.length > 0
-            ? `아직 ${tasks.length}개 남았어요 — 서두르지 않아도 괜찮아요.`
-            : ""}
+        <Progress done={Math.max(0, (total ?? tasks.length) - tasks.length)} total={total ?? tasks.length} />
+
+        <Text className="text-body text-ink-sub">
+          {userName ? `${userName}님, 어서 오세요.` : "어서 오세요."}
+        </Text>
+        <Text className="mt-1 text-display font-extrabold text-ink-strong">오늘의 할 일</Text>
+        <Text className="mb-6 mt-2 text-body text-ink-sub">
+          어려운 상황에서도 한 걸음씩 나아갈 수 있도록{"\n"}꼭 필요한 일만 골라 두었어요.
         </Text>
 
         {tasks.map((task, index) => (
@@ -114,7 +161,6 @@ export function TodayScreen({
             >
               <TaskCard
                 task={task}
-                done={false}
                 pendingMust={pendingMust}
                 onOpenChat={() => onOpenChat(task.id)}
                 onNotifyStaff={
@@ -124,17 +170,45 @@ export function TodayScreen({
                 }
                 onComplete={() => handleComplete(task.id)}
                 statusStrip={renderStatusStrip?.(task.id)}
+                nearby={renderNearby?.(task.id)}
               />
             </TaskRow>
           </View>
         ))}
 
+        {/* **목록 끝에 둔다.** 오늘 할 일보다 먼저 읽힐 것이 아니고, 다 마친
+            사람이 다음으로 눈을 옮기는 자리이기도 하다 */}
+        {onOpenNearby ? (
+          <Pressable
+            onPress={onOpenNearby}
+            accessibilityRole="button"
+            accessibilityLabel="우리 동네 기관 찾아보기"
+            className="mt-6 flex-row items-center justify-center gap-2 rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-80"
+          >
+            <Text className="text-body-lg">📍</Text>
+            <Text className="text-body-lg font-bold text-ink-sub">우리 동네 기관 찾아보기</Text>
+          </Pressable>
+        ) : null}
+
+        {/* **맨 아래에 작게 둔다.** 자주 쓰는 자리가 아니고, 할 일보다 앞에 오면
+            무엇을 하러 온 화면인지가 흐려진다. 다만 찾을 수는 있어야 한다 */}
+        {onOpenMyInfo ? (
+          <Pressable
+            onPress={onOpenMyInfo}
+            accessibilityRole="button"
+            accessibilityLabel="내 정보 보기. 적어주신 정보를 보고 지울 수 있어요"
+            className="mt-3 items-center py-3 active:opacity-60"
+          >
+            <Text className="text-caption font-bold text-ink-muted underline">내 정보 보기</Text>
+          </Pressable>
+        ) : null}
+
         {tasks.length === 0 ? (
           <View className="mt-6 rounded-2xl border border-folder-done-line bg-folder-done-bg px-5 py-6">
-            <Text className="text-center text-lg font-extrabold text-folder-done-ink">
+            <Text className="text-center text-heading font-extrabold text-folder-done-ink">
               오늘 할 일을 다 마치셨어요.
             </Text>
-            <Text className="mt-2 text-center text-[15px] leading-[25px] text-folder-done-ink">
+            <Text className="mt-2 text-center text-body text-folder-done-ink">
               천천히 하셔도 괜찮아요.
             </Text>
           </View>

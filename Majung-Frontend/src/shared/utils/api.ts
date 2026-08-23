@@ -10,9 +10,26 @@ import type {
   CardData,
   Center,
   ChatRequest,
+  DistrictOffice,
+  Institution,
   ChatStreamHandlers,
+  EvidenceEvent,
+  StoredChatTurn,
   TaskCard,
 } from "../types";
+import type {
+  MeResponse,
+  SignupRequest,
+  SignupResponse,
+  UpdateMeRequest,
+} from "../types/account";
+import type { StaffVisitAction, StaffVisitResponse } from "../types/staffVisit";
+import type { VisitCreateRequest, VisitResponse } from "../types/visitRequest";
+import type {
+  StaffLoginRequest,
+  StaffLoginResponse,
+  StaffMeResponse,
+} from "../types/staff";
 
 /** 노출 허용 변수만 사용(EXPO_PUBLIC_). 미설정 시 로컬 기본값. */
 const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
@@ -70,6 +87,215 @@ export async function postIntakeAnalyze(
   return (await res.json()) as IntakeAnalyzeResponse;
 }
 
+// ── 가입·내 정보 (§2.4·§2.5·§9.4) ────────────────────────────────────
+
+/**
+ * POST /api/signup — 가입.
+ *
+ * **여기서부터 서버에 저장이 남는다.** 그래서 §3.5 고지("암호화해서 보관해요")가
+ * 사실이 되고, 동시에 §9.4의 삭제 경로가 반드시 함께 있어야 한다.
+ *
+ * 응답의 `session_token`은 **다시 조회할 수 없다.** 받는 즉시 보관한다.
+ * 할 일 목록도 함께 오므로 곧바로 `intake/analyze`를 부르지 않는다.
+ */
+export async function postSignup(req: SignupRequest): Promise<SignupResponse> {
+  const res = await fetch(`${API_BASE}/api/signup`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as SignupResponse;
+}
+
+/** GET /api/me — 내 정보 열람. **죄목 값은 내려오지 않는다** (§2.5). */
+export async function getMe(token: string): Promise<MeResponse> {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as MeResponse;
+}
+
+/** PATCH /api/me — 바꿀 항목만 보낸다. 죄목은 고치는 것이 아니라 철회한다 (§9.5). */
+export async function patchMe(token: string, req: UpdateMeRequest): Promise<MeResponse> {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as MeResponse;
+}
+
+/**
+ * DELETE /api/me — 모든 정보 삭제 (§9.4).
+ *
+ * **저장한다고 알리면서 지울 길이 없으면 안 된다.** 가입을 서버에 붙이는 순간부터
+ * 이 경로가 함께 살아 있어야 §3.5 고지가 거짓말이 되지 않는다. 서버가 즉시 처리한다.
+ */
+export async function deleteMe(token: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/me`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  // 204가 정상. 이미 지워진 상태(401·404)도 "지워졌다"로 본다 — 사용자가 원한 결과는 같다.
+  if (!res.ok && res.status !== 401 && res.status !== 404) {
+    throw new ApiError(res.status, await errorMessage(res));
+  }
+}
+
+// ── 방문 요청 (§7) ────────────────────────────────────────────────────
+
+/**
+ * POST /api/visits — 담당자에게 방문을 미리 알린다.
+ *
+ * **상한이 서버에서 판정된다** (§7.5). 하루 3건·미확정 5건·같은 항목 1건을 넘으면
+ * 거부되고 그 이유가 문구로 온다. 화면은 막지 않고 이유를 그대로 보여준다.
+ */
+export async function postVisit(token: string, req: VisitCreateRequest): Promise<VisitResponse> {
+  const res = await fetch(`${API_BASE}/api/visits`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as VisitResponse;
+}
+
+/** GET /api/visits — 내가 보낸 방문 요청들. 확정되면 만날 사람과 장소가 함께 온다. */
+export async function getVisits(token: string): Promise<VisitResponse[]> {
+  const res = await fetch(`${API_BASE}/api/visits`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as VisitResponse[];
+}
+
+/** POST /api/visits/{id}/cancel — 보낸 요청을 거둔다. */
+export async function cancelVisit(token: string, id: string): Promise<VisitResponse> {
+  const res = await fetch(`${API_BASE}/api/visits/${encodeURIComponent(id)}/cancel`, {
+    method: "POST",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as VisitResponse;
+}
+
+// ── 담당자 (§8.2) ─────────────────────────────────────────────────────
+//
+// **가입 엔드포인트가 없다.** 계정은 운영 쪽에서 발급한다. 관리자 앱은 정의상
+// 출소자 명단을 다루므로 스스로 계정을 만드는 길을 열면 그게 곧 구멍이 된다.
+
+/**
+ * POST /api/staff/login — 담당자 로그인.
+ *
+ * **아이디가 틀렸는지 비밀번호가 틀렸는지 서버가 구분해 알리지 않는다.** 구분하면
+ * 존재하는 아이디를 찾아내는 길이 되기 때문이다. 화면도 그 문구를 그대로 낸다.
+ */
+export async function postStaffLogin(req: StaffLoginRequest): Promise<StaffLoginResponse> {
+  const res = await fetch(`${API_BASE}/api/staff/login`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(req),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffLoginResponse;
+}
+
+/** GET /api/staff/me — 로그인한 담당자 정보. 토큰이 아직 살아 있는지 확인하는 데도 쓴다. */
+export async function getStaffMe(token: string): Promise<StaffMeResponse> {
+  const res = await fetch(`${API_BASE}/api/staff/me`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffMeResponse;
+}
+
+/**
+ * POST /api/staff/logout — 서버에서 세션을 지운다.
+ *
+ * **실패해도 화면은 로그아웃한다.** 공용 기기를 전제하므로 나가는 길이 막히면 안 된다.
+ * 서버 세션은 8시간 뒤 어차피 만료된다.
+ */
+export async function postStaffLogout(token: string): Promise<void> {
+  try {
+    await fetch(`${API_BASE}/api/staff/logout`, {
+      method: "POST",
+      headers: { Authorization: `Bearer ${token}` },
+    });
+  } catch {
+    // 연결이 끊겨도 화면은 나간다.
+  }
+}
+
+/**
+ * GET /api/staff/visits — 담당자가 보는 방문 요청 목록.
+ *
+ * **다른 기관 요청은 아예 오지 않는다.** 서버가 거르는 것이지 화면이 거르는 것이 아니다.
+ */
+export async function getStaffVisits(token: string): Promise<StaffVisitResponse[]> {
+  const res = await fetch(`${API_BASE}/api/staff/visits`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffVisitResponse[];
+}
+
+/**
+ * PATCH /api/staff/visits/{id} — 상태 변경.
+ *
+ * **남의 기관 요청은 id를 알아도 거부된다.** 화면이 막는 것이 아니다.
+ */
+export async function patchStaffVisit(
+  token: string,
+  id: string,
+  action: StaffVisitAction,
+): Promise<StaffVisitResponse> {
+  const res = await fetch(`${API_BASE}/api/staff/visits/${encodeURIComponent(id)}`, {
+    method: "PATCH",
+    headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+    body: JSON.stringify(action),
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StaffVisitResponse;
+}
+
+/**
+ * GET /api/district-offices — 그 시군구의 주민센터.
+ *
+ * **좌표는 보내지 않는다** (§5.4). 기기에서 알아낸 시도·시군구 이름만 보낸다.
+ * 붙여 쓴 표기("수원시장안구")도 서버가 받아 정규화하므로 그대로 넘긴다.
+ */
+export async function getDistrictOffices(
+  sido: string,
+  sigungu: string,
+): Promise<DistrictOffice[]> {
+  const qs = `?sido=${encodeURIComponent(sido)}&sigungu=${encodeURIComponent(sigungu)}`;
+  const res = await fetch(`${API_BASE}/api/district-offices${qs}`);
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as DistrictOffice[];
+}
+
+/**
+ * GET /api/institutions — 그 지원 항목에서 안내할 기관.
+ *
+ * `route`로 물으면 그 항목에 맞는 종류가 함께 온다 — R8이면 허그상담소와
+ * 정신건강복지센터, R6이면 지부와 교육원이다 (§5.4).
+ */
+export async function getInstitutions(
+  route: string,
+  sido: string,
+  district: string,
+): Promise<Institution[]> {
+  const qs =
+    `?route=${encodeURIComponent(route)}` +
+    `&sido=${encodeURIComponent(sido)}&district=${encodeURIComponent(district)}`;
+  const res = await fetch(`${API_BASE}/api/institutions${qs}`);
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as Institution[];
+}
+
 /** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */
 export async function getCenters(category?: string): Promise<Center[]> {
   const qs = category ? `?category=${encodeURIComponent(category)}` : "";
@@ -87,6 +313,33 @@ export async function postAnalyze(req: AnalyzeRequest): Promise<TaskCard> {
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as TaskCard;
+}
+
+/**
+ * GET /api/chat/{route_id} — 그 할 일에서 나눈 지난 대화 (§6.3).
+ *
+ * **저장을 꺼두면 빈 배열이 온다.** 오류가 아니므로 화면은 대화가 없는 것으로 다룬다.
+ */
+export async function getChatHistory(token: string, routeId: string): Promise<StoredChatTurn[]> {
+  const res = await fetch(`${API_BASE}/api/chat/${encodeURIComponent(routeId)}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as StoredChatTurn[];
+}
+
+/**
+ * DELETE /api/chat/{route_id} — 이 대화를 지운다 (§6.3-2).
+ *
+ * **지울 길이 있어야 저장이 성립한다.** 자동 로그인 상태에서 기기를 잡은 사람이
+ * 대화를 읽을 수 있고, 거기에는 사용자가 가장 사적으로 말한 것이 들어 있다.
+ */
+export async function deleteChatHistory(token: string, routeId: string): Promise<void> {
+  const res = await fetch(`${API_BASE}/api/chat/${encodeURIComponent(routeId)}`, {
+    method: "DELETE",
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
 }
 
 /**
@@ -108,7 +361,12 @@ export async function streamChat(
       "Content-Type": "application/json",
       ...(req.token ? { Authorization: `Bearer ${req.token}` } : {}),
     },
-    body: JSON.stringify({ message: req.message, history: req.history }),
+    body: JSON.stringify({
+      message: req.message,
+      history: req.history,
+      // 값이 없으면 키를 아예 넣지 않는다. 빈 문자열을 보내면 서버가 모르는 코드로 받는다.
+      ...(req.route_id ? { route_id: req.route_id } : {}),
+    }),
     signal,
   });
 
@@ -168,6 +426,9 @@ function dispatchFrame(frame: string, handlers: ChatStreamHandlers): void {
   switch (event) {
     case "triage":
       handlers.onTriage?.((parsed as { routes: RouteOut[] }).routes);
+      break;
+    case "evidence":
+      handlers.onEvidence?.(parsed as EvidenceEvent);
       break;
     case "text":
       handlers.onText?.((parsed as { delta: string }).delta);

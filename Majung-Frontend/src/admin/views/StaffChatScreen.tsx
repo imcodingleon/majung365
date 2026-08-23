@@ -1,16 +1,14 @@
 // 담당자 채팅 (§7.3·§8.1).
 //
-// **화면만이다.** 백엔드 Socket.IO가 아직 없다. 붙일 때 지켜야 할 것이 정해져 있다.
-//   - 접속 핸드셰이크에 세션 토큰을 실어 서버가 검증한다. 방 참여자가 아니면 입장 거부
-//   - 낙관적 UI. 임시 말풍선을 먼저 그리고 clientMsgId로 서버 에코와 짝짓는다
-//   - 전송 방식을 websocket으로 고정하지 않는다. polling으로 붙은 뒤 승격한다
-//   - 토큰이 갱신되면 소켓 자격증명도 교체한다
+// 연결은 `useVisitChat`이 맡는다. 이 화면은 받은 것을 그리기만 한다.
 //
 // **이미지는 주고받지 않는다.** 신분증이나 서류 사진이 오가면 위험만 커진다. 텍스트만이다.
 import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
 export type StaffMessage = {
@@ -26,9 +24,25 @@ type Props = {
   messages: readonly StaffMessage[];
   onSend: (text: string) => void;
   onBack: () => void;
+  /**
+   * 방이 열리지 않은 이유. 서버가 준 문구를 그대로 낸다.
+   *
+   * **없는 요청과 남의 요청에 같은 문구가 온다.** 구분해 주면 남의 방 id를 찾는 데
+   * 쓰이므로 화면에서도 그 둘을 다르게 표시하지 않는다.
+   */
+  blocked?: string | null;
+  /** 붙어 있는지. 끊긴 채 입력만 받으면 보낸 줄 알고 기다리게 된다. */
+  connected?: boolean;
 };
 
-export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
+export function StaffChatScreen({
+  peerName,
+  messages,
+  onSend,
+  onBack,
+  blocked,
+  connected = true,
+}: Props) {
   const [draft, setDraft] = useState("");
 
   const send = () => {
@@ -40,26 +54,27 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
-      <View className="flex-row items-center gap-3 border-b border-line px-4 py-3">
-        <Pressable
-          onPress={onBack}
-          accessibilityRole="button"
-          accessibilityLabel="뒤로"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">‹</Text>
-        </Pressable>
-        <View className="flex-1">
-          <Text className="text-[13px] text-ink-muted">방문 조율</Text>
-          <Text className="mt-0.5 text-[17px] font-extrabold text-ink-strong">{peerName}</Text>
-        </View>
-      </View>
+      <ScreenHeader
+        title={peerName}
+        eyebrow="방문 조율"
+        leading="back"
+        closeHint="요청 상세로 돌아가기"
+        onClose={onBack}
+      />
 
-      <View className="border-b border-line bg-alert-soft px-4 py-2">
-        <Text className="text-[13px] font-bold text-alert">
-          시연용 화면 · 아직 실제로 전송되지 않습니다
-        </Text>
-      </View>
+      {/* 방이 안 열렸거나 끊긴 것을 화면이 숨기지 않는다. 담당자가 보냈다고 믿고
+          기다리면 그 사이에 사용자는 답을 못 받는다 */}
+      {blocked ? (
+        <NoteBox tone="warn" className="mx-4 mt-3">
+          {blocked}
+        </NoteBox>
+      ) : !connected ? (
+        <View className="border-b border-line px-4 py-2" style={{ backgroundColor: COLORS.noteWarn }}>
+          <Text className="text-caption font-bold" style={{ color: COLORS.noteWarnInk }}>
+            연결이 끊겼어요. 다시 잇는 중이에요.
+          </Text>
+        </View>
+      ) : null}
 
       <KeyboardAvoidingView
         className="flex-1"
@@ -67,7 +82,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
       >
         <ScrollView className="flex-1" contentContainerClassName="px-4 py-4">
           {messages.length === 0 ? (
-            <Text className="mt-10 text-center text-[15px] leading-[25px] text-ink-muted">
+            <Text className="mt-10 text-center text-body text-ink-muted">
               여기서 방문 시간과 오시는 길을 조율합니다.
             </Text>
           ) : null}
@@ -77,7 +92,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
             return (
               <View
                 key={m.id}
-                className="mb-2.5 max-w-[82%] rounded-2xl px-3.5 py-2.5"
+                className="mb-3 max-w-[82%] rounded-2xl px-4 py-3"
                 style={{
                   alignSelf: mine ? "flex-end" : "flex-start",
                   backgroundColor: mine ? COLORS.brand : COLORS.bubble,
@@ -86,7 +101,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
                 }}
               >
                 <Text
-                  className="text-[15px] leading-[24px]"
+                  className="text-body"
                   style={{ color: mine ? COLORS.surface : COLORS.inkStrong }}
                 >
                   {m.text}
@@ -96,7 +111,7 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
           })}
         </ScrollView>
 
-        <View className="flex-row items-end gap-2 border-t border-line px-3 py-2.5">
+        <View className="flex-row items-end gap-2 border-t border-line px-3 py-3">
           <TextInput
             value={draft}
             onChangeText={setDraft}
@@ -104,17 +119,17 @@ export function StaffChatScreen({ peerName, messages, onSend, onBack }: Props) {
             placeholder="메시지를 적으세요"
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="메시지 입력"
-            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-3.5 py-3 text-[15px] leading-[22px] text-ink-strong"
+            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-4 py-3 text-body text-ink-strong"
           />
           <Pressable
             onPress={send}
             disabled={!draft.trim()}
             accessibilityRole="button"
             accessibilityLabel="보내기"
-            className="rounded-xl px-4 py-3.5 active:opacity-90"
+            className="rounded-xl px-4 py-4 active:opacity-90"
             style={{ backgroundColor: draft.trim() ? COLORS.brand : COLORS.brandMuted }}
           >
-            <Text className="text-base font-extrabold text-white">보내기</Text>
+            <Text className="text-body-lg font-extrabold text-white">보내기</Text>
           </Pressable>
         </View>
       </KeyboardAvoidingView>

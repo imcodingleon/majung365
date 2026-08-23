@@ -2,23 +2,82 @@
   "_meta": {
     "source": "_bmad-output/specs/spec-majung-2nd/intake-questions.md",
     "note": "초기 진단 답변 → 지원 항목 판정 규칙. 필수 문항 14개가 지원 항목 14개와 1:1 대응한다.",
-    "warning": "optionId 값은 기획 검토 중이다(intake-questions.md §9-1). resolved_options가 비어 있으면 그 항목은 답이 온 이상 항상 할 일로 잡힌다 — 확정되면 값만 채우면 되고 코드는 그대로다.",
-    "resolved_options": "이 답을 골랐으면 이미 해결된 상태라 할 일에서 뺀다."
+    "warning": "resolved_options가 비어 있으면 그 항목은 답이 온 이상 항상 할 일로 잡힌다. 값이 비어 있던 동안에는 14개 항목 전부가 모든 사용자에게 떴다 — 빚이 없는 사람에게 개인회생 안내가 붙는 식이었다(2026-08-23).",
+    "resolved_options": "이 답을 골랐으면 이미 해결된 상태라 할 일에서 뺀다. 값은 Majung-Frontend/src/features/intake/domain/questions.ts의 optionId와 같아야 한다.",
+    "NOT_NEEDED": "다섯 문항(R4·R2·R3·R8·R14)에는 빠져나갈 답이 아예 없었다. 화면에 '지금은 필요 없어요'를 넣고 그 값을 여기서 받는다. 선택지와 이 값은 짝이며 한쪽만 있으면 아무것도 달라지지 않는다."
   },
   "rules": [
-    { "route_id": "R1", "data_key": "accommodationStatus", "resolved_options": [] },
-    { "route_id": "R4", "data_key": "housingConditionIds", "resolved_options": [] },
-    { "route_id": "R11", "data_key": "addressStatus", "resolved_options": [] },
-    { "route_id": "R2", "data_key": "emergencyExpenseType", "resolved_options": [] },
-    { "route_id": "R12", "data_key": "livelihoodBenefitStatus", "resolved_options": [] },
-    { "route_id": "R9", "data_key": "identityStatus", "resolved_options": [] },
-    { "route_id": "R10", "data_key": "bankAccountStatus", "resolved_options": [] },
-    { "route_id": "R6", "data_key": "employmentCurrentStatus", "resolved_options": [] },
-    { "route_id": "R7", "data_key": "startupIntent", "resolved_options": [] },
-    { "route_id": "R3", "data_key": "healthSupportNeed", "resolved_options": [] },
-    { "route_id": "R8", "data_key": "counselingNeed", "resolved_options": [] },
-    { "route_id": "R13", "data_key": "releaseCertificateStatus", "resolved_options": [] },
-    { "route_id": "R14", "data_key": "debtProcedureStage", "resolved_options": [] },
-    { "route_id": "R15", "data_key": "medicalCoverageStatus", "resolved_options": [] }
+    {
+      "route_id": "R1",
+      "data_key": "accommodationStatus",
+      "resolved_options": ["STABLE_PLACE"]
+    },
+    {
+      "route_id": "R4",
+      "data_key": "housingNeed",
+      "resolved_options": ["NOT_NEEDED"]
+    },
+    {
+      "route_id": "R11",
+      "data_key": "addressStatus",
+      "resolved_options": ["MATCHED"]
+    },
+    {
+      "route_id": "R2",
+      "data_key": "emergencyExpenseType",
+      "resolved_options": ["NOT_NEEDED"]
+    },
+    {
+      "_note": "OPT_OUT은 '지금은 알아보고 싶지 않아요'다. 받고 있는 것과 뜻은 다르지만, 알아보고 싶지 않다고 한 사람에게 그 항목을 계속 들이미는 것은 그 답을 무시하는 일이다.",
+      "route_id": "R12",
+      "data_key": "livelihoodBenefitStatus",
+      "resolved_options": ["RECEIVING", "OPT_OUT"]
+    },
+    {
+      "route_id": "R9",
+      "data_key": "identityStatus",
+      "resolved_options": ["USABLE_ID"]
+    },
+    {
+      "route_id": "R10",
+      "data_key": "bankAccountStatus",
+      "resolved_options": ["USABLE"]
+    },
+    {
+      "route_id": "R6",
+      "data_key": "employmentCurrentStatus",
+      "resolved_options": ["EMPLOYED_BUSINESS_STUDENT"]
+    },
+    {
+      "route_id": "R7",
+      "data_key": "startupIntent",
+      "resolved_options": ["NOT_INTERESTED"]
+    },
+    {
+      "route_id": "R3",
+      "data_key": "healthSupportNeed",
+      "resolved_options": ["NOT_NEEDED"]
+    },
+    {
+      "route_id": "R8",
+      "data_key": "counselingNeed",
+      "resolved_options": ["NOT_NEEDED"]
+    },
+    {
+      "route_id": "R13",
+      "data_key": "releaseCertificateStatus",
+      "resolved_options": ["READY"]
+    },
+    {
+      "_note": "진행 중(COURT_PROCESS·CCRS_PROCESS)은 해결로 보지 않는다. 중간에 멈추는 경우가 많고 진행 중일수록 안내가 필요하다. OPT_OUT은 '답하고 싶지 않아요'이며 빚이 없다는 뜻이 아니지만, 말하지 않겠다고 한 사람에게 그 항목을 띄우지 않는다.",
+      "route_id": "R14",
+      "data_key": "debtProcedureStage",
+      "resolved_options": ["NOT_NEEDED", "OPT_OUT"]
+    },
+    {
+      "route_id": "R15",
+      "data_key": "medicalCoverageStatus",
+      "resolved_options": ["MEDICAL_AID", "HEALTH_INSURANCE"]
+    }
   ]
 }

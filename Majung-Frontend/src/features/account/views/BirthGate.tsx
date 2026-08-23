@@ -6,6 +6,8 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { NoteBox } from "@/shared/components/NoteBox";
+import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
 import { birthMatches } from "../domain/account";
@@ -14,9 +16,11 @@ type Props = {
   storedBirth: string;
   onPass: () => void;
   onClose: () => void;
+  /** 내 정보를 불러오지 못했을 때. 조용히 빈 화면으로 두지 않는다. */
+  error?: string | null;
 };
 
-export function BirthGate({ storedBirth, onPass, onClose }: Props) {
+export function BirthGate({ storedBirth, onPass, onClose, error }: Props) {
   const [parts, setParts] = useState({ year: "", month: "", day: "" });
   const [failed, setFailed] = useState(false);
 
@@ -30,26 +34,24 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
 
   const filled = parts.year.length === 4 && parts.month !== "" && parts.day !== "";
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-3 py-3.5 text-center text-[17px] text-ink-strong";
+    "rounded-xl border-[1.5px] border-line bg-white px-3 py-4 text-center text-body-lg text-ink-strong";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <View className="flex-row items-center justify-end px-5 py-4">
-        <Pressable
-          onPress={onClose}
-          accessibilityRole="button"
-          accessibilityLabel="닫기"
-          className="size-10 items-center justify-center rounded-full active:opacity-70"
-        >
-          <Text className="text-2xl text-ink-muted">✕</Text>
-        </Pressable>
-      </View>
+      <ScreenHeader title="내 정보" closeHint="내 정보 화면 닫기" onClose={onClose} />
 
-      <View className="flex-1 px-5">
-        <Text className="text-[23px] font-extrabold leading-[33px] text-ink-strong">
+      <View className="flex-1 px-5 pt-6">
+        {/* 불러오지 못한 것을 조용히 넘기지 않는다. 빈 화면이면 사용자는 자기 탓을 한다 */}
+        {error ? (
+          <NoteBox tone="alert" className="mb-6">
+            {error}
+          </NoteBox>
+        ) : null}
+
+        <Text className="text-title font-extrabold text-ink-strong">
           생일을 알려주세요
         </Text>
-        <Text className="mb-8 mt-2 text-base leading-[26px] text-ink-sub">
+        <Text className="mb-8 mt-2 text-body-lg text-ink-sub">
           다른 사람이 내 정보를 보지 못하게 한 번만 확인할게요.
         </Text>
 
@@ -66,7 +68,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="생일 년"
           />
-          <Text className="text-base text-ink-sub">년</Text>
+          <Text className="text-body-lg text-ink-sub">년</Text>
           <TextInput
             className={`${box} w-16`}
             value={parts.month}
@@ -79,7 +81,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="생일 월"
           />
-          <Text className="text-base text-ink-sub">월</Text>
+          <Text className="text-body-lg text-ink-sub">월</Text>
           <TextInput
             className={`${box} w-16`}
             value={parts.day}
@@ -92,15 +94,11 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="생일 일"
           />
-          <Text className="text-base text-ink-sub">일</Text>
+          <Text className="text-body-lg text-ink-sub">일</Text>
         </View>
 
         {failed ? (
-          <View className="mt-4 rounded-xl border border-alert-line bg-alert-soft px-4 py-3.5">
-            <Text className="text-[15px] leading-[24px] text-alert-ink">
-              가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.
-            </Text>
-          </View>
+          <NoteBox tone="alert" className="mt-4">가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.</NoteBox>
         ) : null}
 
         <Pressable
@@ -112,7 +110,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
           className="mt-6 items-center rounded-2xl py-4 active:opacity-90"
           style={{ backgroundColor: filled ? COLORS.brand : COLORS.brandMuted }}
         >
-          <Text className="text-[17px] font-extrabold text-white">확인</Text>
+          <Text className="text-body-lg font-extrabold text-white">확인</Text>
         </Pressable>
       </View>
     </SafeAreaView>

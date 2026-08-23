@@ -16,6 +16,11 @@ from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, 
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.intake import IntakeRule, judge
+from app.domains.knowledge.domain.purpose import (
+    docs_with_purpose,
+    expense_purpose,
+    say_with_purpose,
+)
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import (
@@ -53,37 +58,40 @@ class IntakeUseCase:
                 section_id=v.section_id.value,
                 section_label=section_label_for(v.section_id),
                 blocks_others=v.blocks_others,
-                card=self._card_for(v.route_id),
+                # 고른 답을 카드의 빈자리에 채운다. 카드를 답별로 나누지는 않는다 —
+                # 갈리는 것은 준비물과 창구에서 할 말뿐이다.
+                card=self._card_for(v.route_id, answers),
             )
             for v in verdicts
             if v.route_id not in completed
         )
 
-    def _to_option(self, inst: Institution) -> IntakeCardOption:
+    def _to_option(self, inst: Institution, purpose: str | None = None) -> IntakeCardOption:
         desk = desk_of(inst)
         contact = contact_of(inst)
         return IntakeCardOption(
             org=inst.name,
             where=inst.where,
             next_step=inst.next_step,
-            docs=inst.docs,
+            docs=docs_with_purpose(inst.docs, purpose),
             desk_place=desk.place if desk else "",
-            desk_say=desk.say if desk else "",
+            desk_say=say_with_purpose(desk.say, purpose) if desk else "",
             contact_org=contact.org,
             contact_phone=contact.phone,
             contact_hours=contact.hours,
         )
 
-    def _card_for(self, route: RouteId) -> IntakeCard:
+    def _card_for(self, route: RouteId, answers: dict[str, object]) -> IntakeCard:
         """항목당 카드 하나. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
         카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다."""
         lead = self._institutions.lead_of(route)
         paths = (lead, *self._institutions.companions_of(route))
+        purpose = expense_purpose(route, answers)
         return IntakeCard(
             institution_id=lead.id,
             name=lead.name,
             summary_easy=lead.summary_easy,
-            docs=lead.docs,
+            docs=docs_with_purpose(lead.docs, purpose),
             deadline=lead.deadline,
             source_url=lead.source_url,
             benefit_summary=lead.benefit_summary,
@@ -92,7 +100,5 @@ class IntakeUseCase:
             cautions=lead.cautions,
             source_urls=lead.source_urls,
             verified_note=verified_note(lead.verified_at),
-            options=tuple(
-                self._to_option(i) for i in paths
-            ),
+            options=tuple(self._to_option(i, purpose) for i in paths),
         )

@@ -3,6 +3,7 @@
 // **최소 노출 원칙이다.** 담당자가 방문 응대에 필요한 것만 담는다.
 // 죄목과 생일은 여기에 없다. 타입에 자리를 두지 않는 것이 필터로 거르는 것보다 확실하다.
 
+import type { SharedAnswerOut } from "@/shared/types/staffVisit";
 import type { VisitStatus } from "@/shared/types/visit";
 
 export type StaffRequest = {
@@ -14,6 +15,15 @@ export type StaffRequest = {
   /** 1·2지망 방문 시간. 사람이 읽는 형태다. */
   firstChoice: string;
   secondChoice: string;
+  /**
+   * 같은 시간의 원본 값(ISO).
+   *
+   * **화면은 사람이 읽는 말로 그리고 서버는 시각을 받는다.** 확정할 때 담당자가 고른
+   * 것이 어느 지망이었는지 되짚으려면 원본이 필요하다. 없으면 만나기로 한 시각을
+   * 못 보내고, 서버가 1지망으로 채우게 된다.
+   */
+  firstChoiceAt: string | null;
+  secondChoiceAt: string | null;
   /** 챙겨 온다고 표시한 준비물. */
   readyDocs: readonly string[];
   /** 이 요청에서 필요한 준비물 전체. 위 목록과 견줘 무엇이 빠졌는지 본다. */
@@ -25,6 +35,13 @@ export type StaffRequest = {
   status: VisitStatus;
   /** 받은 시각. 사람이 읽는 형태다. */
   receivedAt: string;
+  /**
+   * 본인이 함께 보내기로 한 초기 진단 답변 (§7.4-1).
+   *
+   * **서버가 정렬해 보낸 순서 그대로다.** 화면에서 다시 정렬하지 않는다.
+   * 동의하지 않았으면 비어 있으며, 그때는 구역 자체를 그리지 않는다.
+   */
+  sharedAnswers: readonly SharedAnswerOut[];
 };
 
 /**
@@ -37,6 +54,14 @@ export type StaffRequest = {
 export type ConfirmInput = {
   /** 확정한 방문 시각. 1·2지망 중 하나를 고르거나 직접 적는다. */
   whenLabel: string;
+  /**
+   * 그 시각의 원본 값(ISO). **직접 적은 경우에는 없다.**
+   *
+   * 없으면 서버가 1지망으로 채운다 — 매번 입력하게 하면 빼먹었을 때 확정 자체가
+   * 막히기 때문이다. 장소를 필수로 둔 것과 다른 판단이며, 장소는 서버가 알 수 없는
+   * 정보이지만 시각은 이미 1지망이 있다.
+   */
+  whenIso?: string | null;
   staffName: string;
   place: string;
 };

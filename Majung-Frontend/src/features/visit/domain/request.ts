@@ -3,6 +3,8 @@
 // 상태가 없으면 사용자는 보내놓고 아무것도 모르는 채 기다리게 된다. 그래서 요청이 어떤 상태를
 // 거치는지, 각 상태에서 무엇이 보이는지를 도메인에 못 박는다.
 
+import { josa } from "@/shared/utils/korean";
+
 import type { VisitStatus } from "@/shared/types/visit";
 
 export type { VisitStatus };
@@ -34,7 +36,12 @@ export type VisitRequest = {
   proposedTime?: string;
   /** 취소된 이유. 사용자에게 그대로 보여준다. */
   cancelReason?: string;
+  /** 보낸 시각(ISO). 하루 상한을 미리 알려주는 데 쓴다. 서버가 주지 않으면 없다. */
+  createdAt?: string | null;
 };
+
+/** 이 말로 끝나면 직함이 이미 붙은 것이다. 뒤에 "담당자"를 또 붙이지 않는다. */
+const TITLE_TAIL = /(담당자|주무관|팀장|과장|계장|주임|선생님|상담사|사회복지사)$/;
 
 /** 각 상태에서 사용자가 보는 문장 (§7.1). */
 export function statusMessage(request: VisitRequest): string {
@@ -46,11 +53,24 @@ export function statusMessage(request: VisitRequest): string {
     case "confirmed": {
       const c = request.confirmation;
       if (!c) return "방문 시간이 정해졌어요.";
-      return `${c.whenLabel}으로 정해졌어요. ${c.place}에서 ${c.staffName} 담당자를 찾으세요.`;
+      // **만날 사람과 장소가 먼저다** (§7.1). 창구에서 신분이 드러나는 순간이 실질적
+      // 장벽이고, 그 해법은 시간을 아는 것이 아니라 누구를 찾아가면 되는지 아는 것이다.
+      //
+      // 이름만 올 것을 전제하지 않는다. 서버가 "행정복지센터 담당자"·"박지훈 주무관"처럼
+      // 직함이 섞인 값을 주기도 하고, 그때 뒤에 "담당자"를 또 붙이면
+      // **"담당자 담당자를 찾으세요"**가 된다. 이름만 왔을 때만 직함을 붙인다 —
+      // 한국 이름은 띄어쓰지 않으므로 공백이 있으면 이미 직함이 붙은 것으로 본다.
+      const who = c.staffName.trim();
+      const bare = who.length > 0 && !who.includes(" ") && !TITLE_TAIL.test(who);
+      const whom = bare ? `${who} 담당자` : who;
+      const where = `${c.place}에서 ${whom}${josa(whom, "을", "를")} 찾으세요.`;
+      // 시각이 비면 시각 이야기를 빼고 만다. 넣으면 "정해진 시간으로 정해졌어요"가 된다.
+      if (!c.whenLabel) return `방문 시간이 정해졌어요. ${where}`;
+      return `${c.whenLabel}${josa(c.whenLabel, "으로", "로")} 정해졌어요. ${where}`;
     }
     case "reschedule_proposed":
       return request.proposedTime
-        ? `담당자가 다른 시간을 이야기했어요. ${request.proposedTime}은 어떠세요?`
+        ? `담당자가 다른 시간을 이야기했어요. ${request.proposedTime}${josa(request.proposedTime, "은", "는")} 어떠세요?`
         : "담당자가 다른 시간을 이야기했어요.";
     case "completed":
       return "방문을 마쳤어요.";
@@ -82,6 +102,25 @@ export type LimitReason = "daily" | "pending" | "duplicate";
  * 지금 새 요청을 보낼 수 있는지. 막는 이유가 있으면 그 이유를 돌려준다.
  * 진짜 위험은 담당자가 못 받는 것이 아니라 급한 사람의 진짜 요청이 목록 아래로 밀리는 것이다.
  */
+/**
+ * 오늘 보낸 건수. **보낸 시각을 모르는 요청은 세지 않는다.**
+ *
+ * 세면 어제 것까지 오늘로 계산되어 멀쩡한 요청이 막힌다. 덜 세는 쪽이 안전한 이유는
+ * 판정을 서버가 다시 하기 때문이다 — 화면의 셈은 미리 알려주는 용도다.
+ */
+export function countSentToday(requests: readonly VisitRequest[], now: Date = new Date()): number {
+  const sameDay = (iso: string) => {
+    const d = new Date(iso);
+    if (Number.isNaN(d.getTime())) return false;
+    return (
+      d.getFullYear() === now.getFullYear() &&
+      d.getMonth() === now.getMonth() &&
+      d.getDate() === now.getDate()
+    );
+  };
+  return requests.filter((r) => r.createdAt && sameDay(r.createdAt)).length;
+}
+
 export function blockReason(
   taskId: string,
   todaySentCount: number,
@@ -92,6 +131,29 @@ export function blockReason(
   if (existing.filter((r) => isPending(r.status)).length >= PENDING_LIMIT) return "pending";
   if (todaySentCount >= DAILY_SEND_LIMIT) return "daily";
   return null;
+}
+
+/**
+ * 사용자가 스스로 물릴 수 있는 상태.
+ *
+ * **§7.1의 상태 흐름에는 담당자가 하는 취소만 있다.** 사용자가 물리는 길은 적혀 있지
+ * 않은데, 서버에는 사용자 토큰으로 부르는 창구가 있다. 못 가게 되는 일은 실제로
+ * 생기고, 그때 물릴 길이 없으면 **담당자가 헛되이 기다린다.**
+ *
+ * 이미 다녀왔거나 이미 취소된 것은 물릴 것이 없다.
+ */
+export function canCancel(status: VisitStatus): boolean {
+  return status !== "completed" && status !== "cancelled";
+}
+
+/**
+ * 물리기 전에 한 번 더 묻는지.
+ *
+ * **확정된 요청만 묻는다.** 담당자가 시간과 창구를 비워둔 상태라 무르는 값이 다르다.
+ * 아직 확정 전이면 묻지 않는다 — 저리터러시 전제에서 확인 절차가 늘수록 그만두게 된다.
+ */
+export function cancelNeedsConfirm(status: VisitStatus): boolean {
+  return status === "confirmed";
 }
 
 /**
@@ -117,11 +179,17 @@ export function sharedItems(
   hasNote: boolean,
   hasDeadlineRoute: boolean,
   hasDocs = true,
+  /** 함께 보내기로 한 분야 이름들. 고르지 않았으면 비어 있다 (§7.4-1). */
+  sharedSections: readonly string[] = [],
 ): readonly string[] {
   const items = ["이름", "방문하실 시간 두 가지", "무슨 일로 오시는지"];
   if (hasDocs) items.push("챙겨 오실 것");
   if (hasNote) items.push("하고 싶은 말");
   // 기한이 있는 제도를 상담할 때만 보낸다.
   if (hasDeadlineRoute) items.push("출소한 날짜");
+  // **고른 분야를 이름으로 낸다.** "답한 내용"이라고만 적으면 무엇이 가는지 알 수 없다.
+  if (sharedSections.length > 0) {
+    items.push(`${sharedSections.join("·")} 답하신 내용`);
+  }
   return items;
 }
