@@ -13,7 +13,13 @@ import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import type { DistrictOffice, Institution, NearbyResult } from "../domain/institution";
-import { byDistanceFrom, districtLabel, type LocatedPlace } from "@/shared/location";
+import {
+  byDistanceFrom,
+  districtLabel,
+  officesByDistance,
+  sameSido,
+  type LocatedPlace,
+} from "@/shared/location";
 import type { SelectedRegion } from "../domain/region";
 import type { LookupState } from "@/shared/location";
 
@@ -97,18 +103,15 @@ function Section({ title, children }: { title: string; children: React.ReactNode
 /**
  * 그 사람이 사는 동의 주민센터를 앞에 둔다. 나머지는 같은 구 안의 다른 동이다.
  *
- * **동 이름이 정확히 맞지 않을 수 있다.** 경계 데이터가 "불당동"인데 주민센터는
- * "불당1동"·"불당2동"으로 나뉘어 있는 식이다 — 행정동이 갈라진 시점이 서로 다르다.
- * 그래서 앞부분이 겹치면 같은 동네로 본다. 틀려도 걸어갈 거리이고, 못 찾는 것보다 낫다.
+ * **이름을 맞춰 보던 것을 거리로 바꿨다.** 경계 데이터가 "불당동"인데 주민센터는
+ * "불당1동"·"불당2동"으로 나뉘어 있는 식이라 이름으로는 어긋난다 — 행정동이 갈라진
+ * 시점이 서로 다르다. 주민센터는 동을 알고 있어서 거리를 정확히 잴 수 있다.
  */
 function sortOffices(
   offices: readonly DistrictOffice[],
-  dong: string,
+  place: LocatedPlace,
 ): readonly DistrictOffice[] {
-  if (!dong) return offices;
-  const stem = dong.replace(/\d+(동|가)$/, "").replace(/동$/, "");
-  const mine = offices.filter((o) => o.dong === dong || (stem.length >= 2 && o.dong.startsWith(stem)));
-  return mine.length > 0 ? [...mine, ...offices.filter((o) => !mine.includes(o))] : offices;
+  return officesByDistance(place, offices);
 }
 
 /**
@@ -142,8 +145,6 @@ function branchesFor(
   institutions: readonly Institution[],
   place: LocatedPlace,
 ): readonly Institution[] {
-  const sido = place.sido;
-  const shortSido = sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
   const all = institutions.filter((x) => x.kind !== "mental_health");
   // **그 광역에 없으면 아무것도 안 낸다.** 허그상담소는 전국에 세 곳뿐(원주·천안·통영)
   // 이라 서울에는 없는데, 폴백으로 하나를 내면 **서울 사람에게 원주로 가라고 하는 셈**이다.
@@ -155,7 +156,7 @@ function branchesFor(
   // 데이터로 재므로 좌표가 어디로도 나가지 않는다 (§5.4).
   return byDistanceFrom(
     place,
-    all.filter((x) => x.sido === shortSido || x.sido === sido),
+    all.filter((x) => sameSido(x.sido, place)),
   );
 }
 
@@ -271,7 +272,7 @@ export function NearbyScreen({
                     순서가 없으면 자기 것을 찾지 못한다 */}
                 {result.offices.length > 0 ? (
                   <Section title="주민센터">
-                    {sortOffices(result.offices, place.dong)
+                    {sortOffices(result.offices, place)
                       .slice(0, 3)
                       .map((o, i) => (
                         <PlaceCard

@@ -7,7 +7,12 @@
 // 자리를 비워 두는 것이 맞다 — 빈 상자는 "여기 뭔가 있어야 하는데"로 읽힌다.
 import { Text, View } from "react-native";
 
-import { byDistanceFrom, type LocatedPlace } from "@/shared/location";
+import {
+  byDistanceFrom,
+  officesByDistance,
+  sameSido,
+  type LocatedPlace,
+} from "@/shared/location";
 import { COLORS } from "@/shared/theme/colors";
 import type { DistrictOffice, Institution } from "@/shared/types";
 
@@ -19,7 +24,18 @@ type Props = {
   anyBranch?: boolean;
 };
 
-function Row({ name, address, badge }: { name: string; address: string; badge?: string }) {
+function Row({
+  name,
+  address,
+  phone,
+  badge,
+}: {
+  name: string;
+  address: string;
+  /** 있으면 낸다. **관할을 우리가 모르므로 전화가 확인 수단이다.** */
+  phone?: string;
+  badge?: string;
+}) {
   return (
     <View className="mt-2 first:mt-0">
       <View className="flex-row items-center gap-2">
@@ -33,30 +49,32 @@ function Row({ name, address, badge }: { name: string; address: string; badge?: 
         ) : null}
       </View>
       <Text className="mt-0.5 text-caption text-ink-sub">{address}</Text>
+      {phone ? (
+        <Text className="mt-0.5 text-caption font-bold" style={{ color: COLORS.brand }}>
+          {phone}
+        </Text>
+      ) : null}
     </View>
   );
 }
 
 /**
- * 그 사람이 사는 동의 주민센터를 앞에 둔다.
+ * 그 사람이 사는 곳에서 가까운 주민센터 셋.
  *
- * **동 이름이 정확히 맞지 않을 수 있다.** 경계 데이터가 "불당동"인데 주민센터는
- * "불당1동"·"불당2동"으로 갈려 있는 식이라, 앞부분이 겹치면 같은 동네로 본다.
+ * **이름을 맞춰 보던 것을 거리로 바꿨다.** 경계 데이터가 "불당동"인데 주민센터는
+ * "불당1동"·"불당2동"으로 갈려 있는 식이라 이름으로는 어긋난다. 주민센터는 동을
+ * 알고 있어서 거리를 정확히 잴 수 있다.
+ *
+ * **셋을 낸다.** 전입신고처럼 자기 동네에 가야 하는 일이 있는데, 위치가 경계에
+ * 걸리면 한 곳만 보고 엉뚱한 데로 갈 수 있다. 셋이면 그중에 맞는 것이 있다.
  */
 function pickOffices(
   offices: readonly DistrictOffice[],
-  dong: string,
+  place: LocatedPlace,
 ): { list: readonly DistrictOffice[]; mineFirst: boolean } {
-  if (!dong) return { list: offices.slice(0, 2), mineFirst: false };
-  const stem = dong.replace(/\d+(동|가)$/, "").replace(/동$/, "");
-  const mine = offices.filter((o) => o.dong === dong || (stem.length >= 2 && o.dong.startsWith(stem)));
-  if (mine.length === 0) return { list: offices.slice(0, 2), mineFirst: false };
-  const rest = offices.filter((o) => !mine.includes(o));
-  // **앞으로 당기는 것과 "여기예요"라고 단정하는 것은 다르다** (§5.4 — 없는 것을 있는
-  // 것처럼 보이게 하지 않는다). 어간이 겹치는 정도로 순서를 정하는 것은 도움이 되지만,
-  // 배지는 동 이름이 정확히 같을 때만 붙인다. 경계 데이터가 "불당동"이고 주민센터가
-  // "불당1동"·"불당2동"으로 갈린 경우, 근사치로 붙이면 둘 중 아무 쪽에나 붙는다.
-  return { list: [...mine, ...rest].slice(0, 2), mineFirst: mine[0]?.dong === dong };
+  const sorted = officesByDistance(place, offices).slice(0, 3);
+  // 배지는 정렬과 다르다. **동 이름이 정확히 같을 때만** "여기예요"라고 말한다 (§5.4).
+  return { list: sorted, mineFirst: Boolean(place.dong) && sorted[0]?.dong === place.dong };
 }
 
 /**
@@ -79,8 +97,6 @@ function pickInstitutions(
   institutions: readonly Institution[],
   place: LocatedPlace,
 ): readonly Institution[] {
-  // "서울특별시" → "서울". 공단 데이터가 짧은 이름을 쓴다.
-  const shortSido = place.sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
   const isCenter = (x: Institution) => x.kind === "mental_health";
   const fit = institutions.filter((x) =>
     isCenter(x)
@@ -88,23 +104,23 @@ function pickInstitutions(
         Boolean(x.district) &&
         Boolean(place.district) &&
         (x.district.startsWith(place.district) || place.district.startsWith(x.district))
-      : x.sido === shortSido || x.sido === place.sido,
+      : sameSido(x.sido, place),
   );
   // **그 지역에 없으면 아무것도 안 낸다.** 허그상담소는 전국 세 곳뿐이라 서울에는
   // 없는데, 폴백으로 하나를 내면 서울 사람에게 원주로 가라고 하는 셈이 된다.
   // 카드에는 대표번호가 이미 있어 전화로 물을 수 있다.
   const list = byDistanceFrom(place, fit);
 
-  // **공단은 한 곳만 낸다.** 둘을 늘어놓으면 사용자가 고르게 되고, 그것은 "어디로 가면
-  // 되는지 짚어주는" 것이 아니다(§5.4). 이제 가장 가까운 것이 앞에 온다. 다만 가까운
-  // 것과 관할인 것은 다를 수 있어서, 화면이 전화로 확인하라는 말을 함께 낸다.
-  return list[0] && !isCenter(list[0]) ? list.slice(0, 1) : list.slice(0, 2);
+  // **세 곳까지 낸다.** 한 곳만 내던 것은 "고르게 하지 않는다"는 뜻이었는데, 우리가
+  // 관할을 모르는 이상 그 한 곳이 맞다는 보장이 없다. 위치가 경계에 걸리면 엉뚱한
+  // 곳 하나만 보고 헛걸음하게 된다. 가까운 순으로 세 곳을 보이고 전화로 확인하게 한다.
+  return list.slice(0, 3);
 }
 
 export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props) {
   if (!place) return null;
 
-  const picked = offices.length > 0 ? pickOffices(offices, place.dong) : null;
+  const picked = offices.length > 0 ? pickOffices(offices, place) : null;
   const shown = pickInstitutions(institutions, place);
   // 공단 지부는 거리로 골랐을 뿐 관할까지 확인한 것이 아니다. 그 사실을 숨기지 않는다.
   const branchShown = !picked && shown.some((x) => x.kind !== "mental_health");
@@ -129,7 +145,9 @@ export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props)
               badge={i === 0 && picked.mineFirst ? "여기예요" : undefined}
             />
           ))
-        : shown.map((x) => <Row key={x.name} name={x.name} address={x.address} />)}
+        : shown.map((x) => (
+            <Row key={x.name} name={x.name} address={x.address} phone={x.phone} />
+          ))}
 
       {/* §5.4가 정한 것이다 — R9는 "아무 곳이나"가 부정확한 차선이 아니라 정확한 답이다.
           이 말이 없으면 자기 동 주민센터를 찾아 멀리 가는 사람이 생긴다 */}

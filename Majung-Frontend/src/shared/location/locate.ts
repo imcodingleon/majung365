@@ -160,13 +160,20 @@ export function addressCenter(address: string): [number, number] | null {
   const flat = address.replace(/\s+/g, "");
   let bestKey: string | null = null;
   for (const area of AREAS) {
-    const key = `${area.s}${area.g}`;
-    if (flat.startsWith(key) && (bestKey === null || key.length > bestKey.length)) {
-      bestKey = key;
+    // **주소가 짧은 시도 이름으로 오기도 한다.** "경북 예천군"·"인천 서구"처럼 쓴 것이
+    // 서른여덟 곳 중 아홉이다. 긴 이름만 맞추면 그것들이 전부 거리 없음으로 밀려
+    // 정렬이 무너진다. 두 형태를 다 본다.
+    for (const key of [`${area.s}${area.g}`, `${shortSido(area.s)}${area.g}`]) {
+      if (flat.startsWith(key) && (bestKey === null || key.length > bestKey.length)) {
+        bestKey = key;
+      }
     }
   }
   if (bestKey === null) return null;
-  return centerOf(AREAS.filter((a) => `${a.s}${a.g}` === bestKey));
+  const key = bestKey;
+  return centerOf(
+    AREAS.filter((a) => `${a.s}${a.g}` === key || `${shortSido(a.s)}${a.g}` === key),
+  );
 }
 
 /**
@@ -188,4 +195,78 @@ export function byDistanceFrom<T extends { address: string }>(
     })
     .sort((a, b) => a.km - b.km)
     .map((x) => x.item);
+}
+
+/**
+ * 경계 데이터의 시도 이름을 기관 데이터가 쓰는 짧은 이름으로 바꾼다.
+ *
+ * **끝의 "도"만 떼면 여섯 개 도가 통째로 어긋난다.** 기관 데이터는 "전남"이라고
+ * 쓰는데 그렇게 만들면 "전라남"이 나온다. 경남·경북·전남·전북·충남·충북이 모두
+ * 같은 모양이라, 이 여섯 곳에 사는 사람에게는 **공단 기관이 하나도 뜨지 않았다.**
+ * 줄임말이 규칙적이지 않으므로 표로 적어 둔다.
+ */
+const SHORT_SIDO: Record<string, string> = {
+  강원도: "강원",
+  강원특별자치도: "강원",
+  경기도: "경기",
+  경상남도: "경남",
+  경상북도: "경북",
+  광주광역시: "광주",
+  대구광역시: "대구",
+  대전광역시: "대전",
+  부산광역시: "부산",
+  서울특별시: "서울",
+  세종특별자치시: "세종",
+  울산광역시: "울산",
+  인천광역시: "인천",
+  전라남도: "전남",
+  전라북도: "전북",
+  전북특별자치도: "전북",
+  제주특별자치도: "제주",
+  제주도: "제주",
+  충청남도: "충남",
+  충청북도: "충북",
+};
+
+/**
+ * 기관 데이터와 맞추기 위한 짧은 시도 이름.
+ *
+ * 표에 없으면 끝의 접미사를 떼는 예전 방식으로 물러선다 — 새 이름이 생겨도 목록이
+ * 통째로 비지는 않게 한다.
+ */
+export function shortSido(sido: string): string {
+  return SHORT_SIDO[sido] ?? sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
+}
+
+/** 기관의 시도가 이 지역과 같은지. 양쪽 표기가 달라도 맞춘다. */
+export function sameSido(institutionSido: string, place: LocatedPlace): boolean {
+  const short = shortSido(place.sido);
+  return institutionSido === short || institutionSido === place.sido;
+}
+
+/**
+ * 주민센터를 가까운 순으로 세운다.
+ *
+ * **주민센터는 동을 알고 있어서 정확하게 잴 수 있다.** 기관 주소가 도로명뿐이라
+ * 시군구 중심으로만 재야 하는 것과 다르다. 그래서 이름을 맞춰 보는 대신 거리로
+ * 세운다 — 경계 데이터가 "불당동"인데 주민센터는 "불당1동"·"불당2동"으로 갈려 있는
+ * 식의 어긋남을 이름으로 풀려던 것이 애초에 무리였다.
+ */
+export function officesByDistance<T extends { sido: string; sigungu: string; dong: string }>(
+  place: LocatedPlace,
+  offices: readonly T[],
+): readonly T[] {
+  const from = placeCenter(place);
+  if (!from) return offices;
+  return [...offices]
+    .map((office) => {
+      const at = centerOf(
+        AREAS.filter(
+          (a) => a.g === office.sigungu && a.d === office.dong && shortSido(a.s) === shortSido(office.sido),
+        ),
+      );
+      return { office, km: at ? roughKm(from, at) : Infinity };
+    })
+    .sort((a, b) => a.km - b.km)
+    .map((x) => x.office);
 }
