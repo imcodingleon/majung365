@@ -29,10 +29,17 @@ type Props = {
   onClose: () => void;
 };
 
+/**
+ * "여기 나온 곳은 마중365가 2026년 8월 22일에 확인했어요."
+ *
+ * **무엇을 확인했는지를 문장 앞에 둔다.** 카드와 채팅의 확인 문구와 같은 형태이며,
+ * 대상만 다르다 — 저기는 안내이고 여기는 기관 목록이다. 형태가 어긋나면 사용자가
+ * 같은 뜻을 화면마다 다르게 읽는다.
+ */
 function checkedSentence(isoDate: string): string {
   const [y, m, d] = isoDate.split("-");
   if (!y || !m || !d) return "";
-  return `마중365가 ${y}년 ${Number(m)}월 ${Number(d)}일에 확인한 곳이에요.`;
+  return `여기 나온 곳은 마중365가 ${y}년 ${Number(m)}월 ${Number(d)}일에 확인했어요.`;
 }
 
 function InstitutionCard({ item }: { item: Institution }) {

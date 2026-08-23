@@ -32,6 +32,14 @@ export interface CardData {
   deadline: string | null;
   /** 근거 출처 URL */
   source_url: string;
+  /**
+   * 이 안내를 언제 확인했는지. 서버가 완성된 문장으로 준다 (§6.4 ①단계).
+   *
+   * **카드마다 자기 날짜를 갖는다.** 답변 배지에 하나를 골라 붙이면 그 날짜가 어느
+   * 카드의 것인지 알 수 없고, 답변 말풍선 안에 있으면 "답변을 확인했다"로 읽힌다.
+   * 확인한 것은 이 제도 안내이지 그 답변이 질문에 맞다는 판정이 아니다.
+   */
+  verified_note: string;
 }
 
 /** 지원기관 (CAP-5 지도). GET /api/centers 응답 항목. */

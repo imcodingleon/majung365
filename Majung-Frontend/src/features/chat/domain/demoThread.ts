@@ -11,7 +11,8 @@ export const DEMO_THREAD: readonly ChatMessage[] = [
     text: "주민센터에서 다시 만들 수 있어요.\n사진 한 장을 가져가시면 돼요.",
     desk: { place: "주민센터", say: "주민등록증 재발급하러 왔어요" },
     // ① RAG — 확인한 근거 문서가 있을 때. 확인한 주체가 마중365라는 것이 드러나야 한다.
-    evidence: { stage: "rag", org: "정부24 주민등록증 재발급 안내", checkedAt: "2026-08-23" },
+    evidence: { stage: "rag", org: "정부24 주민등록증 재발급 안내" },
+    verifiedNote: "이 안내는 마중365가 2026년 8월 23일에 확인했어요.",
     // ③ 연결 — 근거 단계와 무관하게 항상 붙는다. LLM이 아니라 서버가 붙인다.
     contact: { org: "정부민원안내콜센터", phone: "국번없이 110" },
   },

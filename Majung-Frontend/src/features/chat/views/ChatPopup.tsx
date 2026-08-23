@@ -89,7 +89,17 @@ function Bubble({ message }: { message: ChatMessage }) {
         <NoteBox tone="info" className="mt-3">{message.desk.place}에 가서 “{message.desk.say}”라고 말하면 돼요.</NoteBox>
       ) : null}
 
-      {message.evidence ? <EvidenceBadge evidence={message.evidence} /> : null}
+      {/* **확인 날짜가 있는 말풍선에는 배지를 붙이지 않는다.** 카드 말풍선이 그런
+          경우인데, "확인한 자료를 참고했어요"와 "이 안내는 마중365가 8월 23일에
+          확인했어요"가 나란히 서면 같은 말을 두 번 한다. 뒤의 것이 언제 확인했는지까지
+          말하므로 그것만 남긴다 */}
+      {message.evidence && !message.verifiedNote ? (
+        <EvidenceBadge evidence={message.evidence} />
+      ) : null}
+
+      {message.verifiedNote ? (
+        <Text className="mt-3 text-caption text-ink-muted">{message.verifiedNote}</Text>
+      ) : null}
 
       {message.contact ? (
         <View className="mt-2 border-t border-line-strong pt-2">

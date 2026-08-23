@@ -30,11 +30,13 @@ function cardToMessage(id: string, card: CardData): ChatMessage {
     id,
     role: "assistant",
     text: lines,
-    // 서버가 KB에서 찾아준 것이므로 확인된 자료다 (§6.4 ①단계).
+    // 서버가 KB에서 찾아준 것이므로 확인한 자료다 (§6.4 ①단계).
     //
     // ⚠️ org에 제도명이 들어간다. §6.4가 요구하는 것은 **출처 기관명**이고 응답에 아직
-    // 그 필드가 없다. 계약에 기관명과 확인 날짜(fetched_at)가 실리면 여기를 바꾼다.
+    // 그 필드가 없다. 계약에 기관명이 실리면 여기를 바꾼다.
     evidence: { stage: "rag", org: card.name },
+    // 서버가 완성 문장으로 준다. 카드마다 자기 날짜를 갖는다.
+    verifiedNote: card.verified_note || undefined,
   };
 }
 

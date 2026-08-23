@@ -18,7 +18,7 @@ import { Text, View } from "react-native";
 
 import { COLORS } from "@/shared/theme/colors";
 
-import { type Evidence, checkedAtSentence } from "../domain/chatMessage";
+import type { Evidence } from "../domain/chatMessage";
 
 export function EvidenceBadge({ evidence }: { evidence: Evidence }) {
   const isRag = evidence.stage === "rag";
@@ -42,13 +42,9 @@ export function EvidenceBadge({ evidence }: { evidence: Evidence }) {
       >
         {evidence.org}
       </Text>
-      {isRag ? (
-        evidence.checkedAt ? (
-          <Text className="mt-1 text-[12.5px] leading-[20px] text-note-info-ink">
-            {checkedAtSentence(evidence.checkedAt)}
-          </Text>
-        ) : null
-      ) : (
+      {/* **확인 날짜는 여기 없다.** 카드마다 자기 날짜를 갖고 있고, 답변 말풍선 안에
+          날짜가 있으면 "답변을 확인했다"로 읽힌다. 날짜는 카드 말풍선에만 붙인다 */}
+      {isRag ? null : (
         // §6.4가 정한 "다만 확인이 필요할 수 있어요"를 할 수 있는 행동으로 적는다.
         <Text
           className="mt-1 text-[12.5px] font-bold leading-[20px]"
