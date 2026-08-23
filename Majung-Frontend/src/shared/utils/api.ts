@@ -3,6 +3,8 @@
 // 비밀 금지: 여기에 API 키를 넣지 않는다. AI 호출은 백엔드가 담당.
 
 import type {
+  IntakeAnalyzeRequest,
+  IntakeAnalyzeResponse,
   AnalyzeRequest,
   RouteOut,
   CardData,
@@ -50,16 +52,22 @@ async function errorMessage(res: Response): Promise<string> {
 /**
  * POST {SER}/analyze — 음성(Blob) + 현재위치 → 감정×구체성 적응형 응답.
  * multipart. Content-Type은 브라우저가 boundary와 함께 자동 설정하므로 지정하지 않는다.
+/**
+ * POST /api/intake/analyze — 초기 진단 답변 → 할 일 목록 (§3.8·§4.1).
+ *
+ * 서버가 진행 상태를 들고 있지 않다. 완료한 항목을 `completed`에 담아 다시 부르면
+ * 그것을 뺀 목록이 온다. **답하지 않은 문항은 요청에 담기지 않으며 그것이 정상이다.**
  */
-export async function postGate(code: string): Promise<string> {
-  const res = await fetch(`${API_BASE}/api/gate`, {
+export async function postIntakeAnalyze(
+  req: IntakeAnalyzeRequest,
+): Promise<IntakeAnalyzeResponse> {
+  const res = await fetch(`${API_BASE}/api/intake/analyze`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ code }),
+    body: JSON.stringify(req),
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
-  const data = (await res.json()) as { token: string };
-  return data.token;
+  return (await res.json()) as IntakeAnalyzeResponse;
 }
 
 /** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */

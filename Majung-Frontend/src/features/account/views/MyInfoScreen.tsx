@@ -40,7 +40,7 @@ export function MyInfoScreen({ profile, onChangeCrime, onErase, onClose }: Props
 
   const crimeLabel =
     profile.crime === null
-      ? "말하지 않으셨어요"
+      ? "말하지 않기로 하셨어요"
       : (CRIME_CATEGORIES.find((c) => c.id === profile.crime)?.label ?? "");
 
   return (

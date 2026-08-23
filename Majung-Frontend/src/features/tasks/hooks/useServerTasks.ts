@@ -1,0 +1,53 @@
+// 서버에서 할 일 목록을 받아온다 (§3.8·§4.1).
+//
+// **서버가 진행 상태를 들고 있지 않다.** 완료한 항목을 기기가 들고 있다가 함께 보내면
+// 그것을 뺀 목록이 온다. 저장 없이도 완료 루프가 도는 구조다.
+import { useCallback, useEffect, useState } from "react";
+
+import type { IntakeAnswerMap } from "@/shared/types";
+import { ApiError, postIntakeAnalyze } from "@/shared/utils/api";
+
+import { toTasks } from "../domain/fromServer";
+import type { RouteId, Task } from "../domain/task";
+
+type State = {
+  tasks: readonly Task[];
+  loading: boolean;
+  /** 사용자에게 보여줄 오류 문구. 없으면 null. */
+  error: string | null;
+};
+
+export function useServerTasks(answers: IntakeAnswerMap | null) {
+  const [state, setState] = useState<State>({ tasks: [], loading: false, error: null });
+  /** 마친 항목. 다음 요청에 함께 보내 목록에서 뺀다. */
+  const [completed, setCompleted] = useState<RouteId[]>([]);
+
+  const load = useCallback(
+    async (done: readonly RouteId[]) => {
+      if (!answers) return;
+      setState((s) => ({ ...s, loading: true, error: null }));
+      try {
+        const res = await postIntakeAnalyze({ answers, completed: done });
+        setState({ tasks: toTasks(res.tasks), loading: false, error: null });
+      } catch (err) {
+        const message =
+          err instanceof ApiError
+            ? err.message
+            : "할 일을 불러오지 못했어요. 잠시 뒤에 다시 열어 주세요.";
+        setState((s) => ({ ...s, loading: false, error: message }));
+      }
+    },
+    [answers],
+  );
+
+  useEffect(() => {
+    void load(completed);
+    // completed가 바뀔 때마다 다시 부른다. 완료하면 목록이 줄어든다.
+  }, [load, completed]);
+
+  const complete = useCallback((id: RouteId) => {
+    setCompleted((prev) => (prev.includes(id) ? prev : [...prev, id]));
+  }, []);
+
+  return { ...state, completed, complete, reload: () => load(completed) };
+}

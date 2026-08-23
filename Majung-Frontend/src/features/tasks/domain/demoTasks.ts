@@ -10,7 +10,7 @@ export const DEMO_TASKS: readonly Task[] = [
     id: "R11",
     title: "주민등록 되살리기",
     tabLabel: "주민등록",
-    meta: "주민센터 · 약 30분",
+    meta: "주민센터에서 해요",
     must: true,
     info: [
       "가까운 주민센터 아무 곳이나 가면 돼요.",
@@ -25,7 +25,7 @@ export const DEMO_TASKS: readonly Task[] = [
     id: "R9",
     title: "신분증 다시 만들기",
     tabLabel: "신분증",
-    meta: "주민센터 · 약 30분",
+    meta: "주민센터에서 해요",
     must: true,
     info: [
       "주민등록증을 다시 만드는 일이에요.",
@@ -38,7 +38,7 @@ export const DEMO_TASKS: readonly Task[] = [
     id: "R10",
     title: "통장 만들기",
     tabLabel: "통장",
-    meta: "은행 · 약 40분",
+    meta: "은행에서 해요",
     must: false,
     info: [
       "신분증이 있어야 만들 수 있어요.",
@@ -56,7 +56,7 @@ export const DEMO_TASKS: readonly Task[] = [
     id: "R2",
     title: "긴급지원 신청하기",
     tabLabel: "지원금",
-    meta: "공단 방문 · 약 1시간",
+    meta: "공단에 가서 해요",
     must: false,
     info: [
       "출소하고 생활비가 막막할 때 신청할 수 있어요.",
@@ -71,7 +71,7 @@ export const DEMO_TASKS: readonly Task[] = [
     id: "R1",
     title: "지낼 곳 상담하기",
     tabLabel: "거처",
-    meta: "공단 상담 · 여러 날",
+    meta: "공단에서 상담해요",
     must: false,
     info: [
       "공단 생활관에 들어갈 수 있는지 상담할 수 있어요.",
@@ -85,7 +85,7 @@ export const DEMO_TASKS: readonly Task[] = [
     id: "R6",
     title: "일자리 찾기",
     tabLabel: "일자리",
-    meta: "공단 담당자 연결",
+    meta: "공단 담당자가 이어줘요",
     must: false,
     info: [
       "앞의 일을 마치면 취업 준비가 훨씬 쉬워져요.",

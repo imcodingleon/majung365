@@ -11,3 +11,12 @@ export type {
   TaskCard,
   Turn,
 } from "./api";
+
+export type {
+  IntakeAnalyzeRequest,
+  IntakeAnalyzeResponse,
+  IntakeAnswerMap,
+  IntakeCard,
+  IntakeCardOption,
+  IntakeTask,
+} from "./intake";

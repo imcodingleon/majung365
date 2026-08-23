@@ -70,7 +70,7 @@ function SectionBox({
 
         {done ? (
           <Text className="text-[15px] font-extrabold" style={{ color: COLORS.doneInk }}>
-            ✓ 다 답했어요
+            ✓ 다 답하셨어요
           </Text>
         ) : (
           <Text className="text-2xl" style={{ color: COLORS.inkMuted }}>

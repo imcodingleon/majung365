@@ -50,7 +50,7 @@ export function BirthGate({ storedBirth, onPass, onClose }: Props) {
           생일을 알려주세요
         </Text>
         <Text className="mb-8 mt-2 text-base leading-[26px] text-ink-sub">
-          다른 사람이 내 정보를 보지 못하게 한 번만 확인해요.
+          다른 사람이 내 정보를 보지 못하게 한 번만 확인할게요.
         </Text>
 
         <View className="flex-row items-center gap-2">

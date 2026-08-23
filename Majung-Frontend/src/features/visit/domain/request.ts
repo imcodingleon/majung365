@@ -3,13 +3,9 @@
 // 상태가 없으면 사용자는 보내놓고 아무것도 모르는 채 기다리게 된다. 그래서 요청이 어떤 상태를
 // 거치는지, 각 상태에서 무엇이 보이는지를 도메인에 못 박는다.
 
-export type VisitStatus =
-  | "sent"
-  | "acknowledged"
-  | "confirmed"
-  | "reschedule_proposed"
-  | "completed"
-  | "cancelled";
+import type { VisitStatus } from "@/shared/types/visit";
+
+export type { VisitStatus };
 
 /** 확정되었을 때 알려주는 것. **만날 사람과 만날 장소가 이 기능의 핵심이다** (§7.1). */
 export type VisitConfirmation = {
@@ -123,8 +119,8 @@ export function sharedItems(
   hasDocs = true,
 ): readonly string[] {
   const items = ["이름", "방문하실 시간 두 가지", "무슨 일로 오시는지"];
-  if (hasDocs) items.push("챙겨 오실 준비물");
-  if (hasNote) items.push("적어주신 하고 싶은 말");
+  if (hasDocs) items.push("챙겨 오실 것");
+  if (hasNote) items.push("하고 싶은 말");
   // 기한이 있는 제도를 상담할 때만 보낸다.
   if (hasDeadlineRoute) items.push("출소한 날짜");
   return items;
