@@ -6,7 +6,6 @@ import { useState } from "react";
 import { Pressable, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 type Props = {
@@ -30,11 +29,8 @@ export function AdminLoginScreen({ error, busy, timedOut, onSignIn }: Props) {
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
       <View className="flex-1 justify-center px-6">
-        {/* **로그인은 이제 진짜다.** 서버가 확인하고 계정도 발급되어 있다.
-            아직 예시인 것은 요청 목록뿐이라 배너를 그만큼만 남긴다. 실제 자료가 붙으면 지운다. */}
-        <NoteBox tone="warn" title="아직 준비 중인 화면입니다" className="mb-8">
-          <NoteLine tone="warn">로그인은 실제로 동작하지만 요청 목록은 예시입니다.</NoteLine>
-        </NoteBox>
+        {/* **배너를 지웠다.** 로그인·요청 목록·상태 변경이 모두 실제 서버에 붙었다.
+            사실이 아닌 안내를 남겨 두면 담당자가 실제 요청을 예시로 알고 넘긴다. */}
 
         <Text className="text-display font-extrabold text-ink-strong">
           담당자 화면

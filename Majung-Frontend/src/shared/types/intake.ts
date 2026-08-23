@@ -73,6 +73,13 @@ export interface IntakeTask {
   section_label: string;
   /** 다른 항목의 선행조건인지. 사용자별 판정이 아니라 그래프 구조의 사실이다. */
   blocks_others: boolean;
+  /**
+   * 담당자에게 방문을 미리 알릴 수 있는 항목인지 (§7).
+   *
+   * **받는 기관이 정해진 항목만 참이다.** R10(은행)·R13(교정시설)·R14(법원)는
+   * 아무도 받지 않아 거짓으로 온다 — 받아 두고 아무도 안 보는 것이 가장 나쁘다.
+   */
+  can_request_visit: boolean;
   card: IntakeCard;
 }
 
