@@ -79,7 +79,10 @@ function pickInstitutions(
       ? x.district.startsWith(place.district) || place.district.startsWith(x.district)
       : x.sido === shortSido || x.sido === place.sido,
   );
-  const list = fit.length > 0 ? fit : institutions;
+  // **그 지역에 없으면 아무것도 안 낸다.** 허그상담소는 전국 세 곳뿐이라 서울에는
+  // 없는데, 폴백으로 하나를 내면 서울 사람에게 원주로 가라고 하는 셈이 된다.
+  // 카드에는 대표번호가 이미 있어 전화로 물을 수 있다.
+  const list = fit;
 
   // **공단은 한 곳만 낸다.** 한 광역에 지부가 여럿인데(서울만 넷) 어느 구가 어느 지부
   // 관할인지는 서버도 모른다. 둘을 늘어놓으면 사용자가 고르게 되고, 그것은 "어디로 가면

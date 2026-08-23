@@ -123,8 +123,8 @@ function centersFor(
   district: string,
 ): readonly Institution[] {
   const all = institutions.filter((x) => x.kind === "mental_health");
-  const mine = all.filter((x) => district.startsWith(x.district) || x.district.startsWith(district));
-  return mine.length > 0 ? mine : all.slice(0, 1);
+  // 여기도 폴백을 두지 않는다. 다른 구의 센터를 짚으면 헛걸음이다.
+  return all.filter((x) => district.startsWith(x.district) || x.district.startsWith(district));
 }
 
 /**
@@ -140,10 +140,13 @@ function branchesFor(
 ): readonly Institution[] {
   const shortSido = sido.replace(/(특별자치시|특별자치도|특별시|광역시|도)$/, "");
   const all = institutions.filter((x) => x.kind !== "mental_health");
-  const mine = all.filter((x) => x.sido === shortSido || x.sido === sido);
-  // 한 광역에 지부가 여럿이면(서울만 넷) 어느 구가 어느 지부 관할인지 서버도 모른다.
-  // 이 화면은 둘러보는 자리이므로 그 광역의 것을 다 보이되, 다른 광역은 섞지 않는다.
-  return mine.length > 0 ? mine : all.slice(0, 1);
+  // **그 광역에 없으면 아무것도 안 낸다.** 허그상담소는 전국에 세 곳뿐(원주·천안·통영)
+  // 이라 서울에는 없는데, 폴백으로 하나를 내면 **서울 사람에게 원주로 가라고 하는 셈**이다.
+  // 없는 것을 없다고 두고, 화면 아래 대표번호로 넘긴다.
+  //
+  // 한 광역에 지부가 여럿이면(서울만 넷) 어느 구가 관할인지 서버도 모른다. 이 화면은
+  // 둘러보는 자리이므로 그 광역의 것을 다 보인다.
+  return all.filter((x) => x.sido === shortSido || x.sido === sido);
 }
 
 export function NearbyScreen({
