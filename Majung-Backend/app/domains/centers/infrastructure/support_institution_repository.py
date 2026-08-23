@@ -8,6 +8,12 @@ import json
 from pathlib import Path
 
 from app.domains.centers.domain.entity import SupportInstitution
+from app.domains.centers.domain.region import (
+    address_hints_district,
+    district_matches,
+    normalize_district,
+    normalize_sido,
+)
 
 _DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -62,24 +68,33 @@ class JsonSupportInstitutionRepository:
         허그센터 3곳이 정신건강복지센터 246곳에 묻혀 화면에 나오지 않는다.
         """
         matched = [i for i in self._items if i.kind in kinds]
+
+        # **기기가 보내는 이름과 우리 데이터의 이름이 다르다**(§5.4).
+        # "서울특별시"로 물으면 "서울"과 안 맞아 지역 센터가 통째로 걸러진다.
+        # 실제로 어느 지역에서 물어도 허그상담소 세 곳만 나온 적이 있다.
+        asked_sido = normalize_sido(sido)
+        asked_district = normalize_district(district)
+
         # 시도 필터는 지역 센터에만 건다. 공단 기관은 전국에 몇 곳뿐이라
         # 시도로 거르면 그 지역에 없는 순간 사라진다 — 허그센터는 전국 3곳이다.
-        if sido:
+        if asked_sido:
             matched = [
-                i for i in matched if i.kind != _MENTAL_HEALTH or i.sido == sido
+                i for i in matched if i.kind != _MENTAL_HEALTH or i.sido == asked_sido
             ] or matched
 
         def rank(inst: SupportInstitution) -> tuple[int, str]:
             local = inst.kind == _MENTAL_HEALTH
-            same_sido = bool(sido) and inst.sido == sido
-            # ① 같은 시군구의 지역 센터가 가장 가깝다
-            if district and inst.district == district:
-                return (0, inst.name)
+            same_sido = bool(asked_sido) and inst.sido == asked_sido
+            # ① 같은 시군구의 지역 센터가 가장 가깝다.
+            #    한 시에 같은 이름이 여럿이면 주소의 구까지 맞는 것을 앞에 둔다.
+            if asked_district and district_matches(inst.district, asked_district):
+                closer = address_hints_district(inst.address, asked_district)
+                return (0 if closer else 1, inst.name)
             # ②③ 공단 기관은 같은 시도부터. 수가 적어(허그센터 3곳) 지역이 안 맞아도
             #     목록에 남아야 한다 — 지역 센터 수백 곳에 묻히면 주 경로가 안 보인다.
             if not local:
-                return (1 if same_sido else 2, inst.name)
+                return (2 if same_sido else 3, inst.name)
             # ④ 같은 시도의 다른 시군구 센터
-            return (3 if same_sido else 4, inst.name)
+            return (4 if same_sido else 5, inst.name)
 
         return sorted(matched, key=rank)[:limit]

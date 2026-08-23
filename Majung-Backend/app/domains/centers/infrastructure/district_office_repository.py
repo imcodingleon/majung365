@@ -9,6 +9,11 @@ from collections import defaultdict
 from pathlib import Path
 
 from app.domains.centers.domain.entity import DistrictOffice
+from app.domains.centers.domain.region import (
+    district_matches,
+    normalize_district,
+    normalize_sido,
+)
 
 _DATA_PATH = Path(__file__).resolve().parent.parent / "data" / "district_offices.json"
 
@@ -40,7 +45,20 @@ class JsonDistrictOfficeRepository:
         """시군구의 읍면동 목록. 시군구 이름은 시도가 달라도 겹치므로(예: 여러 곳의 '중구'),
         시도를 함께 주면 그것으로 좁힌다. 주지 않으면 겹치는 것을 모두 돌려주고,
         각 항목에 sido가 들어 있어 화면에서 구분할 수 있다."""
-        items = self._by_sigungu.get(sigungu, [])
-        if sido:
-            items = [o for o in items if o.sido == sido]
+        # **기기가 보내는 이름과 데이터의 이름이 다르다**(§5.4). "서울특별시"로
+        # 물으면 "서울"과 안 맞아 결과가 통째로 빈다 — 오류가 아니라 목록이
+        # 줄어드는 형태라 화면에서는 "그 지역에 없나 보다"로 읽힌다.
+        asked = normalize_district(sigungu)
+        items = self._by_sigungu.get(asked, [])
+        if not items and asked:
+            # 기기가 "수원시 장안구"까지 줄 수도, "수원시"까지만 줄 수도 있다.
+            items = [
+                o
+                for group in self._by_sigungu.values()
+                for o in group
+                if district_matches(o.sigungu, asked)
+            ]
+        asked_sido = normalize_sido(sido)
+        if asked_sido:
+            items = [o for o in items if o.sido == asked_sido]
         return list(items)
