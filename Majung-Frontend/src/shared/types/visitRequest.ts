@@ -74,6 +74,13 @@ export interface VisitResponse {
   cancel_reason: string;
   /** 채팅방이 열려 있는지. 담당자가 확인하기 전에는 거짓이다 (§7.3-4). */
   chat_available: boolean;
+  /**
+   * 담당자가 보냈는데 아직 안 읽은 메시지 수. **서버가 센다.**
+   *
+   * 화면은 셀 수 없다 — 대화 내용은 소켓으로 방에 들어가야 오는데, 목록의 숫자를
+   * 그리자고 방마다 붙을 수는 없다.
+   */
+  unread: number;
 }
 
 /**

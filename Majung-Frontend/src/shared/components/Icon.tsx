@@ -27,12 +27,22 @@ export type IconName =
   | "bell"
   | "undo"
   | "checkCircle"
-  | "pin";
+  | "pin"
+  | "home"
+  | "person"
+  | "search"
+  | "star";
 
 type Props = {
   name: IconName;
   size?: number;
   color: string;
+  /**
+   * 속을 채운다. 별처럼 **켜짐과 꺼짐이 있는 표시**에만 쓴다.
+   *
+   * 획으로만 그리는 아이콘은 이 값을 무시한다 — 채울 면이 없다.
+   */
+  filled?: boolean;
 };
 
 /** 획으로만 그리는 도형들이 공유하는 속성. 매번 적으면 한 곳이 어긋난다. */
@@ -173,7 +183,58 @@ function Pin({ color }: { color: string }) {
   );
 }
 
-const SHAPES: Record<IconName, (p: { color: string }) => React.ReactElement> = {
+function Home({ color }: { color: string }) {
+  // 집. 지붕과 몸통, 그리고 문 하나. 문이 없으면 도형으로만 보인다.
+  return (
+    <>
+      <Path d="M3.5 10.5 12 3.5l8.5 7" stroke={color} fill="none" {...line} />
+      <Path d="M5.5 9.8V20h13V9.8" stroke={color} fill="none" {...line} />
+      <Path d="M9.8 20v-5.2h4.4V20" stroke={color} fill="none" {...line} />
+    </>
+  );
+}
+
+function Person({ color }: { color: string }) {
+  // 사람. 머리와 어깨만 그린다 — 눈코입을 넣으면 24px에서 뭉쳐 얼룩으로 보인다.
+  return (
+    <>
+      <Circle cx={12} cy={8} r={3.6} stroke={color} fill="none" strokeWidth={STROKE} />
+      <Path
+        d="M4.8 20c0-3.6 3.2-5.8 7.2-5.8s7.2 2.2 7.2 5.8"
+        stroke={color}
+        fill="none"
+        {...line}
+      />
+    </>
+  );
+}
+
+function Search({ color }: { color: string }) {
+  // 돋보기. 원과 손잡이. 찾는다는 뜻이 굳은 그림이다.
+  return (
+    <>
+      <Circle cx={11} cy={11} r={6.5} stroke={color} fill="none" strokeWidth={STROKE} />
+      <Path d="M15.8 15.8 20.5 20.5" stroke={color} fill="none" {...line} />
+    </>
+  );
+}
+
+function Star({ color, filled }: { color: string; filled?: boolean }) {
+  // 별. 즐겨찾기. **채우면 켜진 것이다** — 획만으로는 켜짐과 꺼짐이 구분되지 않는다.
+  return (
+    <Path
+      d="M12 3.8l2.6 5.3 5.8.85-4.2 4.1 1 5.8-5.2-2.7-5.2 2.7 1-5.8-4.2-4.1 5.8-.85z"
+      stroke={color}
+      fill={filled ? color : "none"}
+      {...line}
+    />
+  );
+}
+
+const SHAPES: Record<
+  IconName,
+  (p: { color: string; filled?: boolean }) => React.ReactElement
+> = {
   check: Check,
   close: Close,
   phone: Phone,
@@ -187,13 +248,17 @@ const SHAPES: Record<IconName, (p: { color: string }) => React.ReactElement> = {
   undo: Undo,
   checkCircle: CheckCircle,
   pin: Pin,
+  home: Home,
+  person: Person,
+  search: Search,
+  star: Star,
 };
 
-export function Icon({ name, size = 24, color }: Props) {
+export function Icon({ name, size = 24, color, filled }: Props) {
   const Shape = SHAPES[name];
   return (
     <Svg width={size} height={size} viewBox="0 0 24 24" fill="none">
-      <Shape color={color} />
+      <Shape color={color} filled={filled} />
     </Svg>
   );
 }

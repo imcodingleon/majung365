@@ -49,6 +49,9 @@ function toRequest(v: VisitResponse): VisitRequest {
         : undefined,
     proposedTime: v.proposed_at ? isoLabel(v.proposed_at) : undefined,
     cancelReason: v.cancel_reason || undefined,
+    // **서버가 옛 판이면 이 값이 없다.** 그때는 0으로 둔다 — 숫자가 안 뜰 뿐
+    // 화면이 깨지지는 않는다.
+    unread: v.unread ?? 0,
   };
 }
 

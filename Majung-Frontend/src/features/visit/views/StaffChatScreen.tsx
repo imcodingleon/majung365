@@ -13,14 +13,25 @@ import { COLORS } from "@/shared/theme/colors";
 
 export type StaffMessage = {
   id: string;
-  /** 담당자가 보냈으면 staff, 출소자가 보냈으면 client. */
-  from: "staff" | "client";
+  /** 보낸 쪽. 서버가 주는 값 그대로다 — 담당자는 `staff`, 출소자는 `user`다. */
+  from: "staff" | "user";
   text: string;
 };
 
 type Props = {
   /** 상대 이름. 방은 방문 요청 단위로 열린다. */
   peerName: string;
+  /**
+   * 이 화면을 보고 있는 쪽. **말풍선을 어느 쪽에 붙일지 정한다.**
+   *
+   * 담당자용으로 먼저 만들어져 "내 것"이 `staff`로 굳어 있었다. 그대로 두고 사용자
+   * 쪽에서 쓰면 **자기가 보낸 말이 왼쪽에, 담당자 말이 오른쪽에 붙어 뒤집힌다.**
+   */
+  myRole: "staff" | "user";
+  /** 제목 위 작은 글씨. 담당자는 "방문 조율", 사용자는 "담당자와 이야기하기"다. */
+  eyebrow?: string;
+  /** 닫기 버튼이 어디로 돌아가는지 알려주는 문구. */
+  closeHint?: string;
   messages: readonly StaffMessage[];
   onSend: (text: string) => void;
   onBack: () => void;
@@ -37,6 +48,9 @@ type Props = {
 
 export function StaffChatScreen({
   peerName,
+  myRole,
+  eyebrow = "방문 조율",
+  closeHint = "요청 상세로 돌아가기",
   messages,
   onSend,
   onBack,
@@ -56,9 +70,9 @@ export function StaffChatScreen({
     <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
       <ScreenHeader
         title={peerName}
-        eyebrow="방문 조율"
+        eyebrow={eyebrow}
         leading="back"
-        closeHint="요청 상세로 돌아가기"
+        closeHint={closeHint}
         onClose={onBack}
       />
 
@@ -88,7 +102,9 @@ export function StaffChatScreen({
           ) : null}
 
           {messages.map((m) => {
-            const mine = m.from === "staff";
+            // **보고 있는 쪽이 오른쪽이다.** 여기가 `staff`로 굳어 있으면 사용자
+            // 화면에서 말풍선이 통째로 뒤집힌다.
+            const mine = m.from === myRole;
             return (
               <View
                 key={m.id}

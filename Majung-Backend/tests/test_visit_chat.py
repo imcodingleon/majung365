@@ -111,9 +111,31 @@ def make_staff(org: OrgKind = OrgKind.KOREHA) -> Staff:
     )
 
 
+class FakeAccessLog:
+    """담당자 행적 기록장. `tests/test_visit.py`의 것과 같은 모양이다."""
+
+    def __init__(self) -> None:
+        self.entries: list[tuple[UUID, str, UUID | None]] = []
+
+    def record(self, staff_id: UUID, action: str, target_user_id: UUID | None) -> None:
+        self.entries.append((staff_id, action, target_user_id))
+
+
 def make_usecase(visit: VisitRequest) -> tuple[VisitChatUseCase, FakeMessageRepository]:
     messages = FakeMessageRepository()
     return VisitChatUseCase(visits=FakeVisitRepository(visit), messages=messages), messages
+
+
+def make_usecase_with_log(
+    visit: VisitRequest,
+) -> tuple[VisitChatUseCase, FakeAccessLog]:
+    log = FakeAccessLog()
+    usecase = VisitChatUseCase(
+        visits=FakeVisitRepository(visit),
+        messages=FakeMessageRepository(),
+        access_log=log,
+    )
+    return usecase, log
 
 
 # ── 방이 열리는 조건 ──
@@ -260,3 +282,61 @@ def test_history_is_readable_after_the_room_closes() -> None:
     usecase.send(visit, SenderRole.STAFF, "2층 상담실로 오세요")
     done = replace(visit, status=VisitStatus.COMPLETED)
     assert [m.body for m in usecase.history(done)] == ["2층 상담실로 오세요"]
+
+
+# ── 담당자가 대화를 열면 기록이 남는다 (코드 리뷰 M4) ──
+
+
+def test_staff_entering_a_room_is_recorded() -> None:
+    """**방이 기관 단위로 열린다.** 같은 기관 담당자면 배정되지 않은 요청의 방에도
+    들어가 대화 전체를 읽을 수 있고, 그것은 담당자 교체를 견디려고 일부러 그렇게 둔
+    것이다. 다만 읽었다는 사실이 남지 않으면 누가 무엇을 보았는지 셀 수 없다."""
+    visit = make_visit()
+    usecase, log = make_usecase_with_log(visit)
+    staff = make_staff()
+
+    usecase.room_for_staff(staff, visit.id)
+
+    assert log.entries == [(staff.id, "chat", visit.user_id)]
+
+
+def test_rejected_attempt_is_not_recorded() -> None:
+    """거절된 시도까지 남기면 남의 방 id를 넣어 본 것과 제 방에 들어간 것이 같은
+    무게로 쌓여, 정작 읽은 사람을 찾기 어려워진다."""
+    visit = make_visit()
+    usecase, log = make_usecase_with_log(visit)
+    other_org = make_staff(OrgKind.CENTER)
+
+    with pytest.raises(NotInRoom):
+        usecase.room_for_staff(other_org, visit.id)
+
+    assert log.entries == []
+
+
+def test_closed_room_is_not_recorded() -> None:
+    """확인 전이라 방이 안 열렸으면 읽은 것이 없다."""
+    visit = make_visit(VisitStatus.SENT)
+    usecase, log = make_usecase_with_log(visit)
+
+    with pytest.raises(ChatClosed):
+        usecase.room_for_staff(make_staff(), visit.id)
+
+    assert log.entries == []
+
+
+def test_user_entering_own_room_is_not_recorded() -> None:
+    """**출소자 본인의 입장은 감사 대상이 아니다.** 자기 방이다."""
+    visit = make_visit()
+    usecase, log = make_usecase_with_log(visit)
+
+    usecase.room_for_user(USER, visit.id)
+
+    assert log.entries == []
+
+
+def test_chat_works_without_an_access_log() -> None:
+    """기록장이 없어도 채팅은 막지 않는다 — 저장이 꺼진 채로도 돌아야 한다."""
+    visit = make_visit()
+    usecase, _ = make_usecase(visit)
+
+    assert usecase.room_for_staff(make_staff(), visit.id).id == visit.id

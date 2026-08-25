@@ -349,9 +349,18 @@ export async function getInstitutions(
   return (await res.json()) as Institution[];
 }
 
-/** GET /api/centers — 지원기관 목록(지도용). category로 필터 가능. */
-export async function getCenters(category?: string): Promise<Center[]> {
-  const qs = category ? `?category=${encodeURIComponent(category)}` : "";
+/**
+ * GET /api/centers — 지도에 찍을 기관.
+ *
+ * **지역을 주면 주민센터와 정신건강복지센터까지 함께 온다.** 주지 않으면 법무보호공단
+ * 여덟 곳만 온다 — 전국 주민센터 3,555건을 통째로 받을 수는 없다.
+ *
+ * 갈래 거르기는 화면의 칩이 한다. 여기서는 지역만 좁힌다.
+ */
+export async function getCenters(place?: { sido: string; district: string }): Promise<Center[]> {
+  const qs = place
+    ? `?sido=${encodeURIComponent(place.sido)}&district=${encodeURIComponent(place.district)}`
+    : "";
   const res = await fetch(`${API_BASE}/api/centers${qs}`);
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as Center[];

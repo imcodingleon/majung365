@@ -37,6 +37,12 @@ export type VisitRequest = {
   cancelReason?: string;
   /** 보낸 시각(ISO). 하루 상한을 미리 알려주는 데 쓴다. 서버가 주지 않으면 없다. */
   createdAt?: string | null;
+  /**
+   * 담당자가 보냈는데 아직 안 읽은 메시지 수. **서버가 센다.**
+   *
+   * 하단 메뉴바의 숫자와 대화 목록의 숫자가 이 값을 쓴다.
+   */
+  unread: number;
 };
 
 /** 이 말로 끝나면 직함이 이미 붙은 것이다. 뒤에 "담당자"를 또 붙이지 않는다. */

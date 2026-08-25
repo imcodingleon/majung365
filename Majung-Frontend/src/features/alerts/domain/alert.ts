@@ -1,0 +1,124 @@
+// 알림 목록 (§7.1).
+//
+// **서버에 알림을 쌓지 않는다.** 이미 있는 방문 요청 데이터를 조합해서 만든다.
+// 알림을 저장하면 "누가 언제 어느 기관과 연락했는가"가 한 줄씩 남고, 그것은 보관·파기
+// 대상(§9.4)이 늘어나는 일이다. 근거는 `decision-log-2026-08-26.md` A-3에 있다.
+//
+// 이 파일은 계산만 한다. 화면도 서버 호출도 없다.
+import type { VisitRequest } from "@/features/visit/domain/request";
+
+export type AlertKind = "confirmed" | "proposed" | "cancelled" | "message";
+
+export type Alert = {
+  id: string;
+  kind: AlertKind;
+  title: string;
+  body: string;
+  /** ISO 시각. 정렬과 안 읽음 판정에 쓴다. */
+  at: string;
+  /** 눌렀을 때 열 방문 요청. */
+  visitId: string;
+};
+
+/**
+ * 요청 하나에서 알림 한 줄을 만든다. 알릴 것이 없으면 `null`이다.
+ *
+ * **상태마다 하나씩만 만든다.** 요청 하나가 알림 둘을 내면 같은 일이 두 번 보인다.
+ */
+function alertFor(r: VisitRequest): Alert | null {
+  const at = r.createdAt ?? "";
+
+  // **메시지를 상태보다 먼저 본다.** 확정된 요청에 새 말이 오면 알려야 할 것은
+  // 이미 본 확정 소식이 아니라 방금 온 말이다.
+  if (r.unread > 0) {
+    return {
+      id: `${r.id}:message`,
+      kind: "message",
+      title: "담당자가 메시지를 보냈어요",
+      body: r.unread === 1 ? "새 메시지가 있어요." : `안 읽은 메시지가 ${r.unread}개 있어요.`,
+      at,
+      visitId: r.id,
+    };
+  }
+
+  // **확인만 한 것은 알리지 않는다.** 이 상태에서 채팅방이 열리므로 담당자가 말을
+  // 걸면 위에서 알린다. 확인만 하고 아무 말이 없는 것을 알리면 열어 봐도 볼 것이 없다.
+
+  if (r.status === "confirmed") {
+    // **만날 사람과 장소가 이 알림의 전부다**(§7.1). 없으면 알릴 내용이 없다.
+    if (!r.confirmation) return null;
+    const { whenLabel, staffName, place } = r.confirmation;
+    return {
+      id: `${r.id}:confirmed`,
+      kind: "confirmed",
+      title: "방문이 확정되었어요",
+      body: `${whenLabel}에 ${staffName}을 ${place}에서 만나요.`,
+      at,
+      visitId: r.id,
+    };
+  }
+
+  if (r.status === "reschedule_proposed") {
+    // 시간을 빼면 "다른 시간을 이야기했어요"만 남아 언제인지가 사라진다.
+    if (!r.proposedTime) return null;
+    return {
+      id: `${r.id}:proposed`,
+      kind: "proposed",
+      title: "담당자가 다른 시간을 이야기했어요",
+      body: `${r.proposedTime}은 어떠신지 물어보셨어요.`,
+      at,
+      visitId: r.id,
+    };
+  }
+
+  if (r.status === "cancelled") {
+    return {
+      id: `${r.id}:cancelled`,
+      kind: "cancelled",
+      title: "방문이 취소되었어요",
+      // 이유는 담당자가 쓴 말을 그대로 낸다. 없으면 빈 줄로 둔다.
+      body: r.cancelReason ?? "",
+      at,
+      visitId: r.id,
+    };
+  }
+
+  return null;
+}
+
+/** 최근 것이 위로 온다. */
+export function toAlerts(requests: readonly VisitRequest[]): Alert[] {
+  return requests
+    .map(alertFor)
+    .filter((a): a is Alert => a !== null)
+    .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+/**
+ * 안 읽은 건수.
+ *
+ * **"안 읽음"이 두 종류다.**
+ *
+ * 메시지는 **서버가 센다** — 대화를 열어 읽음 표시를 보내야 0이 된다. 그 값 자체가
+ * 안 읽음의 정의이므로 기기의 시각으로 다시 거르지 않는다. 거르면 알림 화면을 한 번
+ * 지나친 뒤에 온 메시지가 배지에서 사라진다.
+ *
+ * 나머지 소식(확정·시간 제안·취소)은 **기기가 마지막으로 본 시각**으로 센다. 서버에
+ * 알림을 쌓지 않기로 했으므로(§9.4) 읽었는지를 아는 곳이 기기뿐이다.
+ *
+ * **본 시각과 같은 것은 읽은 것으로 센다.** 같은 순간에 온 것을 안 읽은 것으로 세면
+ * 배지가 영영 사라지지 않는다.
+ */
+export function countUnseen(alerts: readonly Alert[], lastSeen: string | null): number {
+  return alerts.filter((a) => isUnseen(a, lastSeen)).length;
+}
+
+/**
+ * 이 소식을 아직 안 봤는가. **하단 바의 숫자와 목록의 점이 같은 판정을 쓴다.**
+ *
+ * 나누어 두면 배지는 떴는데 점은 없는 일이 생긴다 — 실제로 그렇게 어긋나 있었다.
+ */
+export function isUnseen(alert: Alert, lastSeen: string | null): boolean {
+  if (alert.kind === "message") return true;
+  return lastSeen === null || alert.at > lastSeen;
+}

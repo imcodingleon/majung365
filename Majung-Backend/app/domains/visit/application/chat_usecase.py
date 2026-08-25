@@ -33,6 +33,13 @@ class NotInRoom(Exception):
 class VisitChatUseCase:
     visits: VisitRepository
     messages: MessageRepository
+    # 담당자가 남의 대화를 열었을 때 남기는 기록 (코드 리뷰 M4).
+    #
+    # **방이 기관 단위로 열린다**(`room_for_staff`). 같은 기관 담당자면 배정되지 않은
+    # 요청의 방에도 들어가 대화 전체를 읽을 수 있고, 그 자체는 담당자 교체를 견디려고
+    # 일부러 그렇게 둔 것이다. 다만 **읽었다는 사실이 아무 데도 남지 않으면** 누가
+    # 무엇을 보았는지 나중에 셀 수 없다.
+    access_log: object | None = None
 
     # ── 입장 판정 ──
 
@@ -54,6 +61,9 @@ class VisitChatUseCase:
         if visit is None or visit.org_kind != staff.org_kind:
             raise NotInRoom
         ensure_open(visit)
+        # **들어간 뒤에 남긴다.** 거절된 시도까지 남기면 남의 방 id를 넣어 본 것과
+        # 제 방에 들어간 것이 같은 무게로 쌓여, 정작 읽은 사람을 찾기 어려워진다.
+        self._log(staff.id, "chat", visit.user_id)
         return visit
 
     # ── 주고받기 ──
@@ -99,6 +109,17 @@ class VisitChatUseCase:
             visit.user_read_at if role == SenderRole.USER else visit.staff_read_at
         )
         return unread_count(self.history(visit), role, read_at)
+
+    def _log(self, staff_id: UUID, action: str, target_user_id: UUID | None) -> None:
+        """기록이 안 남아도 채팅은 막지 않는다 — 저장이 꺼진 채로도 돌아야 한다.
+
+        `VisitUseCase._log`와 같은 모양이다. 한쪽만 고치면 담당자 행적이 반쪽만 남는다.
+        """
+        if self.access_log is None:
+            return
+        record = getattr(self.access_log, "record", None)
+        if callable(record):
+            record(staff_id, action, target_user_id)
 
 
 __all__ = ["ChatClosed", "NotInRoom", "VisitChatUseCase"]

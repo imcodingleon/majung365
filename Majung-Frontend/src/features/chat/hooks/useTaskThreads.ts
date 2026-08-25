@@ -300,6 +300,8 @@ export function useTaskThreads(initial: Threads = {}) {
   }, [openTaskId]);
 
   return {
+    /** 할 일별 대화 전체. **상담 탭의 목록이 쓴다** — 어느 할 일에서 물었는지 알아야 한다. */
+    threads,
     openTaskId,
     messages: openTaskId ? (threads[openTaskId] ?? []) : [],
     busy: busyId !== null && busyId === openTaskId,

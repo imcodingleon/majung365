@@ -19,8 +19,10 @@ from app.domains.account.domain.entity import Account
 from app.domains.shared.routes import RouteId
 from app.domains.staff.adapter.inbound.api.deps import require_staff
 from app.domains.staff.domain.entity import Staff, org_for
+from app.domains.visit.application.chat_usecase import VisitChatUseCase
 from app.domains.visit.application.usecase import VisitError, VisitUseCase
 from app.domains.visit.domain.entity import SharedAnswer, VisitRequest, VisitStatus
+from app.domains.visit.domain.message import SenderRole
 from app.infrastructure.config.settings import get_settings
 
 router = APIRouter(prefix="/api", tags=["visit"])
@@ -50,6 +52,28 @@ def _usecase(request: Request) -> VisitUseCase:
             status_code=503, detail="지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요."
         )
     return usecase
+
+
+def _chat(request: Request) -> VisitChatUseCase | None:
+    """채팅 유스케이스. **없으면 막지 않고 `None`을 돌려준다.**
+
+    안 읽은 개수는 곁들이는 값이라, 채팅이 꺼져 있다고 방문 요청 목록까지 못 볼 이유가
+    없다. 없으면 0으로 나간다.
+    """
+    usecase = getattr(request.app.state, "visit_chat_usecase", None)
+    return usecase if isinstance(usecase, VisitChatUseCase) else None
+
+
+def _unread(chat: VisitChatUseCase | None, r: VisitRequest, role: SenderRole) -> int:
+    """안 읽은 개수. 방이 열리지 않았으면 셀 것이 없다.
+
+    **닫힌 방을 먼저 걸러 낸다.** 이 함수는 요청 하나마다 대화를 통째로 읽으므로,
+    목록에 있는 요청 수만큼 조회가 나간다. 대기 상한이 다섯(§7.5)이라 실제로는 몇
+    번에 그치지만, 이미 끝났거나 취소된 요청까지 세면 그 수가 계속 늘어난다.
+    """
+    if chat is None or not r.chat_available:
+        return 0
+    return chat.unread_for(r, role)
 
 
 class SharedAnswerIn(BaseModel):
@@ -112,6 +136,11 @@ class VisitOut(BaseModel):
     # **판정은 서버가 한다.** 다만 이 값이 없으면 화면은 앱을 다시 켤 때마다
     # 셈이 0으로 돌아가, 사용자가 보내고 나서야 막혔다는 것을 알게 된다.
     created_at: datetime | None
+    # 담당자가 보냈는데 아직 안 읽은 메시지 수.
+    #
+    # **화면이 셀 수 없는 값이다.** 대화 내용은 소켓으로 방에 들어가야 오는데, 목록의
+    # 숫자를 그리자고 방마다 붙을 수는 없다. 그래서 서버가 세어 함께 보낸다.
+    unread: int = 0
 
 
 class LimitOut(BaseModel):
@@ -123,7 +152,7 @@ class LimitOut(BaseModel):
     existing: list[VisitOut]
 
 
-def _to_out(r: VisitRequest) -> VisitOut:
+def _to_out(r: VisitRequest, unread: int = 0) -> VisitOut:
     return VisitOut(
         id=str(r.id),
         route_id=r.route_id,
@@ -140,6 +169,7 @@ def _to_out(r: VisitRequest) -> VisitOut:
         cancel_reason=r.cancel_reason,
         chat_available=r.chat_available,
         created_at=r.created_at,
+        unread=unread,
     )
 
 
@@ -182,7 +212,11 @@ def create_visit(
 
 @router.get("/visits", response_model=list[VisitOut])
 def list_my_visits(request: Request, account: CurrentAccount) -> list[VisitOut]:
-    return [_to_out(r) for r in _usecase(request).my_visits(account.id)]
+    chat = _chat(request)
+    return [
+        _to_out(r, _unread(chat, r, SenderRole.USER))
+        for r in _usecase(request).my_visits(account.id)
+    ]
 
 
 @router.post("/visits/{request_id}/cancel", response_model=VisitOut)
@@ -217,6 +251,11 @@ class StaffVisitOut(BaseModel):
     meeting_place: str
     confirmed_for: datetime | None
     created_at: datetime | None
+    # 출소자가 보냈는데 담당자가 아직 안 읽은 메시지 수.
+    #
+    # **역할을 바꿔 넣지 않는다.** 출소자 쪽 응답과 세는 기준이 반대여서, 뒤집으면
+    # 자기가 보낸 것을 안 읽은 것으로 세게 된다.
+    unread: int = 0
     # 사용자가 동의하고 보낸 진단 답변(§7.4). 동의가 없으면 빈 목록이다.
     shared_answers: list[SharedAnswerOut] = []
 
@@ -231,7 +270,7 @@ class StaffActionIn(BaseModel):
     cancel_reason: str = Field(default="", max_length=200)
 
 
-def _staff_out(r: VisitRequest, user_name: str) -> StaffVisitOut:
+def _staff_out(r: VisitRequest, user_name: str, unread: int = 0) -> StaffVisitOut:
     return StaffVisitOut(
         id=str(r.id),
         route_id=r.route_id,
@@ -244,6 +283,7 @@ def _staff_out(r: VisitRequest, user_name: str) -> StaffVisitOut:
         meeting_place=r.meeting_place,
         confirmed_for=r.confirmed_for,
         created_at=r.created_at,
+        unread=unread,
         shared_answers=[
             SharedAnswerOut(
                 route_id=a.route_id,
@@ -305,7 +345,11 @@ def list_staff_visits(
         branch_filter=get_settings().staff_branch_filter,
         open_only=open_only,
     )
-    return [_staff_out(r, _name_of(request, r.user_id)) for r in found]
+    chat = _chat(request)
+    return [
+        _staff_out(r, _name_of(request, r.user_id), _unread(chat, r, SenderRole.STAFF))
+        for r in found
+    ]
 
 
 @router.patch("/staff/visits/{request_id}", response_model=StaffVisitOut)
