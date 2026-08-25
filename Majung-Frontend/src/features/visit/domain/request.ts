@@ -88,6 +88,8 @@ export function statusMessage(request: VisitRequest): string {
       if (!c.whenLabel) return `방문 시간이 정해졌어요. ${where}`;
       return `${c.whenLabel}${josa(c.whenLabel, "으로", "로")} 정해졌어요. ${where}`;
     }
+    // **담당자가 다른 시간을 제안하는 기능은 걷어냈다** (§7.3 — 조율은 채팅으로).
+    // 이 문구는 그 전에 만들어진 요청을 위해 남긴다. 새로 생기지는 않는다.
     case "reschedule_proposed":
       return request.proposedTime
         ? `담당자가 다른 시간을 이야기했어요. ${request.proposedTime}${josa(request.proposedTime, "은", "는")} 어떠세요?`

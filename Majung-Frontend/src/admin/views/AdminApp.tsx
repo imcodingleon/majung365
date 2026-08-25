@@ -117,14 +117,12 @@ export function AdminApp() {
               meeting_place: input.place,
               // **만나기로 한 시각을 함께 보낸다.** 안 보내면 서버가 1지망으로 채우므로,
               // 담당자가 2지망으로 확정해도 출소자 화면에는 1지망이 뜬다.
-              ...(input.whenIso ? { confirmed_for: input.whenIso } : {}),
+              // **시각을 보내지 않는다.** 서버가 출소자 희망 시각으로 채운다 —
+              // 만날 때를 시스템이 다시 정하지 않기로 했다 (§7.3 채팅으로 조율).
             });
           })}
           // **제안한 시각을 함께 보낸다.** 담당자가 적은 시각을 버리고 상태만 바꾸면,
           // 출소자 화면에 "담당자가 다른 시간을 이야기했어요"만 뜨고 **언제인지가 빠진다.**
-          onProposeReschedule={touched<string>((time) =>
-            void visits.act(open.id, "reschedule_proposed", { proposed_at: time }),
-          )}
           onCancel={touched<string>((reason) =>
             void visits.act(open.id, "cancelled", { cancel_reason: reason }),
           )}

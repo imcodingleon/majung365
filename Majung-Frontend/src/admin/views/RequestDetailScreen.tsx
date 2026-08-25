@@ -25,7 +25,6 @@ type Props = {
   request: StaffRequest;
   onAcknowledge: () => void;
   onConfirm: (input: ConfirmInput) => void;
-  onProposeReschedule: (time: string) => void;
   onCancel: (reason: string) => void;
   onOpenChat: () => void;
   onBack: () => void;
@@ -76,54 +75,16 @@ function Button({
   );
 }
 
-/**
- * 제안할 수 있는 시간 후보.
- *
- * **1·2지망이 아닌 시간을 담당자가 고를 수 있어야 한다** — 조율의 시작이 그것이다.
- * 다음 다섯 평일의 오전·오후를 낸다. 주민센터와 공단이 평일에만 열기 때문이다.
- */
-function proposalSlots(request: StaffRequest): readonly { label: string; iso: string }[] {
-  // **서버 값을 그대로 믿지 않는다.** 파싱되지 않는 시각이 오면 Invalid Date가 되고,
-  // 그 뒤 `toISOString()`이 RangeError를 던져 **요청 상세 화면이 렌더 도중에 터진다.**
-  // **1지망 날짜를 기준으로 삼되 오늘보다 앞설 수는 없다.** 20일에 들어온 21일 요청을
-  // 담당자가 27일에 열면 24·25·26일이 후보로 나오고, 그것을 고르면 **이미 지난 날짜가
-  // 제안으로 올라가 사용자 화면에 뜬다.**
-  const parsed = request.firstChoiceAt ? new Date(request.firstChoiceAt) : null;
-  const wanted = parsed && !Number.isNaN(parsed.getTime()) ? parsed : new Date();
-  const today = new Date();
-  const base = wanted.getTime() > today.getTime() ? wanted : today;
-
-  const out: { label: string; iso: string }[] = [];
-  const cursor = new Date(base.getFullYear(), base.getMonth(), base.getDate());
-  // 다섯 평일 × 오전·오후. 한 번에 둘을 넣으므로 열까지 채운다.
-  while (out.length < 10) {
-    cursor.setDate(cursor.getDate() + 1);
-    const day = cursor.getDay();
-    if (day === 0 || day === 6) continue;
-    for (const hour of [10, 15]) {
-      const at = new Date(cursor.getFullYear(), cursor.getMonth(), cursor.getDate(), hour);
-      out.push({ label: timeLabel(at.toISOString()), iso: at.toISOString() });
-    }
-  }
-  return out;
-}
-
 export function RequestDetailScreen({
   request,
   onAcknowledge,
   onConfirm,
-  onProposeReschedule,
   onCancel,
   onOpenChat,
   onBack,
 }: Props) {
   const [confirming, setConfirming] = useState(false);
-  const [input, setInput] = useState<ConfirmInput>({
-    whenLabel: request.firstChoice,
-    whenIso: request.firstChoiceAt,
-    staffName: "",
-    place: "",
-  });
+  const [input, setInput] = useState<ConfirmInput>({ staffName: "", place: "" });
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
 
@@ -218,51 +179,21 @@ export function RequestDetailScreen({
             <Button label="확인했습니다" tone="primary" onPress={onAcknowledge} />
           ) : null}
 
-          {request.status === "acknowledged" || request.status === "reschedule_proposed" ? (
+          {request.status === "acknowledged" ? (
             <>
               {!confirming ? (
                 <Button label="방문 시간 확정하기" tone="primary" onPress={() => setConfirming(true)} />
               ) : (
                 <View className="mb-4 rounded-2xl border-[1.5px] border-brand-soft bg-white p-4">
                   {/* 만날 사람과 만날 장소가 이 기능의 핵심이다 (§7.1). */}
+                  {/* **시각은 우리가 정하지 않는다.** 출소자가 적어낸 때가 그대로
+                      확정 시각이 되고, 세부 조율은 채팅으로 한다 (§7.3). 시스템이
+                      시각을 다시 고르게 하면 담당자가 그 자리에서 결정해야 하는데,
+                      정작 상대와 이야기해 봐야 아는 일이다 */}
                   <Text className="mb-3 text-body text-ink-sub">
-                    확정하면 출소자 화면에 시간과 함께 누구를 어디서 만나면 되는지 뜹니다.
+                    확정하면 출소자 화면에 누구를 어디서 만나면 되는지 뜹니다.
+                    시간을 조정하실 일이 있으면 채팅으로 이야기해 주세요.
                   </Text>
-
-                  <Text className="mb-2 text-caption font-bold text-ink-header">방문 시간</Text>
-                  <View className="mb-4 flex-row flex-wrap gap-2">
-                    {/* 라벨과 원본 시각을 짝지어 고르게 한다. 라벨만 들고 있으면 서버에
-                        보낼 시각을 되짚을 수 없어 **1지망으로 확정된 것처럼 되어 버린다** */}
-                    {[
-                      { label: request.firstChoice, iso: request.firstChoiceAt },
-                    ]
-                      .filter((s) => s.label)
-                      .map(({ label: slot, iso }) => (
-                      <Pressable
-                        key={slot}
-                        onPress={() => setInput((p) => ({ ...p, whenLabel: slot, whenIso: iso }))}
-                        accessibilityRole="button"
-                        accessibilityState={{ selected: input.whenLabel === slot }}
-                        accessibilityLabel={slot}
-                        className="rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
-                        style={{
-                          backgroundColor:
-                            input.whenLabel === slot ? COLORS.brandSoft : COLORS.surface,
-                          borderColor: input.whenLabel === slot ? COLORS.brand : COLORS.line,
-                        }}
-                      >
-                        <Text
-                          className="text-caption"
-                          style={{
-                            color: input.whenLabel === slot ? COLORS.brand : COLORS.inkStrong,
-                            fontWeight: input.whenLabel === slot ? "800" : "600",
-                          }}
-                        >
-                          {slot}
-                        </Text>
-                      </Pressable>
-                    ))}
-                  </View>
 
                   <Text className="mb-2 text-caption font-bold text-ink-header">만날 담당자 이름</Text>
                   <TextInput
@@ -302,25 +233,6 @@ export function RequestDetailScreen({
                 </View>
               )}
 
-              {/* **후보에서 고르게 한다.** 서버가 받는 것은 시각이지 문구가 아니어서,
-                  자유 입력은 거부된다(422). 그리고 담당자가 "다음 주쯤"처럼 적으면
-                  출소자 화면에 언제인지가 안 뜬다 */}
-              <Text className="mb-2 mt-2 text-caption font-bold text-ink-header">
-                다른 시간 제안하기
-              </Text>
-              <View className="mb-2 flex-row flex-wrap gap-2">
-                {proposalSlots(request).map(({ label, iso }) => (
-                  <Pressable
-                    key={iso}
-                    onPress={() => onProposeReschedule(iso)}
-                    accessibilityRole="button"
-                    accessibilityLabel={`${label}${josa(label, "으로", "로")} 제안하기`}
-                    className="rounded-xl border-[1.5px] border-line bg-white px-4 py-3 active:opacity-80"
-                  >
-                    <Text className="text-caption font-bold text-ink-sub">{label}</Text>
-                  </Pressable>
-                ))}
-              </View>
             </>
           ) : null}
 

@@ -18,15 +18,6 @@ import {
 type Props = {
   request: VisitRequest;
   onOpenStaffChat: () => void;
-  /**
-   * 담당자가 제안한 다른 시간을 받아들이거나 물린다.
-   *
-   * **아직 쓰지 않는다.** 서버에 사용자가 제안에 답하는 창구가 없다 — 있는 것은
-   * 보내기·조회·취소뿐이다(§7.1의 수락/거절이 계약에 아직 없다). 그때까지는 담당자
-   * 채팅으로 이야기하고, 정 안 되면 물리고 다시 보낸다.
-   */
-  onAcceptProposal?: () => void;
-  onDeclineProposal?: () => void;
   /** 취소된 요청을 다시 보낸다. */
   onResend?: () => void;
   /** 보낸 요청을 물린다. 못 가게 되는 일은 실제로 생기고, 그때 담당자가 헛되이 기다린다. */
@@ -87,8 +78,6 @@ function SmallButton({
 export function RequestStatusStrip({
   request,
   onOpenStaffChat,
-  onAcceptProposal,
-  onDeclineProposal,
   onResend,
   onCancel,
 }: Props) {
@@ -121,13 +110,6 @@ export function RequestStatusStrip({
           </Text>
         ))}
       </View>
-
-      {request.status === "reschedule_proposed" && onAcceptProposal && onDeclineProposal ? (
-        <View className="mt-3 flex-row gap-2">
-          <SmallButton label="그때 갈게요" filled onPress={onAcceptProposal} />
-          <SmallButton label="다시 정할게요" onPress={onDeclineProposal} />
-        </View>
-      ) : null}
 
       {request.status === "cancelled" && onResend ? (
         <View className="mt-3 flex-row">
