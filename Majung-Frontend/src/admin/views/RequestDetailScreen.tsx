@@ -146,7 +146,6 @@ export function RequestDetailScreen({
           {/* 방문 목적이다. 죄목이 아니며 담당자에게 죄목은 전달되지 않는다 (§7.4). */}
           <Field label="무슨 일로 오시나요" value={request.purpose} />
           <Field label="1지망" value={request.firstChoice} />
-          <Field label="2지망" value={request.secondChoice} />
           {request.releaseDate ? <Field label="출소한 날" value={request.releaseDate} /> : null}
           {request.note ? <Field label="하고 싶은 말" value={request.note} /> : null}
         </View>
@@ -236,7 +235,6 @@ export function RequestDetailScreen({
                         보낼 시각을 되짚을 수 없어 **1지망으로 확정된 것처럼 되어 버린다** */}
                     {[
                       { label: request.firstChoice, iso: request.firstChoiceAt },
-                      { label: request.secondChoice, iso: request.secondChoiceAt },
                     ]
                       .filter((s) => s.label)
                       .map(({ label: slot, iso }) => (

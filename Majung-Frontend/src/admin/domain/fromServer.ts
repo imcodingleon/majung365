@@ -46,9 +46,7 @@ export function toStaffRequest(v: StaffVisitResponse): StaffRequest {
     // 지원 항목 코드를 사람이 읽는 이름으로. 담당자도 "R9"를 읽지 않는다.
     purpose: routeLabel(v.route_id),
     firstChoice: timeLabel(v.preferred_at_1),
-    secondChoice: timeLabel(v.preferred_at_2),
     firstChoiceAt: v.preferred_at_1,
-    secondChoiceAt: v.preferred_at_2,
     readyDocs: v.prepared_docs,
     // 필요한 준비물 전체는 서버가 주지 않는다. 카드 쪽 정보라 지금은 챙겨 온 것만 보인다.
     allDocs: v.prepared_docs,

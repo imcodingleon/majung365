@@ -131,9 +131,7 @@ export function RequestListScreen({
                 1지망 {request.firstChoice}
               </Text>
               {/* 2지망은 없을 수 있다. 빈 칸을 남기면 값이 빠진 것으로 읽힌다 */}
-              {request.secondChoice ? (
-                <Text className="text-caption text-ink-sub">2지망 {request.secondChoice}</Text>
-              ) : null}
+
               <Text className="mt-1 text-caption text-ink-muted">{request.receivedAt}</Text>
             </View>
           </Pressable>

@@ -22,7 +22,6 @@ import { isoLabel } from "../domain/timeSlots";
 
 type Draft = {
   firstChoice: string;
-  secondChoice: string;
   readyDocs: readonly string[];
   note?: string;
   sharedAnswers?: readonly SharedAnswerInput[];
@@ -35,7 +34,6 @@ function toRequest(v: VisitResponse): VisitRequest {
     taskId: v.route_id,
     status: v.status,
     firstChoice: isoLabel(v.preferred_at_1),
-    secondChoice: isoLabel(v.preferred_at_2),
     readyDocs: v.prepared_docs,
     note: v.note || undefined,
     createdAt: v.created_at,
@@ -136,7 +134,9 @@ export function useVisitRequests() {
         const created = await postVisit(token, {
           route_id: formTaskId,
           preferred_at_1: first,
-          preferred_at_2: draft.secondChoice || null,
+          // **한 때만 받는다.** 지망 개념을 걷어냈다 — 안 되는 때의 조율은 담당자와
+          // 이야기하는 자리에서 한다 (§7.3). 서버 계약은 그대로라 null을 보낸다.
+          preferred_at_2: null,
           prepared_docs: [...draft.readyDocs],
           note: draft.note,
           // 동의하지 않았으면 답변도 동의 표시도 담기지 않는다. 서버가 짝을 검사하며,

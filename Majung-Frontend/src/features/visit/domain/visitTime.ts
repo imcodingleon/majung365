@@ -1,9 +1,13 @@
 // 방문 시간의 규칙 (§7.2).
 //
-// **고를 수 없는 때를 목록에서 빼지 않고 흐리게 둔다.** 빼 버리면 날짜가 건너뛰어 보여
-// 무슨 일인지 알 수 없다. 흐리게 두면 "그날은 안 된다"로 읽힌다.
+// **막는 것은 지난 날짜 하나뿐이다.**
 //
-// 주말을 막는 것은 주민센터와 공단이 평일에만 열기 때문이다. 고를 수 있게 두면 헛걸음이 된다.
+// 주말과 점심시간도 막아 두었는데 걷어냈다. 기관마다 운영이 다르고 토요일에 여는
+// 주민센터도 있는데, 우리가 일반 규칙으로 막으면 **실제로 갈 수 있는 때를 못 고르게
+// 된다.** 언제 문을 여는지는 담당자가 안다 — 그래서 이 기능이 담당자 확인을 거친다.
+//
+// 고를 수 없는 때는 목록에서 빼지 않고 흐리게 둔다. 빼 버리면 날짜가 건너뛰어 보여
+// 무슨 일인지 알 수 없다.
 import type { PickerItem } from "@/shared/components/PickerBox";
 
 /** 고른 때. 아직 안 고른 칸은 없다. */
@@ -16,14 +20,12 @@ export type VisitTime = {
 };
 
 /**
- * 기관이 창구를 여는 시각.
+ * 고를 수 있는 시각.
  *
- * **점심시간을 뺀다.** 12~13시에 가면 기다리게 되는데, 그 시간을 고를 수 있게 두면
- * 우리가 보낸 사람이 문 앞에서 기다리는 셈이 된다.
- *
- * 마지막을 17시로 잡은 것은 18시 마감 직전에 도착하면 접수가 안 되기 때문이다.
+ * 9시에서 17시까지 한 시간 간격이다. 마지막을 17시로 잡은 것은 18시 마감 직전에
+ * 도착하면 접수가 안 되기 때문이다.
  */
-const OPEN_HOURS = [9, 10, 11, 14, 15, 16, 17] as const;
+const OPEN_HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17] as const;
 
 /** 앞으로 고를 수 있는 달의 수. 두 달이면 넉넉하고, 더 열면 목록만 길어진다. */
 const MONTH_SPAN = 2;
@@ -32,12 +34,6 @@ const MONTH_SPAN = 2;
 export function lastDayOf(year: number | undefined, month: number | undefined): number {
   if (!year || !month) return 31;
   return new Date(year, month, 0).getDate();
-}
-
-/** 주말인가. 주민센터와 공단이 닫는 날이다. */
-function isWeekend(year: number, month: number, day: number): boolean {
-  const weekday = new Date(year, month - 1, day).getDay();
-  return weekday === 0 || weekday === 6;
 }
 
 /** 같은 날인가. 지난 시각을 가릴 때 쓴다. */
@@ -67,21 +63,19 @@ export function pickableDays(
   year: number | undefined,
   month: number | undefined,
   today: Date,
-  taken: VisitTime | null,
 ): readonly PickerItem[] {
   if (!year || !month) return [];
   const last = lastDayOf(year, month);
   const out: PickerItem[] = [];
   for (let day = 1; day <= last; day += 1) {
     const at = new Date(year, month - 1, day);
-    const past = at.getTime() <= new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
-    // 다른 지망이 그날의 시각을 전부 잡은 것이 아니라면 그날 자체는 열어 둔다.
-    const takenWholeDay =
-      taken?.year === year && taken.month === month && taken.day === day && !taken.hour;
+    const past =
+      at.getTime() <=
+      new Date(today.getFullYear(), today.getMonth(), today.getDate()).getTime();
     out.push({
       value: day,
       label: `${day}일 (${WEEKDAY[at.getDay()]})`,
-      disabled: past || isWeekend(year, month, day) || takenWholeDay,
+      disabled: past,
     });
   }
   return out;
@@ -102,7 +96,6 @@ export function hoursOf(
   year: number | undefined,
   month: number | undefined,
   day: number | undefined,
-  taken: VisitTime | null,
 ): readonly PickerItem[] {
   if (!year || !month || !day) return [];
   const now = new Date();
@@ -110,9 +103,7 @@ export function hoursOf(
   return OPEN_HOURS.map((hour) => ({
     value: hour,
     label: hourLabel(hour),
-    disabled:
-      (isToday && hour <= now.getHours()) ||
-      (taken?.year === year && taken.month === month && taken.day === day && taken.hour === hour),
+    disabled: isToday && hour <= now.getHours(),
   }));
 }
 
@@ -132,9 +123,4 @@ export function timeLabel(time: VisitTime): string {
   if (!isComplete(time)) return "";
   const at = new Date(time.year!, time.month! - 1, time.day!);
   return `${time.month}월 ${time.day}일 (${WEEKDAY[at.getDay()]}) ${hourLabel(time.hour!)}`;
-}
-
-/** 두 때가 같은가. 1·2지망이 겹치는지 볼 때 쓴다. */
-export function sameTime(a: VisitTime, b: VisitTime): boolean {
-  return a.year === b.year && a.month === b.month && a.day === b.day && a.hour === b.hour;
 }

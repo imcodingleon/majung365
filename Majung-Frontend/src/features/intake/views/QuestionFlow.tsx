@@ -6,7 +6,7 @@
 //
 // 되돌아갈 수 있어야 한다. 잘못 골랐을 때 처음부터 다시 해야 한다면 도중에 그만두게 된다.
 import { useEffect, useRef, useState } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { COLORS } from "@/shared/theme/colors";
@@ -57,8 +57,28 @@ export function QuestionFlow({
    * 그 답이 곧 할 일 목록을 정한다 (§3.8·§4.1).
    */
   const [overflow, setOverflow] = useState(false);
+  /**
+   * 깜빡임. **움직이는 것이 있어야 눈이 간다** — 가만히 있는 화살표는 장식으로 읽힌다.
+   *
+   * 화면 낭독기를 쓰는 사람에게는 이 표시가 보이지 않지만, 선택지 하나하나가 이미
+   * 읽히므로 아래에 무엇이 있는지는 그쪽 경로로 전해진다.
+   */
+  const blink = useRef(new Animated.Value(1)).current;
   const viewH = useRef(0);
   const contentH = useRef(0);
+  useEffect(() => {
+    if (!overflow) return;
+    const loop = Animated.loop(
+      Animated.sequence([
+        Animated.timing(blink, { toValue: 0.25, duration: 700, useNativeDriver: true }),
+        Animated.timing(blink, { toValue: 1, duration: 700, useNativeDriver: true }),
+      ]),
+    );
+    loop.start();
+    // 넘침이 사라지면 멈춘다. 안 멈추면 보이지 않는 곳에서 계속 돈다.
+    return () => loop.stop();
+  }, [overflow, blink]);
+
   const measure = () => {
     // 한 줄 남짓 남은 것은 넘친 것으로 치지 않는다. 여백 때문에 늘 켜져 있게 된다.
     setOverflow(contentH.current - viewH.current > 24);
@@ -189,23 +209,27 @@ export function QuestionFlow({
             )}
           </ScrollView>
 
-          {/* **아래에 더 있다는 것을 말한다** (§3.9-⑦). 작은 화면에서 다섯 번째
+          {/* **아래에 더 있다는 것을 알린다** (§3.9-⑦). 작은 화면에서 다섯 번째
               선택지가 잘리면, 보이는 것 중에서 고르게 되고 그 답이 할 일 목록을 정한다.
-              화면 크기를 우리가 정할 수 없으므로 잘리는 것을 막는 대신 알린다 */}
+              화면 크기를 우리가 정할 수 없으므로 잘리는 것을 막는 대신 알린다.
+
+              **글자 대신 화살표만 둔다.** 문구를 넣으면 그것 자체가 읽을거리가 되어,
+              한 화면에 한 가지라는 원칙을 이 자리에서 어긴다. 깜빡이는 것만으로
+              "여기 뭔가 더 있다"가 전해진다 */}
           {overflow ? (
             <View
-              className="absolute inset-x-0 bottom-0 items-center pb-2 pt-6"
+              className="absolute inset-x-0 bottom-0 items-center pb-3 pt-8"
               pointerEvents="none"
               style={{ backgroundColor: COLORS.surface }}
             >
-              <View
-                className="rounded-full px-4 py-2"
-                style={{ backgroundColor: COLORS.brandSoft }}
+              <Animated.View
+                className="size-9 items-center justify-center rounded-full"
+                style={{ backgroundColor: COLORS.brandSoft, opacity: blink }}
               >
-                <Text className="text-caption font-extrabold" style={{ color: COLORS.brand }}>
-                  ↓ 아래에 더 있어요
+                <Text className="text-body-lg font-extrabold" style={{ color: COLORS.brand }}>
+                  ↓
                 </Text>
-              </View>
+              </Animated.View>
             </View>
           ) : null}
         </View>

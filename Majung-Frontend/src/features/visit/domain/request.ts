@@ -24,9 +24,8 @@ export type VisitRequest = {
   /** 어느 할 일에 대한 방문인지. */
   taskId: string;
   status: VisitStatus;
-  /** 1지망·2지망 방문 시간. 1지망이 안 될 때 조율 왕복이 한 번 줄어든다 (§7.2). */
+  /** 사용자가 가고 싶다고 고른 방문 시간 (§7.2). */
   firstChoice: string;
-  secondChoice: string;
   /** 챙겨 가기로 한 준비물. */
   readyDocs: readonly string[];
   /** 미리 말해두고 싶은 것. 쓴 경우에만 전달한다. */

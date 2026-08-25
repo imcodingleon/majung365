@@ -9,7 +9,7 @@
 // **오전·오후가 아니라 시각을 고른다.** 예전에는 오전을 10시, 오후를 3시로 대신 정해
 // 보냈는데, 그 시각이 사용자가 고른 것이 아니면서도 담당자에게는 희망 시각으로 갔다.
 import { useMemo, useState } from "react";
-import { Text, View } from "react-native";
+import { View } from "react-native";
 
 import { PickerBox, PickerSheet, type PickerItem } from "@/shared/components/PickerBox";
 import { deferClose } from "@/shared/utils/deferClose";
@@ -32,21 +32,19 @@ type Props = {
   label: string;
   /** 오늘. 지난 날짜를 고르지 못하게 하는 기준이다. */
   today: Date;
-  /** 다른 지망에서 이미 고른 때. 같은 때를 두 번 고르지 못하게 한다. */
-  taken?: VisitTime | null;
 };
 
-export function VisitTimeField({ value, onChange, label, today, taken }: Props) {
+export function VisitTimeField({ value, onChange, label, today }: Props) {
   const [open, setOpen] = useState<Unit | null>(null);
 
   const months = useMemo(() => monthsFrom(today), [today]);
   const days = useMemo(
-    () => pickableDays(value.year, value.month, today, taken ?? null),
-    [value.year, value.month, today, taken],
+    () => pickableDays(value.year, value.month, today),
+    [value.year, value.month, today],
   );
   const hours = useMemo(
-    () => hoursOf(value.year, value.month, value.day, taken ?? null),
-    [value.year, value.month, value.day, taken],
+    () => hoursOf(value.year, value.month, value.day),
+    [value.year, value.month, value.day],
   );
 
   const items: readonly PickerItem[] =
@@ -111,11 +109,6 @@ export function VisitTimeField({ value, onChange, label, today, taken }: Props) 
           }
         />
       </View>
-
-      {/* **왜 못 고르는 날이 있는지 미리 말한다.** 흐린 줄만 보이면 앱이 고장 난 줄 안다 */}
-      <Text className="mt-2 text-caption text-ink-muted">
-        주민센터와 공단은 평일 낮에만 문을 열어요. 점심시간은 빼 두었어요.
-      </Text>
 
       <PickerSheet
         visible={open !== null}
