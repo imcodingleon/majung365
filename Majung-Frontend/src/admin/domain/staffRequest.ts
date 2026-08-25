@@ -49,26 +49,15 @@ export type StaffRequest = {
  * 아는 것이다. 둘 중 하나라도 비면 확정할 수 없다.
  */
 export type ConfirmInput = {
-  /** 확정한 방문 시각. 사용자 희망 시각을 그대로 쓰거나 다른 때를 고른다. */
-  whenLabel: string;
-  /**
-   * 그 시각의 원본 값(ISO). **직접 적은 경우에는 없다.**
-   *
-   * 없으면 서버가 사용자 희망 시각으로 채운다 — 매번 입력하게 하면 빼먹었을 때 확정 자체가
-   * 막히기 때문이다. 장소를 필수로 둔 것과 다른 판단이며, 장소는 서버가 알 수 없는
-   * 정보이지만 시각은 이미 1지망이 있다.
-   */
-  whenIso?: string | null;
+  /** **확정에 시각이 없다.** 출소자가 적어낸 때가 그대로 확정 시각이 되고,
+   * 세부는 채팅으로 조율한다 (§7.3). 여기 남은 것은 만날 사람과 장소다 —
+   * §7.1이 "이 기능의 핵심"이라고 적은 둘이다. */
   staffName: string;
   place: string;
 };
 
 export function canConfirm(input: ConfirmInput): boolean {
-  return (
-    input.whenLabel.trim().length > 0 &&
-    input.staffName.trim().length > 0 &&
-    input.place.trim().length > 0
-  );
+  return input.staffName.trim().length > 0 && input.place.trim().length > 0;
 }
 
 /** 담당자 화면에 보이는 상태 이름. 출소자 화면의 문구와 다르다. */
