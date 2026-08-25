@@ -27,7 +27,9 @@ export type IconName =
   | "bell"
   | "undo"
   | "checkCircle"
-  | "pin";
+  | "pin"
+  | "home"
+  | "person";
 
 type Props = {
   name: IconName;
@@ -173,6 +175,32 @@ function Pin({ color }: { color: string }) {
   );
 }
 
+function Home({ color }: { color: string }) {
+  // 집. 지붕과 몸통, 그리고 문 하나. 문이 없으면 도형으로만 보인다.
+  return (
+    <>
+      <Path d="M3.5 10.5 12 3.5l8.5 7" stroke={color} fill="none" {...line} />
+      <Path d="M5.5 9.8V20h13V9.8" stroke={color} fill="none" {...line} />
+      <Path d="M9.8 20v-5.2h4.4V20" stroke={color} fill="none" {...line} />
+    </>
+  );
+}
+
+function Person({ color }: { color: string }) {
+  // 사람. 머리와 어깨만 그린다 — 눈코입을 넣으면 24px에서 뭉쳐 얼룩으로 보인다.
+  return (
+    <>
+      <Circle cx={12} cy={8} r={3.6} stroke={color} fill="none" strokeWidth={STROKE} />
+      <Path
+        d="M4.8 20c0-3.6 3.2-5.8 7.2-5.8s7.2 2.2 7.2 5.8"
+        stroke={color}
+        fill="none"
+        {...line}
+      />
+    </>
+  );
+}
+
 const SHAPES: Record<IconName, (p: { color: string }) => React.ReactElement> = {
   check: Check,
   close: Close,
@@ -187,6 +215,8 @@ const SHAPES: Record<IconName, (p: { color: string }) => React.ReactElement> = {
   undo: Undo,
   checkCircle: CheckCircle,
   pin: Pin,
+  home: Home,
+  person: Person,
 };
 
 export function Icon({ name, size = 24, color }: Props) {
