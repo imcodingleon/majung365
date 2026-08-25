@@ -6,7 +6,7 @@
 //
 // 아이콘은 PNG를 되살리지 않고 SVG로 다시 그렸다. 사전 색칠본이라 색을 바꿀 수 없고,
 // 앱 전체가 SVG 한 세트로 통일되어 있어 섞으면 굵기와 여백이 어긋나 보인다.
-import { useCallback, useMemo, useState } from "react";
+import { useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -20,7 +20,10 @@ import type { Center } from "@/shared/types";
 import { useNearbyCenters } from "../hooks/useNearbyCenters";
 import { CenterMap } from "./CenterMap";
 
-const CATEGORIES = ["전체", "법무보호공단", "주민센터", "고용센터"] as const;
+// **갖고 있는 것과 맞춘다.** "고용센터"가 칩에 있었는데 그 데이터가 없어 누르면 늘
+// 비었고, 246곳을 가진 정신건강복지센터는 칩이 없어 "전체"로만 보였다. 심리상담(R8)이
+// 안내하는 기관이라 화면에 나와야 한다.
+const CATEGORIES = ["전체", "법무보호공단", "주민센터", "정신건강복지센터"] as const;
 
 function SearchBar({ value, onChange }: { value: string; onChange: (t: string) => void }) {
   return (
@@ -165,32 +168,17 @@ export function MapScreen() {
   const isDesktop = useIsDesktop();
 
   /**
-   * 이 지역에 있는 기관인지. **공단 기관은 지역이 안 맞아도 목록에 온다** — 전국에
-   * 서른여덟 곳뿐이라 거르면 주 경로가 사라지기 때문이다(§5.4).
+   * 보여줄 기관. **순서를 여기서 다시 매기지 않는다.**
    *
-   * 다만 그 규칙을 지도에까지 적용하면 **양천구를 보는데 전국이 뜬다.** 여기서 갈라
-   * 놓고, 목록은 가까운 것부터 그리고 지도는 가까운 것만 담는다.
+   * 서버가 갈래마다 가까운 순 세 곳씩 잘라 보낸다. 화면이 또 줄을 세우면 같은 규칙이
+   * 두 곳에 생기고, 한쪽만 고쳤을 때 목록과 지도가 어긋난다.
    */
-  const isNear = useCallback(
-    (c: Center) => (place ? c.address.includes(place.district) : true),
-    [place],
-  );
-
   const shown = useMemo(() => {
     const byCat = cat === "전체" ? centers : centers.filter((c) => c.category === cat);
     const q = query.trim();
-    const found = q
-      ? byCat.filter((c) => c.name.includes(q) || c.tags.some((t) => t.includes(q)))
-      : byCat;
-    // **가까운 것이 위로.** 양천구 사람에게 경북 본부가 첫 줄이면 안 된다.
-    return [...found].sort((a, b) => Number(isNear(b)) - Number(isNear(a)));
-  }, [centers, cat, query, isNear]);
-
-  /** 지도에 담을 것. 이 지역에 하나도 없으면 전부를 담아 빈 지도를 피한다. */
-  const onMap = useMemo(() => {
-    const near = shown.filter(isNear);
-    return near.length > 0 ? near : shown;
-  }, [shown, isNear]);
+    if (!q) return byCat;
+    return byCat.filter((c) => c.name.includes(q) || c.tags.some((t) => t.includes(q)));
+  }, [centers, cat, query]);
 
   // **위치를 못 받으면 지역을 직접 고르게 한다** (§5.4). 위치를 거부하는 것은
   // 이 서비스에서 흔한 선택이고, 거부했다고 화면이 비면 쓸 수 없는 것과 같다.
@@ -218,7 +206,7 @@ export function MapScreen() {
           <View className="flex-1 gap-5">
             <SearchBar value={query} onChange={setQuery} />
             <FilterChips selected={cat} onSelect={setCat} />
-            <CenterMap centers={onMap} />
+            <CenterMap centers={shown} />
           </View>
           <View className="w-[340px] gap-3">
             <ListHeading error={error} />
@@ -231,7 +219,7 @@ export function MapScreen() {
         <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
           <SearchBar value={query} onChange={setQuery} />
           <FilterChips selected={cat} onSelect={setCat} />
-          <CenterMap centers={onMap} />
+          <CenterMap centers={shown} />
           <ListHeading error={error} />
           <CenterList loading={loading} shown={shown} />
         </ScrollView>
