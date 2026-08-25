@@ -97,10 +97,28 @@ export function toAlerts(requests: readonly VisitRequest[]): Alert[] {
 /**
  * 안 읽은 건수.
  *
+ * **"안 읽음"이 두 종류다.**
+ *
+ * 메시지는 **서버가 센다** — 대화를 열어 읽음 표시를 보내야 0이 된다. 그 값 자체가
+ * 안 읽음의 정의이므로 기기의 시각으로 다시 거르지 않는다. 거르면 알림 화면을 한 번
+ * 지나친 뒤에 온 메시지가 배지에서 사라진다.
+ *
+ * 나머지 소식(확정·시간 제안·취소)은 **기기가 마지막으로 본 시각**으로 센다. 서버에
+ * 알림을 쌓지 않기로 했으므로(§9.4) 읽었는지를 아는 곳이 기기뿐이다.
+ *
  * **본 시각과 같은 것은 읽은 것으로 센다.** 같은 순간에 온 것을 안 읽은 것으로 세면
  * 배지가 영영 사라지지 않는다.
  */
 export function countUnseen(alerts: readonly Alert[], lastSeen: string | null): number {
-  if (lastSeen === null) return alerts.length;
-  return alerts.filter((a) => a.at > lastSeen).length;
+  return alerts.filter((a) => isUnseen(a, lastSeen)).length;
+}
+
+/**
+ * 이 소식을 아직 안 봤는가. **하단 바의 숫자와 목록의 점이 같은 판정을 쓴다.**
+ *
+ * 나누어 두면 배지는 떴는데 점은 없는 일이 생긴다 — 실제로 그렇게 어긋나 있었다.
+ */
+export function isUnseen(alert: Alert, lastSeen: string | null): boolean {
+  if (alert.kind === "message") return true;
+  return lastSeen === null || alert.at > lastSeen;
 }

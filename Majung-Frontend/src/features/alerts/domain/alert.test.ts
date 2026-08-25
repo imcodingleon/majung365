@@ -2,7 +2,7 @@ import { describe, expect, it } from "@jest/globals";
 
 import type { VisitRequest, VisitStatus } from "@/features/visit/domain/request";
 
-import { countUnseen, toAlerts, type Alert } from "./alert";
+import { countUnseen, isUnseen, toAlerts, type Alert } from "./alert";
 
 function req(over: Partial<VisitRequest> & { status: VisitStatus }): VisitRequest {
   return {
@@ -144,5 +144,34 @@ describe("toAlerts — 안 읽은 메시지", () => {
       req({ status: "confirmed", confirmation: CONFIRMED, unread: 0 }),
     ]);
     expect(list[0].kind).toBe("confirmed");
+  });
+});
+
+describe("countUnseen — 두 종류의 안 읽음", () => {
+  const message: Alert = {
+    id: "m",
+    kind: "message",
+    title: "",
+    body: "",
+    // 요청을 보낸 시각이라 알림 화면을 지나친 뒤보다 과거다.
+    at: "2026-08-20T09:00:00+09:00",
+    visitId: "a",
+  };
+
+  it("메시지는 본 시각과 무관하게 안 읽은 것이다", () => {
+    // 서버가 세는 값이 곧 안 읽음의 정의다. 기기 시각으로 다시 거르면 알림 화면을
+    // 한 번 지나친 뒤에 온 메시지가 배지에서 사라진다.
+    expect(countUnseen([message], "2026-08-26T23:00:00+09:00")).toBe(1);
+  });
+
+  it("나머지 소식은 본 시각으로 거른다", () => {
+    const confirmed: Alert = { ...message, id: "c", kind: "confirmed" };
+    expect(countUnseen([confirmed], "2026-08-26T23:00:00+09:00")).toBe(0);
+  });
+
+  it("목록의 점과 바의 숫자가 같은 판정을 쓴다", () => {
+    const seenAt = "2026-08-26T23:00:00+09:00";
+    expect(isUnseen(message, seenAt)).toBe(true);
+    expect(countUnseen([message], seenAt)).toBe(1);
   });
 });

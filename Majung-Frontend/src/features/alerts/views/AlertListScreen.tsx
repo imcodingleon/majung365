@@ -9,7 +9,7 @@ import { AppHeader } from "@/shared/components/AppHeader";
 import { Icon, type IconName } from "@/shared/components/Icon";
 import { COLORS } from "@/shared/theme/colors";
 
-import type { Alert, AlertKind } from "../domain/alert";
+import { isUnseen, type Alert, type AlertKind } from "../domain/alert";
 
 /** 소식의 성격을 그림으로도 알린다. 글을 빨리 읽지 못해도 무슨 일인지 보인다. */
 const ICON: Record<AlertKind, IconName> = {
@@ -62,7 +62,8 @@ export function AlertListScreen({
       ) : (
         <ScrollView className="flex-1">
           {alerts.map((a) => {
-            const unseen = lastSeen === null || a.at > lastSeen;
+            // **판정을 여기서 다시 쓰지 않는다.** 하단 바의 숫자와 같은 함수를 쓴다.
+            const unseen = isUnseen(a, lastSeen);
             return (
               <Pressable
                 key={a.id}
