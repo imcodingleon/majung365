@@ -205,6 +205,9 @@ def create_app() -> FastAPI:
         app.state.visit_chat_usecase = VisitChatUseCase(
             visits=app.state.visit_repo,
             messages=SupabaseVisitMessageRepository(supabase, cipher),
+            # **방문 쪽과 같은 기록장을 쓴다.** 담당자가 목록을 본 것과 대화를 읽은
+            # 것이 한자리에 쌓여야 행적을 이어서 볼 수 있다 (코드 리뷰 M4).
+            access_log=app.state.access_log_repo,
         )
         # 세션이 끊겨도 할 일을 이어서 보려면 판정이 남아야 한다 (§5.2 · 0008).
         # **답변 원문은 담지 않는다** — 저장하는 것은 판정뿐이다 (§9.1).

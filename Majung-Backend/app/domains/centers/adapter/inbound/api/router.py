@@ -12,6 +12,7 @@ from app.domains.centers.infrastructure.district_office_repository import (
     JsonDistrictOfficeRepository,
 )
 from app.domains.centers.infrastructure.json_repository import JsonCenterRepository
+from app.domains.centers.infrastructure.map_repository import JsonMapCenterRepository
 from app.domains.centers.infrastructure.support_institution_repository import (
     JsonSupportInstitutionRepository,
 )
@@ -20,6 +21,8 @@ from app.domains.shared.routes import RouteId, institution_kinds_for
 router = APIRouter(prefix="/api", tags=["centers"])
 _repo = JsonCenterRepository()
 _district_repo = JsonDistrictOfficeRepository()
+# 지도용 합본. 좌표가 있는 것만 담기며, 없으면 그 항목이 빠질 뿐 부팅은 막지 않는다.
+_map_repo = JsonMapCenterRepository()
 
 
 class CenterOut(BaseModel):
@@ -51,7 +54,24 @@ class CenterOut(BaseModel):
 @router.get("/centers", response_model=list[CenterOut])
 def list_centers(
     category: str | None = Query(default=None, description="법무보호공단 | 주민센터 | 고용센터"),
+    sido: str | None = Query(default=None, max_length=20, description="예: 서울특별시"),
+    district: str | None = Query(default=None, max_length=40, description="예: 송파구"),
 ) -> list[CenterOut]:
+    """지도에 찍을 기관.
+
+    **지역을 주면 주민센터와 정신건강복지센터까지 함께 나간다.** 주지 않으면 예전처럼
+    `centers.json`만 나간다 — 전국 주민센터 3,555건을 통째로 보낼 수는 없다.
+
+    사용자의 지역은 준식별정보다. 조회 조건을 로그에 남기지 않는다.
+    """
+    if sido and district:
+        items = _map_repo.by_region(sido, district)
+        if category:
+            narrowed = [c for c in items if c.category == category]
+            # 빈 갈래(오탈자 등)면 전체로 되돌린다. 화면이 비는 것보다 낫다.
+            items = narrowed or items
+        return [CenterOut.of(c) for c in items]
+
     items = _repo.by_category(category) if category else _repo.all()
     # 빈 카테고리(오탈자 등)면 전체로 폴백
     if category and not items:
