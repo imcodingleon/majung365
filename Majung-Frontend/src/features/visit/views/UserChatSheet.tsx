@@ -9,6 +9,7 @@
 // 넘기는 토큰과 `myRole`뿐이다.
 import { useEffect, useState } from "react";
 
+import { FramedModal } from "@/shared/components/FramedModal";
 import { loadToken } from "@/shared/utils/tokenStore";
 
 import type { VisitRequest } from "../domain/request";
@@ -45,17 +46,24 @@ export function UserChatSheet({
   }, [connected, blocked, markRead]);
 
   return (
-    <StaffChatScreen
-      // 확정되기 전에는 만날 사람이 정해지지 않았다. 그때는 직함으로 부른다.
-      peerName={request.confirmation?.staffName ?? "담당자"}
-      myRole="user"
-      eyebrow="담당자와 이야기하기"
-      closeHint="할 일 목록으로 돌아가기"
-      messages={chat.messages}
-      onSend={chat.send}
-      onBack={onClose}
-      blocked={chat.blocked}
-      connected={chat.connected}
-    />
+    // **화면 전체를 덮는다** (§6.1). 얹기만 하면 뒤의 할 일 목록이 그대로 보이고
+    // 하단 메뉴바가 대화 위에 겹친다. AI 채팅도 같은 이유로 팝업이다.
+    //
+    // `Modal`을 직접 쓰지 않는다. 웹에서 `Modal`은 앱 프레임 바깥에 그려져,
+    // 화면은 모바일 폭인데 팝업만 데스크톱 전체 폭으로 퍼진다.
+    <FramedModal visible animationType="slide" onRequestClose={onClose}>
+      <StaffChatScreen
+        // 확정되기 전에는 만날 사람이 정해지지 않았다. 그때는 직함으로 부른다.
+        peerName={request.confirmation?.staffName ?? "담당자"}
+        myRole="user"
+        eyebrow="담당자와 이야기하기"
+        closeHint="할 일 목록으로 돌아가기"
+        messages={chat.messages}
+        onSend={chat.send}
+        onBack={onClose}
+        blocked={chat.blocked}
+        connected={chat.connected}
+      />
+    </FramedModal>
   );
 }
