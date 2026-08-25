@@ -14,12 +14,12 @@ import type { VisitStatus } from "@/shared/types/visit";
 import type { ConfirmInput, StaffRequest } from "../domain/staffRequest";
 import { useAdminSession } from "../hooks/useAdminSession";
 import { useStaffVisits } from "../hooks/useStaffVisits";
-import { useVisitChat } from "../hooks/useVisitChat";
+import { useVisitChat } from "@/features/visit/hooks/useVisitChat";
 
 import { AdminLoginScreen } from "./AdminLoginScreen";
 import { RequestDetailScreen } from "./RequestDetailScreen";
 import { RequestListScreen } from "./RequestListScreen";
-import { StaffChatScreen } from "./StaffChatScreen";
+import { StaffChatScreen } from "@/features/visit/views/StaffChatScreen";
 
 /**
  * 방문 조율 채팅방.
@@ -48,6 +48,7 @@ function StaffChatRoom({
   return (
     <StaffChatScreen
       peerName={request.name}
+      myRole="staff"
       messages={chat.messages}
       blocked={chat.blocked}
       connected={chat.connected}

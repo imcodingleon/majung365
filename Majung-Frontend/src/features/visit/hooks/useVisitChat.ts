@@ -58,6 +58,13 @@ export function useVisitChat(visitId: string | null, token: string | null) {
 
     const socket = io(API_BASE, { auth: { token } });
     socketRef.current = socket;
+
+    // **방이 바뀌면 이전 방 대화를 지운다.** 지우지 않으면 다른 요청의 채팅을 열었을
+    // 때 남의 대화가 잠깐 보인다 — 방은 요청 하나에 하나이므로(§7.3) 섞이면 안 된다.
+    //
+    // 린터는 이 자리의 setState를 연쇄 렌더로 보고 막는다. 성능에 관한 경고이고,
+    // 여기서는 방을 바꿀 때만 도는 한 번의 초기화라 그 대가를 치를 값어치가 있다.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages([]);
     setBlocked(null);
 

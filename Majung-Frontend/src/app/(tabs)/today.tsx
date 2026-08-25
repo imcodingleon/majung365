@@ -18,9 +18,10 @@ import { useNearbyPlaces, nearbyKindFor } from "@/features/tasks/hooks/useNearby
 import { NearbyPlaces } from "@/features/tasks/views/NearbyPlaces";
 import { useServerTasks } from "@/features/tasks/hooks/useServerTasks";
 import { TodayScreen } from "@/features/tasks";
-import { limitMessage } from "@/features/visit/domain/request";
+import { limitMessage, type VisitRequest } from "@/features/visit/domain/request";
 import { useVisitRequests } from "@/features/visit/hooks/useVisitRequests";
 import { RequestStatusStrip } from "@/features/visit/views/RequestStatusStrip";
+import { UserChatSheet } from "@/features/visit/views/UserChatSheet";
 import { VisitRequestSheet } from "@/features/visit/views/VisitRequestSheet";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { getSession } from "@/shared/utils/session";
@@ -37,6 +38,11 @@ export default function TodayRoute() {
   const chat = useTaskThreads();
   const visit = useVisitRequests();
   const [helpOpen, setHelpOpen] = useState(false);
+  /**
+   * 담당자 채팅을 연 방문 요청. **방은 요청 하나에 하나다**(§7.3) — 할 일이 아니라
+   * 요청을 들고 있어야 어느 방을 열지 정해진다.
+   */
+  const [staffChatFor, setStaffChatFor] = useState<VisitRequest | null>(null);
   // 아코디언 열림은 화면 상태다. 아무것도 안 골랐으면 첫 항목이 열린 채로 시작한다 (§5.2).
   const [openId, setOpenId] = useState<RouteId | null>(null);
 
@@ -120,7 +126,9 @@ export default function TodayRoute() {
           return (
             <RequestStatusStrip
               request={request}
-              onOpenStaffChat={() => chat.open(taskId)}
+              // **AI 채팅이 아니라 담당자 채팅을 연다.** 여기가 `chat.open`을
+              // 부르고 있어서 담당자가 보낸 말이 사용자에게 닿지 않았다.
+              onOpenStaffChat={() => setStaffChatFor(request)}
               onCancel={() => visit.cancel(request.id)}
               // 취소된 요청을 다시 보낸다. 폼을 다시 열어 시간부터 고르게 한다 —
               // 같은 시간으로 자동 재전송하면 그때가 안 되어 취소한 경우 되풀이된다.
@@ -153,6 +161,12 @@ export default function TodayRoute() {
             setHelpOpen(true);
           }}
         />
+      ) : null}
+
+      {/* **담당자와 주고받는 방.** AI 채팅과 따로 있다 — 저쪽은 제도를 물어보는
+          자리이고 여기는 사람과 시간·오시는 길을 맞추는 자리다 (§7.3) */}
+      {staffChatFor ? (
+        <UserChatSheet request={staffChatFor} onClose={() => setStaffChatFor(null)} />
       ) : null}
 
       {visitTask ? (
