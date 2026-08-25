@@ -20,7 +20,7 @@ import {
   defaultSections,
   type SharedAnswer,
 } from "../domain/sharedAnswers";
-import { isComplete, sameTime, toIso, type VisitTime } from "../domain/visitTime";
+import { isComplete, toIso, type VisitTime } from "../domain/visitTime";
 import { VisitTimeField } from "./VisitTimeField";
 import { FramedModal } from "@/shared/components/FramedModal";
 
@@ -37,10 +37,8 @@ type Props = {
   /** 시간 후보를 만들 기준 날짜. 넘기지 않으면 오늘로 잡는다. */
   today?: Date;
   onSubmit: (payload: {
-    /** 1지망 시각(ISO). 화면이 골라 만든 값을 그대로 넘긴다. */
+    /** 가고 싶은 시각(ISO). 화면이 골라 만든 값을 그대로 넘긴다. */
     firstChoice: string;
-    /** 2지망 시각(ISO). */
-    secondChoice: string;
     readyDocs: readonly string[];
     note?: string;
     /** 함께 보내기로 한 진단 답변. 동의하지 않으면 비어 있다 (§7.4-1). */
@@ -77,7 +75,6 @@ export function VisitRequestSheet({
 }: Props) {
   const base = useMemo(() => today ?? new Date(), [today]);
   const [first, setFirst] = useState<VisitTime>({});
-  const [second, setSecond] = useState<VisitTime>({});
   const [readyDocs, setReadyDocs] = useState<string[]>([]);
   const [note, setNote] = useState("");
 
@@ -111,8 +108,7 @@ export function VisitRequestSheet({
     [answers, shareOn, picked],
   );
 
-  // 두 지망이 다 차야 보낼 수 있다. 같은 때를 두 번 고르는 것은 칸에서 이미 막는다.
-  const canSend = isComplete(first) && isComplete(second) && !sameTime(first, second);
+  const canSend = isComplete(first);
 
   const toggleDoc = (doc: string) => {
     setReadyDocs((prev) => (prev.includes(doc) ? prev.filter((d) => d !== doc) : [...prev, doc]));
@@ -120,11 +116,9 @@ export function VisitRequestSheet({
 
   const send = () => {
     const at1 = toIso(first);
-    const at2 = toIso(second);
-    if (!at1 || !at2) return;
+    if (!at1) return;
     onSubmit({
       firstChoice: at1,
-      secondChoice: at2,
       readyDocs,
       note: note.trim() ? note.trim() : undefined,
       // 동의하지 않았으면 아예 담기지 않는다. 빈 배열도 보내지 않는다.
@@ -172,25 +166,12 @@ export function VisitRequestSheet({
             <Text className="text-body-lg text-ink-strong">{purpose}</Text>
           </View>
 
-          {/* 1지망이 안 될 때 조율 왕복이 한 번 줄어든다 (§7.2). */}
+          {/* **한 때만 고른다.** 1·2지망을 받던 것을 걷어냈다 — 안 되는 때를 미리
+              대비하는 것은 담당자와 이야기하면 되는 일이고(§7.3), 고를 것이 두 벌이면
+              그만큼 보내기까지 오래 걸린다 */}
           <SectionTitle>언제 가실 수 있나요</SectionTitle>
           <Text className="mb-3 text-caption text-ink-muted">가시고 싶은 때를 고르세요.</Text>
-          <VisitTimeField
-            value={first}
-            onChange={setFirst}
-            label="가고 싶은 때"
-            today={base}
-            taken={second}
-          />
-
-          <SectionTitle>그때가 안 되면 언제가 좋으세요</SectionTitle>
-          <VisitTimeField
-            value={second}
-            onChange={setSecond}
-            label="그다음으로 좋은 때"
-            today={base}
-            taken={first}
-          />
+          <VisitTimeField value={first} onChange={setFirst} label="가고 싶은 때" today={base} />
 
           {docs.length > 0 ? (
             <>
