@@ -9,7 +9,11 @@ import { AppFrame } from "@/shared/components/AppFrame";
 import { COLORS } from "@/shared/theme/colors";
 import { useRestoreSession } from "@/shared/utils/useRestoreSession";
 
-// 루트 레이아웃. 본선은 단일 화면 + 아코디언 구조라 탭 네비게이션이 없다.
+// 루트 레이아웃. **하단 메뉴바는 `(tabs)/_layout.tsx`가 맡는다.**
+//
+// 가입·상황 다시 알아보기·팜플렛·담당자 화면은 그 그룹 밖에 있다 — 가입하는 중에
+// 메뉴바가 보이면 안 되기 때문이다.
+//
 // 헤더는 각 화면이 직접 그린다(저리터러시 커스텀 UI).
 //
 // **세션 되살리기가 여기 있다** (§5.2). 화면마다 두면 어느 하나가 빠지고, 진입점에만
