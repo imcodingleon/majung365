@@ -14,6 +14,7 @@
 import { Text, View } from "react-native";
 
 import { COLORS } from "../theme/colors";
+import { Icon, type IconName } from "./Icon";
 
 export type NoteTone = "info" | "warn" | "alert";
 
@@ -23,7 +24,7 @@ type Props = {
   /** 본문 위에 굵게 붙는 한 줄. 없으면 자리를 만들지 않는다. */
   title?: string;
   /** 문장 앞에 붙는 그림. 글을 읽기 어려운 사람에게 종류를 먼저 알린다. */
-  icon?: string;
+  icon?: IconName;
   /** 바깥 여백. 상자 스스로 정하지 않고 놓는 쪽이 정한다. */
   className?: string;
 };
@@ -44,17 +45,29 @@ export function NoteBox({ tone = "info", children, title, icon, className }: Pro
       className={`rounded-2xl border px-4 py-4 ${className ?? ""}`}
       style={{ backgroundColor: c.bg, borderColor: c.line }}
     >
+      {/* 그림은 글 옆에 나란히 둔다. 글 앞에 이어 붙이면 기기마다 크기가 달라지고
+          줄이 넘어갈 때 두 번째 줄이 그림 아래로 들어가 어긋난다 */}
       {title ? (
-        <Text className="mb-2 text-body font-extrabold" style={{ color: c.ink }}>
-          {icon ? `${icon} ` : ""}
-          {title}
-        </Text>
+        <View className="mb-2 flex-row items-center gap-2">
+          {icon ? <Icon name={icon} size={20} color={c.ink} /> : null}
+          <Text className="flex-1 text-body font-extrabold" style={{ color: c.ink }}>
+            {title}
+          </Text>
+        </View>
       ) : null}
       {plain ? (
-        <Text className="text-body" style={{ color: c.ink }}>
-          {!title && icon ? `${icon} ` : ""}
-          {children}
-        </Text>
+        !title && icon ? (
+          <View className="flex-row items-start gap-2">
+            <Icon name={icon} size={20} color={c.ink} />
+            <Text className="flex-1 text-body" style={{ color: c.ink }}>
+              {children}
+            </Text>
+          </View>
+        ) : (
+          <Text className="text-body" style={{ color: c.ink }}>
+            {children}
+          </Text>
+        )
       ) : (
         children
       )}

@@ -23,6 +23,7 @@ import {
 import { isComplete, toIso, type VisitTime } from "../domain/visitTime";
 import { VisitTimeField } from "./VisitTimeField";
 import { FramedModal } from "@/shared/components/FramedModal";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   visible: boolean;
@@ -142,7 +143,7 @@ export function VisitRequestSheet({
             accessibilityLabel="닫기"
             className="size-10 items-center justify-center rounded-full active:opacity-70"
           >
-            <Text className="text-2xl text-ink-muted">✕</Text>
+            <Icon name="close" size={22} color={COLORS.inkMuted} />
           </Pressable>
         </View>
 
@@ -202,7 +203,7 @@ export function VisitRequestSheet({
                         borderColor: checked ? COLORS.brand : COLORS.brandMuted,
                       }}
                     >
-                      {checked ? <Text className="text-caption font-extrabold text-white">✓</Text> : null}
+                      {checked ? <Icon name="check" size={14} color={COLORS.surface} /> : null}
                     </View>
                     <Text className="flex-1 text-body-lg text-ink-strong">{doc}</Text>
                   </Pressable>
@@ -250,7 +251,7 @@ export function VisitRequestSheet({
                   }}
                 >
                   {shareOn ? (
-                    <Text className="text-caption font-extrabold text-white">✓</Text>
+                    <Icon name="check" size={16} color={COLORS.surface} />
                   ) : null}
                 </View>
                 <View className="flex-1">
@@ -300,7 +301,7 @@ export function VisitRequestSheet({
                           }}
                         >
                           {on ? (
-                            <Text className="text-[11px] font-extrabold text-white">✓</Text>
+                            <Icon name="check" size={12} color={COLORS.surface} />
                           ) : null}
                         </View>
                         <Text

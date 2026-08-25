@@ -13,6 +13,7 @@ import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { STORE_LINKS, type StoreLink } from "../domain/storeLinks";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   onClose?: () => void;
@@ -49,7 +50,7 @@ export function PamphletScreen({ onClose }: Props) {
             accessibilityLabel="닫기"
             className="size-10 items-center justify-center rounded-full active:opacity-70"
           >
-            <Text className="text-2xl text-ink-muted">✕</Text>
+            <Icon name="close" size={22} color={COLORS.inkMuted} />
           </Pressable>
         ) : null}
       </View>

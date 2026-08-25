@@ -6,6 +6,8 @@
 // **닫기를 왼쪽에 둔다.** 오른쪽 위는 엄지가 닿기 먼 자리라, 덮어씌운 화면에서
 // 나가는 길을 거기 두면 갇힌 느낌을 준다. 채팅 팝업도 같은 이유로 왼쪽이다.
 import { Pressable, Text, View } from "react-native";
+import { COLORS } from "../theme/colors";
+import { Icon } from "./Icon";
 
 type Props = {
   title: string;
@@ -42,7 +44,7 @@ export function ScreenHeader({
         accessibilityLabel={closeHint ?? (back ? "앞 화면으로" : `${title} 닫기`)}
         className="size-10 items-center justify-center rounded-full active:opacity-70"
       >
-        <Text className="text-2xl text-ink-muted">{back ? "‹" : "✕"}</Text>
+        <Icon name={back ? "back" : "close"} size={22} color={COLORS.inkMuted} />
       </Pressable>
 
       <View className="flex-1 px-1">

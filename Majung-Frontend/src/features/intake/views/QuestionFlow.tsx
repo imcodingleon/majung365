@@ -6,6 +6,7 @@
 //
 // 되돌아갈 수 있어야 한다. 잘못 골랐을 때 처음부터 다시 해야 한다면 도중에 그만두게 된다.
 import { useEffect, useRef, useState } from "react";
+import { Icon } from "@/shared/components/Icon";
 import { Animated, Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -226,9 +227,7 @@ export function QuestionFlow({
                 className="size-9 items-center justify-center rounded-full"
                 style={{ backgroundColor: COLORS.brandSoft, opacity: blink }}
               >
-                <Text className="text-body-lg font-extrabold" style={{ color: COLORS.brand }}>
-                  ↓
-                </Text>
+                <Icon name="down" size={20} color={COLORS.brand} />
               </Animated.View>
             </View>
           ) : null}

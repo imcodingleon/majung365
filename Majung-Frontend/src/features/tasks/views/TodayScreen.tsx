@@ -14,6 +14,7 @@ import type { RouteId, Task } from "../domain/task";
 
 import { TaskCard } from "./TaskCard";
 import { TaskRow } from "./TaskRow";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   tasks: readonly Task[];
@@ -191,7 +192,7 @@ export function TodayScreen({
             accessibilityLabel="우리 동네 기관 찾아보기"
             className="mt-6 flex-row items-center justify-center gap-2 rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-80"
           >
-            <Text className="text-body-lg">📍</Text>
+            <Icon name="pin" size={20} color={COLORS.inkSub} />
             <Text className="text-body-lg font-bold text-ink-sub">우리 동네 기관 찾아보기</Text>
           </Pressable>
         ) : null}

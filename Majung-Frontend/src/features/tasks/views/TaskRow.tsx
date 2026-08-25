@@ -11,6 +11,7 @@
 // 번호 색은 옛 인덱스 탭 색을 그대로 쓴다. 분류가 아니라 **순서**를 가리키는 것으로
 // 뜻이 바뀌었지만, 위에서부터 빨강→주황→노랑으로 옅어지는 배열이 순서에도 맞는다.
 import { Pressable, Text, View } from "react-native";
+import { Icon } from "@/shared/components/Icon";
 
 import { COLORS } from "@/shared/theme/colors";
 
@@ -102,9 +103,12 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
             {task.title}
           </Text>
           {done ? (
-            <Text className="text-body font-extrabold" style={{ color: FOLDER_DONE.title }}>
-              ✓ 끝
-            </Text>
+            <View className="flex-row items-center gap-1">
+              <Icon name="check" size={15} color={FOLDER_DONE.title} />
+              <Text className="text-body font-extrabold" style={{ color: FOLDER_DONE.title }}>
+                끝
+              </Text>
+            </View>
           ) : (
             <Text className="text-2xl" style={{ color: COLORS.inkMuted }}>
               {open ? "⌃" : "⌄"}

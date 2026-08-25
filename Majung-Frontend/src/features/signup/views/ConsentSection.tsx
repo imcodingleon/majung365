@@ -8,6 +8,7 @@
 // 대신 항목마다 쉬운 말 한 줄을 아래에 붙여 저리터러시 원칙을 지킨다. 항목명은 형식을 맡고
 // 그 아래 한 줄이 뜻을 맡는다.
 import { Pressable, Text, View } from "react-native";
+import { Icon } from "@/shared/components/Icon";
 
 import { COLORS } from "@/shared/theme/colors";
 
@@ -43,7 +44,7 @@ function CheckBox({ checked, large }: { checked: boolean; large?: boolean }) {
       }}
     >
       {checked ? (
-        <Text className={`${large ? "text-body-lg" : "text-caption"} font-extrabold text-white`}>✓</Text>
+        <Icon name="check" size={large ? 18 : 14} color={COLORS.surface} />
       ) : null}
     </View>
   );

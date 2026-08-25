@@ -10,6 +10,7 @@ import { COLORS } from "@/shared/theme/colors";
 
 import type { UrgentNotice as Notice } from "../domain/urgent";
 import { FramedModal } from "@/shared/components/FramedModal";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   notice: Notice | null;
@@ -53,7 +54,7 @@ export function UrgentNotice({ notice, onClose }: Props) {
               className="flex-row items-center justify-center gap-2 rounded-2xl py-4 active:opacity-90"
               style={{ backgroundColor: COLORS.alert }}
             >
-              <Text className="text-2xl">📞</Text>
+              <Icon name="phone" size={24} color={COLORS.surface} />
               <Text className="text-heading font-extrabold text-white">{notice.callLabel}</Text>
             </Pressable>
 

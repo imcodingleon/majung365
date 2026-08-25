@@ -24,6 +24,7 @@ import type { SelectedRegion } from "../domain/region";
 import type { LookupState } from "@/shared/location";
 
 import { RegionPicker } from "./RegionPicker";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   state: LookupState;
@@ -83,7 +84,7 @@ function PlaceCard({
         accessibilityLabel={`${name}에 전화하기. ${phone}`}
         className="mt-3 flex-row items-center gap-2 self-start rounded-xl border-[1.5px] border-brand-soft bg-brand-soft px-4 py-3 active:opacity-80"
       >
-        <Text className="text-body-lg">📞</Text>
+        <Icon name="phone" size={20} color={COLORS.brand} />
         <Text className="text-body-lg font-extrabold text-brand">{phone}</Text>
       </Pressable>
       ) : null}

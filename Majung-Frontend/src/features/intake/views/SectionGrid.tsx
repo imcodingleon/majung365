@@ -6,6 +6,7 @@
 //
 // 박스를 누르면 문항 팝업이 열린다. 이 자리에서 펼치지 않는다. 한 화면에 한 가지가 원칙이다.
 import { Pressable, Text, View } from "react-native";
+import { Icon } from "@/shared/components/Icon";
 
 import { COLORS } from "@/shared/theme/colors";
 
@@ -72,9 +73,15 @@ function SectionBox({
         {label}
       </Text>
 
-      <Text className="mt-1 text-caption font-bold" style={{ color: done ? COLORS.doneInk : COLORS.inkMuted }}>
-        {done ? "✓ 다 답했어요" : started ? `${visible}개 중 ${answered}개` : "눌러서 답하기"}
-      </Text>
+      <View className="mt-1 flex-row items-center justify-center gap-1">
+        {done ? <Icon name="check" size={14} color={COLORS.doneInk} /> : null}
+        <Text
+          className="text-caption font-bold"
+          style={{ color: done ? COLORS.doneInk : COLORS.inkMuted }}
+        >
+          {done ? "다 답했어요" : started ? `${visible}개 중 ${answered}개` : "눌러서 답하기"}
+        </Text>
+      </View>
 
       {/* 진행 막대. 시작한 분야에만 나온다 — 아직 안 연 박스에 빈 막대가 있으면 못 한 일처럼 보인다 */}
       {started && !done ? (

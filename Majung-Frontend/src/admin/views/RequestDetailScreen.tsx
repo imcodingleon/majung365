@@ -7,6 +7,7 @@ import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
+import { Icon } from "@/shared/components/Icon";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 import { josa } from "@/shared/utils/korean";
@@ -121,12 +122,11 @@ export function RequestDetailScreen({
               const ready = request.readyDocs.includes(doc);
               return (
                 <View key={doc} className="flex-row items-center gap-3 py-2">
-                  <Text
-                    className="text-body-lg font-extrabold"
-                    style={{ color: ready ? COLORS.doneInk : COLORS.alert }}
-                  >
-                    {ready ? "✓" : "✕"}
-                  </Text>
+                  <Icon
+                    name={ready ? "check" : "close"}
+                    size={20}
+                    color={ready ? COLORS.doneInk : COLORS.alert}
+                  />
                   <Text className="flex-1 text-body text-ink-strong">{doc}</Text>
                 </View>
               );

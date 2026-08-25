@@ -7,6 +7,7 @@
 // **고른 것을 색만으로 나타내지 않는다.** 색으로만 구별하면 색을 구별하기 어려운 사람이
 // 무엇을 골랐는지 알 수 없다. 동그라미 표시를 함께 낸다.
 import { Pressable, Text, View } from "react-native";
+import { Icon } from "./Icon";
 
 import { COLORS } from "../theme/colors";
 
@@ -57,7 +58,7 @@ export function ChoiceButton({
             borderColor: selected ? accent : COLORS.lineStrong,
           }}
         >
-          {selected ? <Text className="text-caption font-extrabold text-white">✓</Text> : null}
+          {selected ? <Icon name="check" size={15} color={COLORS.surface} /> : null}
         </View>
       ) : null}
 
