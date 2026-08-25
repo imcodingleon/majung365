@@ -30,6 +30,9 @@ class JsonDistrictOfficeRepository:
                 name=row["name"],
                 zipcode=row["zipcode"],
                 address=row["address"],
+                # 못 채운 항목은 None이다. 그때는 거리를 못 재고 이름순으로 남는다.
+                lat=row.get("lat"),
+                lng=row.get("lng"),
             )
             for row in raw["offices"]
         ]

@@ -12,7 +12,13 @@ from app.domains.centers.domain.entity import SupportInstitution
 from app.domains.chat.domain.local_branch import answer_for
 
 
-def inst(name: str, address: str, phone: str = "031-000-0000") -> SupportInstitution:
+def inst(
+    name: str,
+    address: str,
+    phone: str = "031-000-0000",
+    lat: float | None = None,
+    lng: float | None = None,
+) -> SupportInstitution:
     return SupportInstitution(
         name=name,
         kind="branch",
@@ -20,6 +26,8 @@ def inst(name: str, address: str, phone: str = "031-000-0000") -> SupportInstitu
         district="",
         address=address,
         phone=phone,
+        lat=lat,
+        lng=lng,
     )
 
 
@@ -71,3 +79,50 @@ def test_it_does_not_flood_the_prompt() -> None:
     many = [inst(f"지부{i}", f"경기도 군포시 어딘가 {i}") for i in range(10)]
     found = answer_for("경기", "군포시", many)
     assert found.injection.count("- ") <= 4
+
+
+# ── 가까운 순으로 낸다 ──
+
+# 군포시청 언저리. 사용자가 말한 동네의 기준점이다.
+GUNPO_ORIGIN = (37.3617, 126.9350)
+# 수원 경기지부가 가장 가깝고, 화성·의정부 순으로 멀어진다.
+SUWON = inst("경기지부", "경기도 수원시 장안구 천천로 126", lat=37.2967, lng=126.9770)
+HWASEONG = inst("경기남부지부", "경기도 화성시 병점중앙로 154", lat=37.2076, lng=127.0356)
+UIJEONGBU = inst("경기북부지부", "경기도 의정부시 입석로 45", lat=37.7386, lng=127.0339)
+
+
+def test_the_nearest_one_comes_first() -> None:
+    """**군포 사람에게 화성이 첫 줄이면 안 된다.** 이름순으로 두었을 때 실제로
+    그랬다 — 경기남부(화성)가 경기지부(수원)보다 먼저 나왔다."""
+    found = answer_for("경기", "군포시", [HWASEONG, UIJEONGBU, SUWON], origin=GUNPO_ORIGIN)
+    lines = [x for x in found.injection.splitlines() if x.startswith("- ")]
+    assert "경기지부" in lines[0]
+    assert "경기북부지부" in lines[-1]
+
+
+def test_distance_is_shown() -> None:
+    """이름만으로는 어디가 가까운지 알 수 없다."""
+    found = answer_for("경기", "군포시", [SUWON], origin=GUNPO_ORIGIN)
+    assert "km)" in found.injection
+
+
+def test_places_without_coordinates_go_last() -> None:
+    """거리를 모르는 것을 가깝다고 할 수 없다."""
+    unknown = inst("좌표없는지부", "경기도 어딘가")
+    found = answer_for("경기", "군포시", [unknown, SUWON], origin=GUNPO_ORIGIN)
+    lines = [x for x in found.injection.splitlines() if x.startswith("- ")]
+    assert "경기지부" in lines[0]
+    assert "좌표없는지부" in lines[-1]
+
+
+def test_without_an_origin_it_falls_back_to_the_town_name() -> None:
+    """기준점을 못 구했을 때도 답은 나가야 한다."""
+    found = answer_for("경기", "수원시", [SUWON, HWASEONG])
+    assert found.found
+    assert "경기지부" in found.injection
+
+
+def test_it_tells_the_model_the_order_matters() -> None:
+    """줄 세워 놓고 모델이 다시 섞으면 소용이 없다."""
+    found = answer_for("경기", "군포시", [SUWON], origin=GUNPO_ORIGIN)
+    assert "맨 위가 가장 가깝다" in found.injection

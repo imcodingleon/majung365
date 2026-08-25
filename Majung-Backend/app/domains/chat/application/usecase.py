@@ -300,7 +300,41 @@ class ChatUseCase:
             # 검색어는 로그에 남기지 않는다.
             logger.warning("공단 기관 조회 실패")
             return LocalBranchAnswer(injection="")
-        return branch_answer_for(region.sido, region.sigungu, list(found))
+        return branch_answer_for(
+            region.sido,
+            region.sigungu,
+            list(found),
+            origin=self._origin(triage),
+        )
+
+    def _origin(self, triage: TriageResult) -> tuple[float, float] | None:
+        """거리를 재는 기준점. **사용자가 말한 동네의 주민센터 좌표다.**
+
+        우리는 사용자 좌표를 받지 않는다(§5.4). 그래서 "가까운 공단"을 셀 기준점이
+        없었고, 군포 사람에게 화성 지부가 수원 지부보다 먼저 나왔다.
+
+        주민센터는 동마다 있어 그 동네의 중심으로 삼을 만하다. **좌표가 우리 서버
+        밖으로 나가지 않는다** — 사용자가 말한 행정구역 이름에서 유도한 값이다.
+        """
+        if self._offices is None:
+            return None
+        region = triage.region
+        by_sigungu = getattr(self._offices, "by_sigungu", None)
+        if not callable(by_sigungu) or not region.sigungu:
+            return None
+        try:
+            offices = list(by_sigungu(region.sigungu, region.sido or None))
+        except Exception:
+            logger.warning("기준점 조회 실패")
+            return None
+
+        # 동까지 말했으면 그 동을 쓴다. 아니면 시군구 안 아무 곳이나 — 같은 시군구
+        # 안에서는 어느 동을 잡아도 시도 단위 거리 비교에 영향이 없다.
+        named = [o for o in offices if region.dong and o.dong == region.dong]
+        for office in [*named, *offices]:
+            if office.lat is not None and office.lng is not None:
+                return (office.lat, office.lng)
+        return None
 
     def _as_branch_passage(self, branch: LocalBranchAnswer) -> Passage:
         """공단 기관 안내를 근거 구절 형태로.

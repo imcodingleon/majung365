@@ -36,6 +36,8 @@ class JsonSupportInstitutionRepository:
                 district=row.get("district", ""),
                 address=row["address"],
                 phone=row["phone"],
+                lat=row.get("lat"),
+                lng=row.get("lng"),
             )
             for row in koreha["items"]
         ] + [
@@ -46,6 +48,8 @@ class JsonSupportInstitutionRepository:
                 district=row["district"],
                 address=row["address"],
                 phone=row["phone"],
+                lat=row.get("lat"),
+                lng=row.get("lng"),
             )
             for row in mental["items"]
         ]
