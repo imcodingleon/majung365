@@ -26,15 +26,19 @@ export function useNearbyCenters() {
   // 화면 안에서 지역을 직접 골랐으면 그쪽이 이긴다 — 사용자가 방금 한 선택이다.
   const place = lookup.place ?? getSession()?.place ?? null;
 
-  // **이 effect는 마운트 때 한 번만 돈다.** 그래서 시작 상태를 여기서 다시 정하지
-  // 않는다 — `loading`은 이미 `true`이고 `error`는 `null`이다. 다시 정하면 그리기가
-  // 한 번 더 일어난다.
+  const sido = place?.sido;
+  const district = place?.district;
+
   useEffect(() => {
+    // **지역이 정해지기 전에는 부르지 않는다.** 지역 없이 부르면 전국 목록이 오는데,
+    // 지금 서버는 좌표가 있는 것만 3,839건 들고 있다.
+    if (!sido || !district) return;
+
     let alive = true;
     void (async () => {
       try {
-        // 갈래를 고르지 않고 전부 받는다. 거르는 일은 화면의 칩이 한다.
-        const all = await getCenters();
+        // 갈래를 고르지 않고 그 지역 전부를 받는다. 거르는 일은 화면의 칩이 한다.
+        const all = await getCenters({ sido, district });
         if (alive) setCenters(all);
       } catch {
         if (alive) setError("기관을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -45,7 +49,7 @@ export function useNearbyCenters() {
     return () => {
       alive = false;
     };
-  }, []);
+  }, [sido, district]);
 
   return { centers, loading, error, place, pick: lookup.pick };
 }

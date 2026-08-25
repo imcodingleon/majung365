@@ -6,7 +6,7 @@
 //
 // 아이콘은 PNG를 되살리지 않고 SVG로 다시 그렸다. 사전 색칠본이라 색을 바꿀 수 없고,
 // 앱 전체가 SVG 한 세트로 통일되어 있어 섞으면 굵기와 여백이 어긋나 보인다.
-import { useMemo, useState } from "react";
+import { useCallback, useMemo, useState } from "react";
 import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -164,12 +164,33 @@ export function MapScreen() {
   const { centers, loading, error, place, pick } = useNearbyCenters();
   const isDesktop = useIsDesktop();
 
+  /**
+   * 이 지역에 있는 기관인지. **공단 기관은 지역이 안 맞아도 목록에 온다** — 전국에
+   * 서른여덟 곳뿐이라 거르면 주 경로가 사라지기 때문이다(§5.4).
+   *
+   * 다만 그 규칙을 지도에까지 적용하면 **양천구를 보는데 전국이 뜬다.** 여기서 갈라
+   * 놓고, 목록은 가까운 것부터 그리고 지도는 가까운 것만 담는다.
+   */
+  const isNear = useCallback(
+    (c: Center) => (place ? c.address.includes(place.district) : true),
+    [place],
+  );
+
   const shown = useMemo(() => {
     const byCat = cat === "전체" ? centers : centers.filter((c) => c.category === cat);
     const q = query.trim();
-    if (!q) return byCat;
-    return byCat.filter((c) => c.name.includes(q) || c.tags.some((t) => t.includes(q)));
-  }, [centers, cat, query]);
+    const found = q
+      ? byCat.filter((c) => c.name.includes(q) || c.tags.some((t) => t.includes(q)))
+      : byCat;
+    // **가까운 것이 위로.** 양천구 사람에게 경북 본부가 첫 줄이면 안 된다.
+    return [...found].sort((a, b) => Number(isNear(b)) - Number(isNear(a)));
+  }, [centers, cat, query, isNear]);
+
+  /** 지도에 담을 것. 이 지역에 하나도 없으면 전부를 담아 빈 지도를 피한다. */
+  const onMap = useMemo(() => {
+    const near = shown.filter(isNear);
+    return near.length > 0 ? near : shown;
+  }, [shown, isNear]);
 
   // **위치를 못 받으면 지역을 직접 고르게 한다** (§5.4). 위치를 거부하는 것은
   // 이 서비스에서 흔한 선택이고, 거부했다고 화면이 비면 쓸 수 없는 것과 같다.
@@ -197,7 +218,7 @@ export function MapScreen() {
           <View className="flex-1 gap-5">
             <SearchBar value={query} onChange={setQuery} />
             <FilterChips selected={cat} onSelect={setCat} />
-            <CenterMap centers={shown} />
+            <CenterMap centers={onMap} />
           </View>
           <View className="w-[340px] gap-3">
             <ListHeading error={error} />
@@ -210,7 +231,7 @@ export function MapScreen() {
         <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
           <SearchBar value={query} onChange={setQuery} />
           <FilterChips selected={cat} onSelect={setCat} />
-          <CenterMap centers={shown} />
+          <CenterMap centers={onMap} />
           <ListHeading error={error} />
           <CenterList loading={loading} shown={shown} />
         </ScrollView>
