@@ -11,7 +11,27 @@
 import json
 from pathlib import Path
 
+from app.domains.centers.domain.distance import Point, distance_km
 from app.domains.centers.domain.entity import Center
+
+# 기준점을 못 구했을 때 쓰는 값. 정렬만 하고 순서는 바꾸지 않도록 모두 같은 값을 준다.
+_UNKNOWN = float("inf")
+
+
+def _center_of(items: list[Center]) -> Point | None:
+    """그 동네 기관들의 한가운데. 하나도 없으면 `None`."""
+    if not items:
+        return None
+    return (
+        sum(c.lat for c in items) / len(items),
+        sum(c.lng for c in items) / len(items),
+    )
+
+
+def _distance_km(origin: Point, c: Center) -> float:
+    """정렬용 거리. 좌표가 없으면 맨 뒤로 보낸다."""
+    found = distance_km(origin, c.lat, c.lng)
+    return _UNKNOWN if found is None else found
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -99,22 +119,33 @@ class JsonMapCenterRepository:
     # ── 조회 ──
 
     def by_region(self, sido: str, district: str) -> list[Center]:
-        """그 지역의 기관.
+        """그 지역의 기관을 **가까운 순으로**.
 
         **주소 문자열로 거른다.** 세 자료의 시도 표기가 서로 달라("서울" · "서울특별시")
         필드를 맞대면 한쪽이 통째로 빠진다. 주소에는 어느 쪽 표기든 들어 있다.
 
         **공단 기관은 지역이 안 맞아도 남긴다.** 전국에 서른여덟 곳뿐이라 시군구로
-        거르면 사라지고, 그러면 주 경로가 지도에서 없어진다.
+        거르면 사라지고, 그러면 주 경로가 지도에서 없어진다. 다만 그대로 두면 군포
+        사람에게 통영 지부가 목록에 끼므로, **거리로 줄 세워 뒤로 보낸다.**
         """
         # "서울특별시" · "서울" 어느 쪽으로 와도 맞도록 짧은 쪽을 기준 삼는다.
         head = sido.strip()[:2]
         town = district.strip()
 
-        found: list[Center] = []
+        local: list[Center] = []
+        koreha: list[Center] = []
         for c in self._items:
-            if c.category == KOREHA:
-                found.append(c)
-            elif head and town and head in c.address and town in c.address:
-                found.append(c)
-        return found
+            if head and town and head in c.address and town in c.address:
+                local.append(c)
+            elif c.category == KOREHA:
+                koreha.append(c)
+
+        # 기준점은 그 동네 기관들의 한가운데다. **사용자 좌표를 받지 않으므로**(§5.4)
+        # 그 지역에 있는 것들의 평균으로 동네 위치를 가늠한다.
+        origin = _center_of(local)
+        if origin is None:
+            return [*local, *koreha]
+
+        koreha.sort(key=lambda c: _distance_km(origin, c))
+        local.sort(key=lambda c: _distance_km(origin, c))
+        return [*local, *koreha]

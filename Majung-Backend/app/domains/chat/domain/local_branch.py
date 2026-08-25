@@ -16,30 +16,12 @@
 """
 
 from dataclasses import dataclass
-from math import cos, radians, sqrt
 
+from app.domains.centers.domain.distance import distance_km
 from app.domains.centers.domain.entity import SupportInstitution
 
 # 한 지역에 여럿이면 몇 개까지 보여줄지. 전부 늘어놓으면 고르기가 더 어렵다.
 _MAX_LINES = 4
-
-# 위도 1도는 약 111km다. 경도는 위도에 따라 좁아지므로 코사인을 곱한다.
-_KM_PER_DEGREE = 111.0
-
-
-def _distance_km(
-    lat: float, lng: float, other_lat: float | None, other_lng: float | None
-) -> float | None:
-    """두 점 사이 거리(km). 좌표가 없으면 `None`.
-
-    **정확한 측지 계산을 하지 않는다.** 한 나라 안에서 가까운 순서를 매기는 것이
-    목적이라 평면으로 근사해도 순서가 뒤집히지 않고, 계산이 수백 배 가볍다.
-    """
-    if other_lat is None or other_lng is None:
-        return None
-    dy = (other_lat - lat) * _KM_PER_DEGREE
-    dx = (other_lng - lng) * _KM_PER_DEGREE * cos(radians(lat))
-    return sqrt(dy * dy + dx * dx)
 
 
 @dataclass(frozen=True)
@@ -84,7 +66,7 @@ def answer_for(
 
     if origin is not None:
         lat, lng = origin
-        measured = [(i, _distance_km(lat, lng, i.lat, i.lng)) for i in found]
+        measured = [(i, distance_km((lat, lng), i.lat, i.lng)) for i in found]
         # 좌표가 없는 것은 맨 뒤로. 거리를 모르는 것을 가깝다고 할 수 없다.
         measured.sort(key=lambda pair: (pair[1] is None, pair[1] or 0.0, pair[0].name))
         scope = "가까운 순"
