@@ -1,6 +1,6 @@
 {
   "$schema": "https://openapi.vercel.sh/vercel.json",
-  "buildCommand": "npx expo export -p web",
+  "buildCommand": "INCLUDE_ADMIN=1 npx expo export -p web",
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "cleanUrls": true
