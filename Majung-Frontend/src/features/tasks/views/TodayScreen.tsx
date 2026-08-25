@@ -4,7 +4,7 @@
 // AI 채팅 팝업과 도움 연결 화면은 이 화면이 직접 열지 않는다. 라우트가 조립한다.
 // 다른 feature를 화면이 직접 가져다 쓰지 않는다는 규약(Majung-Frontend/CLAUDE.md) 때문이다.
 import { useCallback, useRef } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/shared/components/AppHeader";
@@ -14,7 +14,6 @@ import type { RouteId, Task } from "../domain/task";
 
 import { TaskCard } from "./TaskCard";
 import { TaskRow } from "./TaskRow";
-import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   tasks: readonly Task[];
@@ -43,21 +42,9 @@ type Props = {
   hideNotifyFor?: (taskId: RouteId) => boolean;
   /** 근처 기관 구역 (§5.4). 열린 카드에만 그린다. */
   renderNearby?: (taskId: RouteId) => React.ReactNode;
-  /**
-   * 지역 기관을 따로 찾아보는 화면을 연다 (§5.4).
-   *
-   * **할 일 카드에도 근처 기관이 나오지만 성격이 다르다.** 카드는 "이 일을 하려면
-   * 어디로" 이고, 여기는 "우리 동네에 무엇이 있나"다. 할 일이 다 끝난 사람에게도
-   * 갈 곳은 남는다.
-   */
-  onOpenNearby?: () => void;
-  /**
-   * 내 정보 열람·수정·삭제 화면을 연다 (§2.5·§9.4).
-   *
-   * **저장하는 이상 지울 길이 있어야 한다.** 기획서가 "만들지 않을 수 없다"고 적어둔
-   * 화면이고 법적 요구사항이기도 한데, 들어갈 문이 없으면 없는 것과 같다.
-   */
-  onOpenMyInfo?: () => void;
+  // **기관 찾기와 내 정보로 가는 버튼을 여기서 지웠다.** 하단 메뉴바가 생겨 같은
+  // 곳으로 가는 길이 둘이 되었고, 두 길이 다르게 보이면 사용자는 다른 곳으로 간다고
+  // 여긴다 (`decision-log-2026-08-26.md` B-1).
   /** 처음 받은 할 일 개수. 진행 표시의 분모다. */
   total?: number;
 };
@@ -105,8 +92,6 @@ export function TodayScreen({
   renderStatusStrip,
   hideNotifyFor,
   renderNearby,
-  onOpenNearby,
-  onOpenMyInfo,
   total,
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
@@ -183,32 +168,9 @@ export function TodayScreen({
           </View>
         ))}
 
-        {/* **목록 끝에 둔다.** 오늘 할 일보다 먼저 읽힐 것이 아니고, 다 마친
-            사람이 다음으로 눈을 옮기는 자리이기도 하다 */}
-        {onOpenNearby ? (
-          <Pressable
-            onPress={onOpenNearby}
-            accessibilityRole="button"
-            accessibilityLabel="우리 동네 기관 찾아보기"
-            className="mt-6 flex-row items-center justify-center gap-2 rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-80"
-          >
-            <Icon name="pin" size={20} color={COLORS.inkSub} />
-            <Text className="text-body-lg font-bold text-ink-sub">우리 동네 기관 찾아보기</Text>
-          </Pressable>
-        ) : null}
-
-        {/* **맨 아래에 작게 둔다.** 자주 쓰는 자리가 아니고, 할 일보다 앞에 오면
-            무엇을 하러 온 화면인지가 흐려진다. 다만 찾을 수는 있어야 한다 */}
-        {onOpenMyInfo ? (
-          <Pressable
-            onPress={onOpenMyInfo}
-            accessibilityRole="button"
-            accessibilityLabel="내 정보 보기. 적어주신 정보를 보고 지울 수 있어요"
-            className="mt-3 items-center py-3 active:opacity-60"
-          >
-            <Text className="text-caption font-bold text-ink-muted underline">내 정보 보기</Text>
-          </Pressable>
-        ) : null}
+        {/* **기관 찾기와 내 정보 버튼이 여기 있었다.** 하단 메뉴바가 그 자리를
+            대신한다 — 지도 칸과 내 정보 칸이다. 화면 안에 같은 길을 또 두면
+            사용자는 둘이 다른 곳으로 간다고 여긴다 */}
 
         {tasks.length === 0 ? (
           <View className="mt-6 rounded-2xl border border-folder-done-line bg-folder-done-bg px-5 py-6">
