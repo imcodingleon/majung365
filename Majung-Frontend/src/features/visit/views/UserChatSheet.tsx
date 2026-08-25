@@ -19,9 +19,16 @@ import { StaffChatScreen } from "./StaffChatScreen";
 export function UserChatSheet({
   request,
   onClose,
+  closeHint = "할 일 목록으로 돌아가기",
 }: {
   request: VisitRequest;
   onClose: () => void;
+  /**
+   * 닫으면 어디로 돌아가는지. **연 자리마다 다르다** — 홈에서 열면 할 일 목록으로,
+   * 상담 탭에서 열면 나눈 이야기 목록으로 돌아간다. 화면 낭독기가 읽는 문장이라
+   * 실제와 다르면 앞을 못 보는 사용자가 엉뚱한 곳으로 간다고 믿는다.
+   */
+  closeHint?: string;
 }) {
   const [token, setToken] = useState<string | null>(null);
 
@@ -57,7 +64,7 @@ export function UserChatSheet({
         peerName={request.confirmation?.staffName ?? "담당자"}
         myRole="user"
         eyebrow="담당자와 이야기하기"
-        closeHint="할 일 목록으로 돌아가기"
+        closeHint={closeHint}
         messages={chat.messages}
         onSend={chat.send}
         onBack={onClose}

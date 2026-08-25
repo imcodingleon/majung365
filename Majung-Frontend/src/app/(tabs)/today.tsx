@@ -5,9 +5,9 @@
 //
 // **할 일 목록은 서버가 만든다.** 초기 진단 답변을 보내면 지원 항목이 정해져 돌아온다.
 // 완료 처리도 서버가 목록을 다시 계산하는 방식이라 기기는 마친 항목만 들고 있으면 된다.
-import { useCallback, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
-import { Redirect } from "expo-router";
+import { Redirect, useLocalSearchParams } from "expo-router";
 
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
 import { ChatPopup } from "@/features/chat/views/ChatPopup";
@@ -45,6 +45,20 @@ export default function TodayRoute() {
   const [staffChatFor, setStaffChatFor] = useState<VisitRequest | null>(null);
   // 아코디언 열림은 화면 상태다. 아무것도 안 골랐으면 첫 항목이 열린 채로 시작한다 (§5.2).
   const [openId, setOpenId] = useState<RouteId | null>(null);
+
+  /**
+   * 상담 탭에서 넘어오면서 어느 대화를 열지 함께 온다.
+   *
+   * **한 번만 연다.** 사용자가 팝업을 닫았는데 이 값이 남아 있으면 다시 열려, 닫을
+   * 수 없는 화면이 된다.
+   */
+  const { openChat } = useLocalSearchParams<{ openChat?: string }>();
+  const openedFromParam = useRef<string | null>(null);
+  useEffect(() => {
+    if (!openChat || openedFromParam.current === openChat) return;
+    openedFromParam.current = openChat;
+    chat.open(openChat);
+  }, [openChat, chat]);
 
   // **열린 카드 하나만 부른다** (§5.4). 위치는 가입할 때 알아낸 것이며 세션에만 있다.
 
