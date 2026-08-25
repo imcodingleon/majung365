@@ -9,6 +9,7 @@ import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 
 import { COUNSEL_LINES, EMERGENCY_LINES, type HelpLine } from "../domain/contacts";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   onClose: () => void;
@@ -40,7 +41,10 @@ function LineButton({
         borderColor: emergency ? COLORS.alertLine : COLORS.brandSoft,
       }}
     >
-      <Text className="mr-3 text-2xl">📞</Text>
+      {/* 번호 줄에 맞춰 위쪽에 둔다. 가운데로 두면 큰 번호와 어긋나 보인다 */}
+      <View className="mr-3 mt-1 self-start">
+        <Icon name="phone" size={26} color={emergency ? COLORS.alert : COLORS.brand} />
+      </View>
       <View className="flex-1">
         <Text
           className="text-title font-extrabold"

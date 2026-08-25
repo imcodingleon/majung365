@@ -10,6 +10,7 @@ import { COLORS } from "@/shared/theme/colors";
 import { joinKorean, josa } from "@/shared/utils/korean";
 
 import type { Task } from "../domain/task";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   task: Task;
@@ -54,7 +55,7 @@ export function TaskCard({
     <View className="px-4 pb-4 pt-4">
       {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2) */}
       {showGuide ? (
-        <NoteBox tone="warn" icon="🔑" className="mb-4">
+        <NoteBox tone="warn" icon="key" className="mb-4">
           {`${pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.\n그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요.`}
         </NoteBox>
       ) : null}
@@ -62,9 +63,9 @@ export function TaskCard({
       <View className="mb-4">
         {task.info.map((line) => (
           <View key={line} className="mb-2 flex-row pr-1">
-            <Text className="mr-2 text-body font-extrabold" style={{ color: COLORS.doneInk }}>
-              ✓
-            </Text>
+            <View className="mr-2 mt-0.5">
+              <Icon name="check" size={16} color={COLORS.doneInk} />
+            </View>
             <Text className="flex-1 text-body text-ink-body">{line}</Text>
           </View>
         ))}
@@ -107,10 +108,10 @@ export function TaskCard({
 
       {/* 세 버튼의 순서가 곧 권하는 순서다. 물어보기가 먼저이고 끝냈다는 표시가 마지막이다 */}
       <View className="gap-2">
-        <Button icon="💬" label="AI 챗봇과 대화하기" onPress={onOpenChat} />
+        <Button icon="chat" label="AI 챗봇과 대화하기" onPress={onOpenChat} />
         {task.visitLabel && onNotifyStaff ? (
           <Button
-            icon="🔔"
+            icon="bell"
             // **어디에 가는 것인지가 먼저다.** "숙식제공 담당자"는 우리 쪽 분류
             // 이름이라 사용자에게는 그런 사람이 어디 있는지 짚이지 않는다.
             // 기관 이름이 있으면 그것을 쓰고, 없을 때만 항목 이름으로 물러선다.
@@ -125,13 +126,13 @@ export function TaskCard({
         ) : null}
         {task.done ? (
           <Button
-            icon="↩️"
+            icon="undo"
             label="아직 안 끝났어요"
             tone="secondary"
             onPress={onUncomplete ?? onComplete}
           />
         ) : (
-          <Button icon="✅" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
+          <Button icon="checkCircle" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
         )}
       </View>
 

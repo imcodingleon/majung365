@@ -25,6 +25,7 @@ import type { ChatMessage } from "../domain/chatMessage";
 import { EvidenceBadge } from "./EvidenceBadge";
 import { RichText } from "./RichText";
 import { FramedModal } from "@/shared/components/FramedModal";
+import { Icon } from "@/shared/components/Icon";
 
 type Props = {
   visible: boolean;
@@ -82,7 +83,7 @@ function Bubble({ message }: { message: ChatMessage }) {
         className="mt-1 size-8 items-center justify-center rounded-full"
         style={{ backgroundColor: COLORS.brand }}
       >
-        <Text className="text-body">🤖</Text>
+        <Icon name="bot" size={20} color={COLORS.surface} />
       </View>
       <View className="flex-1 rounded-2xl rounded-tl-sm bg-bubble px-4 py-3">
       {/* 모델이 쓴 `**굵게**`와 `---`를 푼다. 그대로 두면 별표가 화면에 보인다 */}
@@ -184,7 +185,7 @@ export function ChatPopup({
             accessibilityLabel="대화 닫기"
             className="size-10 items-center justify-center rounded-full active:opacity-70"
           >
-            <Text className="text-2xl text-ink-muted">✕</Text>
+            <Icon name="close" size={22} color={COLORS.inkMuted} />
           </Pressable>
 
           <View className="flex-1 px-1">
@@ -342,7 +343,7 @@ export function ChatPopup({
                     backgroundColor: !draft.trim() || busy ? COLORS.brandMuted : COLORS.brand,
                   }}
                 >
-                  <Text className="text-title text-white">➤</Text>
+                  <Icon name="send" size={22} color={COLORS.surface} />
                 </Pressable>
               </View>
             </View>

@@ -14,9 +14,10 @@
 //
 // **높이는 셋 다 같다.** 중요도는 색으로 말하지 크기로 말하지 않는다 — 작은 버튼은
 // 손이 떨리는 사람에게 누르기 어렵다.
-import { Pressable, Text } from "react-native";
+import { Pressable, Text, View } from "react-native";
 
 import { COLORS } from "../theme/colors";
+import { Icon, type IconName } from "./Icon";
 
 export type ButtonTone = "primary" | "secondary" | "danger";
 
@@ -28,7 +29,7 @@ type Props = {
   /** 화면 낭독기가 읽을 문장. 라벨만으로 무엇이 일어나는지 모를 때 채운다. */
   hint?: string;
   /** 글 앞에 붙는 그림. 글을 읽기 어려운 사람에게 종류를 먼저 알린다. */
-  icon?: string;
+  icon?: IconName;
   /** 바깥 여백. 버튼이 스스로 정하지 않고 놓는 쪽이 정한다. */
   className?: string;
 };
@@ -71,10 +72,14 @@ export function Button({
       className={`items-center justify-center rounded-2xl border-[1.5px] px-4 py-4 active:opacity-80 ${className ?? ""}`}
       style={{ backgroundColor: bg, borderColor: line }}
     >
-      <Text className="text-body-lg font-extrabold" style={{ color: ink }}>
-        {icon ? `${icon} ` : ""}
-        {label}
-      </Text>
+      {/* 그림과 글을 가로로 붙인다. 예전에는 이모지를 글 앞에 이어 붙였는데,
+          그러면 기기마다 크기와 색이 달라지고 글자 기준선과도 어긋났다 */}
+      <View className="flex-row items-center justify-center gap-2">
+        {icon ? <Icon name={icon} size={22} color={ink} /> : null}
+        <Text className="text-body-lg font-extrabold" style={{ color: ink }}>
+          {label}
+        </Text>
+      </View>
     </Pressable>
   );
 }

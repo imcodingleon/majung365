@@ -15,6 +15,8 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import type { ConsentId } from "../domain/signup";
 import { FramedModal } from "@/shared/components/FramedModal";
+import { Icon } from "@/shared/components/Icon";
+import { COLORS } from "@/shared/theme/colors";
 
 type Props = {
   /** 열려 있는 동의 항목. 닫혀 있으면 null. */
@@ -185,7 +187,7 @@ export function ConsentPopup({ consentId, onClose }: Props) {
             accessibilityLabel="닫기"
             className="size-10 items-center justify-center rounded-full active:opacity-70"
           >
-            <Text className="text-2xl text-ink-muted">✕</Text>
+            <Icon name="close" size={22} color={COLORS.inkMuted} />
           </Pressable>
         </View>
 

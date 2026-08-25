@@ -14,6 +14,7 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { COLORS } from "../theme/colors";
 import { FramedModal } from "./FramedModal";
+import { Icon } from "./Icon";
 
 /** 목록 한 줄 높이. 처음 설 자리를 픽셀로 계산해야 해서 고정한다. */
 export const PICKER_ROW = 52;
@@ -117,7 +118,7 @@ export function PickerSheet({
               accessibilityLabel="닫기"
               className="size-9 items-center justify-center rounded-full active:opacity-70"
             >
-              <Text className="text-2xl text-ink-muted">✕</Text>
+              <Icon name="close" size={22} color={COLORS.inkMuted} />
             </Pressable>
           </View>
 
