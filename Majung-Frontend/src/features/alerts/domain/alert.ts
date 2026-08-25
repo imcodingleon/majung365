@@ -28,9 +28,21 @@ export type Alert = {
 function alertFor(r: VisitRequest): Alert | null {
   const at = r.createdAt ?? "";
 
+  // **메시지를 상태보다 먼저 본다.** 확정된 요청에 새 말이 오면 알려야 할 것은
+  // 이미 본 확정 소식이 아니라 방금 온 말이다.
+  if (r.unread > 0) {
+    return {
+      id: `${r.id}:message`,
+      kind: "message",
+      title: "담당자가 메시지를 보냈어요",
+      body: r.unread === 1 ? "새 메시지가 있어요." : `안 읽은 메시지가 ${r.unread}개 있어요.`,
+      at,
+      visitId: r.id,
+    };
+  }
+
   // **확인만 한 것은 알리지 않는다.** 이 상태에서 채팅방이 열리므로 담당자가 말을
-  // 걸면 그때 메시지 알림이 나간다. 확인만 하고 아무 말이 없는 것을 알리면 열어 봐도
-  // 볼 것이 없다.
+  // 걸면 위에서 알린다. 확인만 하고 아무 말이 없는 것을 알리면 열어 봐도 볼 것이 없다.
 
   if (r.status === "confirmed") {
     // **만날 사람과 장소가 이 알림의 전부다**(§7.1). 없으면 알릴 내용이 없다.

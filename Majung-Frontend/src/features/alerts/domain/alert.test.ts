@@ -11,6 +11,7 @@ function req(over: Partial<VisitRequest> & { status: VisitStatus }): VisitReques
     firstChoice: "2026-08-28T14:00:00+09:00",
     readyDocs: [],
     createdAt: "2026-08-26T09:00:00+09:00",
+    unread: 0,
     ...over,
   } as VisitRequest;
 }
@@ -113,5 +114,35 @@ describe("countUnseen", () => {
 
   it("알림이 없으면 0이다", () => {
     expect(countUnseen([], null)).toBe(0);
+  });
+});
+
+describe("toAlerts — 안 읽은 메시지", () => {
+  it("안 읽은 말이 있으면 그것을 알린다", () => {
+    const list = toAlerts([req({ status: "acknowledged", unread: 2 })]);
+    expect(list).toHaveLength(1);
+    expect(list[0].kind).toBe("message");
+    expect(list[0].body).toContain("2개");
+  });
+
+  it("한 건이면 개수를 세지 않는다", () => {
+    const list = toAlerts([req({ status: "acknowledged", unread: 1 })]);
+    expect(list[0].body).toBe("새 메시지가 있어요.");
+  });
+
+  it("확정된 요청에 새 말이 오면 말 쪽을 알린다", () => {
+    // 이미 본 확정 소식보다 방금 온 말이 먼저다.
+    const list = toAlerts([
+      req({ status: "confirmed", confirmation: CONFIRMED, unread: 1 }),
+    ]);
+    expect(list).toHaveLength(1);
+    expect(list[0].kind).toBe("message");
+  });
+
+  it("다 읽었으면 상태 소식으로 돌아간다", () => {
+    const list = toAlerts([
+      req({ status: "confirmed", confirmation: CONFIRMED, unread: 0 }),
+    ]);
+    expect(list[0].kind).toBe("confirmed");
   });
 });

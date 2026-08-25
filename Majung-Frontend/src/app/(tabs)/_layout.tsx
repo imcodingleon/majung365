@@ -13,6 +13,9 @@
 import { type GestureResponderEvent, Pressable, Text, View } from "react-native";
 import { Tabs } from "expo-router";
 
+import { countUnseen, toAlerts } from "@/features/alerts/domain/alert";
+import { useLastSeen } from "@/features/alerts/hooks/useLastSeen";
+import { useVisitRequests } from "@/features/visit/hooks/useVisitRequests";
 import { Icon, type IconName } from "@/shared/components/Icon";
 import { TabBadge } from "@/shared/components/TabBadge";
 import { COLORS } from "@/shared/theme/colors";
@@ -72,6 +75,13 @@ function ChatFabButton({
 }
 
 export default function TabsLayout() {
+  // **숫자는 여기서 한 번만 센다.** 알림 탭과 상담 탭이 각자 세면 같은 셈이 두 곳에
+  // 생기고, 한쪽 규칙만 고쳤을 때 바에 뜬 수와 화면 안 수가 어긋난다.
+  const visit = useVisitRequests();
+  const { lastSeen } = useLastSeen();
+  const alertCount = countUnseen(toAlerts(visit.requests), lastSeen);
+  const chatCount = visit.requests.reduce((sum, r) => sum + r.unread, 0);
+
   return (
     <Tabs
       screenOptions={{
@@ -93,14 +103,16 @@ export default function TabsLayout() {
         name="alerts"
         options={{
           title: "알림",
-          tabBarIcon: ({ focused }) => <TabIcon name="bell" focused={focused} />,
+          tabBarIcon: ({ focused }) => (
+            <TabIcon name="bell" focused={focused} badge={alertCount} />
+          ),
         }}
       />
       <Tabs.Screen
         name="chats"
         options={{
           title: "상담",
-          tabBarButton: (props) => <ChatFabButton onPress={props.onPress} />,
+          tabBarButton: (props) => <ChatFabButton onPress={props.onPress} badge={chatCount} />,
         }}
       />
       <Tabs.Screen

@@ -61,7 +61,7 @@ export function toConversations(
       // 요청 응답에 실어 주면 그때 채운다.
       preview: "",
       at: r.createdAt ?? null,
-      unread: 0,
+      unread: r.unread,
     }));
 
   const ai: Conversation[] = Object.entries(threads)
