@@ -26,7 +26,28 @@
 ## 보안 설계 (요금 폭탄 방어)
 
 - **Mock LLM** → 유료 외부 호출 원천 0. 챗 남용해도 Claude 비용 0.
-- SSH는 사용자 IP(`220.120.196.8/32`)만. 비번 로그인 없음(키 전용).
+- SSH는 **작업하는 사람의 IP만** 연다. 비번 로그인 없음(키 전용).
+
+  **IP 값을 여기에 적지 않는다.** 집·회사·모바일 테더링에 따라 바뀌고, 실제로 문서에
+  적힌 값이 두 번 어긋난 채로 남아 있었다(`220.120.196.8` → `61.77.23.157` → …).
+  아래로 그때그때 갱신한다.
+
+  ```bash
+  G=sg-0e65887f93481d3fc
+  MYIP=$(curl -s https://checkip.amazonaws.com | tr -d '\r\n')
+
+  # 지금 열린 목록
+  aws ec2 describe-security-groups --region ap-northeast-2 --group-ids $G \
+    --query "SecurityGroups[0].IpPermissions[?FromPort==\`22\`].IpRanges[].CidrIp" --output text
+
+  # 내 IP 열기
+  aws ec2 authorize-security-group-ingress --region ap-northeast-2 \
+    --group-id $G --protocol tcp --port 22 --cidr $MYIP/32
+
+  # 안 쓰는 IP 닫기 — 열어 둔 채 두지 않는다. 서버에 출소자 정보가 쌓인다
+  aws ec2 revoke-security-group-ingress --region ap-northeast-2 \
+    --group-id $G --protocol tcp --port 22 --cidr <옛IP>/32
+  ```
 - **막혔을 때 거절 메시지로 원인을 가른다.** 둘을 섞으면 엉뚱한 곳을 고친다.
 
   ```
@@ -61,6 +82,27 @@ scp -i "$KEY" /tmp/mb.tar.gz ec2-user@3.34.251.223:/tmp/
 ssh -i "$KEY" ec2-user@3.34.251.223 \
   'cd ~/majung-backend && tar xzf /tmp/mb.tar.gz && ~/.local/bin/uv sync --python 3.12 && sudo systemctl restart majung-backend'
 ```
+
+## 프론트 환경변수 (Vercel)
+
+| 이름 | 어디에 |
+|---|---|
+| `EXPO_PUBLIC_API_URL` | 저장소 `vercel.json`의 `buildCommand`에 값이 그대로 적혀 있다. 공개 주소라 숨길 것이 없다 |
+| `EXPO_PUBLIC_GOOGLE_MAPS_KEY` | **Vercel 프로젝트 환경변수에 넣는다.** 파일에 적지 않는다 |
+
+**`vercel.json`을 고칠 필요가 없다.** expo가 빌드할 때 `EXPO_PUBLIC_` 접두사가 붙은
+환경변수를 알아서 번들에 싣는다. Vercel 대시보드에서 값을 넣기만 하면 다음 배포부터
+들어간다.
+
+> **키가 없으면 지도 자리에 "지도를 불러오지 못했어요"가 나온다.** 목록·검색·전화·
+> 길찾기는 그대로 동작하므로 화면이 죽지는 않는다. 실제로 첫 배포에서 이 상태였다.
+
+**이 키는 웹 번들에 그대로 박힌다.** 숨길 수 없으므로 방어는 구글 콘솔의 제한이 맡는다.
+
+- 웹사이트 제한: `https://majung365.vercel.app/*` · `http://localhost:19006/*` · `http://localhost:8081/*`
+- API 제한: Maps JavaScript API 하나만
+- **Geocoding은 이 키에 허용하지 않는다.** 기관 좌표를 채울 때는 별도 키를 만들어 쓰고
+  끝나면 지운다 (`tools/fill_coordinates.py`)
 
 ## 본선 환경변수 (저장 기능)
 
