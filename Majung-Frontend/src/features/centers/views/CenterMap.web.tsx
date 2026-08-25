@@ -16,6 +16,8 @@ interface GLatLng {
 }
 interface GMap {
   setCenter(p: GLatLng): void;
+  setZoom(z: number): void;
+  fitBounds(b: GLatLngBounds, padding?: number): void;
 }
 interface GMarker {
   addListener(event: string, cb: () => void): void;
@@ -24,10 +26,15 @@ interface GInfoWindow {
   setContent(html: string): void;
   open(map: GMap, anchor: GMarker): void;
 }
+/** 여러 지점을 감싸는 사각 범위. 지도를 여기에 맞추면 전부 화면에 들어온다. */
+interface GLatLngBounds {
+  extend(p: GLatLng): void;
+}
 interface GMaps {
   Map: new (el: HTMLElement, opts: Record<string, unknown>) => GMap;
   Marker: new (opts: Record<string, unknown>) => GMarker;
   InfoWindow: new () => GInfoWindow;
+  LatLngBounds: new () => GLatLngBounds;
 }
 declare global {
   interface Window {
@@ -95,18 +102,26 @@ export function CenterMap({ centers }: { centers: Center[] }) {
           clickableIcons: false,
         });
         const info = new maps.InfoWindow();
+        const bounds = new maps.LatLngBounds();
         for (const c of centers) {
-          const marker = new maps.Marker({
-            position: { lat: c.lat, lng: c.lng },
-            map,
-            title: c.name,
-          });
+          const at = { lat: c.lat, lng: c.lng };
+          const marker = new maps.Marker({ position: at, map, title: c.name });
+          bounds.extend(at);
           marker.addListener("click", () => {
             info.setContent(
               `<div style="font-size:13px;line-height:1.5"><b>${c.name}</b><br/>${c.phone}<br/>${c.hours}</div>`,
             );
             info.open(map, marker);
           });
+        }
+
+        // **찍은 것이 전부 화면에 들어오게 한다.** 첫 기관을 중심에 놓고 확대를 고정하면
+        // 나머지가 화면 밖으로 밀려, 목록에는 여덟 곳이 있는데 지도에는 하나만 보인다.
+        if (centers.length > 1) {
+          map.fitBounds(bounds, 40);
+        } else if (centers.length === 1) {
+          // 한 곳뿐이면 범위가 점 하나라 최대까지 당겨진다. 동네가 보이는 정도로 둔다.
+          map.setZoom(15);
         }
       })
       .catch(() => {
