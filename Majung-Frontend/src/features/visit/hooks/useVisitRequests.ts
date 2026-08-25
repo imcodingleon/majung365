@@ -18,7 +18,7 @@ import {
   type LimitReason,
   type VisitRequest,
 } from "../domain/request";
-import { isoLabel, slotToIso } from "../domain/timeSlots";
+import { isoLabel } from "../domain/timeSlots";
 
 type Draft = {
   firstChoice: string;
@@ -122,7 +122,10 @@ export function useVisitRequests() {
         return;
       }
 
-      const first = slotToIso(draft.firstChoice);
+      // **화면이 이미 시각을 만들어 넘긴다.** 예전에는 "2026-08-25-am" 같은 슬롯 id를
+      // 받아 여기서 시각으로 바꿨는데, 오전을 10시로 대신 정하는 규칙이 이 자리에
+      // 숨어 있었다. 이제 사용자가 고른 시각이 그대로 온다.
+      const first = draft.firstChoice;
       if (!first) {
         setError("가실 수 있는 때를 다시 골라 주세요.");
         setSending(false);
@@ -133,7 +136,7 @@ export function useVisitRequests() {
         const created = await postVisit(token, {
           route_id: formTaskId,
           preferred_at_1: first,
-          preferred_at_2: slotToIso(draft.secondChoice),
+          preferred_at_2: draft.secondChoice || null,
           prepared_docs: [...draft.readyDocs],
           note: draft.note,
           // 동의하지 않았으면 답변도 동의 표시도 담기지 않는다. 서버가 짝을 검사하며,

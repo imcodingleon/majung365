@@ -3,7 +3,7 @@
 // 진행 표시와 이동 버튼은 여기 없다. 그것은 문항을 어떤 순서로 보여줄지 정하는 쪽의 일이며,
 // 이 파일은 "이 문항 하나가 어떻게 생겼는가"만 안다.
 import { useEffect, useState } from "react";
-import { Pressable, Text, View } from "react-native";
+import { Pressable, Text, useWindowDimensions, View } from "react-native";
 
 import { ChoiceButton } from "@/shared/components/ChoiceButton";
 import { DateField } from "@/shared/components/DateField";
@@ -32,11 +32,14 @@ function OptionButton({
   option,
   selected,
   multi,
+  tight,
   onPress,
 }: {
   option: IntakeOption;
   selected: boolean;
   multi?: boolean;
+  /** 세로가 짧은 기기. 선택지 사이 간격만 좁힌다 — 글씨와 누르는 넓이는 그대로 둔다. */
+  tight?: boolean;
   onPress: () => void;
 }) {
   return (
@@ -46,7 +49,7 @@ function OptionButton({
       onPress={onPress}
       urgent={Boolean(option.standout)}
       multi={multi}
-      className="mb-3"
+      className={tight ? "mb-2" : "mb-3"}
     />
   );
 }
@@ -124,6 +127,15 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
       ? onToggleMulti(question, optionId)
       : onSelectSingle(question.id, optionId);
 
+  // **작은 화면에서는 여백을 줄인다.** 선택지가 다섯인 문항이 넷 있는데, 세로가 짧은
+  // 기기에서는 마지막 하나가 잘려 안 보였다. 아래에 더 있는 줄 모르면 보이는 것 중에서
+  // 고르게 되고, 그 답이 곧 할 일 목록을 정한다 (§3.8·§4.1).
+  //
+  // 글씨는 줄이지 않는다 — 저리터러시 사용자 전제에서 글씨 크기는 마지막까지 지킨다.
+  // 줄이는 것은 사이 간격뿐이다.
+  const { height } = useWindowDimensions();
+  const tight = height < 720;
+
   return (
     <View>
       <Text className="text-title font-extrabold text-ink-strong">
@@ -131,7 +143,9 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
       </Text>
 
       {question.help ? (
-        <Text className="mt-2 text-body text-ink-sub">{question.help}</Text>
+        <Text className={`text-body text-ink-sub ${tight ? "mt-1" : "mt-2"}`}>
+          {question.help}
+        </Text>
       ) : null}
 
       {question.kind === "multi" ? (
@@ -144,7 +158,7 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
         <NoteBox tone="info" className="mt-4">{note}</NoteBox>
       ) : null}
 
-      <View className="mt-5">
+      <View className={tight ? "mt-3" : "mt-5"}>
         {question.kind === "date" ? (
           <DateAnswer
             question={question}
@@ -159,14 +173,18 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
                 option={o}
                 selected={isSelected(answer, o.id)}
                 multi={question.kind === "multi"}
+                tight={tight}
                 onPress={() => pick(o.id)}
               />
             ))}
-            {standout.length > 0 ? <View className="mb-4 mt-2 border-t border-line" /> : null}
+            {standout.length > 0 ? (
+              <View className={`border-t border-line ${tight ? "mb-2 mt-1" : "mb-4 mt-2"}`} />
+            ) : null}
 
             {shown.map((o) => (
               <OptionButton
                 key={o.id}
+                tight={tight}
                 option={o}
                 selected={isSelected(answer, o.id)}
                 multi={question.kind === "multi"}
