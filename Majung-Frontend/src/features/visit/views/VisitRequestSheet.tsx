@@ -20,7 +20,8 @@ import {
   defaultSections,
   type SharedAnswer,
 } from "../domain/sharedAnswers";
-import { buildTimeSlots, type TimeSlot } from "../domain/timeSlots";
+import { isComplete, sameTime, toIso, type VisitTime } from "../domain/visitTime";
+import { VisitTimeField } from "./VisitTimeField";
 import { FramedModal } from "@/shared/components/FramedModal";
 
 type Props = {
@@ -36,7 +37,9 @@ type Props = {
   /** 시간 후보를 만들 기준 날짜. 넘기지 않으면 오늘로 잡는다. */
   today?: Date;
   onSubmit: (payload: {
+    /** 1지망 시각(ISO). 화면이 골라 만든 값을 그대로 넘긴다. */
     firstChoice: string;
+    /** 2지망 시각(ISO). */
     secondChoice: string;
     readyDocs: readonly string[];
     note?: string;
@@ -53,115 +56,6 @@ type Props = {
   /** 보내지 못했을 때의 이유. 하루 상한에 걸린 것도 여기로 온다 (§7.5). */
   error?: string | null;
 };
-
-function SlotPicker({
-  slots,
-  selected,
-  disabledId,
-  onSelect,
-}: {
-  slots: readonly TimeSlot[];
-  selected: string | null;
-  /** 다른 지망에서 이미 고른 시간. 같은 시간을 두 번 고르게 두지 않는다. */
-  disabledId: string | null;
-  onSelect: (id: string) => void;
-}) {
-  // **날짜를 먼저 고르고 오전·오후를 고른다.** 열 개를 한 번에 늘어놓으면 같은 말이
-  // 열 번 반복되어 무엇이 다른지 눈으로 갈리지 않는다 (§3.9-⑦ 한 번에 한 가지).
-  const dates = useMemo(() => {
-    const seen = new Map<string, { date: string; dateLabel: string; dayShort: string }>();
-    for (const slot of slots) {
-      if (!seen.has(slot.date)) {
-        seen.set(slot.date, { date: slot.date, dateLabel: slot.dateLabel, dayShort: slot.dayShort });
-      }
-    }
-    return [...seen.values()];
-  }, [slots]);
-
-  const selectedDate = slots.find((s) => s.id === selected)?.date ?? null;
-  const [openDate, setOpenDate] = useState<string | null>(null);
-  // 고른 것이 있으면 그 날짜를 편다. 아직 없으면 사용자가 누른 날짜를 편다.
-  const shownDate = selectedDate ?? openDate;
-  const halves = slots.filter((s) => s.date === shownDate);
-
-  return (
-    <View className="gap-3">
-      <View className="flex-row flex-wrap gap-2">
-        {dates.map((d) => {
-          const isOpen = shownDate === d.date;
-          const hasPick = selectedDate === d.date;
-          return (
-            <Pressable
-              key={d.date}
-              onPress={() => setOpenDate(isOpen ? null : d.date)}
-              accessibilityRole="radio"
-              accessibilityState={{ selected: hasPick, expanded: isOpen }}
-              accessibilityLabel={`${d.dateLabel} ${d.dayShort}요일`}
-              className="items-center rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
-              style={{
-                backgroundColor: hasPick ? COLORS.brandSoft : COLORS.surface,
-                borderColor: hasPick || isOpen ? COLORS.brand : COLORS.line,
-              }}
-            >
-              <Text
-                className="text-body"
-                style={{
-                  color: hasPick || isOpen ? COLORS.brand : COLORS.inkStrong,
-                  fontWeight: hasPick ? "800" : "600",
-                }}
-              >
-                {d.dateLabel}
-              </Text>
-              <Text
-                className="text-caption"
-                style={{ color: hasPick || isOpen ? COLORS.brand : COLORS.inkMuted }}
-              >
-                {d.dayShort}
-              </Text>
-            </Pressable>
-          );
-        })}
-      </View>
-
-      {/* 날짜를 고르기 전에는 오전·오후를 보이지 않는다. 자리를 미리 잡아 두면
-          대부분의 시간 동안 빈 칸이 남는다 */}
-      {halves.length > 0 ? (
-        <View className="flex-row gap-2">
-          {halves.map((slot) => {
-            const isSelected = selected === slot.id;
-            const isDisabled = disabledId === slot.id;
-            return (
-              <Pressable
-                key={slot.id}
-                onPress={() => onSelect(slot.id)}
-                disabled={isDisabled}
-                accessibilityRole="radio"
-                accessibilityState={{ selected: isSelected, disabled: isDisabled }}
-                accessibilityLabel={slot.label}
-                className="flex-1 items-center rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
-                style={{
-                  backgroundColor: isSelected ? COLORS.brandSoft : COLORS.surface,
-                  borderColor: isSelected ? COLORS.brand : COLORS.line,
-                  opacity: isDisabled ? 0.4 : 1,
-                }}
-              >
-                <Text
-                  className="text-body"
-                  style={{
-                    color: isSelected ? COLORS.brand : COLORS.inkStrong,
-                    fontWeight: isSelected ? "800" : "600",
-                  }}
-                >
-                  {slot.half}
-                </Text>
-              </Pressable>
-            );
-          })}
-        </View>
-      ) : null}
-    </View>
-  );
-}
 
 function SectionTitle({ children }: { children: React.ReactNode }) {
   return <Text className="mb-3 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>;
@@ -181,9 +75,9 @@ export function VisitRequestSheet({
   sending,
   error,
 }: Props) {
-  const slots = useMemo(() => buildTimeSlots(today ?? new Date()), [today]);
-  const [first, setFirst] = useState<string | null>(null);
-  const [second, setSecond] = useState<string | null>(null);
+  const base = useMemo(() => today ?? new Date(), [today]);
+  const [first, setFirst] = useState<VisitTime>({});
+  const [second, setSecond] = useState<VisitTime>({});
   const [readyDocs, setReadyDocs] = useState<string[]>([]);
   const [note, setNote] = useState("");
 
@@ -217,17 +111,20 @@ export function VisitRequestSheet({
     [answers, shareOn, picked],
   );
 
-  const canSend = first !== null && second !== null;
+  // 두 지망이 다 차야 보낼 수 있다. 같은 때를 두 번 고르는 것은 칸에서 이미 막는다.
+  const canSend = isComplete(first) && isComplete(second) && !sameTime(first, second);
 
   const toggleDoc = (doc: string) => {
     setReadyDocs((prev) => (prev.includes(doc) ? prev.filter((d) => d !== doc) : [...prev, doc]));
   };
 
   const send = () => {
-    if (!first || !second) return;
+    const at1 = toIso(first);
+    const at2 = toIso(second);
+    if (!at1 || !at2) return;
     onSubmit({
-      firstChoice: first,
-      secondChoice: second,
+      firstChoice: at1,
+      secondChoice: at2,
       readyDocs,
       note: note.trim() ? note.trim() : undefined,
       // 동의하지 않았으면 아예 담기지 않는다. 빈 배열도 보내지 않는다.
@@ -244,7 +141,7 @@ export function VisitRequestSheet({
     >
       <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
         <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-          <Text className="text-heading font-extrabold text-ink-strong">담당자에게 미리 알리기</Text>
+          <Text className="text-heading font-extrabold text-ink-strong">방문 예약하기</Text>
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
@@ -277,14 +174,23 @@ export function VisitRequestSheet({
 
           {/* 1지망이 안 될 때 조율 왕복이 한 번 줄어든다 (§7.2). */}
           <SectionTitle>언제 가실 수 있나요</SectionTitle>
-          <Text className="mb-3 text-caption text-ink-muted">
-            가시고 싶은 때를 고르세요.{"\n"}
-            주민센터와 공단은 평일에만 문을 열어요.
-          </Text>
-          <SlotPicker slots={slots} selected={first} disabledId={second} onSelect={setFirst} />
+          <Text className="mb-3 text-caption text-ink-muted">가시고 싶은 때를 고르세요.</Text>
+          <VisitTimeField
+            value={first}
+            onChange={setFirst}
+            label="가고 싶은 때"
+            today={base}
+            taken={second}
+          />
 
           <SectionTitle>그때가 안 되면 언제가 좋으세요</SectionTitle>
-          <SlotPicker slots={slots} selected={second} disabledId={first} onSelect={setSecond} />
+          <VisitTimeField
+            value={second}
+            onChange={setSecond}
+            label="그다음으로 좋은 때"
+            today={base}
+            taken={first}
+          />
 
           {docs.length > 0 ? (
             <>

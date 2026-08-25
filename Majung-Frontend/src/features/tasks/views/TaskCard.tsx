@@ -111,7 +111,14 @@ export function TaskCard({
         {task.visitLabel && onNotifyStaff ? (
           <Button
             icon="🔔"
-            label={`${task.visitLabel} 담당자에게 미리 알리기`}
+            // **어디에 가는 것인지가 먼저다.** "숙식제공 담당자"는 우리 쪽 분류
+            // 이름이라 사용자에게는 그런 사람이 어디 있는지 짚이지 않는다.
+            // 기관 이름이 있으면 그것을 쓰고, 없을 때만 항목 이름으로 물러선다.
+            label={
+              task.contact?.org
+                ? `${task.contact.org}에 방문 예약하기`
+                : `${task.visitLabel} 방문 예약하기`
+            }
             tone="secondary"
             onPress={onNotifyStaff}
           />
