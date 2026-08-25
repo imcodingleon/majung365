@@ -33,7 +33,7 @@ type ServerMessage = {
   visitId: string;
   body: string;
   /** 보낸 쪽. 담당자인지 출소자인지 서버가 알려준다. */
-  senderRole: "staff" | "client";
+  senderRole: "staff" | "user";
   createdAt: string;
   clientMsgId?: string;
 };
@@ -44,7 +44,17 @@ function toMessage(m: ServerMessage): StaffMessage {
   return { id: m.id, from: m.senderRole, text: m.body };
 }
 
-export function useVisitChat(visitId: string | null, token: string | null) {
+/**
+ * @param myRole 이 연결을 쓰는 쪽. **보낸 즉시 그리는 말풍선이 이 값을 쓴다.**
+ *   담당자용으로 먼저 만들어져 `"staff"`로 박혀 있었고, 그래서 사용자가 보낸 말이
+ *   담당자가 보낸 것으로 표시되어 왼쪽에 붙었다. 서버 에코가 오면 제 값으로 바뀌므로
+ *   **잠깐 뒤집혔다가 돌아오는, 눈에 띄기 어려운 종류의 결함이었다.**
+ */
+export function useVisitChat(
+  visitId: string | null,
+  token: string | null,
+  myRole: "staff" | "user",
+) {
   const [messages, setMessages] = useState<StaffMessage[]>([]);
   /** 방이 열리지 않은 이유. 서버가 준 문구를 그대로 쓴다. */
   const [blocked, setBlocked] = useState<string | null>(null);
@@ -113,19 +123,23 @@ export function useVisitChat(visitId: string | null, token: string | null) {
     // 토큰이 갱신되면 연결을 다시 맺는다. 자격증명을 바꾸지 않으면 조용히 죽는다.
   }, [visitId, token]);
 
-  const send = useCallback((text: string) => {
-    const socket = socketRef.current;
-    const body = text.trim();
-    if (!socket || !body) return;
+  const send = useCallback(
+    (text: string) => {
+      const socket = socketRef.current;
+      const body = text.trim();
+      if (!socket || !body) return;
 
-    // 시각이 아니라 임의값으로 만든다. 같은 순간에 두 번 눌러도 겹치지 않는다.
-    const clientMsgId = `c-${Math.random().toString(36).slice(2)}-${messagesSeq()}`;
-    pending.current.add(clientMsgId);
+      // 시각이 아니라 임의값으로 만든다. 같은 순간에 두 번 눌러도 겹치지 않는다.
+      const clientMsgId = `c-${Math.random().toString(36).slice(2)}-${messagesSeq()}`;
+      pending.current.add(clientMsgId);
 
-    // 낙관적 표시. 보낸 즉시 화면에 남아야 사용자가 다시 누르지 않는다.
-    setMessages((prev) => [...prev, { id: clientMsgId, from: "staff", text: body }]);
-    socket.emit("send_message", { body, clientMsgId });
-  }, []);
+      // 낙관적 표시. 보낸 즉시 화면에 남아야 사용자가 다시 누르지 않는다.
+      // **보낸 쪽을 박아 두지 않는다** — 이 연결을 쓰는 쪽이 넣어 준다.
+      setMessages((prev) => [...prev, { id: clientMsgId, from: myRole, text: body }]);
+      socket.emit("send_message", { body, clientMsgId });
+    },
+    [myRole],
+  );
 
   const markRead = useCallback(() => {
     socketRef.current?.emit("mark_read", {});

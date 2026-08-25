@@ -38,7 +38,7 @@ function StaffChatRoom({
   onTouch: () => void;
   onBack: () => void;
 }) {
-  const chat = useVisitChat(request.id, token);
+  const chat = useVisitChat(request.id, token, "staff");
 
   // 방을 열면 읽음으로 표시한다. 상대는 자기 말이 닿았는지 알아야 기다릴 수 있다.
   useEffect(() => {

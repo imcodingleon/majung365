@@ -34,7 +34,7 @@ export function UserChatSheet({
     };
   }, []);
 
-  const chat = useVisitChat(request.id, token);
+  const chat = useVisitChat(request.id, token, "user");
   // **쓰는 값만 꺼내 둔다.** `chat`을 통째로 의존성에 넣으면 렌더마다 새 객체가
   // 되어 읽음 표시가 끝없이 다시 돈다.
   const { connected, blocked, markRead } = chat;
@@ -48,7 +48,7 @@ export function UserChatSheet({
     <StaffChatScreen
       // 확정되기 전에는 만날 사람이 정해지지 않았다. 그때는 직함으로 부른다.
       peerName={request.confirmation?.staffName ?? "담당자"}
-      myRole="client"
+      myRole="user"
       eyebrow="담당자와 이야기하기"
       closeHint="할 일 목록으로 돌아가기"
       messages={chat.messages}

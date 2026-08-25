@@ -13,8 +13,8 @@ import { COLORS } from "@/shared/theme/colors";
 
 export type StaffMessage = {
   id: string;
-  /** 담당자가 보냈으면 staff, 출소자가 보냈으면 client. */
-  from: "staff" | "client";
+  /** 보낸 쪽. 서버가 주는 값 그대로다 — 담당자는 `staff`, 출소자는 `user`다. */
+  from: "staff" | "user";
   text: string;
 };
 
@@ -27,7 +27,7 @@ type Props = {
    * 담당자용으로 먼저 만들어져 "내 것"이 `staff`로 굳어 있었다. 그대로 두고 사용자
    * 쪽에서 쓰면 **자기가 보낸 말이 왼쪽에, 담당자 말이 오른쪽에 붙어 뒤집힌다.**
    */
-  myRole: "staff" | "client";
+  myRole: "staff" | "user";
   /** 제목 위 작은 글씨. 담당자는 "방문 조율", 사용자는 "담당자와 이야기하기"다. */
   eyebrow?: string;
   /** 닫기 버튼이 어디로 돌아가는지 알려주는 문구. */
