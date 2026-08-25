@@ -469,6 +469,8 @@ npx tsc --noEmit
 npm run lint
 ```
 
+**린트는 기존 결함 24건(오류 13·경고 11)을 안고 시작한다.** 전부 이번 작업 전부터 있던 것이며 `(tabs)/`·`TabBadge.tsx`·`Icon.tsx`에는 하나도 없다. 기준은 **"내가 만든 파일에 오류가 없고 전체 건수가 늘지 않는다"**이다. 다만 이번 작업에서 만지는 파일(`useVisitChat.ts` 2건 · `ChatPopup.tsx` 2건 · `AdminApp.tsx` 1건)의 오류는 그 작업을 할 때 함께 고친다.
+
 기대: 오류가 없다. 지우다 남은 자리가 있으면 여기서 잡힌다.
 
 - [ ] **Step 5: 화면으로 확인한다**
@@ -671,6 +673,8 @@ npx tsc --noEmit
 npm run lint
 ```
 
+**린트는 기존 결함 24건(오류 13·경고 11)을 안고 시작한다.** 전부 이번 작업 전부터 있던 것이며 `(tabs)/`·`TabBadge.tsx`·`Icon.tsx`에는 하나도 없다. 기준은 **"내가 만든 파일에 오류가 없고 전체 건수가 늘지 않는다"**이다. 다만 이번 작업에서 만지는 파일(`useVisitChat.ts` 2건 · `ChatPopup.tsx` 2건 · `AdminApp.tsx` 1건)의 오류는 그 작업을 할 때 함께 고친다.
+
 - [ ] **Step 8: 화면으로 확인한다**
 
 ```bash
@@ -872,6 +876,8 @@ onOpenStaffChat={() => setStaffChatFor(request)}
 npx tsc --noEmit
 npm run lint
 ```
+
+**린트는 기존 결함 24건(오류 13·경고 11)을 안고 시작한다.** 전부 이번 작업 전부터 있던 것이며 `(tabs)/`·`TabBadge.tsx`·`Icon.tsx`에는 하나도 없다. 기준은 **"내가 만든 파일에 오류가 없고 전체 건수가 늘지 않는다"**이다. 다만 이번 작업에서 만지는 파일(`useVisitChat.ts` 2건 · `ChatPopup.tsx` 2건 · `AdminApp.tsx` 1건)의 오류는 그 작업을 할 때 함께 고친다.
 
 - [ ] **Step 7: 담당자와 사용자 양쪽으로 실제 대화를 주고받는다**
 
@@ -1121,6 +1127,8 @@ export default function ChatsRoute() {
 npx tsc --noEmit
 npm run lint
 ```
+
+**린트는 기존 결함 24건(오류 13·경고 11)을 안고 시작한다.** 전부 이번 작업 전부터 있던 것이며 `(tabs)/`·`TabBadge.tsx`·`Icon.tsx`에는 하나도 없다. 기준은 **"내가 만든 파일에 오류가 없고 전체 건수가 늘지 않는다"**이다. 다만 이번 작업에서 만지는 파일(`useVisitChat.ts` 2건 · `ChatPopup.tsx` 2건 · `AdminApp.tsx` 1건)의 오류는 그 작업을 할 때 함께 고친다.
 
 - [ ] **Step 6: 화면으로 확인한다**
 
@@ -1625,6 +1633,7 @@ git commit -m "feat(nav): 안 읽은 건수를 하단 바에 띄운다"
 
 **Files:**
 - Modify: `CLAUDE.md`
+- Modify: `Majung-Frontend/CLAUDE.md` — **여기에도 같은 표가 있다.** "하단 5탭 네비게이션 → 단일 화면"과 "지도 화면(Google Maps 플랫폼 분기) → 지도 없음" 두 줄, 그리고 Tech Stack의 "Google Maps Geocoding API를 쓰지 않는다", 특수 규칙 8번을 함께 고친다
 - Modify: `Majung-Frontend/src/app/_layout.tsx` (주석)
 - Modify: `_bmad-output/specs/spec-majung-2nd/majung365_리뉴얼_개발플로_기획안_v2.md`
 
