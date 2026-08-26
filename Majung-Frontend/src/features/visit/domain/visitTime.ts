@@ -9,6 +9,10 @@
 // 고를 수 없는 때는 목록에서 빼지 않고 흐리게 둔다. 빼 버리면 날짜가 건너뛰어 보여
 // 무슨 일인지 알 수 없다.
 import type { PickerItem } from "@/shared/components/PickerBox";
+import { hourLabel } from "@/shared/utils/clock";
+
+// 쓰던 곳이 이 파일에서 가져가고 있어 그대로 다시 내보낸다.
+export { hourLabel };
 
 /** 고른 때. 아직 안 고른 칸은 없다. */
 export type VisitTime = {
@@ -79,11 +83,6 @@ export function pickableDays(
     });
   }
   return out;
-}
-
-/** 오전 9시 → "오전 9시". 확정 문구와 담당자 화면이 같은 말을 쓰게 한다. */
-export function hourLabel(hour: number): string {
-  return hour < 12 ? `오전 ${hour}시` : hour === 12 ? "낮 12시" : `오후 ${hour - 12}시`;
 }
 
 /**

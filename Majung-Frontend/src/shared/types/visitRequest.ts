@@ -13,7 +13,12 @@ export interface SharedAnswerInput {
 
 export interface VisitCreateRequest {
   route_id: string;
-  /** ISO 8601. 1지망은 반드시 있고 2지망은 없을 수 있다. */
+  /**
+   * ISO 8601. 출소자가 오겠다는 때다.
+   *
+   * **이름의 `_1`은 서버 계약에 남은 자국이다.** 1·2지망을 받던 때의 이름이며,
+   * 지금은 한 때만 받는다 (§7.3). `preferred_at_2`는 늘 비어 있다.
+   */
   preferred_at_1: string;
   preferred_at_2?: string | null;
   /** 챙겨 오기로 표시한 준비물. */

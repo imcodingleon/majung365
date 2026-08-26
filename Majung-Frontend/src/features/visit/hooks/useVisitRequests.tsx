@@ -21,7 +21,7 @@ import {
 import { isoLabel } from "../domain/timeSlots";
 
 type Draft = {
-  firstChoice: string;
+  wantedAt: string;
   readyDocs: readonly string[];
   note?: string;
   sharedAnswers?: readonly SharedAnswerInput[];
@@ -33,7 +33,7 @@ function toRequest(v: VisitResponse): VisitRequest {
     id: v.id,
     taskId: v.route_id,
     status: v.status,
-    firstChoice: isoLabel(v.preferred_at_1),
+    wantedAt: isoLabel(v.preferred_at_1),
     readyDocs: v.prepared_docs,
     note: v.note || undefined,
     createdAt: v.created_at,
@@ -132,7 +132,7 @@ function useVisitRequestsState() {
       // **화면이 이미 시각을 만들어 넘긴다.** 예전에는 "2026-08-25-am" 같은 슬롯 id를
       // 받아 여기서 시각으로 바꿨는데, 오전을 10시로 대신 정하는 규칙이 이 자리에
       // 숨어 있었다. 이제 사용자가 고른 시각이 그대로 온다.
-      const first = draft.firstChoice;
+      const first = draft.wantedAt;
       if (!first) {
         setError("가실 수 있는 때를 다시 골라 주세요.");
         setSending(false);

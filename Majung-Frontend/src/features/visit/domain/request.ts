@@ -25,7 +25,7 @@ export type VisitRequest = {
   taskId: string;
   status: VisitStatus;
   /** 사용자가 가고 싶다고 고른 방문 시간 (§7.2). */
-  firstChoice: string;
+  wantedAt: string;
   /** 챙겨 가기로 한 준비물. */
   readyDocs: readonly string[];
   /** 미리 말해두고 싶은 것. 쓴 경우에만 전달한다. */

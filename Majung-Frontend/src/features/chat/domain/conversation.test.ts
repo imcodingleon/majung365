@@ -12,7 +12,7 @@ function req(over: Partial<VisitRequest> & { status: VisitStatus }): VisitReques
   return {
     id: "v1",
     taskId: "R1",
-    firstChoice: "2026-08-28T14:00:00+09:00",
+    wantedAt: "2026-08-28T14:00:00+09:00",
     readyDocs: [],
     createdAt: "2026-08-26T09:00:00+09:00",
     ...over,

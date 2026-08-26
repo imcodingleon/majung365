@@ -127,10 +127,10 @@ export function RequestListScreen({
             </View>
 
             <View className="mt-3 border-t border-line pt-3">
+              {/* **지망이 아니다.** 한 때만 받으며, 안 되면 채팅으로 조율한다 (§7.3). */}
               <Text className="text-caption text-ink-sub">
-                1지망 {request.firstChoice}
+                오시겠다는 때 {request.wantedLabel}
               </Text>
-              {/* 2지망은 없을 수 있다. 빈 칸을 남기면 값이 빠진 것으로 읽힌다 */}
 
               <Text className="mt-1 text-caption text-ink-muted">{request.receivedAt}</Text>
             </View>

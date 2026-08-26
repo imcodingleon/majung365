@@ -107,7 +107,7 @@ export function RequestDetailScreen({
         <View className="rounded-2xl bg-white px-4">
           {/* 방문 목적이다. 죄목이 아니며 담당자에게 죄목은 전달되지 않는다 (§7.4). */}
           <Field label="무슨 일로 오시나요" value={request.purpose} />
-          <Field label="1지망" value={request.firstChoice} />
+          <Field label="오시겠다는 때" value={request.wantedLabel} />
           {request.releaseDate ? <Field label="출소한 날" value={request.releaseDate} /> : null}
           {request.note ? <Field label="하고 싶은 말" value={request.note} /> : null}
         </View>

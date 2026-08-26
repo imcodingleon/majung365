@@ -13,14 +13,14 @@ export type StaffRequest = {
   /** 무슨 일로 오는지. 지원 항목 이름이 들어온다. */
   purpose: string;
   /** 사용자가 가고 싶다고 적어낸 시간. 사람이 읽는 형태다. */
-  firstChoice: string;
+  wantedLabel: string;
   /**
    * 같은 시간의 원본 값(ISO).
    *
    * **화면은 사람이 읽는 말로 그리고 서버는 시각을 받는다.** 확정할 때 담당자가 고른
    * 원본이 없으면 만나기로 한 시각을 못 보내고, 서버가 사용자 희망 시각으로 채운다.
    */
-  firstChoiceAt: string | null;
+  wantedAt: string | null;
   /** 챙겨 온다고 표시한 준비물. */
   readyDocs: readonly string[];
   /** 이 요청에서 필요한 준비물 전체. 위 목록과 견줘 무엇이 빠졌는지 본다. */
