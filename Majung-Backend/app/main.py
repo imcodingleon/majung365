@@ -25,6 +25,9 @@ from app.domains.centers.adapter.inbound.api.router import router as centers_rou
 from app.domains.centers.infrastructure.district_office_repository import (
     JsonDistrictOfficeRepository,
 )
+from app.domains.centers.infrastructure.support_institution_repository import (
+    JsonSupportInstitutionRepository,
+)
 from app.domains.chat.adapter.inbound.api.router import router as chat_router
 from app.domains.chat.adapter.outbound.external.claude_client import ClaudeChatLlm
 from app.domains.chat.adapter.outbound.external.cli_client import CliChatLlm
@@ -161,6 +164,9 @@ def create_app() -> FastAPI:
         passages=JsonRagRepository(cards=institutions.all()).index(),
         graph_nodes=graph_nodes,
         district_offices=JsonDistrictOfficeRepository(),
+        # **공단 지부를 붙여 준다.** 없으면 "군포역 근처 공단 어디야"에 홈페이지를
+        # 찾아보라는 답이 나간다 — 서버에 경기지부 주소와 번호가 있는데도 그랬다.
+        support_institutions=JsonSupportInstitutionRepository(),
     )
     # llm은 StateExtractorLlm(C6)도 구조적으로 만족한다(extract_node_state 메서드 보유)
     app.state.intake_usecase = IntakeUseCase(

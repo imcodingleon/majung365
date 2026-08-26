@@ -12,7 +12,6 @@
 """
 
 import logging
-from datetime import date
 
 from fastapi import Header, HTTPException, Request
 

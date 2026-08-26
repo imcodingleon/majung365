@@ -42,13 +42,6 @@ export type ChatMessage =
       evidence?: Evidence;
       desk?: MessageDesk;
       contact?: MessageContact;
-      /**
-       * 이 안내를 언제 확인했는지. **서버가 완성 문장으로 주며 카드 말풍선에만 붙는다.**
-       *
-       * 화면이 날짜만 받아 문장을 만들지 않는다 — "우리가 확인한 날"과 "기관이 갱신한
-       * 날"의 구분은 서버만 알고, 화면이 각자 조립하면 그 구분이 화면마다 흐려진다.
-       */
-      verifiedNote?: string;
       /** 스트리밍이 끝나지 않은 상태. */
       streaming?: boolean;
     }

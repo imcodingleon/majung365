@@ -30,3 +30,6 @@ Thumbs.db
 *.pem.pub
 ser-lab/
 .playwright-mcp/
+
+.vercel
+.env*

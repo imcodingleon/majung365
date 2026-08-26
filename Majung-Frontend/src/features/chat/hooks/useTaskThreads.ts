@@ -47,7 +47,6 @@ function cardToMessage(id: string, card: CardData): ChatMessage {
     // 그 필드가 없다. 계약에 기관명이 실리면 여기를 바꾼다.
     evidence: { stage: "rag", org: card.name },
     // 서버가 완성 문장으로 준다. 카드마다 자기 날짜를 갖는다.
-    verifiedNote: card.verified_note || undefined,
   };
 }
 

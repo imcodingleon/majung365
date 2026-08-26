@@ -99,17 +99,10 @@ function Bubble({ message }: { message: ChatMessage }) {
         </NoteBox>
       ) : null}
 
-      {/* **확인 날짜가 있는 말풍선에는 배지를 붙이지 않는다.** 카드 말풍선이 그런
-          경우인데, "확인한 자료를 참고했어요"와 "이 안내는 마중365가 8월 23일에
-          확인했어요"가 나란히 서면 같은 말을 두 번 한다. 뒤의 것이 언제 확인했는지까지
-          말하므로 그것만 남긴다 */}
-      {message.evidence && !message.verifiedNote ? (
-        <EvidenceBadge evidence={message.evidence} />
-      ) : null}
-
-      {message.verifiedNote ? (
-        <Text className="mt-3 text-caption text-ink-muted">{message.verifiedNote}</Text>
-      ) : null}
+      {/* **확인한 날짜는 화면에 내지 않는다** (2026-08-26 결정). 근거를 밝히는 일은
+          이 배지가 맡는다 — 날짜까지 적으면 저리터러시 사용자에게는 읽을 것만 늘고,
+          "8월 23일"이 방문해야 할 날짜로 읽히기까지 한다 */}
+      {message.evidence ? <EvidenceBadge evidence={message.evidence} /> : null}
 
       {message.contact ? (
         <View className="mt-2 border-t border-line-strong pt-2">
@@ -328,7 +321,7 @@ export function ChatPopup({
                   placeholderTextColor={COLORS.inkMuted}
                   multiline
                   accessibilityLabel="질문 입력"
-                  className="max-h-28 flex-1 rounded-2xl px-4 py-3 text-body text-ink-strong"
+                  className="max-h-28 min-h-[48px] flex-1 rounded-2xl px-4 py-3 text-body text-ink-strong"
                   style={{ backgroundColor: COLORS.bubble }}
                 />
                 {/* 시안의 원형 전송 버튼. 글자 대신 화살표를 쓰면 글을 읽기 어려운

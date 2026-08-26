@@ -13,7 +13,9 @@
 // 둘. **웹에는 그 함수의 구현이 없다.** 그냥 오류를 던진다. 심사·시연을 웹으로 하면
 // 그 자리에서 기능이 죽는다.
 import * as Location from "expo-location";
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+
+import { lastPlace, markPlace } from "@/shared/utils/storage";
 
 import { placeAt, type LocatedPlace } from "./locate";
 import { type SelectedRegion } from "@/features/institutions/domain/region";
@@ -41,6 +43,13 @@ export function useRegionLookup() {
   const [state, setState] = useState<LookupState>({ status: "idle" });
   /** 직접 고른 지역. 위치로 알아낸 것보다 이쪽이 우선한다. */
   const [picked, setPicked] = useState<SelectedRegion | null>(null);
+  /**
+   * 지난번에 알아낸 곳. **렌더 전에 한 번만 읽는다.**
+   *
+   * effect로 읽으면 첫 그림에서 위치를 모르는 상태가 스쳐, 기관 조회가 한 번
+   * 헛돌고 화면이 깜빡인다.
+   */
+  const [remembered] = useState<LocatedPlace | null>(() => lastPlace());
 
   const locate = useCallback(async () => {
     setState({ status: "locating" });
@@ -93,8 +102,16 @@ export function useRegionLookup() {
     if (picked !== null) {
       return { sido: picked.sido, district: picked.district ?? "", dong: "" };
     }
-    return state.status === "resolved" ? state.place : null;
-  }, [picked, state]);
+    if (state.status === "resolved") return state.place;
+    // **지난번에 알아낸 곳을 쓴다.** 저장하지 않았을 때는 새로고침할 때마다 위치를
+    // 다시 잡아야 했고, 심사·시연을 웹으로 하는데 그것은 기능이 없는 것과 같았다.
+    return remembered;
+  }, [picked, state, remembered]);
+
+  // 새로 정해진 곳을 기기에 남긴다. **서버에 보내지 않는다** (§9.4).
+  useEffect(() => {
+    if (place && place.sido && place.district) markPlace(place);
+  }, [place]);
 
   return { state, place, locate, pick, reset };
 }

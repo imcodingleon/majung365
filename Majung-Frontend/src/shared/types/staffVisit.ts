@@ -42,6 +42,15 @@ export interface StaffVisitResponse {
    *
    * 동의하지 않았으면 빈 배열이다. 예전 요청에는 이 필드가 아예 없을 수 있다.
    */
+  /**
+   * 마지막으로 오간 말 한 줄. 아직 아무 말도 없으면 빈 문자열이다.
+   *
+   * **같은 이유로 서버가 실어 보낸다.** 이것이 없으면 대화 목록이 제목만 늘어선 표가
+   * 되어, 어제 어디까지 이야기했는지 열어보기 전에는 알 수 없다.
+   */
+  last_message?: string;
+  /** 마지막으로 말한 때(ISO 8601). 목록 순서를 이 값으로 정한다. */
+  last_message_at?: string | null;
   shared_answers?: SharedAnswerOut[];
 }
 
@@ -56,7 +65,12 @@ export interface StaffVisitAction {
   meeting_place?: string;
   /** 다른 시간을 제안할 때. ISO 8601. */
   proposed_at?: string;
-  /** 확정할 때 만나기로 한 시각. 안 보내면 서버가 1지망으로 채운다. */
-  confirmed_for?: string;
+  /**
+   * 확정할 때 만나기로 한 시각. ISO 8601.
+   *
+   * **담당자가 화면에서 정한다** (2026-08-26 결정). 안 보내면 서버가 출소자가 적어낸
+   * 때로 채우는데, 그러면 담당자가 바꾼 때가 조용히 사라진다.
+   */
+  confirmed_for?: string | null;
   cancel_reason?: string;
 }

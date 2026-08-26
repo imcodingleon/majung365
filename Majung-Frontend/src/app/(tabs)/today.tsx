@@ -180,7 +180,15 @@ export default function TodayRoute() {
       {/* **담당자와 주고받는 방.** AI 채팅과 따로 있다 — 저쪽은 제도를 물어보는
           자리이고 여기는 사람과 시간·오시는 길을 맞추는 자리다 (§7.3) */}
       {staffChatFor ? (
-        <UserChatSheet request={staffChatFor} onClose={() => setStaffChatFor(null)} />
+        <UserChatSheet
+          request={staffChatFor}
+          onClose={() => {
+            setStaffChatFor(null);
+            // **닫을 때 다시 읽는다.** 대화를 열면 서버가 읽음으로 표시하는데,
+            // 화면이 그것을 모르면 하단 바의 숫자가 그대로 남는다.
+            void visit.reload();
+          }}
+        />
       ) : null}
 
       {visitTask ? (

@@ -20,8 +20,8 @@ import {
   defaultSections,
   type SharedAnswer,
 } from "../domain/sharedAnswers";
-import { isComplete, toIso, type VisitTime } from "../domain/visitTime";
-import { VisitTimeField } from "./VisitTimeField";
+import { VisitTimeField } from "@/shared/components/VisitTimeField";
+import { isComplete, toIso, type VisitTime } from "@/shared/utils/visitTime";
 import { FramedModal } from "@/shared/components/FramedModal";
 import { Icon } from "@/shared/components/Icon";
 
@@ -39,7 +39,7 @@ type Props = {
   today?: Date;
   onSubmit: (payload: {
     /** 가고 싶은 시각(ISO). 화면이 골라 만든 값을 그대로 넘긴다. */
-    firstChoice: string;
+    wantedAt: string;
     readyDocs: readonly string[];
     note?: string;
     /** 함께 보내기로 한 진단 답변. 동의하지 않으면 비어 있다 (§7.4-1). */
@@ -119,7 +119,7 @@ export function VisitRequestSheet({
     const at1 = toIso(first);
     if (!at1) return;
     onSubmit({
-      firstChoice: at1,
+      wantedAt: at1,
       readyDocs,
       note: note.trim() ? note.trim() : undefined,
       // 동의하지 않았으면 아예 담기지 않는다. 빈 배열도 보내지 않는다.

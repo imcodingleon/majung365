@@ -21,8 +21,8 @@ import shutil
 from collections.abc import AsyncIterator
 from typing import Any
 
-from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.application.dto import Turn
+from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.domain.prompts import (
     TRIAGE_INSTRUCTION,
     build_system_prompt,

@@ -44,6 +44,9 @@ class FakeAccounts:
     def by_id(self, user_id: UUID) -> Account | None:
         return next((a for a in self.saved if a.id == user_id), None)
 
+    def record_consent(self, user_id: UUID, consent: Consent) -> None:
+        self.consents.append(consent)
+
     def touch(self, user_id: UUID, today: date) -> None: ...
 
     def delete(self, user_id: UUID) -> None: ...

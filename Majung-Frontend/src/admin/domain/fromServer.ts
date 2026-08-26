@@ -4,21 +4,31 @@
 // 타입은 담당자 목록이 필요로 하는 모양이다. 둘을 합치면 계약이 바뀔 때마다 화면이 흔들린다.
 //
 // **시각을 사람이 읽는 말로 바꾸는 것이 여기서 하는 일의 절반이다.** 담당자는
-// `2026-08-25T09:00:00+09:00`이 아니라 "8월 25일 월요일 오전"을 읽는다.
+// `2026-08-25T09:00:00+09:00`이 아니라 "8월 25일 월요일 오전 9시"를 읽는다.
 import type { StaffVisitResponse } from "@/shared/types";
 import { routeLabel } from "@/shared/types/route";
+import { hourLabel } from "@/shared/utils/clock";
 
 import type { StaffRequest } from "./staffRequest";
 
 const WEEKDAYS = ["일", "월", "화", "수", "목", "금", "토"] as const;
 
-/** "8월 25일 월요일 오전". 분 단위까지 내지 않는다 — 아직 정해진 시각이 아니다. */
+/**
+ * "8월 25일 월요일 오전 9시".
+ *
+ * **시각을 잘라내지 않는다.** 예전에는 "오전"까지만 냈는데, 그때는 우리가 오전을
+ * 10시로 대신 정하고 있어서 더 낼 것이 없었다. 지금은 사용자가 시까지 고르므로
+ * 그대로 보여야 한다 — 9시에 가려는 사람에게 "오전"이라고만 하면 담당자는 몇 시에
+ * 맞춰야 할지 모른 채 다시 물어야 한다.
+ *
+ * 분은 내지 않는다. 사용자가 고르는 것은 시 단위이며 분은 늘 0이다.
+ */
 export function timeLabel(iso: string | null): string {
   if (!iso) return "";
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  const half = d.getHours() < 12 ? "오전" : "오후";
-  return `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAYS[d.getDay()]}요일 ${half}`;
+  const day = `${d.getMonth() + 1}월 ${d.getDate()}일 ${WEEKDAYS[d.getDay()]}요일`;
+  return `${day} ${hourLabel(d.getHours())}`;
 }
 
 /** "오늘 오전 9시 12분" · "어제 오후 4시 40분" · "이틀 전". 받은 지 얼마나 됐는지가 중요하다. */
@@ -45,8 +55,8 @@ export function toStaffRequest(v: StaffVisitResponse): StaffRequest {
     name: v.user_name,
     // 지원 항목 코드를 사람이 읽는 이름으로. 담당자도 "R9"를 읽지 않는다.
     purpose: routeLabel(v.route_id),
-    firstChoice: timeLabel(v.preferred_at_1),
-    firstChoiceAt: v.preferred_at_1,
+    wantedLabel: timeLabel(v.preferred_at_1),
+    wantedAt: v.preferred_at_1,
     readyDocs: v.prepared_docs,
     // 필요한 준비물 전체는 서버가 주지 않는다. 카드 쪽 정보라 지금은 챙겨 온 것만 보인다.
     allDocs: v.prepared_docs,

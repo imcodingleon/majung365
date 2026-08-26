@@ -11,8 +11,8 @@ import asyncio
 import re
 from collections.abc import AsyncIterator
 
-from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.application.dto import Turn
+from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.domain.triage import (
     QuestionType,
     RoutePriority,

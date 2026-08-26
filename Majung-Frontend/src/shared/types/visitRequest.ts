@@ -13,7 +13,12 @@ export interface SharedAnswerInput {
 
 export interface VisitCreateRequest {
   route_id: string;
-  /** ISO 8601. 1지망은 반드시 있고 2지망은 없을 수 있다. */
+  /**
+   * ISO 8601. 출소자가 오겠다는 때다.
+   *
+   * **이름의 `_1`은 서버 계약에 남은 자국이다.** 1·2지망을 받던 때의 이름이며,
+   * 지금은 한 때만 받는다 (§7.3). `preferred_at_2`는 늘 비어 있다.
+   */
   preferred_at_1: string;
   preferred_at_2?: string | null;
   /** 챙겨 오기로 표시한 준비물. */
@@ -81,6 +86,15 @@ export interface VisitResponse {
    * 그리자고 방마다 붙을 수는 없다.
    */
   unread: number;
+  /**
+   * 마지막으로 오간 말 한 줄. 아직 아무 말도 없으면 빈 문자열이다.
+   *
+   * **같은 이유로 서버가 실어 보낸다.** 이것이 없으면 대화 목록이 제목만 늘어선 표가
+   * 되어, 어제 어디까지 이야기했는지 열어보기 전에는 알 수 없다.
+   */
+  last_message?: string;
+  /** 마지막으로 말한 때(ISO 8601). 목록 순서를 이 값으로 정한다. */
+  last_message_at?: string | null;
 }
 
 /**

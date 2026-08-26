@@ -43,7 +43,10 @@ export default function AlertsRoute() {
       {request ? (
         <UserChatSheet
           request={request}
-          onClose={() => setOpenStaff(null)}
+          onClose={() => {
+            setOpenStaff(null);
+            void visit.reload();
+          }}
           closeHint="알림 목록으로 돌아가기"
         />
       ) : null}

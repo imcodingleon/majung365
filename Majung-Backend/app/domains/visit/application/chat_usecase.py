@@ -19,9 +19,25 @@ from app.domains.visit.domain.message import (
     SenderRole,
     clean_body,
     ensure_open,
+    last_message,
     unread_count,
 )
 from app.domains.visit.domain.repository import MessageRepository, VisitRepository
+
+
+@dataclass(frozen=True)
+class RoomGlance:
+    """목록 한 줄에 필요한 것. **대화를 한 번만 읽고 둘 다 낸다.**
+
+    안 읽은 수와 미리보기를 따로 물으면 같은 방을 두 번 읽는다. 요청 하나마다 조회가
+    나가는 자리라(§7.5 대기 상한 다섯), 두 배는 그대로 두 배가 된다.
+    """
+
+    unread: int
+    #: 마지막으로 오간 말. 아직 아무 말도 없으면 빈 문자열이다.
+    preview: str
+    #: 마지막으로 말한 때. 말이 없으면 None이다.
+    at: datetime | None
 
 
 class NotInRoom(Exception):
@@ -105,10 +121,20 @@ class VisitChatUseCase:
 
     def unread_for(self, visit: VisitRequest, role: SenderRole) -> int:
         """안 읽은 개수. 목록 화면의 빨간 점이 이 값을 쓴다."""
+        return self.glance_for(visit, role).unread
+
+    def glance_for(self, visit: VisitRequest, role: SenderRole) -> RoomGlance:
+        """목록 한 줄에 필요한 것을 한 번에. 대화를 한 번만 읽는다."""
         read_at = (
             visit.user_read_at if role == SenderRole.USER else visit.staff_read_at
         )
-        return unread_count(self.history(visit), role, read_at)
+        messages = self.history(visit)
+        last = last_message(messages)
+        return RoomGlance(
+            unread=unread_count(messages, role, read_at),
+            preview=last.body if last else "",
+            at=last.created_at if last else None,
+        )
 
     def _log(self, staff_id: UUID, action: str, target_user_id: UUID | None) -> None:
         """기록이 안 남아도 채팅은 막지 않는다 — 저장이 꺼진 채로도 돌아야 한다.

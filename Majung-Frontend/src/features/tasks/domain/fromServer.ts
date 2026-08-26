@@ -85,7 +85,6 @@ export function toTask(item: IntakeTask): Task {
     meta: item.section_label,
     must: item.blocks_others,
     info: info.filter(Boolean),
-    verifiedNote: item.card.verified_note || undefined,
     // 서버가 판정한다. 화면이 지원 항목 표를 들고 있으면 배정 규칙이 두 군데가 된다.
     visitLabel: item.can_request_visit ? item.route_label : undefined,
     docs: mergedDocs(item),

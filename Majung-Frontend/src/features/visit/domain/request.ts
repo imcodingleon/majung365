@@ -25,7 +25,7 @@ export type VisitRequest = {
   taskId: string;
   status: VisitStatus;
   /** 사용자가 가고 싶다고 고른 방문 시간 (§7.2). */
-  firstChoice: string;
+  wantedAt: string;
   /** 챙겨 가기로 한 준비물. */
   readyDocs: readonly string[];
   /** 미리 말해두고 싶은 것. 쓴 경우에만 전달한다. */
@@ -43,6 +43,15 @@ export type VisitRequest = {
    * 하단 메뉴바의 숫자와 대화 목록의 숫자가 이 값을 쓴다.
    */
   unread: number;
+  /**
+   * 마지막으로 오간 말 한 줄. 아직 아무 말도 없으면 빈 문자열이다.
+   *
+   * **화면이 만들 수 없는 값이다.** 대화는 소켓으로 방에 들어가야 오는데, 목록을
+   * 그리자고 방마다 붙을 수는 없다. 안 읽은 수와 같은 이유로 서버가 실어 보낸다.
+   */
+  lastMessage: string;
+  /** 마지막으로 말한 때(ISO). 목록 순서를 이 값으로 정한다. 말이 없으면 없다. */
+  lastMessageAt?: string | null;
 };
 
 /** 이 말로 끝나면 직함이 이미 붙은 것이다. 뒤에 "담당자"를 또 붙이지 않는다. */

@@ -11,15 +11,18 @@
 import { useMemo, useState } from "react";
 import { View } from "react-native";
 
-import { PickerBox, PickerSheet, type PickerItem } from "@/shared/components/PickerBox";
 import { deferClose } from "@/shared/utils/deferClose";
+import { type VisitTime, hoursOf, lastDayOf, monthsFrom, pickableDays } from "@/shared/utils/visitTime";
 
-import { type VisitTime, hoursOf, lastDayOf, monthsFrom, pickableDays } from "../domain/visitTime";
+import { PickerBox, PickerSheet, type PickerItem } from "./PickerBox";
 
-type Unit = "month" | "day" | "hour";
+/** 고르는 칸 하나. 담당자 화면이 제목을 따로 줄 때도 이 이름을 쓴다. */
+export type Unit = "month" | "day" | "hour";
 
 const UNIT_LABEL: Record<Unit, string> = { month: "월", day: "일", hour: "시" };
-const SHEET_TITLE: Record<Unit, string> = {
+
+/** 출소자가 갈 때를 고를 때. 담당자 화면은 만나는 쪽이라 말이 다르다. */
+const GOING_TITLE: Record<Unit, string> = {
   month: "몇 월에 가시나요",
   day: "며칠에 가시나요",
   hour: "몇 시에 가시나요",
@@ -32,9 +35,14 @@ type Props = {
   label: string;
   /** 오늘. 지난 날짜를 고르지 못하게 하는 기준이다. */
   today: Date;
+  /**
+   * 고르는 팝업의 제목. **누가 고르느냐에 따라 말이 다르다** — 출소자는 가는 쪽이고
+   * 담당자는 만나는 쪽이다. 안 주면 출소자 쪽 말을 쓴다.
+   */
+  titles?: Record<Unit, string>;
 };
 
-export function VisitTimeField({ value, onChange, label, today }: Props) {
+export function VisitTimeField({ value, onChange, label, today, titles = GOING_TITLE }: Props) {
   const [open, setOpen] = useState<Unit | null>(null);
 
   const months = useMemo(() => monthsFrom(today), [today]);
@@ -112,7 +120,7 @@ export function VisitTimeField({ value, onChange, label, today }: Props) {
 
       <PickerSheet
         visible={open !== null}
-        title={open ? SHEET_TITLE[open] : ""}
+        title={open ? titles[open] : ""}
         items={items}
         current={current}
         unit={open ? UNIT_LABEL[open] : ""}

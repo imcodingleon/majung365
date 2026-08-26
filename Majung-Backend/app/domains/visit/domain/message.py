@@ -81,3 +81,14 @@ def unread_count(messages: list[Message], role: SenderRole, read_at: datetime | 
         for m in messages
         if m.sender_role != role and (read_at is None or m.created_at > read_at)
     )
+
+
+def last_message(messages: list[Message]) -> Message | None:
+    """마지막으로 오간 말. 목록의 미리보기가 이 값을 쓴다.
+
+    **시간으로 고른다.** 저장소가 시간순으로 준다는 것에 기대지 않는다 — 그 약속이
+    한 번 어긋나면 목록에 엉뚱한 줄이 뜨는데, 화면에서는 그것이 틀린 줄 알 수 없다.
+    """
+    if not messages:
+        return None
+    return max(messages, key=lambda m: m.created_at)

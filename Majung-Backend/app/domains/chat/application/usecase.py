@@ -26,6 +26,12 @@ from app.domains.chat.application.dto import (
 )
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.domain.evidence import EvidenceStage, notice_for
+from app.domains.chat.domain.local_branch import (
+    LocalBranchAnswer,
+)
+from app.domains.chat.domain.local_branch import (
+    answer_for as branch_answer_for,
+)
 from app.domains.chat.domain.local_office import LocalOfficeAnswer, answer_for
 from app.domains.chat.domain.prompts import build_guidance_context
 from app.domains.chat.domain.triage import (
@@ -53,6 +59,11 @@ _MAX_ROUTES = 3
 _PASSAGE_CHARS = 700
 
 
+# 공단 기관 종류. **정신건강복지센터는 넣지 않는다** — "공단 어디야"에 246곳짜리
+# 지역 센터가 섞이면 정작 지부가 묻힌다. 허그센터는 공단 소속이라 함께 둔다.
+_KOREHA_KINDS = frozenset({"branch", "head", "training", "hug"})
+
+
 class ChatUseCase:
     def __init__(
         self,
@@ -62,6 +73,7 @@ class ChatUseCase:
         passages: PassageIndex | None = None,
         graph_nodes: dict[str, GraphNode] | None = None,
         district_offices: object | None = None,
+        support_institutions: object | None = None,
     ) -> None:
         self._llm = llm
         self._institutions = institutions
@@ -74,6 +86,9 @@ class ChatUseCase:
         self._nodes = graph_nodes or {}
         # 사용자가 자기 입으로 동을 말하면 그 주민센터를 짚어준다(§5.4).
         self._offices = district_offices
+        # 공단 지부·교육원·허그센터. **제도 KB(`institutions`)와 다른 저장소다** —
+        # 저쪽은 "무슨 제도가 있나"이고 이쪽은 "어디로 가면 되나"다.
+        self._support = support_institutions
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -106,6 +121,14 @@ class ChatUseCase:
         local = self._local_office(triage)
         if local.found:
             found = [*found, self._as_local_passage(local)]
+
+        # 3.6) 공단 기관도 같은 이유로 짚어준다.
+        #      **주민센터에서 고친 결함이 공단 지부에서 그대로 되풀이됐다.**
+        #      "군포역 근처 법무보호복지공단 어디야?"에 "검색이 잘 안 되네요, 홈페이지에서
+        #      찾아보세요"가 나갔다. 그 순간 서버에 경기지부 주소와 번호가 있었다.
+        branch = self._local_branch(triage)
+        if branch.found:
+            found = [*found, self._as_branch_passage(branch)]
 
         # 4) 근거 단계를 가린다. 확인된 자료에서 찾지 못했으면 인터넷을 찾아본다(§6.4).
         #    **사전 고지가 답변보다 먼저 나간다** — 나중에 "인터넷 정보였습니다"라고
@@ -262,6 +285,73 @@ class ChatUseCase:
             logger.warning("주민센터 조회 실패")
             return LocalOfficeAnswer(injection="")
         return answer_for(triage.region.dong, list(found))
+
+    def _local_branch(self, triage: TriageResult) -> LocalBranchAnswer:
+        """사용자 지역의 공단 기관. **조회 실패가 답변을 막지는 않는다.**"""
+        region = triage.region
+        if self._support is None or not (region.sido or region.sigungu):
+            return LocalBranchAnswer(injection="")
+        find = getattr(self._support, "find", None)
+        if not callable(find):
+            return LocalBranchAnswer(injection="")
+        try:
+            found = find(_KOREHA_KINDS, region.sido or None, region.sigungu or None)
+        except Exception:
+            # 검색어는 로그에 남기지 않는다.
+            logger.warning("공단 기관 조회 실패")
+            return LocalBranchAnswer(injection="")
+        return branch_answer_for(
+            region.sido,
+            region.sigungu,
+            list(found),
+            origin=self._origin(triage),
+        )
+
+    def _origin(self, triage: TriageResult) -> tuple[float, float] | None:
+        """거리를 재는 기준점. **사용자가 말한 동네의 주민센터 좌표다.**
+
+        우리는 사용자 좌표를 받지 않는다(§5.4). 그래서 "가까운 공단"을 셀 기준점이
+        없었고, 군포 사람에게 화성 지부가 수원 지부보다 먼저 나왔다.
+
+        주민센터는 동마다 있어 그 동네의 중심으로 삼을 만하다. **좌표가 우리 서버
+        밖으로 나가지 않는다** — 사용자가 말한 행정구역 이름에서 유도한 값이다.
+        """
+        if self._offices is None:
+            return None
+        region = triage.region
+        by_sigungu = getattr(self._offices, "by_sigungu", None)
+        if not callable(by_sigungu) or not region.sigungu:
+            return None
+        try:
+            offices = list(by_sigungu(region.sigungu, region.sido or None))
+        except Exception:
+            logger.warning("기준점 조회 실패")
+            return None
+
+        # 동까지 말했으면 그 동을 쓴다. 아니면 시군구 안 아무 곳이나 — 같은 시군구
+        # 안에서는 어느 동을 잡아도 시도 단위 거리 비교에 영향이 없다.
+        named = [o for o in offices if region.dong and o.dong == region.dong]
+        for office in [*named, *offices]:
+            if office.lat is not None and office.lng is not None:
+                return (office.lat, office.lng)
+        return None
+
+    def _as_branch_passage(self, branch: LocalBranchAnswer) -> Passage:
+        """공단 기관 안내를 근거 구절 형태로.
+
+        **확인 날짜를 붙인다.** 주민센터와 달리 이 표는 사람이 손으로 확인한 것이라
+        (§6.4 · `route-contacts.md`) 언제 확인했는지가 의미를 갖는다.
+        """
+        return Passage(
+            doc_id="koreha-branch",
+            title="공단 기관 안내",
+            section="한국법무보호복지공단 지부·지소",
+            text=branch.injection,
+            source_url="https://www.koreha.or.kr",
+            fetched_at="",
+            route_ids=(),
+            department="한국법무보호복지공단",
+        )
 
     def _as_local_passage(self, local: LocalOfficeAnswer) -> Passage:
         """주민센터 안내를 근거 구절 형태로. 확인 날짜는 붙이지 않는다 —

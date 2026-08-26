@@ -73,14 +73,14 @@ export default function RetakeRoute() {
     <>
       <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
         <ScreenHeader
-          title="상황 다시 알아보기"
-          closeHint="다시 알아보기 그만두기"
+          title="설문조사 다시 진행하기"
+          closeHint="설문조사 그만두기"
           onClose={() => router.back()}
         />
 
         <ScrollView className="flex-1" contentContainerClassName="px-5 pb-12 pt-4">
           <NoteBox tone="info" className="mb-5">
-            지금 상황에 맞게 할 일을 다시 골라 드려요. 이름과 생일은 그대로 있어요.
+            지금 상황에 맞게 할 일을 다시 골라 드립니다. 이름과 생일은 그대로 있어요.
           </NoteBox>
 
           {error ? (

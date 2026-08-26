@@ -187,9 +187,21 @@ class MeOut(BaseModel):
 
 
 class MeUpdateIn(BaseModel):
-    """수정할 항목만 보낸다. 이름·생일·출소날짜는 바꿀 수 있고 죄목은 철회만 된다."""
+    """수정할 항목만 보낸다. 지금은 죄목을 밝히거나 철회할 수 있다."""
 
     crime_category_revoked: bool = False
+    # 새로 밝히는 죄목. **동의 없이는 저장하지 않는다** (§9.5).
+    crime_category: str | None = None
+    # 이 요청과 함께 받은 민감정보 동의. 값을 보내면서 이것이 없으면 거절한다.
+    crime_consent_agreed: bool = False
+
+    @field_validator("crime_category")
+    @classmethod
+    def _known_crime(cls, given: str | None) -> str | None:
+        """가입 때와 같은 규칙이다. "말하고 싶지 않아요"는 값이 아니라 철회로 온다."""
+        if given is not None and given not in CRIME_CATEGORIES:
+            raise ValueError(f"모르는 죄목 값: {given}")
+        return given
 
 
 @router.get("/me", response_model=MeOut)
@@ -331,14 +343,39 @@ def update_me(
     request: Request,
     account: CurrentAccount,
 ) -> MeOut:
-    """지금은 죄목 철회만 받는다.
+    """죄목을 밝히거나 철회한다.
 
     이름·생일·출소날짜 수정은 암호화된 컬럼을 다시 쓰는 일이라 별도로 붙인다.
-    철회를 먼저 두는 이유는 **동의 철회가 법적 권리**이고 지연되면 안 되기 때문이다.
+    철회를 먼저 만든 이유는 **동의 철회가 법적 권리**이고 지연되면 안 되기 때문이다.
+
+    **밝히는 쪽이 오래 빠져 있었다.** 처음에는 말하지 않다가 서비스를 써보고 마음이
+    바뀔 수 있다고 §3.3-3이 정해 두었는데, 철회만 받으니 화면의 "바꾸기"가 실제로는
+    지우기 하나뿐이었다. 고른 값은 조용히 버려졌다.
     """
     crimes = getattr(request.app.state, "crime_repo", None)
-    if body.crime_category_revoked and crimes is not None:
+    if crimes is None:
+        raise HTTPException(
+            status_code=503, detail="지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요."
+        )
+
+    if body.crime_category_revoked:
         crimes.revoke(account.id)  # 그 행만 지운다. 계정은 남는다(§9.5)
+        return read_me(request, account)
+
+    if body.crime_category is None:
+        return read_me(request, account)
+
+    # **동의가 먼저다.** 값만 보내면 거절한다 — 민감정보를 동의 없이 저장하는 경로가
+    # 하나라도 열려 있으면 §9.5는 지켜지지 않는다.
+    if not body.crime_consent_agreed:
+        raise HTTPException(status_code=400, detail="먼저 동의해 주세요.")
+
+    accounts = request.app.state.account_repo
+    accounts.record_consent(
+        account.id,
+        Consent(kind=CRIME_CONSENT_KIND, agreed=True, at=utcnow()),
+    )
+    crimes.set(account.id, body.crime_category)
     return read_me(request, account)
 
 

@@ -65,6 +65,15 @@ export interface UpdateMeRequest {
   release_date?: string;
   /** 참이면 죄목이 즉시 파기된다 (§9.5). */
   crime_category_revoked?: boolean;
+  /**
+   * 새로 밝히는 죄목 대분류. 처음에는 말하지 않다가 나중에 밝힐 수 있다 (§3.3-3).
+   *
+   * **`crime_consent_agreed` 없이 보내면 서버가 거절한다.** 민감정보를 동의 없이
+   * 저장하는 경로는 하나도 열어두지 않는다 (§9.5).
+   */
+  crime_category?: string;
+  /** 이 요청과 함께 받은 민감정보 동의. */
+  crime_consent_agreed?: boolean;
 }
 
 /**
