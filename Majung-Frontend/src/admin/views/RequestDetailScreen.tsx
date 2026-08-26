@@ -2,15 +2,17 @@
 //
 // 담당자가 상태를 바꾸는 자리다. **확정할 때 만날 사람과 만날 장소를 받는다.**
 // 그 두 값이 출소자 화면의 확정 문구를 이룬다. 빠지면 이 기능의 목적이 사라진다.
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
+import { VisitTimeField } from "@/shared/components/VisitTimeField";
 import { Icon } from "@/shared/components/Icon";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 import { josa } from "@/shared/utils/korean";
+import { fromIso, isComplete, toIso, type VisitTime } from "@/shared/utils/visitTime";
 
 import { timeLabel } from "../domain/fromServer";
 
@@ -85,9 +87,20 @@ export function RequestDetailScreen({
   onBack,
 }: Props) {
   const [confirming, setConfirming] = useState(false);
-  const [input, setInput] = useState<ConfirmInput>({ staffName: "", place: "" });
+  const [input, setInput] = useState({ staffName: "", place: "" });
+  /**
+   * 만나기로 할 때. **처음 값은 출소자가 적어낸 때다** (2026-08-26 결정).
+   *
+   * 빈 칸에서 시작하면 담당자가 상대가 원한 때를 보면서 옮겨 적어야 한다. 그대로
+   * 두면 손대지 않은 것이고, 안 되는 때면 그 자리에서 고쳐 확정한다.
+   */
+  const [when, setWhen] = useState<VisitTime>(() => fromIso(request.wantedAt));
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+
+  // 오늘은 렌더마다 새로 만들지 않는다. 매번 새 객체면 고르기 목록이 계속 다시 만들어진다.
+  const today = useMemo(() => new Date(), []);
+  const confirmInput: ConfirmInput = { ...input, whenIso: toIso(when) };
 
   const missing = missingDocs(request);
   const box =
@@ -190,9 +203,29 @@ export function RequestDetailScreen({
                       확정 시각이 되고, 세부 조율은 채팅으로 한다 (§7.3). 시스템이
                       시각을 다시 고르게 하면 담당자가 그 자리에서 결정해야 하는데,
                       정작 상대와 이야기해 봐야 아는 일이다 */}
-                  <Text className="mb-3 text-body text-ink-sub">
-                    확정하면 출소자 화면에 누구를 어디서 만나면 되는지 뜹니다.
-                    시간을 조정하실 일이 있으면 채팅으로 이야기해 주세요.
+                  <Text className="mb-4 text-body text-ink-sub">
+                    확정하면 출소자 화면에 언제 누구를 어디서 만나면 되는지 뜹니다.
+                  </Text>
+
+                  {/* **때를 바꿀 수 있다** (2026-08-26 결정). 기관이 언제 문을 여는지는
+                      담당자가 알고, 안 되는 때를 채팅으로만 조율하면 확정까지 하루가
+                      더 걸린다. 처음 값은 출소자가 적어낸 때다 */}
+                  <Text className="mb-2 text-caption font-bold text-ink-header">만날 때</Text>
+                  <VisitTimeField
+                    value={when}
+                    onChange={setWhen}
+                    label="만날 때"
+                    today={today}
+                    titles={{
+                      month: "몇 월에 만나시나요",
+                      day: "며칠에 만나시나요",
+                      hour: "몇 시에 만나시나요",
+                    }}
+                  />
+                  <Text className="mb-4 mt-2 text-caption text-ink-muted">
+                    {isComplete(when)
+                      ? "본인이 적어낸 때입니다. 안 되시면 바꿔 주세요."
+                      : "만날 때를 골라 주세요."}
                   </Text>
 
                   <Text className="mb-2 text-caption font-bold text-ink-header">만날 담당자 이름</Text>
@@ -218,15 +251,15 @@ export function RequestDetailScreen({
                   <Button
                     label="이대로 확정"
                     tone="primary"
-                    disabled={!canConfirm(input)}
+                    disabled={!canConfirm(confirmInput)}
                     onPress={() => {
-                      onConfirm(input);
+                      onConfirm(confirmInput);
                       setConfirming(false);
                     }}
                   />
-                  {!canConfirm(input) ? (
+                  {!canConfirm(confirmInput) ? (
                     <Text className="mb-2 text-center text-caption text-ink-muted">
-                      만날 사람과 장소를 모두 적어야 확정할 수 있습니다.
+                      만날 때와 사람, 장소를 모두 정해야 확정할 수 있습니다.
                     </Text>
                   ) : null}
                   <Button label="그만두기" tone="ghost" onPress={() => setConfirming(false)} />

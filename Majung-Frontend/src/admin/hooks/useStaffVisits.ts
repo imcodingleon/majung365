@@ -4,6 +4,7 @@
 // 그래서 여기에 기관 필터가 없다 — 있으면 "화면이 거른다"고 오해하게 된다.
 import { useCallback, useEffect, useState } from "react";
 
+import type { StaffVisitAction } from "@/shared/types/staffVisit";
 import type { VisitStatus } from "@/shared/types/visit";
 import { ApiError, getStaffVisits, patchStaffVisit } from "@/shared/utils/api";
 
@@ -51,12 +52,10 @@ export function useStaffVisits(token: string | null) {
       // `confirmed_for`가 빠져 있었다. 호출 쪽이 전개 연산자로 넣어 초과 속성 검사를
       // 비껴가는 바람에 타입 검사가 통과했고, 값은 실행 시점에만 서버까지 갔다.
       // 키를 잘못 적거나 `extra`를 구조 분해로 고치면 조용히 사라지는 자리였다.
-      extra?: {
-        meeting_place?: string;
-        proposed_at?: string;
-        confirmed_for?: string;
-        cancel_reason?: string;
-      },
+      // **계약을 여기서 다시 적지 않는다.** 손으로 옮겨 적던 목록이라 `confirmed_for`가
+      // 한 번 빠져 있었고, 호출 쪽이 전개 연산자로 넣어 초과 속성 검사를 비껴가는 바람에
+      // 타입 검사가 통과했다. 계약에서 가져다 쓰면 그 어긋남이 생기지 않는다.
+      extra?: Omit<StaffVisitAction, "status">,
     ): Promise<boolean> => {
       if (!token) return false;
       try {

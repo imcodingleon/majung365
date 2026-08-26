@@ -20,8 +20,8 @@ import {
   defaultSections,
   type SharedAnswer,
 } from "../domain/sharedAnswers";
-import { isComplete, toIso, type VisitTime } from "../domain/visitTime";
-import { VisitTimeField } from "./VisitTimeField";
+import { VisitTimeField } from "@/shared/components/VisitTimeField";
+import { isComplete, toIso, type VisitTime } from "@/shared/utils/visitTime";
 import { FramedModal } from "@/shared/components/FramedModal";
 import { Icon } from "@/shared/components/Icon";
 

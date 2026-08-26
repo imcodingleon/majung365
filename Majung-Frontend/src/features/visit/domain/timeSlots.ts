@@ -6,7 +6,7 @@
 //
 // 여기 남은 것은 **받은 값을 읽는 일**뿐이다 — 담당자가 확정한 시각, 제안한 시각처럼
 // 우리가 만들지 않은 값이 그 대상이다.
-import { hourLabel } from "./visitTime";
+import { hourLabel } from "@/shared/utils/clock";
 
 const WEEKDAY_NAMES = ["일요일", "월요일", "화요일", "수요일", "목요일", "금요일", "토요일"];
 

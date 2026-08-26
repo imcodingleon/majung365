@@ -1,5 +1,8 @@
 // 방문 시간의 규칙 (§7.2).
 //
+// **`features/visit`에서 `shared`로 올렸다.** 출소자가 때를 고르는 화면과 담당자가
+// 그 때를 바꾸는 화면이 같은 규칙을 써야 한다. 두 벌로 두면 한쪽만 고치게 된다.
+//
 // **막는 것은 지난 날짜 하나뿐이다.**
 //
 // 주말과 점심시간도 막아 두었는데 걷어냈다. 기관마다 운영이 다르고 토요일에 여는
@@ -9,7 +12,7 @@
 // 고를 수 없는 때는 목록에서 빼지 않고 흐리게 둔다. 빼 버리면 날짜가 건너뛰어 보여
 // 무슨 일인지 알 수 없다.
 import type { PickerItem } from "@/shared/components/PickerBox";
-import { hourLabel } from "@/shared/utils/clock";
+import { hourLabel } from "./clock";
 
 // 쓰던 곳이 이 파일에서 가져가고 있어 그대로 다시 내보낸다.
 export { hourLabel };
@@ -122,4 +125,25 @@ export function timeLabel(time: VisitTime): string {
   if (!isComplete(time)) return "";
   const at = new Date(time.year!, time.month! - 1, time.day!);
   return `${time.month}월 ${time.day}일 (${WEEKDAY[at.getDay()]}) ${hourLabel(time.hour!)}`;
+}
+
+/**
+ * ISO 문자열을 고르기 칸의 값으로 되돌린다.
+ *
+ * **담당자 화면이 이것으로 시작한다** (§7.2 · 2026-08-26 결정). 출소자가 적어낸 때를
+ * 처음 값으로 놓고, 안 되는 때면 그 자리에서 고쳐 확정한다. 빈 칸에서 시작하면
+ * 담당자가 상대가 원한 때를 보면서 옮겨 적어야 한다.
+ *
+ * 읽을 수 없는 값이면 빈 칸으로 둔다 — 지어낸 시각으로 확정되면 안 된다.
+ */
+export function fromIso(iso: string | null | undefined): VisitTime {
+  if (!iso) return {};
+  const at = new Date(iso);
+  if (Number.isNaN(at.getTime())) return {};
+  return {
+    year: at.getFullYear(),
+    month: at.getMonth() + 1,
+    day: at.getDate(),
+    hour: at.getHours(),
+  };
 }

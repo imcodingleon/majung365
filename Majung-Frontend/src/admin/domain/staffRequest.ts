@@ -49,15 +49,27 @@ export type StaffRequest = {
  * 아는 것이다. 둘 중 하나라도 비면 확정할 수 없다.
  */
 export type ConfirmInput = {
-  /** **확정에 시각이 없다.** 출소자가 적어낸 때가 그대로 확정 시각이 되고,
-   * 세부는 채팅으로 조율한다 (§7.3). 여기 남은 것은 만날 사람과 장소다 —
-   * §7.1이 "이 기능의 핵심"이라고 적은 둘이다. */
+  /** §7.1이 "이 기능의 핵심"이라고 적은 둘. */
   staffName: string;
   place: string;
+  /**
+   * 만나기로 한 시각(ISO). 덜 골랐으면 `null`이다.
+   *
+   * **처음 값은 출소자가 적어낸 때다** (2026-08-26 결정). 담당자가 시각을 다시 정하지
+   * 않기로 했던 것을 되돌렸다 — 기관이 언제 문을 여는지는 담당자가 알고, 안 되는 때를
+   * 채팅으로만 조율하면 확정까지 하루가 더 걸린다. 그대로 두면 손대지 않은 것이다.
+   */
+  whenIso: string | null;
 };
 
 export function canConfirm(input: ConfirmInput): boolean {
-  return input.staffName.trim().length > 0 && input.place.trim().length > 0;
+  return (
+    input.staffName.trim().length > 0 &&
+    input.place.trim().length > 0 &&
+    // **시각 없이 확정하지 않는다.** 서버가 대신 채워 주던 자리를 담당자가 정하기로
+    // 한 이상, 덜 고른 채로 보내면 무엇으로 확정됐는지 아무도 모른다.
+    input.whenIso !== null
+  );
 }
 
 /** 담당자 화면에 보이는 상태 이름. 출소자 화면의 문구와 다르다. */

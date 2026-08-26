@@ -65,7 +65,12 @@ export interface StaffVisitAction {
   meeting_place?: string;
   /** 다른 시간을 제안할 때. ISO 8601. */
   proposed_at?: string;
-  /** 확정할 때 만나기로 한 시각. 안 보내면 서버가 1지망으로 채운다. */
-  confirmed_for?: string;
+  /**
+   * 확정할 때 만나기로 한 시각. ISO 8601.
+   *
+   * **담당자가 화면에서 정한다** (2026-08-26 결정). 안 보내면 서버가 출소자가 적어낸
+   * 때로 채우는데, 그러면 담당자가 바꾼 때가 조용히 사라진다.
+   */
+  confirmed_for?: string | null;
   cancel_reason?: string;
 }
