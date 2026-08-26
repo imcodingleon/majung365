@@ -214,14 +214,24 @@ class StoredMessageOut(BaseModel):
     at: str
 
 
-@router.get("/chat-rooms", response_model=list[str])
-def list_rooms(request: Request, account: CurrentAccount) -> list[str]:
-    """대화가 있는 할 일들. 최근에 말한 것이 앞에 온다.
+class ChatRoomOut(BaseModel):
+    """상담 탭 목록 한 줄. **방 전체가 아니라 한 줄 미리보기만 담는다.**"""
+
+    route_id: str
+    #: 마지막으로 오간 말. 못 읽었으면 빈 문자열이다.
+    preview: str = ""
+    #: 마지막으로 말한 때(ISO 8601). 목록 순서를 이 값으로 정한다.
+    at: str
+
+
+@router.get("/chat-rooms", response_model=list[ChatRoomOut])
+def list_rooms(request: Request, account: CurrentAccount) -> list[ChatRoomOut]:
+    """대화가 있는 할 일들과 마지막으로 오간 말. 최근에 말한 것이 앞에 온다.
 
     **상담 탭이 이것 없이는 목록을 그릴 수 없었다.** 방을 열어야 대화가 오는 구조라,
     앱을 다시 켜면 어디서 이야기했는지 화면이 알 방법이 없었다.
 
-    본문은 담지 않는다 — 목록에 필요한 것은 어느 방인지뿐이다.
+    방 전체를 담지는 않는다. 목록에 필요한 것은 마지막 한 줄뿐이다.
     """
     messages = getattr(request.app.state, "message_repo", None)
     if messages is None:
@@ -229,8 +239,10 @@ def list_rooms(request: Request, account: CurrentAccount) -> list[str]:
     rooms = getattr(messages, "rooms", None)
     if not callable(rooms):
         return []
-    found = rooms(account.id)
-    return [str(r) for r in found]
+    return [
+        ChatRoomOut(route_id=r.route_id, preview=r.preview, at=r.at.isoformat())
+        for r in rooms(account.id)
+    ]
 
 
 @router.get("/chat/{route_id}", response_model=list[StoredMessageOut])

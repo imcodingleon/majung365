@@ -96,6 +96,13 @@ export function useVisitChat(
     socket.on("disconnect", () => setConnected(false));
 
     socket.on("new_message", (m: ServerMessage) => {
+      // **방에 있는 동안 온 말도 읽은 것이다.** 예전에는 들어올 때 한 번만 표시해서,
+      // 보고 있는 앞에서 온 말이 안 읽은 것으로 남았다. 방을 나가면 하단 메뉴바에
+      // 숫자가 뜨고, 다시 들어갔다 나와야 사라졌다.
+      //
+      // 내가 보낸 것의 에코에는 표시하지 않는다 — 내 말을 내가 읽었다고 알릴 일이 없다.
+      if (m.senderRole !== myRole) socket.emit("mark_read", {});
+
       setMessages((prev) => {
         // **같은 메시지가 두 번 올 수 있다.** 서버는 재전송을 저장하지 않지만(같은 id가
         // 돌아온다) 에코는 두 번 보낸다. 실측으로 확인했다(2026-08-23).
@@ -121,7 +128,8 @@ export function useVisitChat(
       setConnected(false);
     };
     // 토큰이 갱신되면 연결을 다시 맺는다. 자격증명을 바꾸지 않으면 조용히 죽는다.
-  }, [visitId, token]);
+    // `myRole`도 넣는다 — 옛 값으로 판정하면 자기 말에 읽음을 보내게 된다.
+  }, [visitId, token, myRole]);
 
   const send = useCallback(
     (text: string) => {

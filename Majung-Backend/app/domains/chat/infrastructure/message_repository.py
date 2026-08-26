@@ -32,6 +32,16 @@ class StoredMessage:
     at: datetime
 
 
+@dataclass(frozen=True)
+class RoomSummary:
+    """목록 한 줄에 필요한 것만. **방 전체를 내려받지 않는다.**"""
+
+    route_id: str
+    #: 마지막으로 오간 말. 못 읽었으면 빈 문자열이다.
+    preview: str
+    at: datetime
+
+
 class SupabaseMessageRepository:
     def __init__(self, client: Client, cipher: FieldCipher) -> None:
         self._db = client
@@ -90,19 +100,19 @@ class SupabaseMessageRepository:
         messages.reverse()
         return messages
 
-    def rooms(self, user_id: UUID) -> list[str]:
-        """대화가 있는 방들. 상담 탭의 목록이 이 값을 쓴다.
+    def rooms(self, user_id: UUID) -> list[RoomSummary]:
+        """대화가 있는 방들과 마지막으로 오간 말. 상담 탭의 목록이 이 값을 쓴다.
 
-        **본문을 가져오지 않는다.** 목록을 그리는 데 필요한 것은 "어느 할 일에서
-        이야기했는가"뿐이고, 대화 내용은 방을 열 때 온다. 스무 방이 있다고 스무
-        방의 본문을 다 내려받을 이유가 없다.
+        **방마다 한 줄씩만 푼다.** 본문이 암호화되어 있어 미리 보여주려면 복호화가
+        필요한데, 방은 열댓 개를 넘지 않으므로 그만큼만 푼다. 방 전체를 내려받는 것과는
+        비용이 다르다 — 스무 방의 대화를 다 풀어 오는 것이 아니다.
 
-        **마지막 말을 함께 주지 못한다.** 본문이 암호화되어 있어 미리 보여주려면
-        방마다 한 줄씩 풀어야 하는데, 목록 하나 그리자고 할 일이 아니다.
+        미리보기가 없으면 목록이 제목만 늘어선 표가 된다. 어제 어디까지 이야기했는지
+        알 수 없어, 열어보기 전에는 무엇이 있는지 모른다.
         """
         result = (
             self._db.table("chat_message")
-            .select("route_id, created_at")
+            .select("route_id, role, content_enc, created_at")
             .eq("user_id", str(user_id))
             .order("created_at", desc=True)
             # 방이 스무 개를 넘을 일이 없다. 넉넉히 두고 중복은 아래에서 접는다.
@@ -113,12 +123,28 @@ class SupabaseMessageRepository:
             r for r in (getattr(result, "data", None) or []) if isinstance(r, dict)
         ]
 
-        # 최근에 말한 방이 앞에 온다. 같은 방이 여러 번 나오므로 처음 것만 남긴다.
-        found: list[str] = []
+        # 최근에 말한 방이 앞에 온다. 같은 방이 여러 번 나오므로 처음 것만 남긴다 —
+        # 최근순으로 받았으니 처음 만나는 줄이 그 방의 마지막 말이다.
+        found: list[RoomSummary] = []
+        seen: set[str] = set()
         for row in rows:
             route_id = str(row.get("route_id") or "")
-            if route_id and route_id not in found:
-                found.append(route_id)
+            if not route_id or route_id in seen:
+                continue
+            seen.add(route_id)
+            try:
+                preview = self._cipher.decrypt(str(row["content_enc"]))
+            except CryptoError:
+                # 한 줄이 깨졌다고 방이 목록에서 사라지면 안 된다. 미리보기만 비운다.
+                logger.warning("미리보기를 읽지 못했다 — 방은 그대로 낸다")
+                preview = ""
+            found.append(
+                RoomSummary(
+                    route_id=route_id,
+                    preview=preview,
+                    at=datetime.fromisoformat(str(row["created_at"]).replace("Z", "+00:00")),
+                )
+            )
         return found
 
     def clear(self, user_id: UUID, route_id: str) -> None:

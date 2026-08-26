@@ -45,6 +45,8 @@ function SectionBox({
   const tint = done ? COLORS.doneBg : COLORS.surface;
   const accent = done ? COLORS.doneInk : COLORS.brand;
 
+  // **박스 안의 것을 모두 가운데로 모은다.** 아이콘과 이름은 왼쪽에 붙고 진행 문구만
+  // 가운데였다. 두 칸씩 놓인 격자에서 그 어긋남은 칸이 삐뚤어 보이게 한다.
   return (
     <Pressable
       onPress={onOpen}
@@ -56,7 +58,7 @@ function SectionBox({
             ? `${label}. ${visible}개 중 ${answered}개 답하셨어요. 눌러서 이어서 답하기`
             : `${label}. 눌러서 답하기`
       }
-      className="w-[48.5%] rounded-2xl border-[1.5px] px-4 pb-4 pt-4 active:opacity-85"
+      className="w-[48.5%] items-center rounded-2xl border-[1.5px] px-3 pb-4 pt-4 active:opacity-85"
       style={{ backgroundColor: tint, borderColor: border }}
     >
       <View
@@ -67,7 +69,7 @@ function SectionBox({
       </View>
 
       <Text
-        className="mt-3 text-body-lg font-extrabold"
+        className="mt-3 text-center text-body-lg font-extrabold"
         style={{ color: done ? COLORS.doneInk : COLORS.inkStrong }}
       >
         {label}
@@ -86,7 +88,7 @@ function SectionBox({
       {/* 진행 막대. 시작한 분야에만 나온다 — 아직 안 연 박스에 빈 막대가 있으면 못 한 일처럼 보인다 */}
       {started && !done ? (
         <View
-          className="mt-3 h-1.5 overflow-hidden rounded-full"
+          className="mt-3 h-1.5 w-full overflow-hidden rounded-full"
           style={{ backgroundColor: COLORS.line }}
         >
           <View
@@ -95,7 +97,7 @@ function SectionBox({
           />
         </View>
       ) : (
-        <View className="mt-3 h-1.5" />
+        <View className="mt-3 h-1.5 w-full" />
       )}
     </Pressable>
   );

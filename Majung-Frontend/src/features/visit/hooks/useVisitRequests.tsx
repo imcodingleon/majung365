@@ -37,6 +37,8 @@ function toRequest(v: VisitResponse): VisitRequest {
     readyDocs: v.prepared_docs,
     note: v.note || undefined,
     createdAt: v.created_at,
+    lastMessage: v.last_message ?? "",
+    lastMessageAt: v.last_message_at ?? null,
     confirmation:
       v.status === "confirmed"
         ? {

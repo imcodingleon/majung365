@@ -42,6 +42,15 @@ export interface StaffVisitResponse {
    *
    * 동의하지 않았으면 빈 배열이다. 예전 요청에는 이 필드가 아예 없을 수 있다.
    */
+  /**
+   * 마지막으로 오간 말 한 줄. 아직 아무 말도 없으면 빈 문자열이다.
+   *
+   * **같은 이유로 서버가 실어 보낸다.** 이것이 없으면 대화 목록이 제목만 늘어선 표가
+   * 되어, 어제 어디까지 이야기했는지 열어보기 전에는 알 수 없다.
+   */
+  last_message?: string;
+  /** 마지막으로 말한 때(ISO 8601). 목록 순서를 이 값으로 정한다. */
+  last_message_at?: string | null;
   shared_answers?: SharedAnswerOut[];
 }
 

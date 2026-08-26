@@ -321,7 +321,7 @@ export function ChatPopup({
                   placeholderTextColor={COLORS.inkMuted}
                   multiline
                   accessibilityLabel="질문 입력"
-                  className="max-h-28 flex-1 rounded-2xl px-4 py-3 text-body text-ink-strong"
+                  className="max-h-28 min-h-[48px] flex-1 rounded-2xl px-4 py-3 text-body text-ink-strong"
                   style={{ backgroundColor: COLORS.bubble }}
                 />
                 {/* 시안의 원형 전송 버튼. 글자 대신 화살표를 쓰면 글을 읽기 어려운

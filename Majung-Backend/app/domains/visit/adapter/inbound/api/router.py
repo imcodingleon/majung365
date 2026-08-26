@@ -19,7 +19,7 @@ from app.domains.account.domain.entity import Account
 from app.domains.shared.routes import RouteId
 from app.domains.staff.adapter.inbound.api.deps import require_staff
 from app.domains.staff.domain.entity import Staff, org_for
-from app.domains.visit.application.chat_usecase import VisitChatUseCase
+from app.domains.visit.application.chat_usecase import RoomGlance, VisitChatUseCase
 from app.domains.visit.application.usecase import VisitError, VisitUseCase
 from app.domains.visit.domain.entity import SharedAnswer, VisitRequest, VisitStatus
 from app.domains.visit.domain.message import SenderRole
@@ -64,16 +64,21 @@ def _chat(request: Request) -> VisitChatUseCase | None:
     return usecase if isinstance(usecase, VisitChatUseCase) else None
 
 
-def _unread(chat: VisitChatUseCase | None, r: VisitRequest, role: SenderRole) -> int:
-    """안 읽은 개수. 방이 열리지 않았으면 셀 것이 없다.
+_NO_GLANCE = RoomGlance(unread=0, preview="", at=None)
+
+
+def _glance(
+    chat: VisitChatUseCase | None, r: VisitRequest, role: SenderRole
+) -> RoomGlance:
+    """목록 한 줄에 얹을 것. 방이 열리지 않았으면 볼 것이 없다.
 
     **닫힌 방을 먼저 걸러 낸다.** 이 함수는 요청 하나마다 대화를 통째로 읽으므로,
     목록에 있는 요청 수만큼 조회가 나간다. 대기 상한이 다섯(§7.5)이라 실제로는 몇
     번에 그치지만, 이미 끝났거나 취소된 요청까지 세면 그 수가 계속 늘어난다.
     """
     if chat is None or not r.chat_available:
-        return 0
-    return chat.unread_for(r, role)
+        return _NO_GLANCE
+    return chat.glance_for(r, role)
 
 
 class SharedAnswerIn(BaseModel):
@@ -141,6 +146,12 @@ class VisitOut(BaseModel):
     # **화면이 셀 수 없는 값이다.** 대화 내용은 소켓으로 방에 들어가야 오는데, 목록의
     # 숫자를 그리자고 방마다 붙을 수는 없다. 그래서 서버가 세어 함께 보낸다.
     unread: int = 0
+    # 마지막으로 오간 말 한 줄. 같은 이유로 서버가 실어 보낸다.
+    #
+    # 이것이 없으면 상담 탭이 제목만 늘어선 표가 된다 — 어제 어디까지 이야기했는지
+    # 열어보기 전에는 알 수 없다.
+    last_message: str = ""
+    last_message_at: datetime | None = None
 
 
 class LimitOut(BaseModel):
@@ -152,7 +163,7 @@ class LimitOut(BaseModel):
     existing: list[VisitOut]
 
 
-def _to_out(r: VisitRequest, unread: int = 0) -> VisitOut:
+def _to_out(r: VisitRequest, glance: RoomGlance = _NO_GLANCE) -> VisitOut:
     return VisitOut(
         id=str(r.id),
         route_id=r.route_id,
@@ -169,7 +180,9 @@ def _to_out(r: VisitRequest, unread: int = 0) -> VisitOut:
         cancel_reason=r.cancel_reason,
         chat_available=r.chat_available,
         created_at=r.created_at,
-        unread=unread,
+        unread=glance.unread,
+        last_message=glance.preview,
+        last_message_at=glance.at,
     )
 
 
@@ -214,7 +227,7 @@ def create_visit(
 def list_my_visits(request: Request, account: CurrentAccount) -> list[VisitOut]:
     chat = _chat(request)
     return [
-        _to_out(r, _unread(chat, r, SenderRole.USER))
+        _to_out(r, _glance(chat, r, SenderRole.USER))
         for r in _usecase(request).my_visits(account.id)
     ]
 
@@ -256,6 +269,9 @@ class StaffVisitOut(BaseModel):
     # **역할을 바꿔 넣지 않는다.** 출소자 쪽 응답과 세는 기준이 반대여서, 뒤집으면
     # 자기가 보낸 것을 안 읽은 것으로 세게 된다.
     unread: int = 0
+    # 마지막으로 오간 말. 출소자 쪽 응답과 같은 값이다 — 한쪽만 두면 또 짝이 어긋난다.
+    last_message: str = ""
+    last_message_at: datetime | None = None
     # 사용자가 동의하고 보낸 진단 답변(§7.4). 동의가 없으면 빈 목록이다.
     shared_answers: list[SharedAnswerOut] = []
 
@@ -264,13 +280,15 @@ class StaffActionIn(BaseModel):
     status: str
     # 확정할 때 반드시 함께 온다. 장소가 없으면 확정이 성립하지 않는다.
     meeting_place: str = Field(default="", max_length=100)
-    # 만나기로 한 시각. 안 보내면 서버가 1지망으로 채운다.
+    # 만나기로 한 시각. 안 보내면 서버가 출소자가 오겠다는 때로 채운다 (§7.3).
     confirmed_for: datetime | None = None
     proposed_at: datetime | None = None
     cancel_reason: str = Field(default="", max_length=200)
 
 
-def _staff_out(r: VisitRequest, user_name: str, unread: int = 0) -> StaffVisitOut:
+def _staff_out(
+    r: VisitRequest, user_name: str, glance: RoomGlance = _NO_GLANCE
+) -> StaffVisitOut:
     return StaffVisitOut(
         id=str(r.id),
         route_id=r.route_id,
@@ -283,7 +301,9 @@ def _staff_out(r: VisitRequest, user_name: str, unread: int = 0) -> StaffVisitOu
         meeting_place=r.meeting_place,
         confirmed_for=r.confirmed_for,
         created_at=r.created_at,
-        unread=unread,
+        unread=glance.unread,
+        last_message=glance.preview,
+        last_message_at=glance.at,
         shared_answers=[
             SharedAnswerOut(
                 route_id=a.route_id,
@@ -347,7 +367,7 @@ def list_staff_visits(
     )
     chat = _chat(request)
     return [
-        _staff_out(r, _name_of(request, r.user_id), _unread(chat, r, SenderRole.STAFF))
+        _staff_out(r, _name_of(request, r.user_id), _glance(chat, r, SenderRole.STAFF))
         for r in found
     ]
 

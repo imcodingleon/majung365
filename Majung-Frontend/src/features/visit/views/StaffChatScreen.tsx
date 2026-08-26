@@ -7,6 +7,7 @@ import { useState } from "react";
 import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
+import { Icon } from "@/shared/components/Icon";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
@@ -127,6 +128,9 @@ export function StaffChatScreen({
           })}
         </ScrollView>
 
+        {/* **AI 채팅과 같은 보내기 박스다.** 예전에는 글자 버튼이 입력칸보다 높아 두
+            요소가 어긋나 보였고, 같은 일을 하는 자리가 화면마다 다른 모양이었다.
+            화살표를 쓰면 글을 읽기 어려운 사람도 방향으로 뜻을 안다 */}
         <View className="flex-row items-end gap-2 border-t border-line px-3 py-3">
           <TextInput
             value={draft}
@@ -135,17 +139,18 @@ export function StaffChatScreen({
             placeholder="메시지를 적으세요"
             placeholderTextColor={COLORS.inkMuted}
             accessibilityLabel="메시지 입력"
-            className="max-h-28 flex-1 rounded-xl border-[1.5px] border-line px-4 py-3 text-body text-ink-strong"
+            className="max-h-28 min-h-[48px] flex-1 rounded-2xl px-4 py-3 text-body text-ink-strong"
+            style={{ backgroundColor: COLORS.bubble }}
           />
           <Pressable
             onPress={send}
             disabled={!draft.trim()}
             accessibilityRole="button"
             accessibilityLabel="보내기"
-            className="rounded-xl px-4 py-4 active:opacity-90"
+            className="size-12 items-center justify-center rounded-full active:opacity-90"
             style={{ backgroundColor: draft.trim() ? COLORS.brand : COLORS.brandMuted }}
           >
-            <Text className="text-body-lg font-extrabold text-white">보내기</Text>
+            <Icon name="send" size={22} color={COLORS.surface} />
           </Pressable>
         </View>
       </KeyboardAvoidingView>

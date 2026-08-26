@@ -388,12 +388,21 @@ export async function postAnalyze(req: AnalyzeRequest): Promise<TaskCard> {
  * **본문은 오지 않는다.** 상담 탭이 목록을 그리는 데 필요한 것은 어느 방인지뿐이고,
  * 대화 내용은 그 방을 열 때 온다.
  */
-export async function getChatRooms(token: string): Promise<string[]> {
+/** 대화가 남아 있는 방 한 칸. **방 전체가 아니라 목록에 필요한 것만 온다.** */
+export type ChatRoomSummary = {
+  route_id: string;
+  /** 마지막으로 오간 말. 못 읽었으면 빈 문자열이다. */
+  preview: string;
+  /** 마지막으로 말한 때(ISO 8601). */
+  at: string;
+};
+
+export async function getChatRooms(token: string): Promise<ChatRoomSummary[]> {
   const res = await fetch(`${API_BASE}/api/chat-rooms`, {
     headers: { Authorization: `Bearer ${token}` },
   });
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
-  return (await res.json()) as string[];
+  return (await res.json()) as ChatRoomSummary[];
 }
 
 export async function getChatHistory(token: string, routeId: string): Promise<StoredChatTurn[]> {

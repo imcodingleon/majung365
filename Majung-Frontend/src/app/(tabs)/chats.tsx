@@ -9,7 +9,11 @@
 import { useCallback, useState } from "react";
 import { Redirect, router, useFocusEffect } from "expo-router";
 
-import { toConversations, type Conversation } from "@/features/chat/domain/conversation";
+import {
+  toConversations,
+  type Conversation,
+  type SavedRoom,
+} from "@/features/chat/domain/conversation";
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
 import { ChatListScreen } from "@/features/chat/views/ChatListScreen";
 import { toTasks } from "@/features/tasks/domain/fromServer";
@@ -31,7 +35,7 @@ export default function ChatsRoute() {
    * **기기가 아는 것만으로는 목록을 그릴 수 없다.** 방을 열어야 대화가 오는
    * 구조라, 앱을 다시 켜면 어제 나눈 이야기가 사라진 것처럼 보였다.
    */
-  const [savedRooms, setSavedRooms] = useState<string[]>([]);
+  const [savedRooms, setSavedRooms] = useState<SavedRoom[]>([]);
 
   // **탭을 열 때마다 다시 읽는다.** 하단 메뉴바의 화면들은 한 번 뜨면 그대로
   // 살아 있어서, 처음 한 번만 읽으면 홈에서 방금 연 대화가 여기에 안 나타난다.
@@ -43,7 +47,11 @@ export default function ChatsRoute() {
         if (!token) return;
         try {
           const found = await getChatRooms(token);
-          if (alive) setSavedRooms(found);
+          if (alive) {
+            setSavedRooms(
+              found.map((r) => ({ taskId: r.route_id, preview: r.preview, at: r.at })),
+            );
+          }
         } catch {
           // 목록을 못 읽어도 이번에 연 방은 보인다. 화면을 막지 않는다.
         }

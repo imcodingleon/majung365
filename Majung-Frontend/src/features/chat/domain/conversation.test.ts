@@ -116,32 +116,57 @@ describe("toConversations — 순서", () => {
 describe("toConversations — 서버에 남은 방", () => {
   const msgs: ChatMessage[] = [{ id: "m", role: "user", text: "안녕하세요" }];
 
+  /** 서버가 아는 방 한 칸. 시각은 최근일수록 뒤 날짜다. */
+  const room = (taskId: string, at: string, preview = "") => ({ taskId, preview, at });
+
   it("이번에 열지 않은 방도 목록에 낸다", () => {
     // **앱을 다시 켜면 기기에는 아무 방도 없다.** 서버 목록이 없으면 상담 탭이
     // 통째로 비어, 어제 나눈 이야기가 사라진 것처럼 보인다 (§6.3).
-    const list = toConversations([], {}, titleOf, ["R1", "R11"]);
+    const list = toConversations([], {}, titleOf, [
+      room("R1", "2026-08-26T10:00:00+09:00"),
+      room("R11", "2026-08-25T10:00:00+09:00"),
+    ]);
     expect(list.map((c) => c.id)).toEqual(["R1", "R11"]);
   });
 
   it("서버가 정한 순서를 지킨다", () => {
     // 최근에 말한 방이 앞이다. 그 순서를 화면이 다시 매기지 않는다.
-    const list = toConversations([], {}, titleOf, ["R11", "R1"]);
+    const list = toConversations([], {}, titleOf, [
+      room("R11", "2026-08-26T10:00:00+09:00"),
+      room("R1", "2026-08-25T10:00:00+09:00"),
+    ]);
     expect(list.map((c) => c.id)).toEqual(["R11", "R1"]);
   });
 
   it("방금 첫 말을 건 방은 뒤에 붙인다", () => {
     // 서버 목록을 받은 뒤에 연 방은 아직 그 목록에 없다.
-    const list = toConversations([], { R11: msgs }, titleOf, ["R1"]);
+    const list = toConversations([], { R11: msgs }, titleOf, [
+      room("R1", "2026-08-26T10:00:00+09:00"),
+    ]);
     expect(list.map((c) => c.id)).toEqual(["R1", "R11"]);
   });
 
   it("같은 방이 두 번 나오지 않는다", () => {
-    const list = toConversations([], { R1: msgs }, titleOf, ["R1"]);
+    const list = toConversations([], { R1: msgs }, titleOf, [
+      room("R1", "2026-08-26T10:00:00+09:00"),
+    ]);
     expect(list).toHaveLength(1);
   });
 
-  it("안 연 방은 미리 보여줄 것이 없다", () => {
-    const list = toConversations([], {}, titleOf, ["R1"]);
-    expect(list[0].preview).toBe("");
+  it("안 연 방도 서버가 준 마지막 말을 보여준다", () => {
+    // **이것이 없으면 목록이 제목만 늘어선 표가 된다.** 어제 어디까지 이야기했는지
+    // 열어보기 전에는 알 수 없다.
+    const list = toConversations([], {}, titleOf, [
+      room("R1", "2026-08-26T10:00:00+09:00", "가까운 지부에 전화해 보세요."),
+    ]);
+    expect(list[0].preview).toBe("가까운 지부에 전화해 보세요.");
+  });
+
+  it("방에서 방금 오간 말이 서버가 아는 것보다 앞선다", () => {
+    // 방금 보낸 말이 목록에 아직 안 뜨는 일을 막는다. 서버가 알기 전이다.
+    const list = toConversations([], { R1: msgs }, titleOf, [
+      room("R1", "2026-08-26T10:00:00+09:00", "지난번에 드린 말씀이에요."),
+    ]);
+    expect(list[0].preview).toBe("안녕하세요");
   });
 });

@@ -47,12 +47,15 @@ function SmallButton({
   label,
   filled,
   danger,
+  a11yLabel,
   onPress,
 }: {
   label: string;
   filled?: boolean;
   /** 되돌릴 수 없는 쪽. 문구만으로는 무게가 전해지지 않아 색으로도 알린다. */
   danger?: boolean;
+  /** 화면에 적힌 말이 짧을 때 읽어줄 말. 없으면 적힌 말을 그대로 읽는다. */
+  a11yLabel?: string;
   onPress: () => void;
 }) {
   const bg = danger ? COLORS.alert : filled ? COLORS.brand : COLORS.surface;
@@ -61,7 +64,7 @@ function SmallButton({
     <Pressable
       onPress={onPress}
       accessibilityRole="button"
-      accessibilityLabel={label}
+      accessibilityLabel={a11yLabel ?? label}
       className="rounded-lg border-[1.5px] px-4 py-3 active:opacity-90"
       style={{ backgroundColor: bg, borderColor: line }}
     >
@@ -87,41 +90,49 @@ export function RequestStatusStrip({
   // 다르다. 확정 전이면 묻지 않는다 — 확인 절차가 늘수록 그만두게 된다.
   const [confirming, setConfirming] = useState(false);
 
+  // **지금 할 수 있는 일은 하나뿐이다.** 취소한 요청은 다시 보내고, 방이 열린 요청은
+  // 담당자와 이야기한다. 두 가지가 동시에 오는 상태는 없으므로 자리를 하나만 둔다.
+  const action =
+    request.status === "cancelled" && onResend ? (
+      <SmallButton label="다시 보내기" filled onPress={onResend} />
+    ) : canOpenStaffChat(request.status) ? (
+      <SmallButton
+        label="이야기하기"
+        a11yLabel="담당자와 이야기하기"
+        onPress={onOpenStaffChat}
+      />
+    ) : null;
+
   return (
     <View
       className="mb-4 rounded-xl border px-4 py-4"
       style={{ backgroundColor: tone.bg, borderColor: tone.line }}
     >
-      {/* 첫 줄이 지금 상태이고 뒤따르는 줄은 부연이다. 무게를 달리해 눈으로 갈리게 한다. */}
-      <View className="gap-1">
-        {statusLines(request).map((line, i) => (
-          <Text
-            key={line}
-            className="leading-[24px]"
-            style={{
-              color: tone.ink,
-              // 확정 문구는 실제로 찾아가야 할 정보를 담고 있으므로 더 크고 굵게 낸다.
-              fontSize: confirmed ? 16 : 14.5,
-              fontWeight: i === 0 ? (confirmed ? "800" : "700") : "600",
-              opacity: i === 0 ? 1 : 0.85,
-            }}
-          >
-            {line}
-          </Text>
-        ))}
+      {/* **문구는 왼쪽, 할 수 있는 일은 오른쪽에 나란히 둔다.** 위아래로 쌓으면 카드가
+          길어지고, 짧은 문구 아래에 버튼 하나만 덩그러니 남아 빈 칸처럼 보인다.
+          문구가 길어지면 왼쪽 칸 안에서 접힌다 — 버튼을 밀어내지 않는다 */}
+      <View className="flex-row items-center gap-3">
+        {/* 첫 줄이 지금 상태이고 뒤따르는 줄은 부연이다. 무게를 달리해 눈으로 갈리게 한다. */}
+        <View className="flex-1 gap-1">
+          {statusLines(request).map((line, i) => (
+            <Text
+              key={line}
+              className="leading-[24px]"
+              style={{
+                color: tone.ink,
+                // 확정 문구는 실제로 찾아가야 할 정보를 담고 있으므로 더 크고 굵게 낸다.
+                fontSize: confirmed ? 16 : 14.5,
+                fontWeight: i === 0 ? (confirmed ? "800" : "700") : "600",
+                opacity: i === 0 ? 1 : 0.85,
+              }}
+            >
+              {line}
+            </Text>
+          ))}
+        </View>
+
+        {action ? <View className="shrink-0">{action}</View> : null}
       </View>
-
-      {request.status === "cancelled" && onResend ? (
-        <View className="mt-3 flex-row">
-          <SmallButton label="다시 보내기" filled onPress={onResend} />
-        </View>
-      ) : null}
-
-      {canOpenStaffChat(request.status) ? (
-        <View className="mt-3 flex-row">
-          <SmallButton label="담당자와 이야기하기" onPress={onOpenStaffChat} />
-        </View>
-      ) : null}
 
       {/* **눈에 덜 띄게 둔다.** 물리는 것이 이 화면의 목적이 아니고, 크게 두면
           기다리는 동안 눌러 보게 된다. 다만 찾을 수는 있어야 한다 */}
