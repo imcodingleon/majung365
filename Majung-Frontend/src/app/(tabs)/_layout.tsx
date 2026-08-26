@@ -15,7 +15,10 @@ import { Tabs } from "expo-router";
 
 import { countUnseen, toAlerts } from "@/features/alerts/domain/alert";
 import { useLastSeen } from "@/features/alerts/hooks/useLastSeen";
-import { useVisitRequests } from "@/features/visit/hooks/useVisitRequests";
+import {
+  useVisitRequests,
+  VisitRequestsProvider,
+} from "@/features/visit/hooks/useVisitRequests";
 import { Icon, type IconName } from "@/shared/components/Icon";
 import { TabBadge } from "@/shared/components/TabBadge";
 import { COLORS } from "@/shared/theme/colors";
@@ -74,7 +77,13 @@ function ChatFabButton({
   );
 }
 
-export default function TabsLayout() {
+/**
+ * 하단 바 자체.
+ *
+ * **Provider 안쪽이라야 한다.** 방문 요청 목록을 화면들과 나눠 써야 하기 때문이다 —
+ * 각자 들면 대화를 읽어 서버에서 0이 된 뒤에도 바의 숫자가 그대로 남는다.
+ */
+function TabsBar() {
   // **숫자는 여기서 한 번만 센다.** 알림 탭과 상담 탭이 각자 세면 같은 셈이 두 곳에
   // 생기고, 한쪽 규칙만 고쳤을 때 바에 뜬 수와 화면 안 수가 어긋난다.
   const visit = useVisitRequests();
@@ -130,5 +139,13 @@ export default function TabsLayout() {
         }}
       />
     </Tabs>
+  );
+}
+
+export default function TabsLayout() {
+  return (
+    <VisitRequestsProvider>
+      <TabsBar />
+    </VisitRequestsProvider>
   );
 }

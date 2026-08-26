@@ -52,7 +52,12 @@ export default function ChatsRoute() {
       {request ? (
         <UserChatSheet
           request={request}
-          onClose={() => setOpenStaff(null)}
+          onClose={() => {
+            setOpenStaff(null);
+            // **닫을 때 다시 읽는다.** 대화를 열면 서버가 읽음으로 표시하는데,
+            // 화면이 그것을 모르면 안 읽은 수가 그대로 남는다.
+            void visit.reload();
+          }}
           closeHint="나눈 이야기 목록으로 돌아가기"
         />
       ) : null}

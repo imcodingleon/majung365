@@ -5,7 +5,7 @@
 // 상한 판정도 서버가 한다(§7.5) — 기기에서 세는 값은 우회할 수 있고 날짜 경계도
 // 서버 시각으로 봐야 정확하다. 화면의 셈은 **보내기 전에 미리 알려주는 용도**이며,
 // 서버가 거부하면 그 이유를 그대로 보여준다.
-import { useCallback, useEffect, useState } from "react";
+import { createContext, useCallback, useContext, useEffect, useState, type ReactNode } from "react";
 
 import type { SharedAnswerInput, VisitResponse } from "@/shared/types";
 import { ApiError, cancelVisit, getVisits, postVisit } from "@/shared/utils/api";
@@ -55,7 +55,7 @@ function toRequest(v: VisitResponse): VisitRequest {
   };
 }
 
-export function useVisitRequests() {
+function useVisitRequestsState() {
   const [requests, setRequests] = useState<VisitRequest[]>([]);
   /** 지금 폼이 열려 있는 할 일. 닫혀 있으면 null. */
   const [formTaskId, setFormTaskId] = useState<string | null>(null);
@@ -66,26 +66,32 @@ export function useVisitRequests() {
   /** 서버가 준 실패 문구. 상한에 걸린 것도 여기로 온다. */
   const [error, setError] = useState<string | null>(null);
 
-  // 보낸 요청을 서버에서 읽어 온다. 담당자가 확정하면 그 상태가 여기로 내려온다.
-  useEffect(() => {
-    let alive = true;
-    void (async () => {
-      const token = await loadToken();
-      if (!token) return;
-      try {
-        const found = await getVisits(token);
-        if (alive) setRequests(found.map(toRequest));
-      } catch {
-        // **조용히 넘기지 않는다.** 목록을 못 읽으면 화면이 중복도 미확정 건수도
-        // 못 보므로, 이미 보낸 항목에 한 번 더 보내게 된다. 막는 것은 서버뿐이고
-        // 사용자는 왜 막혔는지 모른다.
-        if (alive) setError("보낸 요청을 불러오지 못했어요. 화면을 다시 열어 주세요.");
-      }
-    })();
-    return () => {
-      alive = false;
-    };
+  /**
+   * 보낸 요청을 서버에서 읽어 온다. 담당자가 확정하면 그 상태가 여기로 내려온다.
+   *
+   * **밖에서도 부를 수 있어야 한다.** 처음 한 번만 읽던 탓에, 대화를 읽어 서버에서는
+   * 안 읽은 수가 0이 됐는데도 하단 바의 숫자가 그대로 남았다.
+   */
+  const reload = useCallback(async () => {
+    const token = await loadToken();
+    if (!token) return;
+    try {
+      const found = await getVisits(token);
+      setRequests(found.map(toRequest));
+    } catch {
+      // **조용히 넘기지 않는다.** 목록을 못 읽으면 화면이 중복도 미확정 건수도
+      // 못 보므로, 이미 보낸 항목에 한 번 더 보내게 된다. 막는 것은 서버뿐이고
+      // 사용자는 왜 막혔는지 모른다.
+      setError("보낸 요청을 불러오지 못했어요. 화면을 다시 열어 주세요.");
+    }
   }, []);
+
+  // 화면이 처음 붙을 때 한 번 읽는다. 린터는 이 자리를 연쇄 렌더로 보지만,
+  // `reload`는 서버를 기다린 뒤에야 상태를 바꾸므로 동기 호출이 아니다.
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
+    void reload();
+  }, [reload]);
 
   const openForm = useCallback(
     (taskId: string) => {
@@ -200,6 +206,8 @@ export function useVisitRequests() {
   return {
     requests,
     requestFor,
+    /** 서버에서 다시 읽는다. 대화를 닫은 뒤 안 읽은 수를 맞추는 데 쓴다. */
+    reload,
     cancel,
     formTaskId,
     blocked,
@@ -210,4 +218,34 @@ export function useVisitRequests() {
     dismissBlocked,
     submit,
   };
+}
+
+/**
+ * 방문 요청 상태를 화면들이 나눠 쓴다.
+ *
+ * **훅을 화면마다 부르면 각자 다른 목록을 들게 된다.** 실제로 그래서, 대화를 읽어
+ * 서버에서는 안 읽은 수가 0이 됐는데도 **하단 바의 숫자가 그대로 남았다** — 바가
+ * 들고 있는 것은 자기가 처음 읽은 값이고 화면이 다시 읽은 것을 몰랐다.
+ *
+ * `(tabs)` 레이아웃이 한 번 만들어 아래 화면들에 내려준다.
+ */
+const VisitRequestsContext = createContext<ReturnType<typeof useVisitRequestsState> | null>(
+  null,
+);
+
+export function VisitRequestsProvider({ children }: { children: ReactNode }) {
+  const value = useVisitRequestsState();
+  return (
+    <VisitRequestsContext.Provider value={value}>{children}</VisitRequestsContext.Provider>
+  );
+}
+
+export function useVisitRequests() {
+  const shared = useContext(VisitRequestsContext);
+  if (shared === null) {
+    // **Provider 없이 부르면 조용히 어긋난다.** 자기만의 목록을 들고 도는데 화면은
+    // 그것을 알 수 없어, 숫자가 맞지 않는 이유를 찾기 어려워진다.
+    throw new Error("VisitRequestsProvider 안에서만 쓸 수 있어요.");
+  }
+  return shared;
 }
