@@ -136,7 +136,7 @@ export function CenterMap({ centers }: { centers: Center[] }) {
   return (
     <View
       ref={ref}
-      className="h-44 overflow-hidden rounded-2xl border border-line bg-line lg:h-[420px]"
+      className="h-56 overflow-hidden rounded-2xl border border-line bg-line"
     />
   );
 }

@@ -12,7 +12,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Icon } from "@/shared/components/Icon";
 import { Logo } from "@/shared/components/Logo";
-import { useIsDesktop } from "@/shared/hooks/useIsDesktop";
 import { RegionPicker } from "@/features/institutions/views/RegionPicker";
 import { COLORS } from "@/shared/theme/colors";
 import type { Center } from "@/shared/types";
@@ -165,7 +164,6 @@ export function MapScreen() {
   const [cat, setCat] = useState<string>("전체");
   const [query, setQuery] = useState("");
   const { centers, loading, error, place, pick } = useNearbyCenters();
-  const isDesktop = useIsDesktop();
 
   /**
    * 보여줄 기관. **순서를 여기서 다시 매기지 않는다.**
@@ -185,7 +183,7 @@ export function MapScreen() {
   if (!place) {
     return (
       <SafeAreaView className="flex-1 bg-page" edges={["top"]}>
-        <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
+        <View className="border-b border-line bg-white px-5 py-4">
           <Logo height={26} />
         </View>
         <RegionPicker onPick={pick} />
@@ -195,35 +193,22 @@ export function MapScreen() {
 
   return (
     <SafeAreaView className="flex-1 overflow-hidden bg-page" edges={["top"]}>
-      {/* 모바일 헤더 — 데스크톱에선 셸 navbar가 대체 */}
-      <View className="border-b border-line bg-white px-5 py-4 lg:hidden">
+      <View className="border-b border-line bg-white px-5 py-4">
         <Logo height={26} />
       </View>
 
-      {isDesktop ? (
-        // 데스크톱 2열 (majung365_web_v2 .map-layout): 좌=검색·칩·지도(유동) / 우=리스트 340px 자체 스크롤
-        <View className="w-full max-w-[860px] flex-1 flex-row gap-5 self-center px-4 py-6">
-          <View className="flex-1 gap-5">
-            <SearchBar value={query} onChange={setQuery} />
-            <FilterChips selected={cat} onSelect={setCat} />
-            <CenterMap centers={shown} />
-          </View>
-          <View className="w-[340px] gap-3">
-            <ListHeading error={error} />
-            <ScrollView className="flex-1" contentContainerClassName="gap-4 pb-6 pr-1">
-              <CenterList loading={loading} shown={shown} />
-            </ScrollView>
-          </View>
-        </View>
-      ) : (
-        <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
-          <SearchBar value={query} onChange={setQuery} />
-          <FilterChips selected={cat} onSelect={setCat} />
-          <CenterMap centers={shown} />
-          <ListHeading error={error} />
-          <CenterList loading={loading} shown={shown} />
-        </ScrollView>
-      )}
+      {/* **한 벌만 둔다** (2026-08-26). 넓은 화면에서 2열로 가는 갈래가 있었는데, 그
+          판정이 브라우저 창 너비를 봤다. 웹은 `AppFrame`이 모든 화면을 440px 프레임에
+          묶으므로 PC에서는 판정만 켜지고 자리는 없었다 — 오른쪽 칸 340px에 여백과
+          간격을 빼면 지도에 48px이 남아, 지도가 세로 띠로 눌렸다.
+          창이 아니라 이 화면이 실제로 받는 폭을 봐야 하는데, 그 폭은 늘 440px이다 */}
+      <ScrollView className="flex-1" contentContainerClassName="gap-5 px-4 pb-10 pt-5">
+        <SearchBar value={query} onChange={setQuery} />
+        <FilterChips selected={cat} onSelect={setCat} />
+        <CenterMap centers={shown} />
+        <ListHeading error={error} />
+        <CenterList loading={loading} shown={shown} />
+      </ScrollView>
     </SafeAreaView>
   );
 }

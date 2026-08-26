@@ -13,7 +13,7 @@ import { COLORS } from "@/shared/theme/colors";
 
 export function MapFallbackPanel() {
   return (
-    <View className="h-44 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-line bg-brand-soft lg:h-[420px]">
+    <View className="h-56 items-center justify-center gap-2 overflow-hidden rounded-2xl border border-line bg-brand-soft">
       <Icon name="pin" size={32} color={COLORS.brand} />
       <Text className="text-body font-bold text-brand">지도를 불러오지 못했어요</Text>
       <Text className="px-6 text-center text-caption text-ink-muted">
