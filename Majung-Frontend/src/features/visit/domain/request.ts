@@ -224,7 +224,8 @@ export function sharedItems(
   /** 함께 보내기로 한 분야 이름들. 고르지 않았으면 비어 있다 (§7.4-1). */
   sharedSections: readonly string[] = [],
 ): readonly string[] {
-  const items = ["이름", "방문하실 시간 두 가지", "무슨 일로 오시는지"];
+  // **한 때만 간다.** 지망 개념을 걷어냈는데(§7.3) 문구에 "두 가지"가 남아 있었다.
+  const items = ["이름", "방문하실 시간", "무슨 일로 오시는지"];
   if (hasDocs) items.push("챙겨 오실 것");
   if (hasNote) items.push("하고 싶은 말");
   // 기한이 있는 제도를 상담할 때만 보낸다.

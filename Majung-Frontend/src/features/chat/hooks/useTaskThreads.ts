@@ -8,7 +8,7 @@
 //
 // **방(routeId)을 서버로 보낸다.** 어느 할 일 카드에서 연 대화인지 알아야 챗봇이 그
 // 항목의 근거부터 훑는다. triage를 건너뛰는 것은 아니고 순서만 바뀐다 (2026-08-23).
-import { useCallback, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 
 import type { CardData, Turn, EvidenceEvent } from "@/shared/types";
 import { ApiError, deleteChatHistory, getChatHistory, streamChat } from "@/shared/utils/api";
@@ -60,6 +60,23 @@ export function useTaskThreads(initial: Threads = {}) {
   const loaded = useRef<Set<string>>(new Set());
   /** 열려 있는 방의 스트림. 방을 닫거나 새로 보내면 끊는다. */
   const abort = useRef<AbortController | null>(null);
+  /**
+   * 세션 토큰. **미리 읽어 둔다.**
+   *
+   * 보낼 때 읽으면 `send`를 비동기로 만들어야 하는데, 그러면 낙관적 말풍선이 한 박자
+   * 늦게 뜬다. 토큰은 앱을 켤 때 이미 정해져 있으므로 미리 담아 둔다.
+   */
+  const tokenRef = useRef<string | null>(null);
+
+  useEffect(() => {
+    let alive = true;
+    void loadToken().then((t) => {
+      if (alive) tokenRef.current = t;
+    });
+    return () => {
+      alive = false;
+    };
+  }, []);
 
   /**
    * 대화방을 연다. **저장된 지난 대화를 함께 불러온다** (§6.3).
@@ -154,7 +171,11 @@ export function useTaskThreads(initial: Threads = {}) {
       void streamChat(
         // 방(taskId)이 곧 지원 항목 코드다. 어느 카드에서 연 대화인지 서버가 알아야
         // 근거를 그쪽부터 훑는다.
-        { message: text, history, route_id: taskId },
+        //
+        // **토큰을 함께 보낸다.** 서버는 이 값으로 누구인지 가려 대화를 저장하고(§6.3),
+        // 모르면 답만 하고 흘려보낸다 — 오류가 나지 않아 오래 빠져 있었다. 상담 탭이
+        // 계속 비어 있던 이유가 이것이다.
+        { message: text, history, route_id: taskId, token: tokenRef.current },
         {
           onText: (delta) => {
             streamed += delta;

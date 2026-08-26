@@ -72,6 +72,10 @@ from app.infrastructure.security.spend import SpendCircuitBreaker
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger("majung.boot")
 
+# 브라우저에 여는 메서드. **여기서 한 번만 적는다** — 테스트가 이 값과 실제 라우트를
+# 대조하려면 밖에서 읽을 수 있어야 한다.
+CORS_METHODS = ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"]
+
 _DEFAULT_SESSION_SECRET = "dev-only-secret-change-me"
 
 
@@ -108,8 +112,14 @@ def create_app() -> FastAPI:
         # 실제로 여는 메서드만 적는다. **여기가 늦으면 브라우저에서만 막힌다** —
         # curl로는 되고 화면에서만 preflight가 400이라 원인을 찾기 어렵다.
         #   PATCH   내 정보 수정 · 담당자의 방문 요청 상태 변경
+        #   PUT     끝낸 할 일 목록 저장 (§5.2)
         #   DELETE  내 정보 삭제(§9.4) · 대화 내역 삭제
-        allow_methods=["GET", "POST", "PATCH", "DELETE", "OPTIONS"],
+        #
+        # **실제로 그 일이 났다.** `PUT /api/tasks/completed`를 만들고 이 목록에 넣지
+        # 않아서, 완료를 눌러도 브라우저에서는 한 번도 저장되지 않았다. 사용자에게는
+        # "끝낸 표시를 저장하지 못했어요"만 뜨고 새로고침하면 되살아났다.
+        # 그래서 `tests/test_cors_methods.py`가 이 목록과 실제 라우트를 대조한다.
+        allow_methods=CORS_METHODS,
         allow_headers=["*"],
     )
 

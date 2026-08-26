@@ -16,6 +16,7 @@ import { toSignupRequest } from "@/features/signup/domain/signup";
 import { SignupScreen } from "@/features/signup";
 import { ApiError, postSignup } from "@/shared/utils/api";
 import { startSession } from "@/shared/utils/session";
+import { markAnswers } from "@/shared/utils/storage";
 import { saveToken } from "@/shared/utils/tokenStore";
 import { FramedModal } from "@/shared/components/FramedModal";
 
@@ -48,6 +49,10 @@ export default function SignupRoute() {
         // **토큰을 먼저 보관한다.** 화면을 옮긴 뒤에 저장하다 실패하면 서버에는 자료가
         // 남았는데 지울 열쇠가 없는 상태가 된다.
         await saveToken(found.session_token);
+        // **답변을 기기에 남긴다** (2026-08-26 결정 G-1). 메모리에만 두면 새로고침
+        // 한 번에 사라져, 방문 알림의 "담당자에게 이만큼 알려주기"(§7.4-1)가 통째로
+        // 없어진다. 서버에는 그대로 안 보낸다 — 판정만 저장한다는 §9.1은 지킨다.
+        markAnswers(intake.answers);
         // 가입 응답에 할 일이 함께 온다. 홈에서 다시 부르지 않는다.
         startSession({
           answers: request.answers,

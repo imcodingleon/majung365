@@ -374,7 +374,7 @@ export function VisitRequestSheet({
 
           {!canSend ? (
             <Text className="mt-3 text-center text-caption text-ink-muted">
-              가실 수 있는 때를 두 가지 골라 주세요.
+              가실 수 있는 때를 골라 주세요.
             </Text>
           ) : null}
         </ScrollView>
