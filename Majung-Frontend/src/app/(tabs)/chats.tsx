@@ -6,8 +6,8 @@
 // **AI 대화는 여기서 열지 않고 홈으로 보낸다.** 그 화면은 할 일 카드의 문맥(근거
 // 배지·담당 기관 연락처)을 함께 받아 그리는데, 여기서 같은 조립을 다시 하면 **같은
 // 화면을 만드는 규칙이 두 곳에 생긴다.**
-import { useState } from "react";
-import { Redirect, router } from "expo-router";
+import { useCallback, useState } from "react";
+import { Redirect, router, useFocusEffect } from "expo-router";
 
 import { toConversations, type Conversation } from "@/features/chat/domain/conversation";
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
@@ -15,7 +15,9 @@ import { ChatListScreen } from "@/features/chat/views/ChatListScreen";
 import { toTasks } from "@/features/tasks/domain/fromServer";
 import { useVisitRequests } from "@/features/visit/hooks/useVisitRequests";
 import { UserChatSheet } from "@/features/visit/views/UserChatSheet";
+import { getChatRooms } from "@/shared/utils/api";
 import { getSession } from "@/shared/utils/session";
+import { loadToken } from "@/shared/utils/tokenStore";
 
 export default function ChatsRoute() {
   const session = getSession();
@@ -23,6 +25,34 @@ export default function ChatsRoute() {
   const ai = useTaskThreads();
   /** 담당자 채팅을 연 방문 요청 id. 방은 요청 하나에 하나다 (§7.3). */
   const [openStaff, setOpenStaff] = useState<string | null>(null);
+  /**
+   * 서버에 대화가 남아 있는 할 일들.
+   *
+   * **기기가 아는 것만으로는 목록을 그릴 수 없다.** 방을 열어야 대화가 오는
+   * 구조라, 앱을 다시 켜면 어제 나눈 이야기가 사라진 것처럼 보였다.
+   */
+  const [savedRooms, setSavedRooms] = useState<string[]>([]);
+
+  // **탭을 열 때마다 다시 읽는다.** 하단 메뉴바의 화면들은 한 번 뜨면 그대로
+  // 살아 있어서, 처음 한 번만 읽으면 홈에서 방금 연 대화가 여기에 안 나타난다.
+  useFocusEffect(
+    useCallback(() => {
+      let alive = true;
+      void (async () => {
+        const token = await loadToken();
+        if (!token) return;
+        try {
+          const found = await getChatRooms(token);
+          if (alive) setSavedRooms(found);
+        } catch {
+          // 목록을 못 읽어도 이번에 연 방은 보인다. 화면을 막지 않는다.
+        }
+      })();
+      return () => {
+        alive = false;
+      };
+    }, []),
+  );
 
   if (!session) return <Redirect href="/signup" />;
 
@@ -33,7 +63,12 @@ export default function ChatsRoute() {
     (session.tasks ? toTasks(session.tasks) : []).map((t) => [t.id as string, t.title]),
   );
 
-  const conversations = toConversations(visit.requests, ai.threads, (id) => titles.get(id));
+  const conversations = toConversations(
+    visit.requests,
+    ai.threads,
+    (id) => titles.get(id),
+    savedRooms,
+  );
 
   const open = (c: Conversation) => {
     if (c.kind === "staff") {

@@ -382,6 +382,20 @@ export async function postAnalyze(req: AnalyzeRequest): Promise<TaskCard> {
  *
  * **저장을 꺼두면 빈 배열이 온다.** 오류가 아니므로 화면은 대화가 없는 것으로 다룬다.
  */
+/**
+ * GET /api/chat-rooms — 대화가 있는 할 일들. 최근에 말한 것이 앞에 온다.
+ *
+ * **본문은 오지 않는다.** 상담 탭이 목록을 그리는 데 필요한 것은 어느 방인지뿐이고,
+ * 대화 내용은 그 방을 열 때 온다.
+ */
+export async function getChatRooms(token: string): Promise<string[]> {
+  const res = await fetch(`${API_BASE}/api/chat-rooms`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
+  return (await res.json()) as string[];
+}
+
 export async function getChatHistory(token: string, routeId: string): Promise<StoredChatTurn[]> {
   const res = await fetch(`${API_BASE}/api/chat/${encodeURIComponent(routeId)}`, {
     headers: { Authorization: `Bearer ${token}` },

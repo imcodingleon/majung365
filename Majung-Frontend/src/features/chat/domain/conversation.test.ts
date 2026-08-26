@@ -112,3 +112,36 @@ describe("toConversations — 순서", () => {
     expect(list.map((c) => c.kind)).toEqual(["staff", "ai"]);
   });
 });
+
+describe("toConversations — 서버에 남은 방", () => {
+  const msgs: ChatMessage[] = [{ id: "m", role: "user", text: "안녕하세요" }];
+
+  it("이번에 열지 않은 방도 목록에 낸다", () => {
+    // **앱을 다시 켜면 기기에는 아무 방도 없다.** 서버 목록이 없으면 상담 탭이
+    // 통째로 비어, 어제 나눈 이야기가 사라진 것처럼 보인다 (§6.3).
+    const list = toConversations([], {}, titleOf, ["R1", "R11"]);
+    expect(list.map((c) => c.id)).toEqual(["R1", "R11"]);
+  });
+
+  it("서버가 정한 순서를 지킨다", () => {
+    // 최근에 말한 방이 앞이다. 그 순서를 화면이 다시 매기지 않는다.
+    const list = toConversations([], {}, titleOf, ["R11", "R1"]);
+    expect(list.map((c) => c.id)).toEqual(["R11", "R1"]);
+  });
+
+  it("방금 첫 말을 건 방은 뒤에 붙인다", () => {
+    // 서버 목록을 받은 뒤에 연 방은 아직 그 목록에 없다.
+    const list = toConversations([], { R11: msgs }, titleOf, ["R1"]);
+    expect(list.map((c) => c.id)).toEqual(["R1", "R11"]);
+  });
+
+  it("같은 방이 두 번 나오지 않는다", () => {
+    const list = toConversations([], { R1: msgs }, titleOf, ["R1"]);
+    expect(list).toHaveLength(1);
+  });
+
+  it("안 연 방은 미리 보여줄 것이 없다", () => {
+    const list = toConversations([], {}, titleOf, ["R1"]);
+    expect(list[0].preview).toBe("");
+  });
+});

@@ -90,6 +90,37 @@ class SupabaseMessageRepository:
         messages.reverse()
         return messages
 
+    def rooms(self, user_id: UUID) -> list[str]:
+        """대화가 있는 방들. 상담 탭의 목록이 이 값을 쓴다.
+
+        **본문을 가져오지 않는다.** 목록을 그리는 데 필요한 것은 "어느 할 일에서
+        이야기했는가"뿐이고, 대화 내용은 방을 열 때 온다. 스무 방이 있다고 스무
+        방의 본문을 다 내려받을 이유가 없다.
+
+        **마지막 말을 함께 주지 못한다.** 본문이 암호화되어 있어 미리 보여주려면
+        방마다 한 줄씩 풀어야 하는데, 목록 하나 그리자고 할 일이 아니다.
+        """
+        result = (
+            self._db.table("chat_message")
+            .select("route_id, created_at")
+            .eq("user_id", str(user_id))
+            .order("created_at", desc=True)
+            # 방이 스무 개를 넘을 일이 없다. 넉넉히 두고 중복은 아래에서 접는다.
+            .limit(500)
+            .execute()
+        )
+        rows: list[dict[str, Any]] = [
+            r for r in (getattr(result, "data", None) or []) if isinstance(r, dict)
+        ]
+
+        # 최근에 말한 방이 앞에 온다. 같은 방이 여러 번 나오므로 처음 것만 남긴다.
+        found: list[str] = []
+        for row in rows:
+            route_id = str(row.get("route_id") or "")
+            if route_id and route_id not in found:
+                found.append(route_id)
+        return found
+
     def clear(self, user_id: UUID, route_id: str) -> None:
         """이 대화 지우기(§6.3-2). 경고로 막는 대신 지울 수 있게 하는 편이 낫다."""
         self._db.table("chat_message").delete().eq("user_id", str(user_id)).eq(

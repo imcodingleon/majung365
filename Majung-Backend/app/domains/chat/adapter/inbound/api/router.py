@@ -214,6 +214,25 @@ class StoredMessageOut(BaseModel):
     at: str
 
 
+@router.get("/chat-rooms", response_model=list[str])
+def list_rooms(request: Request, account: CurrentAccount) -> list[str]:
+    """대화가 있는 할 일들. 최근에 말한 것이 앞에 온다.
+
+    **상담 탭이 이것 없이는 목록을 그릴 수 없었다.** 방을 열어야 대화가 오는 구조라,
+    앱을 다시 켜면 어디서 이야기했는지 화면이 알 방법이 없었다.
+
+    본문은 담지 않는다 — 목록에 필요한 것은 어느 방인지뿐이다.
+    """
+    messages = getattr(request.app.state, "message_repo", None)
+    if messages is None:
+        return []
+    rooms = getattr(messages, "rooms", None)
+    if not callable(rooms):
+        return []
+    found = rooms(account.id)
+    return [str(r) for r in found]
+
+
 @router.get("/chat/{route_id}", response_model=list[StoredMessageOut])
 def read_room(
     route_id: str,

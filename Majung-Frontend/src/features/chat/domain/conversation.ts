@@ -47,6 +47,14 @@ export function toConversations(
   threads: Readonly<Record<string, readonly ChatMessage[]>>,
   /** 할 일 id를 사람이 읽는 제목으로 바꾼다. 모르는 id면 `undefined`를 돌려준다. */
   titleOf: (taskId: string) => string | undefined,
+  /**
+   * 서버에 대화가 남아 있는 할 일들. **최근에 말한 것이 앞이다.**
+   *
+   * 기기의 `threads`는 이번에 연 방만 담는다. 그것만 보면 앱을 다시 켰을 때 상담
+   * 탭이 비어, 어제 나눈 이야기가 사라진 것처럼 보인다 — 대화를 저장하기로 한
+   * 이유(§6.3)가 그대로 무효가 된다.
+   */
+  savedRooms: readonly string[] = [],
 ): Conversation[] {
   const staff: Conversation[] = requests
     // **담당자가 확인하기 전에는 방이 열리지 않는다**(§7.3-4). 목록에도 내지 않는다.
@@ -64,17 +72,23 @@ export function toConversations(
       unread: r.unread,
     }));
 
-  const ai: Conversation[] = Object.entries(threads)
+  // **서버에 남은 방과 이번에 연 방을 합친다.** 서버 목록이 순서를 정하고, 이번에
+  // 연 방 중 아직 서버에 안 담긴 것(방금 첫 말을 건 방)을 뒤에 붙인다.
+  const openedNow = Object.entries(threads)
     .filter(([, messages]) => messages.length > 0)
-    .map(([taskId, messages]) => ({
-      kind: "ai" as const,
-      id: taskId,
-      // 어느 할 일에서 물었는지가 곧 제목이다. 모르는 id면 서비스 이름으로 둔다.
-      title: titleOf(taskId) ?? "마중365와 나눈 이야기",
-      preview: lastText(messages),
-      at: null,
-      unread: 0,
-    }));
+    .map(([taskId]) => taskId);
+  const rooms = [...savedRooms, ...openedNow.filter((id) => !savedRooms.includes(id))];
+
+  const ai: Conversation[] = rooms.map((taskId) => ({
+    kind: "ai" as const,
+    id: taskId,
+    // 어느 할 일에서 물었는지가 곧 제목이다. 모르는 id면 서비스 이름으로 둔다.
+    title: titleOf(taskId) ?? "마중365와 나눈 이야기",
+    // 방을 열어야 내용이 온다. 아직 안 연 방은 미리 보여줄 것이 없다.
+    preview: lastText(threads[taskId] ?? []),
+    at: null,
+    unread: 0,
+  }));
 
   return [...staff, ...ai].sort(byRecent);
 }
