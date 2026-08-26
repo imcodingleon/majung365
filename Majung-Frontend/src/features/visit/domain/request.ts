@@ -13,6 +13,14 @@ export type { VisitStatus };
 export type VisitConfirmation = {
   /** 사람이 읽는 형태의 확정 시각. 예: "8월 25일 오후 2시" */
   whenLabel: string;
+  /**
+   * 만나기로 한 시각(ISO). **알림을 언제까지 남길지 이 값으로 정한다** (§7.1).
+   *
+   * 사람이 읽는 `whenLabel`로는 날짜를 견줄 수 없다. 서버가 주지 않으면 없다.
+   */
+  whenIso?: string | null;
+  /** 담당자가 확정을 누른 시각(ISO). 알림이 온 때가 이때다. */
+  decidedAt?: string | null;
   /** 만날 담당자 이름. */
   staffName: string;
   /** 만날 장소. 예: "2층 상담실" */
@@ -224,7 +232,8 @@ export function sharedItems(
   /** 함께 보내기로 한 분야 이름들. 고르지 않았으면 비어 있다 (§7.4-1). */
   sharedSections: readonly string[] = [],
 ): readonly string[] {
-  const items = ["이름", "방문하실 시간 두 가지", "무슨 일로 오시는지"];
+  // **한 때만 간다.** 지망 개념을 걷어냈는데(§7.3) 문구에 "두 가지"가 남아 있었다.
+  const items = ["이름", "방문하실 시간", "무슨 일로 오시는지"];
   if (hasDocs) items.push("챙겨 오실 것");
   if (hasNote) items.push("하고 싶은 말");
   // 기한이 있는 제도를 상담할 때만 보낸다.

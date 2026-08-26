@@ -16,6 +16,7 @@ import { RegionPicker } from "@/features/institutions/views/RegionPicker";
 import { COLORS } from "@/shared/theme/colors";
 import type { Center } from "@/shared/types";
 
+import { distanceLabel, groupByCategory, type Origin } from "../domain/grouping";
 import { useNearbyCenters } from "../hooks/useNearbyCenters";
 import { CenterMap } from "./CenterMap";
 
@@ -80,13 +81,24 @@ function CenterTag({ label, primary }: { label: string; primary: boolean }) {
   );
 }
 
-function CenterCard({ center }: { center: Center }) {
+function CenterCard({ center, distance }: { center: Center; distance: string }) {
   const [fav, setFav] = useState(false);
   return (
     <View className="gap-2 rounded-2xl border border-line bg-white p-4 shadow">
       <View className="flex-row items-start justify-between gap-2">
         <View className="flex-1 gap-1">
-          <Text className="text-base font-semibold text-[#1d1b20]">{center.name}</Text>
+          <View className="flex-row items-center gap-2">
+            <Text className="flex-1 text-base font-semibold text-[#1d1b20]">{center.name}</Text>
+            {/* **얼마나 먼지 함께 낸다.** 가까운 순으로 오지만 그것만으로는 지방에서
+                50km 떨어진 공단이 "가장 가까운 곳"으로만 보인다. 숫자가 있어야
+                전화로 먼저 물어볼지 사용자가 판단한다.
+                자리를 모르면(지역을 직접 고른 경우) 아무것도 그리지 않는다 */}
+            {distance ? (
+              <Text className="text-sm font-bold" style={{ color: COLORS.brand }}>
+                {distance}
+              </Text>
+            ) : null}
+          </View>
           <Text className="text-sm text-[#494551]">운영시간 {center.hours}</Text>
         </View>
         <Pressable
@@ -132,19 +144,35 @@ function CenterCard({ center }: { center: Center }) {
 function CenterList({
   loading,
   shown,
+  origin,
 }: {
   loading: boolean;
   shown: Center[];
+  /** 지금 있는 자리. 지역을 직접 골랐으면 없고, 그때는 거리를 내지 않는다. */
+  origin: Origin | null;
 }) {
+  // **갈래별로 묶는다.** 한 줄로 늘어놓으면 공단 지부와 주민센터와 정신건강복지센터가
+  // 섞여, 지금 보는 카드가 어느 기관인지 이름을 읽어야만 알 수 있다.
+  const groups = useMemo(() => groupByCategory(shown), [shown]);
+
+  if (loading) return <Text className="text-sm text-ink-muted">불러오는 중…</Text>;
+  if (groups.length === 0) {
+    return <Text className="text-sm text-ink-muted">조건에 맞는 센터가 없어요.</Text>;
+  }
+
   return (
-    <View className="gap-4">
-      {loading ? (
-        <Text className="text-sm text-ink-muted">불러오는 중…</Text>
-      ) : shown.length === 0 ? (
-        <Text className="text-sm text-ink-muted">조건에 맞는 센터가 없어요.</Text>
-      ) : (
-        shown.map((c) => <CenterCard key={c.id} center={c} />)
-      )}
+    <View className="gap-6">
+      {groups.map((group) => (
+        <View key={group.category} className="gap-3">
+          <View className="flex-row items-center gap-2">
+            <Text className="text-base font-extrabold text-ink-strong">{group.category}</Text>
+            <Text className="text-caption text-ink-muted">{group.items.length}곳</Text>
+          </View>
+          {group.items.map((c) => (
+            <CenterCard key={c.id} center={c} distance={distanceLabel(origin, c)} />
+          ))}
+        </View>
+      ))}
     </View>
   );
 }
@@ -164,6 +192,17 @@ export function MapScreen() {
   const [cat, setCat] = useState<string>("전체");
   const [query, setQuery] = useState("");
   const { centers, loading, error, place, pick } = useNearbyCenters();
+
+  /**
+   * 거리를 재는 기준. **지역을 직접 고른 사용자에게는 없다** (§5.4).
+   *
+   * 좌표는 짝으로만 쓴다 — 하나만 있으면 없는 것으로 친다.
+   */
+  const origin = useMemo<Origin | null>(() => {
+    const lat = place?.lat;
+    const lng = place?.lng;
+    return typeof lat === "number" && typeof lng === "number" ? { lat, lng } : null;
+  }, [place]);
 
   /**
    * 보여줄 기관. **순서를 여기서 다시 매기지 않는다.**
@@ -207,7 +246,7 @@ export function MapScreen() {
         <FilterChips selected={cat} onSelect={setCat} />
         <CenterMap centers={shown} />
         <ListHeading error={error} />
-        <CenterList loading={loading} shown={shown} />
+        <CenterList loading={loading} shown={shown} origin={origin} />
       </ScrollView>
     </SafeAreaView>
   );

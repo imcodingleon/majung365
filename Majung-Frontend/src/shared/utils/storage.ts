@@ -27,6 +27,21 @@ const ALERTS_SEEN_KEY = "majung365.alertsSeen";
  * 두기로 한 결정(2026-08-24)과 같은 판단이다.
  */
 const PLACE_KEY = "majung365.place";
+/**
+ * 초기 진단 답변 원문 (문항 id 기준).
+ *
+ * **서버에 두지 않는다.** 서버가 보관하는 것은 판정뿐이고(§9.1), 답변 원문은 여기까지가
+ * 끝이다. 이 규칙은 그대로 지킨다.
+ *
+ * **기기에는 남긴다** (2026-08-26 결정 G-1). 예전에는 메모리에만 두어서, 새로고침하면
+ * 방문 알림의 "담당자에게 이만큼 알려주기"(§7.4-1) 화면이 통째로 사라졌다. 어느 문항의
+ * 답인지 알아야 문장을 만들 수 있는데 그 답이 없어졌기 때문이다.
+ *
+ * 감수하는 것: 공용 PC에서 브라우저를 닫아도 답변이 남는다. 다만 같은 저장소에 이미
+ * 토큰이 있고(2026-08-24 결정) 그것은 대화까지 열 수 있는 값이라, 여기서 늘어나는
+ * 노출은 그 안쪽이다.
+ */
+const ANSWERS_KEY = "majung365.answers";
 
 function hasLocalStorage(): boolean {
   return typeof window !== "undefined" && typeof window.localStorage !== "undefined";
@@ -130,7 +145,49 @@ export function clearSignedUp(): void {
     window.localStorage.removeItem(SIGNED_UP_KEY);
     window.localStorage.removeItem(ALERTS_SEEN_KEY);
     window.localStorage.removeItem(PLACE_KEY);
+    window.localStorage.removeItem(ANSWERS_KEY);
   } catch {
     // no-op
+  }
+}
+
+/**
+ * 한 문항의 답. 단일선택은 문자열, 복수선택은 배열이다.
+ *
+ * **`features/intake`의 타입을 가져오지 않는다.** `shared`가 feature를 가져가면
+ * 의존성이 거꾸로 흐른다. 모양만 같게 적어 두고 부르는 쪽에서 맞춘다.
+ */
+export type StoredAnswers = Record<string, string | readonly string[]>;
+
+/** 지난번에 답한 초기 진단. 없으면 `null`. */
+export function lastAnswers(): StoredAnswers | null {
+  if (!hasLocalStorage()) return null;
+  try {
+    const raw = window.localStorage.getItem(ANSWERS_KEY);
+    if (!raw) return null;
+    const found: unknown = JSON.parse(raw);
+    if (!found || typeof found !== "object" || Array.isArray(found)) return null;
+    // **값의 모양까지 본다.** 남의 값이나 옛 형식이 들어 있으면 문항을 되짚다가
+    // 화면이 터진다. 문자열이나 문자열 배열이 아닌 것은 버린다.
+    const clean: Record<string, string | readonly string[]> = {};
+    for (const [id, value] of Object.entries(found as Record<string, unknown>)) {
+      if (typeof value === "string") clean[id] = value;
+      else if (Array.isArray(value) && value.every((v) => typeof v === "string")) {
+        clean[id] = value as readonly string[];
+      }
+    }
+    return Object.keys(clean).length > 0 ? clean : null;
+  } catch {
+    return null;
+  }
+}
+
+/** 방금 답한 초기 진단을 남긴다. 다시 하기로 답을 바꾸면 통째로 덮어쓴다. */
+export function markAnswers(answers: StoredAnswers): void {
+  if (!hasLocalStorage()) return;
+  try {
+    window.localStorage.setItem(ANSWERS_KEY, JSON.stringify(answers));
+  } catch {
+    // 저장에 실패해도 화면 흐름은 막지 않는다(프라이빗 모드·용량 제한).
   }
 }

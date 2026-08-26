@@ -11,7 +11,9 @@ import { useEffect, useState } from "react";
 
 import type { RouteId } from "@/shared/types/route";
 import { ApiError, getTasks } from "@/shared/utils/api";
+import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
 import { getSession, startSession } from "@/shared/utils/session";
+import { lastAnswers } from "@/shared/utils/storage";
 import { clearToken, loadToken } from "@/shared/utils/tokenStore";
 
 /** 되살리는 중인가. 그동안 화면을 가입 쪽으로 보내면 안 된다. */
@@ -36,6 +38,10 @@ export function useRestoreSession(): { checking: boolean } {
           name: restored.name,
           tasks: restored.tasks,
           completed: restored.completed as RouteId[],
+          // **답변은 기기에서 되살린다** (2026-08-26 결정 G-1). 서버에는 판정만 있고
+          // 원문이 없어서(§9.1) 여기서 채우지 않으면, 방문 알림의 "담당자에게 이만큼
+          // 알려주기"(§7.4-1)가 새로고침 한 번에 통째로 사라진다.
+          rawAnswers: (lastAnswers() ?? undefined) as IntakeAnswers | undefined,
         });
       } catch (err) {
         // **아무 실패에나 토큰을 지우지 않는다.** 서버가 잠깐 안 되거나 인터넷이

@@ -25,6 +25,7 @@ import { NoteBox } from "@/shared/components/NoteBox";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { ApiError, putIntake } from "@/shared/utils/api";
 import { getSession, startSession } from "@/shared/utils/session";
+import { markAnswers } from "@/shared/utils/storage";
 import { loadToken } from "@/shared/utils/tokenStore";
 
 export default function RetakeRoute() {
@@ -49,6 +50,9 @@ export default function RetakeRoute() {
       }
       // 보이지 않는 답은 보내지 않는다 (§3.8). 답을 바꿔 닫힌 꼬리질문의 답은 여기서 빠진다.
       const next = await putIntake(token, intake.toPayload());
+      // 답을 바꿨으니 기기에 남은 것도 덮어쓴다. 안 덮으면 옛 답으로 담당자에게
+      // 알리게 된다 (§7.4-1).
+      markAnswers(intake.answers);
       startSession({
         name: next.name,
         tasks: next.tasks,
