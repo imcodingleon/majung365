@@ -50,6 +50,7 @@ from app.domains.knowledge.infrastructure.intake_state_repository import (
 )
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
 from app.domains.knowledge.infrastructure.rag_repository import JsonRagRepository
+from app.domains.shared.routes import ROUTE_ORDER, RouteId
 from app.domains.staff.adapter.inbound.api.router import router as staff_router
 from app.domains.staff.infrastructure.supabase_repository import (
     SupabaseAccessLogRepository,
@@ -185,6 +186,15 @@ def create_app() -> FastAPI:
         blocking_routes=routes_blocking_others(graph_nodes),
         graph_nodes=graph_nodes,
     )
+    # 목록 순서에서 빠진 항목을 부팅 때 알린다 (2026-08-26 결정 H-1).
+    # **빠져도 화면에서 사라지지는 않는다** — 맨 뒤로 밀릴 뿐이라 눈에 잘 안 띈다.
+    unordered = [r.value for r in RouteId if r not in ROUTE_ORDER]
+    if unordered:
+        logger.warning(
+            "📋 할 일 순서에 빠진 항목 %d건(맨 뒤로 나갑니다): %s",
+            len(unordered),
+            ", ".join(unordered),
+        )
     # KB에 있으나 어떤 화면에도 닿지 않는 제도를 부팅 때 알린다.
     # 지원 항목에 걸어 두면 쓰인다고 믿기 쉬운데, 확인하지 않으면 알 길이 없다.
     unreachable = institutions.unreachable(app.state.intake_usecase.reachable_kb_refs())

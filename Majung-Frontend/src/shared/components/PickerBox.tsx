@@ -9,8 +9,8 @@
 //
 // **직접 만든다.** 선택기 라이브러리는 웹과 안드로이드·iOS에서 각각 다른 화면을 띄우는데,
 // 그러면 저리터러시 사용자가 만나는 화면을 우리가 통제하지 못한다.
-import { useRef } from "react";
-import { Pressable, ScrollView, Text, View } from "react-native";
+import { useEffect, useRef, useState } from "react";
+import { Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
 
 import { COLORS } from "../theme/colors";
 import { FramedModal } from "./FramedModal";
@@ -91,6 +91,30 @@ export function PickerSheet({
   const listRef = useRef<ScrollView>(null);
   const placed = useRef(false);
 
+  /**
+   * 시트가 아래에서 올라오는 정도 (2026-08-26 결정 H-5).
+   *
+   * **어두운 배경은 바로 깔리고 시트만 올라온다.** 예전에는 팝업 전체가 `slide`라
+   * 배경과 시트가 함께 올라와, 화면 아래에서 흰 덩어리가 통째로 밀려 올라오는 것처럼
+   * 보였다. 배경이 먼저 깔려야 "뒤가 잠겼다"가 읽히고 시트가 그 위에 서 있게 된다.
+   */
+  const [rise] = useState(() => new Animated.Value(1));
+
+  useEffect(() => {
+    if (!visible) {
+      // 닫힐 때는 되돌려 둔다. 다음에 열 때 이미 올라와 있으면 움직임이 없다.
+      rise.setValue(1);
+      return;
+    }
+    Animated.timing(rise, {
+      toValue: 0,
+      duration: 220,
+      easing: Easing.out(Easing.cubic),
+      // 웹에서는 이 값이 무시되고 JS로 돈다. 시트 하나라 그 비용이 문제되지 않는다.
+      useNativeDriver: true,
+    }).start();
+  }, [visible, rise]);
+
   const at = current === null ? restIndex : items.findIndex((x) => x.value === current);
   // 고른 줄이 위에 딱 붙지 않고 한 줄쯤 위가 함께 보이게 둔다. 앞뒤가 보여야 목록으로 읽힌다.
   const offset = Math.max(0, (at < 0 ? restIndex : at) - 1) * PICKER_ROW;
@@ -99,7 +123,7 @@ export function PickerSheet({
   if (!visible && placed.current) placed.current = false;
 
   return (
-    <FramedModal visible={visible} animationType="slide" transparent onRequestClose={onClose}>
+    <FramedModal visible={visible} animationType="fade" transparent onRequestClose={onClose}>
       {/* 바깥을 눌러도 닫힌다. 고르지 않고 빠져나올 길이 있어야 한다.
           바깥과 시트를 형제로 둔다 — 겹쳐 두면 버튼 안에 버튼이 들어가 웹에서 깨진다. */}
       <View className="flex-1 justify-end">
@@ -109,7 +133,14 @@ export function PickerSheet({
           accessibilityRole="button"
           accessibilityLabel="닫기"
         />
-        <View className="rounded-t-3xl bg-white px-5 pb-8 pt-5">
+        <Animated.View
+          className="rounded-t-3xl bg-white px-5 pb-8 pt-5"
+          style={{
+            transform: [
+              { translateY: rise.interpolate({ inputRange: [0, 1], outputRange: [0, 480] }) },
+            ],
+          }}
+        >
           <View className="mb-4 flex-row items-center">
             <Text className="flex-1 text-heading font-extrabold text-ink-strong">{title}</Text>
             <Pressable
@@ -167,7 +198,7 @@ export function PickerSheet({
               );
             })}
           </ScrollView>
-        </View>
+        </Animated.View>
       </View>
     </FramedModal>
   );

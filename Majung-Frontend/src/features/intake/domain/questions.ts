@@ -42,7 +42,8 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
       { id: "NO_PLACE_TONIGHT", label: "오늘 밤 잘 곳이 없어요" },
       { id: "TEMPORARY_UNSTABLE", label: "잠시 머물 곳은 있지만 곧 나가야 해요" },
       { id: "CANNOT_LIVE_WITH_CONTACTS", label: "가족이나 아는 사람이 있지만 함께 살 수 없어요" },
-      { id: "TRAINING_COMMUTE_DIFFICULT", label: "직업교육 장소가 멀어 오가기 어려워요" },
+      // **"직업교육 장소가 멀어 오가기 어려워요"를 뺐다** (2026-08-26). 지금 머물 곳을
+      // 묻는 자리인데 그것은 다니는 문제라, 고르면 거처가 없는 것으로 판정됐다.
       { id: "STABLE_PLACE", label: "계속 지낼 곳이 있어요" },
       UNKNOWN,
     ],
@@ -69,12 +70,14 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     // 서류로 확인할 것**이지 사용자에게 물을 것이 아니었다. 무주택 여부를 본인이 알기 어렵고,
     // 부양가족 유무와 세대주 여부는 문구로 구별되지 않아 사실상 같은 답이 둘이었다.
     // 게다가 R4 카드(긴급복지 주거지원)는 가족 단위 요건을 담고 있지 않다 (2026-08-23).
-    prompt: "오래 지낼 집을 구해야 하나요?",
-    help: "오늘 밤 지낼 곳은 앞에서 여쭤봤어요. 여기는 앞으로 지낼 집이에요.",
+    // **"장기 거주"라고 못 박는다** (2026-08-26). "오래 지낼 집"은 앞 문항의 "잠시
+    // 머물 곳"과 눈으로 갈리지 않아, 도움말로 그 차이를 설명하고 있었다. 물음 자체가
+    // 구별되면 도움말이 필요 없다.
+    prompt: "장기 거주 할 집을 구해야 하나요?",
     kind: "single",
     dataKey: "housingNeed",
     options: [
-      { id: "NEEDED", label: "네, 지낼 집을 구해야 해요" },
+      { id: "NEEDED", label: "네, 장기 거주 할 집이 필요해요" },
       NOT_NEEDED,
       UNKNOWN,
     ],
@@ -83,8 +86,9 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q1-3",
     sectionId: "housing",
     routeId: "R11",
+    // 도움말을 걷었다 (2026-08-26). 선택지에 "일정하게 지내는 곳이 없어요"가 이미
+    // 있어서, 그것을 고르라고 다시 적으면 같은 말을 두 번 하는 셈이었다.
     prompt: "지금 지내는 곳이 주민등록 주소와 같나요?",
-    help: "장기 거주지가 없다면 주민등록과 상관없이 ‘일정하게 지내는 곳이 없어요’를 골라 주세요.",
     kind: "single",
     dataKey: "addressStatus",
     options: [
@@ -137,8 +141,12 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     // 용도 넷은 결과가 같지만 남긴다. **창구에서 할 말과 챙겨 갈 서류가 갈리기 때문이다.**
     // R2 카드의 준비물에 "돈이 필요한 이유를 보여주는 서류"가 있는데, 그것이 진료비
     // 영수증인지 임대차계약서인지는 이 답이 정한다 (2026-08-23).
-    prompt: "지금 가장 급하게 필요한 돈은 어디에 쓰나요?",
-    kind: "single",
+    // **여러 개를 고를 수 있다** (2026-08-26 결정 H-2). 병원비와 월세가 동시에 급한
+    // 사람이 실제로 있는데, 하나만 받으면 창구에서 한쪽 서류를 안 들고 가게 된다.
+    // 서버가 고른 것을 모두 준비물에 채운다 (`purpose.py`).
+    prompt: "지금 급하게 필요한 돈은 어디에 쓰나요?",
+    help: "여러 개를 고르셔도 돼요.",
+    kind: "multi",
     dataKey: "emergencyExpenseType",
     options: [
       { id: "LIVING_EXPENSE", label: "밥값과 생활비가 필요해요" },

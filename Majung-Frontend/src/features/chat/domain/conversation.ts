@@ -102,3 +102,29 @@ export function toConversations(
 
   return [...staff, ...ai].sort(byRecent);
 }
+
+export type ConversationGroup = {
+  title: string;
+  items: readonly Conversation[];
+};
+
+/**
+ * 누구와 나눈 이야기인지로 묶는다 (2026-08-26 결정 H-3).
+ *
+ * **아이콘만으로는 안 갈렸다.** 사람 아이콘과 로봇 아이콘을 붙여 두었지만 한 목록에
+ * 섞여 있어서, 지금 보는 줄이 담당자인지 마중365인지 제목을 읽어야 알 수 있었다.
+ *
+ * 위에 탭 둘을 두는 대신 제목 줄로 나눈다 — 탭이면 누르기 전까지 반대쪽에 새 말이
+ * 왔는지 보이지 않는다.
+ *
+ * 비어 있는 묶음은 내지 않는다. 제목만 있고 아래가 빈 자리는 "불러오지 못했나"로 읽힌다.
+ */
+export function groupByPeer(conversations: readonly Conversation[]): ConversationGroup[] {
+  const staff = conversations.filter((c) => c.kind === "staff");
+  const ai = conversations.filter((c) => c.kind === "ai");
+  const groups: ConversationGroup[] = [];
+  // **담당자가 먼저다.** 사람이 기다리고 있는 쪽이고, 답을 늦게 보면 손해가 크다.
+  if (staff.length > 0) groups.push({ title: "담당자와 나눈 이야기", items: staff });
+  if (ai.length > 0) groups.push({ title: "마중365에게 물어본 것", items: ai });
+  return groups;
+}

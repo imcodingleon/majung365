@@ -44,6 +44,48 @@ class SectionId(StrEnum):
     S6 = "S6"  # 기타·권리구제
 
 
+# 할 일 목록에 나오는 순서 (2026-08-26 결정 H-1).
+#
+# **분야 순서가 아니라 항목 순서다.** 예전에는 "막힌 항목 먼저, 그다음 분야 순서"로
+# 정렬했는데, 그 규칙으로는 지금 순서가 나오지 않는다 — 증명서와 신분증(신분·행정)이
+# 맨 앞이고 그 뒤에 긴급지원과 생계급여(생계)가 오며, 주민등록과 통장은 다시 뒤로
+# 간다. 분야가 뒤섞이므로 항목 하나하나를 적는 수밖에 없다.
+#
+# **누가 들어와도 순서가 같다.** 사람마다 순서가 달라지면 "1번부터 하세요"라는 안내를
+# 화면 밖에서 할 수 없고, 담당자와 통화하면서 몇 번을 보라고 말하기도 어렵다.
+#
+# `blocks_others`는 이 정렬에서 빠졌지만 값은 그대로 쓴다 — 카드의 "먼저 하면 좋아요"
+# 배지와 §5.2의 탭 잠금이 그 값을 본다.
+ROUTE_ORDER: tuple[RouteId, ...] = (
+    RouteId.R13,  # 수용·출소증명서 — 이것이 없으면 뒤가 전부 막힌다
+    RouteId.R9,   # 신분증
+    RouteId.R2,   # 공단 긴급지원
+    RouteId.R12,  # 생계급여
+    RouteId.R1,   # 숙식제공
+    RouteId.R4,   # 주거지원
+    RouteId.R11,  # 주민등록 주소
+    RouteId.R10,  # 통장
+    RouteId.R6,   # 취업·허그일자리
+    RouteId.R7,   # 창업지원
+    RouteId.R3,   # 기초건강지원
+    RouteId.R8,   # 심리상담
+    RouteId.R14,  # 개인회생·파산
+    RouteId.R15,  # 의료급여·건강보험
+)
+
+
+def order_of(route_id: RouteId) -> int:
+    """목록에서 몇 번째인가. **모르는 항목은 맨 뒤로 보낸다.**
+
+    항목이 새로 생겼는데 `ROUTE_ORDER`에 안 넣으면 조용히 사라지는 것이 가장 나쁘다.
+    뒤에라도 남으면 화면에서 보이고, 부팅 검사가 그것을 로그로 알린다.
+    """
+    try:
+        return ROUTE_ORDER.index(route_id)
+    except ValueError:
+        return len(ROUTE_ORDER)
+
+
 ROUTE_LABELS: dict[RouteId, str] = {
     RouteId.R1: "숙식제공",
     RouteId.R2: "공단 긴급지원",

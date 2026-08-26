@@ -6,7 +6,7 @@ import { describe, expect, it } from "@jest/globals";
 import type { VisitRequest, VisitStatus } from "@/features/visit/domain/request";
 
 import type { ChatMessage } from "./chatMessage";
-import { toConversations } from "./conversation";
+import { groupByPeer, toConversations } from "./conversation";
 
 function req(over: Partial<VisitRequest> & { status: VisitStatus }): VisitRequest {
   return {
@@ -168,5 +168,36 @@ describe("toConversations — 서버에 남은 방", () => {
       room("R1", "2026-08-26T10:00:00+09:00", "지난번에 드린 말씀이에요."),
     ]);
     expect(list[0].preview).toBe("안녕하세요");
+  });
+});
+
+describe("groupByPeer — 누구와 나눈 이야기인지", () => {
+  const msgs: ChatMessage[] = [{ id: "m", role: "user", text: "안녕하세요" }];
+
+  it("담당자 묶음이 먼저 온다", () => {
+    // **사람이 기다리고 있는 쪽이다.** 답을 늦게 보면 손해가 크다.
+    const list = toConversations([req({ status: "acknowledged" })], { R1: msgs }, titleOf);
+    expect(groupByPeer(list).map((g) => g.title)).toEqual([
+      "담당자와 나눈 이야기",
+      "마중365에게 물어본 것",
+    ]);
+  });
+
+  it("비어 있는 묶음은 내지 않는다", () => {
+    // 제목만 있고 아래가 빈 자리는 "불러오지 못했나"로 읽힌다.
+    const list = toConversations([], { R1: msgs }, titleOf);
+    const groups = groupByPeer(list);
+    expect(groups).toHaveLength(1);
+    expect(groups[0].title).toBe("마중365에게 물어본 것");
+  });
+
+  it("아무것도 없으면 묶음도 없다", () => {
+    expect(groupByPeer([])).toEqual([]);
+  });
+
+  it("묶어도 대화가 사라지지 않는다", () => {
+    const list = toConversations([req({ status: "acknowledged" })], { R1: msgs }, titleOf);
+    const inGroups = groupByPeer(list).flatMap((g) => g.items);
+    expect(inGroups).toHaveLength(list.length);
   });
 });

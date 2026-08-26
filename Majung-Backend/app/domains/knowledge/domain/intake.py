@@ -15,7 +15,7 @@ from collections.abc import Mapping
 from dataclasses import dataclass, field
 
 from app.domains.knowledge.domain.graph_engine import NodeState
-from app.domains.shared.routes import RouteId, SectionId, section_of
+from app.domains.shared.routes import RouteId, SectionId, order_of, section_of
 
 
 @dataclass(frozen=True)
@@ -158,10 +158,9 @@ def judge(
             )
         )
 
-    section_order = {s: i for i, s in enumerate(SectionId)}
-    return tuple(
-        sorted(
-            verdicts,
-            key=lambda v: (not v.blocks_others, section_order[v.section_id]),
-        )
-    )
+    # **적어 둔 항목 순서를 따른다** (2026-08-26 결정 H-1). 예전에는 "막힌 항목 먼저,
+    # 그다음 분야 순서"였는데, 지금 순서는 분야가 뒤섞여 있어 그 규칙으로 나오지 않는다.
+    #
+    # `blocks_others`는 여기서 안 보지만 값은 그대로 실려 나간다 — 카드의 "먼저 하면
+    # 좋아요" 배지와 §5.2의 탭 잠금이 그 값을 쓴다.
+    return tuple(sorted(verdicts, key=lambda v: order_of(v.route_id)))

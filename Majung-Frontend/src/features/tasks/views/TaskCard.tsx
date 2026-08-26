@@ -56,7 +56,9 @@ export function TaskCard({
       {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2) */}
       {showGuide ? (
         <NoteBox tone="warn" icon="key" className="mb-4">
-          {`${pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.\n그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요.`}
+          {/* **뒷문장을 걷었다.** "그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요"는
+              막지 않는다는 말인데, 애초에 막고 있지 않으므로 없는 걱정을 만들었다 */}
+          {`${pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.`}
         </NoteBox>
       ) : null}
 

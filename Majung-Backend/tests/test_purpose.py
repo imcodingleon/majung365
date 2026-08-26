@@ -62,3 +62,54 @@ def test_desk_say_stays_empty_when_there_is_no_desk() -> None:
     """창구 안내가 없는 기관에는 붙일 자리도 없다. 빈 문장을 만들어 내지 않는다."""
     assert say_with_purpose("", "병원비") == ""
     assert say_with_purpose("긴급복지지원 신청하러 왔어요", None) == "긴급복지지원 신청하러 왔어요"
+
+
+class TestMultipleExpenses:
+    """여러 용도를 함께 고른 경우 (2026-08-26 결정 H-2).
+
+    병원비와 월세가 동시에 급한 사람이 실제로 있다. 하나만 받으면 창구에서 한쪽
+    서류를 안 들고 가게 된다.
+    """
+
+    def test_two_purposes_are_joined(self) -> None:
+        got = expense_purpose(
+            RouteId.R2, {"emergencyExpenseType": ["MEDICAL_EXPENSE", "HOUSING_EXPENSE"]}
+        )
+        assert got == "병원비와 월세나 방값"
+
+    def test_particle_follows_the_previous_word(self) -> None:
+        """받침이 있으면 '과'다. 조사가 틀리면 기계가 쓴 문장으로 읽힌다."""
+        got = expense_purpose(
+            RouteId.R2, {"emergencyExpenseType": ["LIVING_EXPENSE", "MEDICAL_EXPENSE"]}
+        )
+        assert got == "밥값과 생활비와 병원비"
+
+    def test_order_follows_the_question_not_the_clicks(self) -> None:
+        """**누른 순서를 따르면 같은 답에 다른 문장이 나온다.**"""
+        clicked_backwards = expense_purpose(
+            RouteId.R2, {"emergencyExpenseType": ["CHILD_EDUCATION", "LIVING_EXPENSE"]}
+        )
+        assert clicked_backwards == "밥값과 생활비와 아이 학비"
+
+    def test_one_in_a_list_reads_like_one(self) -> None:
+        got = expense_purpose(RouteId.R2, {"emergencyExpenseType": ["MEDICAL_EXPENSE"]})
+        assert got == "병원비"
+
+    def test_a_plain_string_still_works(self) -> None:
+        """옛 답이 남아 있어도 읽는다. 복수응답으로 바꾸기 전에 답한 사람들이다."""
+        assert expense_purpose(RouteId.R2, {"emergencyExpenseType": "MEDICAL_EXPENSE"}) == "병원비"
+
+    def test_only_not_needed_fills_nothing(self) -> None:
+        """"지금은 필요 없어요"만 골랐으면 채울 용도가 없다. 원문을 그대로 둔다."""
+        assert expense_purpose(RouteId.R2, {"emergencyExpenseType": ["NOT_NEEDED"]}) is None
+
+    def test_empty_list_fills_nothing(self) -> None:
+        assert expense_purpose(RouteId.R2, {"emergencyExpenseType": []}) is None
+
+    def test_docs_take_the_joined_purpose(self) -> None:
+        """준비물 한 줄에 고른 것이 모두 들어간다."""
+        purpose = expense_purpose(
+            RouteId.R2, {"emergencyExpenseType": ["MEDICAL_EXPENSE", "HOUSING_EXPENSE"]}
+        )
+        docs = docs_with_purpose(("돈이 필요한 이유를 보여주는 서류", "신분증"), purpose)
+        assert docs == ("병원비와 월세나 방값이 필요한 것을 보여주는 서류", "신분증")
