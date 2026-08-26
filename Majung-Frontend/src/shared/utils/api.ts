@@ -357,10 +357,29 @@ export async function getInstitutions(
  *
  * 갈래 거르기는 화면의 칩이 한다. 여기서는 지역만 좁힌다.
  */
-export async function getCenters(place?: { sido: string; district: string }): Promise<Center[]> {
-  const qs = place
-    ? `?sido=${encodeURIComponent(place.sido)}&district=${encodeURIComponent(place.district)}`
-    : "";
+/**
+ * 지도에 찍을 기관.
+ *
+ * **좌표를 주면 그 자리에서 가까운 순으로 온다** (2026-08-26 결정 F-1). 안 주면 서버가
+ * 그 동네 기관들의 한가운데를 기준으로 삼는데, 시군구 안에서 그 한가운데가 엉뚱한 곳을
+ * 가리킬 수 있다 — 지역을 직접 고른 사용자가 그 길로 온다.
+ */
+export async function getCenters(place?: {
+  sido: string;
+  district: string;
+  lat?: number;
+  lng?: number;
+}): Promise<Center[]> {
+  let qs = "";
+  if (place) {
+    const params = new URLSearchParams({ sido: place.sido, district: place.district });
+    // 좌표는 짝으로만 보낸다. 하나만 보내면 서버가 그냥 무시해 조용히 옛 방식으로 돈다.
+    if (typeof place.lat === "number" && typeof place.lng === "number") {
+      params.set("lat", String(place.lat));
+      params.set("lng", String(place.lng));
+    }
+    qs = `?${params.toString()}`;
+  }
   const res = await fetch(`${API_BASE}/api/centers${qs}`);
   if (!res.ok) throw new ApiError(res.status, await errorMessage(res));
   return (await res.json()) as Center[];

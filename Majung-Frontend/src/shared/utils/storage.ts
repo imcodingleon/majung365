@@ -70,23 +70,46 @@ export function markAlertsSeen(at: string): void {
   }
 }
 
-/** 마지막으로 알아낸 지역. 없으면 `null`. */
-export function lastPlace(): { sido: string; district: string; dong: string } | null {
+/** 기기에 남기는 위치. 좌표는 위치로 알아낸 경우에만 있다. */
+type StoredPlace = {
+  sido: string;
+  district: string;
+  dong: string;
+  lat?: number;
+  lng?: number;
+};
+
+/**
+ * 마지막으로 알아낸 지역. 없으면 `null`.
+ *
+ * **좌표까지 남긴다** (2026-08-26 결정 F-1). 새로고침하고 나서도 지도가 그 자리를
+ * 기준으로 떠야 하는데, 시군구만 남기면 거리를 잴 기준이 사라져 동네 한가운데로
+ * 되돌아간다.
+ */
+export function lastPlace(): StoredPlace | null {
   if (!hasLocalStorage()) return null;
   try {
     const raw = window.localStorage.getItem(PLACE_KEY);
     if (!raw) return null;
-    const found = JSON.parse(raw) as { sido?: string; district?: string; dong?: string };
-    // **셋이 다 있어야 쓸모가 있다.** 시도만 남으면 기관 조회가 전국을 훑는다.
+    const found = JSON.parse(raw) as Partial<StoredPlace>;
+    // **둘이 다 있어야 쓸모가 있다.** 시도만 남으면 기관 조회가 전국을 훑는다.
     if (!found.sido || !found.district) return null;
-    return { sido: found.sido, district: found.district, dong: found.dong ?? "" };
+    return {
+      sido: found.sido,
+      district: found.district,
+      dong: found.dong ?? "",
+      // 좌표는 짝으로만 쓴다. 하나만 남아 있으면 없는 것으로 친다.
+      ...(typeof found.lat === "number" && typeof found.lng === "number"
+        ? { lat: found.lat, lng: found.lng }
+        : {}),
+    };
   } catch {
     // 남의 값이 들어 있거나 형식이 깨졌으면 없는 것으로 친다.
     return null;
   }
 }
 
-export function markPlace(place: { sido: string; district: string; dong: string }): void {
+export function markPlace(place: StoredPlace): void {
   if (!hasLocalStorage()) return;
   try {
     window.localStorage.setItem(PLACE_KEY, JSON.stringify(place));

@@ -31,6 +31,16 @@ export type LocatedPlace = {
   district: string;
   /** "오금동" */
   dong: string;
+  /**
+   * 지금 있는 자리. 지역을 직접 골랐으면 없다.
+   *
+   * **2026-08-26에 좌표를 살렸다.** 예선부터 이어온 "좌표는 그 자리에서 버린다"를
+   * 뒤집은 것이다 — 시군구까지만 아는 서버는 그 동네 기관들의 한가운데로 거리를
+   * 재는데, 시군구 안에서 그 한가운데가 엉뚱한 곳을 가리켰다. 군포역에 사는
+   * 사람에게 산본 주민센터가 먼저 나왔다.
+   */
+  lat?: number;
+  lng?: number;
 };
 
 type Area = {
@@ -88,7 +98,9 @@ export function districtLabel(district: string): string {
 /**
  * 좌표가 속한 행정동. 바다나 국경 밖이면 null이다.
  *
- * **좌표를 받아서 쓰고 버린다.** 이 함수는 좌표를 어디에도 남기지 않는다.
+ * **판정한 좌표를 결과에 함께 담는다** (2026-08-26 결정 F-1). 예전에는 여기서 버렸다.
+ * 시군구까지만 아는 서버는 그 동네 기관들의 한가운데로 거리를 재는데, 시군구 안에서
+ * 그 한가운데가 엉뚱한 곳을 가리켰다.
  */
 export function placeAt(longitude: number, latitude: number): LocatedPlace | null {
   const px = Math.round(longitude * SCALE);
@@ -99,7 +111,7 @@ export function placeAt(longitude: number, latitude: number): LocatedPlace | nul
     if (px < w || px > e || py < s || py > n) continue;
     for (const ring of area.r) {
       if (inRing(ring, px, py)) {
-        return { sido: area.s, district: area.g, dong: area.d };
+        return { sido: area.s, district: area.g, dong: area.d, lat: latitude, lng: longitude };
       }
     }
   }

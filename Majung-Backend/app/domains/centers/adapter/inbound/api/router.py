@@ -56,16 +56,26 @@ def list_centers(
     category: str | None = Query(default=None, description="법무보호공단 | 주민센터 | 고용센터"),
     sido: str | None = Query(default=None, max_length=20, description="예: 서울특별시"),
     district: str | None = Query(default=None, max_length=40, description="예: 송파구"),
+    lat: float | None = Query(default=None, ge=33.0, le=39.0, description="지금 있는 자리"),
+    lng: float | None = Query(default=None, ge=124.0, le=132.0),
 ) -> list[CenterOut]:
     """지도에 찍을 기관.
 
     **지역을 주면 주민센터와 정신건강복지센터까지 함께 나간다.** 주지 않으면 예전처럼
     `centers.json`만 나간다 — 전국 주민센터 3,555건을 통째로 보낼 수는 없다.
 
-    사용자의 지역은 준식별정보다. 조회 조건을 로그에 남기지 않는다.
+    **좌표를 주면 그 자리에서 거리를 잰다** (2026-08-26 결정 F-1). 예전에는 시군구까지만
+    받아서 그 동네 기관들의 한가운데를 기준으로 삼았는데, 시군구 안에서 그 한가운데가
+    엉뚱한 곳을 가리켰다 — 군포역에 사는 사람에게 산본 주민센터가 먼저 나왔다.
+
+    좌표는 대한민국 범위 밖이면 받지 않는다. 범위를 벗어난 값은 오작동이거나 장난이고,
+    그대로 거리를 재면 전국에서 가장 먼 기관이 "가까운 곳"으로 나간다.
+
+    사용자의 지역과 좌표는 준식별정보다. **조회 조건을 로그에 남기지 않는다.**
     """
+    origin = (lat, lng) if lat is not None and lng is not None else None
     if sido and district:
-        items = _map_repo.by_region(sido, district)
+        items = _map_repo.by_region(sido, district, origin)
         if category:
             narrowed = [c for c in items if c.category == category]
             # 빈 갈래(오탈자 등)면 전체로 되돌린다. 화면이 비는 것보다 낫다.

@@ -28,6 +28,10 @@ export function useNearbyCenters() {
 
   const sido = place?.sido;
   const district = place?.district;
+  // **좌표가 있으면 그 자리에서 거리를 잰다** (2026-08-26 결정 F-1). 지역을 직접
+  // 고른 경우에는 없다 — 그때는 서버가 동네 한가운데로 가늠한다.
+  const lat = place?.lat;
+  const lng = place?.lng;
 
   useEffect(() => {
     // **지역이 정해지기 전에는 부르지 않는다.** 지역 없이 부르면 전국 목록이 오는데,
@@ -38,7 +42,7 @@ export function useNearbyCenters() {
     void (async () => {
       try {
         // 갈래를 고르지 않고 그 지역 전부를 받는다. 거르는 일은 화면의 칩이 한다.
-        const all = await getCenters({ sido, district });
+        const all = await getCenters({ sido, district, lat, lng });
         if (alive) setCenters(all);
       } catch {
         if (alive) setError("기관을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -49,7 +53,7 @@ export function useNearbyCenters() {
     return () => {
       alive = false;
     };
-  }, [sido, district]);
+  }, [sido, district, lat, lng]);
 
   return { centers, loading, error, place, pick: lookup.pick };
 }

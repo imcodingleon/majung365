@@ -4,11 +4,17 @@
 메서드라, 담당자 화면처럼 죄목이 가면 안 되는 경로(§7.4)에서 실수로 딸려올 일이 없다.
 """
 
-from datetime import date
+from datetime import date, datetime
 from typing import Protocol
 from uuid import UUID
 
-from app.domains.account.domain.entity import Account, Consent, CrimeCategory, Session
+from app.domains.account.domain.entity import (
+    Account,
+    Consent,
+    CrimeCategory,
+    Place,
+    Session,
+)
 
 
 class AccountRepository(Protocol):
@@ -28,6 +34,14 @@ class AccountRepository(Protocol):
     def touch(self, user_id: UUID, today: date) -> None:
         """마지막 접속일 갱신. **하루 한 번만 쓴다**(§9.4 보관 기간 계산용) —
         매 요청마다 쓰면 읽기만 하는 화면에서도 쓰기가 생긴다."""
+        ...
+
+    def save_place(self, user_id: UUID, place: Place, now: datetime) -> None:
+        """마지막으로 알아낸 자리를 덮어쓴다 (2026-08-26 결정 F-1).
+
+        **이력이 아니라 한 자리만 남긴다.** 다시 들어왔을 때 지도가 그 자리를 기준으로
+        뜨면 되고, 지나온 자리를 쌓으면 그것은 동선 기록이 된다.
+        """
         ...
 
     def record_consent(self, user_id: UUID, consent: Consent) -> None:

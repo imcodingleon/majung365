@@ -1,7 +1,12 @@
 // 지금 있는 지역 알아내기 (§5.4).
 //
-// **좌표를 우리 서버로 보내지 않는다.** 기기에서 행정동으로 바꾸고 좌표는 바로 버린다.
-// 이 훅은 좌표를 상태에 담지도 않는다. 남겨두면 언젠가 어딘가로 실려 간다.
+// **좌표를 서버로 함께 보낸다** (2026-08-26 결정 F-1). 예선부터 이어온 "좌표는 그
+// 자리에서 버린다"를 뒤집었다 — 시군구까지만 아는 서버는 그 동네 기관들의 한가운데로
+// 거리를 재는데, 시군구 안에서 그 한가운데가 엉뚱한 곳을 가리켰다. 군포역에 사는
+// 사람에게 산본 주민센터가 먼저 나왔다.
+//
+// **동으로 바꾸는 계산은 그대로 기기에서 한다.** 아래 두 이유는 좌표를 보내기로 한
+// 뒤에도 그대로 유효하다.
 //
 // **좌표를 동으로 바꾸는 것도 기기 안에서 한다** (`domain/locate.ts`). `expo-location`의
 // `reverseGeocodeAsync`를 쓰지 않는 이유가 둘이다.
@@ -15,7 +20,9 @@
 import * as Location from "expo-location";
 import { useCallback, useEffect, useMemo, useState } from "react";
 
+import { getMe, patchMe } from "@/shared/utils/api";
 import { lastPlace, markPlace } from "@/shared/utils/storage";
+import { loadToken } from "@/shared/utils/tokenStore";
 
 import { placeAt, type LocatedPlace } from "./locate";
 import { type SelectedRegion } from "@/features/institutions/domain/region";
@@ -49,7 +56,41 @@ export function useRegionLookup() {
    * effect로 읽으면 첫 그림에서 위치를 모르는 상태가 스쳐, 기관 조회가 한 번
    * 헛돌고 화면이 깜빡인다.
    */
-  const [remembered] = useState<LocatedPlace | null>(() => lastPlace());
+  const [remembered, setRemembered] = useState<LocatedPlace | null>(() => lastPlace());
+
+  /**
+   * 기기가 모르면 서버에 물어본다 (2026-08-26 결정 F-1).
+   *
+   * **기기에 있으면 묻지 않는다.** 이 길로 오는 것은 브라우저를 지웠거나 기기를 바꾼
+   * 경우이고, 그때만 요청 하나가 더 나간다. 매번 물으면 화면을 열 때마다 왕복이 는다.
+   */
+  useEffect(() => {
+    if (remembered) return;
+    let alive = true;
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return;
+      try {
+        const me = await getMe(token);
+        const found = me.place;
+        if (!alive || !found?.sido || !found.district) return;
+        setRemembered({
+          sido: found.sido,
+          district: found.district,
+          dong: found.dong ?? "",
+          // 좌표는 짝으로만 쓴다. 지역을 직접 골랐던 사람에게는 없다.
+          ...(typeof found.lat === "number" && typeof found.lng === "number"
+            ? { lat: found.lat, lng: found.lng }
+            : {}),
+        });
+      } catch {
+        // 못 물어봐도 화면은 뜬다. 위치를 새로 잡거나 지역을 고르는 길이 그대로 있다.
+      }
+    })();
+    return () => {
+      alive = false;
+    };
+  }, [remembered]);
 
   const locate = useCallback(async () => {
     setState({ status: "locating" });
@@ -72,7 +113,6 @@ export function useRegionLookup() {
         ),
       ]);
       const place = placeAt(position.coords.longitude, position.coords.latitude);
-      // 좌표는 여기서 끝난다. 아래로 넘기지 않는다.
 
       if (!place) {
         setState({ status: "failed", reason: "지금 계신 곳이 어느 지역인지 찾지 못했어요." });
@@ -108,9 +148,36 @@ export function useRegionLookup() {
     return remembered;
   }, [picked, state, remembered]);
 
-  // 새로 정해진 곳을 기기에 남긴다. **서버에 보내지 않는다** (§9.4).
+  // 새로 정해진 곳을 기기에 남긴다. 좌표까지 함께 남겨야 새로고침 뒤에도 그 자리를
+  // 기준으로 거리를 잰다 (2026-08-26 결정 F-1).
   useEffect(() => {
-    if (place && place.sido && place.district) markPlace(place);
+    if (!place || !place.sido || !place.district) return;
+    markPlace(place);
+
+    // **서버에도 남긴다.** 기기에만 두면 브라우저를 지웠거나 기기를 바꿨을 때 그 자리를
+    // 다시 잡아야 한다. 서버가 알면 로그인만으로 지도가 제자리에서 뜬다.
+    //
+    // 실패해도 조용히 넘어간다. 기기에는 이미 남았으므로 지금 화면은 그대로 돌고,
+    // 위치를 못 올렸다고 사용자에게 알릴 일이 아니다.
+    void (async () => {
+      const token = await loadToken();
+      if (!token) return;
+      try {
+        await patchMe(token, {
+          place: {
+            sido: place.sido,
+            district: place.district,
+            dong: place.dong,
+            // 좌표는 짝으로만 보낸다. 지역을 직접 고른 경우에는 없다.
+            ...(typeof place.lat === "number" && typeof place.lng === "number"
+              ? { lat: place.lat, lng: place.lng }
+              : {}),
+          },
+        });
+      } catch {
+        // 기기에는 남았다. 다음에 위치가 정해질 때 다시 시도된다.
+      }
+    })();
   }, [place]);
 
   return { state, place, locate, pick, reset };

@@ -9,20 +9,30 @@
 API만 부른다. 그래서 service_role 키는 서버에만 두고 절대 클라이언트로 내려보내지 않는다.
 """
 
+import json
+import logging
 from datetime import date, datetime
 from typing import Any
 from uuid import UUID
 
 from supabase import Client
 
-from app.domains.account.domain.entity import Account, Consent, CrimeCategory, Session
+from app.domains.account.domain.entity import (
+    Account,
+    Consent,
+    CrimeCategory,
+    Place,
+    Session,
+)
 from app.domains.account.domain.tokens import (
     expires_at,
     hash_token,
     new_token,
     utcnow,
 )
-from app.infrastructure.security.crypto import FieldCipher
+from app.infrastructure.security.crypto import CryptoError, FieldCipher
+
+logger = logging.getLogger("majung.account")
 
 
 def _parse_ts(value: str) -> datetime:
@@ -49,8 +59,36 @@ class SupabaseAccountRepository:
         self._db = client
         self._cipher = cipher
 
+    def _to_place(self, row: dict[str, Any]) -> Place | None:
+        """저장된 위치. **읽지 못해도 계정은 살린다.**
+
+        위치는 곁들이는 값이라, 한 줄이 깨졌다고 로그인이 막히면 안 된다. 못 읽으면
+        위치를 모르는 상태로 두고 예전처럼 동네 한가운데로 가늠한다.
+        """
+        raw = row.get("place_enc")
+        if not raw:
+            return None
+        try:
+            found = json.loads(self._cipher.decrypt(str(raw)))
+        except (CryptoError, ValueError):
+            logger.warning("저장된 위치를 읽지 못했다 — 없는 것으로 둔다")
+            return None
+        if not isinstance(found, dict) or not found.get("sido") or not found.get("district"):
+            return None
+        # 좌표는 짝으로만 쓴다. 하나만 남아 있으면 없는 것으로 친다.
+        lat, lng = found.get("lat"), found.get("lng")
+        paired = isinstance(lat, (int, float)) and isinstance(lng, (int, float))
+        return Place(
+            sido=str(found["sido"]),
+            district=str(found["district"]),
+            dong=str(found.get("dong") or ""),
+            lat=float(lat) if paired else None,  # type: ignore[arg-type]
+            lng=float(lng) if paired else None,  # type: ignore[arg-type]
+        )
+
     def _to_account(self, row: dict[str, Any]) -> Account:
         """복호화는 읽기 경로 한곳에서만 한다."""
+        at = row.get("place_at")
         return Account(
             id=UUID(str(row["id"])),
             name=self._cipher.decrypt(str(row["name_enc"])),
@@ -60,7 +98,32 @@ class SupabaseAccountRepository:
             ),
             created_at=_parse_ts(str(row["created_at"])),
             last_seen_on=date.fromisoformat(str(row["last_seen_on"])),
+            place=self._to_place(row),
+            place_at=_parse_ts(str(at)) if at else None,
         )
+
+    def save_place(self, user_id: UUID, place: Place, now: datetime) -> None:
+        """마지막 위치를 덮어쓴다 (2026-08-26 결정 F-1).
+
+        **이력이 아니라 마지막 한 자리만 남긴다.** 목적은 다시 들어왔을 때 지도가 그
+        자리를 기준으로 뜨는 것이고, 그 목적에는 최신 값 하나면 된다. 지나온 자리를
+        줄줄이 쌓으면 그것은 동선 기록이 되는데, 이 결정으로 승인된 범위가 아니다.
+
+        좌표는 암호화해 넣는다. 이 값으로 검색하지 않으므로 암호화가 편의를 깎지 않는다.
+        """
+        payload = {
+            "sido": place.sido,
+            "district": place.district,
+            "dong": place.dong,
+            "lat": place.lat,
+            "lng": place.lng,
+        }
+        self._db.table("app_user").update(
+            {
+                "place_enc": self._cipher.encrypt(json.dumps(payload, ensure_ascii=False)),
+                "place_at": now.isoformat(),
+            }
+        ).eq("id", str(user_id)).execute()
 
     def create(
         self,

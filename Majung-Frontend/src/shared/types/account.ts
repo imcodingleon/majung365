@@ -56,6 +56,23 @@ export interface MeResponse {
    * 있는지만 알면 된다 (§2.5).
    */
   has_crime_category: boolean;
+  /**
+   * 마지막으로 알아낸 자리 (2026-08-26 결정 F-1). 알린 적이 없으면 없다.
+   *
+   * **이것이 있어야 다른 기기에서도 지도가 그 자리를 기준으로 뜬다.** 같은 기기라면
+   * localStorage에 남은 값으로 충분하지만, 브라우저를 지웠거나 기기를 바꾸면 그쪽은
+   * 비어 있다.
+   */
+  place?: PlaceResponse | null;
+}
+
+/** 서버가 아는 자리. 지역을 직접 고른 경우에는 좌표가 없다. */
+export interface PlaceResponse {
+  sido: string;
+  district: string;
+  dong: string;
+  lat?: number | null;
+  lng?: number | null;
 }
 
 /** 바꿀 항목만 담는다. 죄목은 고칠 수 없고 철회만 된다. */
@@ -65,6 +82,18 @@ export interface UpdateMeRequest {
   release_date?: string;
   /** 참이면 죄목이 즉시 파기된다 (§9.5). */
   crime_category_revoked?: boolean;
+  /**
+   * 새로 알아낸 자리 (2026-08-26 결정 F-1). **이력이 아니라 마지막 한 자리만 남는다.**
+   *
+   * 지역을 직접 고른 경우에는 좌표 없이 시군구만 보낸다.
+   */
+  place?: {
+    sido: string;
+    district: string;
+    dong?: string;
+    lat?: number;
+    lng?: number;
+  };
   /**
    * 새로 밝히는 죄목 대분류. 처음에는 말하지 않다가 나중에 밝힐 수 있다 (§3.3-3).
    *

@@ -24,6 +24,7 @@ from app.domains.account.domain.entity import (
     PRIVACY_CONSENT_KIND,
     Account,
     Consent,
+    Place,
 )
 from app.domains.account.domain.tokens import utcnow
 from app.domains.knowledge.adapter.inbound.api.router import IntakeTaskOut, to_task_out
@@ -175,6 +176,17 @@ def signup(body: SignupIn, request: Request) -> SignupOut:
 # 계정까지 사라지면 27문항을 다시 답해야 한다.
 
 
+class PlaceOut(BaseModel):
+    """마지막으로 알아낸 자리 (2026-08-26 결정 F-1)."""
+
+    sido: str
+    district: str
+    dong: str = ""
+    # 지역을 직접 고른 경우에는 좌표가 없다.
+    lat: float | None = None
+    lng: float | None = None
+
+
 class MeOut(BaseModel):
     user_id: str
     name: str
@@ -184,12 +196,33 @@ class MeOut(BaseModel):
     # 죄목 동의 여부. **값 자체는 여기서 내보내지 않는다** — 화면에 띄우면
     # 어깨 너머로 보인다. 무엇을 지울 수 있는지만 알려준다.
     has_crime_category: bool
+    # 마지막으로 알아낸 자리 (2026-08-26 결정 F-1). 알린 적이 없으면 없다.
+    #
+    # **이것이 있어야 다시 들어왔을 때 지도가 그 자리를 기준으로 뜬다.** 없으면 서버가
+    # 동네 기관들의 한가운데로 가늠하는데, 시군구 안에서 엉뚱한 곳을 가리킨다.
+    place: PlaceOut | None = None
+
+
+class PlaceIn(BaseModel):
+    """알려 오는 자리 (2026-08-26 결정 F-1).
+
+    좌표는 대한민국 범위 밖이면 받지 않는다. 벗어난 값은 오작동이거나 장난이고, 그대로
+    거리를 재면 전국에서 가장 먼 기관이 "가까운 곳"으로 나간다.
+    """
+
+    sido: str = Field(min_length=1, max_length=20)
+    district: str = Field(min_length=1, max_length=40)
+    dong: str = Field(default="", max_length=40)
+    lat: float | None = Field(default=None, ge=33.0, le=39.0)
+    lng: float | None = Field(default=None, ge=124.0, le=132.0)
 
 
 class MeUpdateIn(BaseModel):
-    """수정할 항목만 보낸다. 지금은 죄목을 밝히거나 철회할 수 있다."""
+    """수정할 항목만 보낸다. 지금은 죄목과 위치를 다룬다."""
 
     crime_category_revoked: bool = False
+    # 마지막으로 알아낸 자리. 다시 들어왔을 때 지도가 이 자리를 기준으로 뜬다.
+    place: PlaceIn | None = None
     # 새로 밝히는 죄목. **동의 없이는 저장하지 않는다** (§9.5).
     crime_category: str | None = None
     # 이 요청과 함께 받은 민감정보 동의. 값을 보내면서 이것이 없으면 거절한다.
@@ -215,6 +248,17 @@ def read_me(request: Request, account: CurrentAccount) -> MeOut:
         release_date=account.release_date,
         days_since_release=account.days_since_release(today_kst()),
         has_crime_category=has_crime,
+        place=(
+            PlaceOut(
+                sido=account.place.sido,
+                district=account.place.district,
+                dong=account.place.dong,
+                lat=account.place.lat,
+                lng=account.place.lng,
+            )
+            if account.place
+            else None
+        ),
     )
 
 
@@ -352,6 +396,22 @@ def update_me(
     바뀔 수 있다고 §3.3-3이 정해 두었는데, 철회만 받으니 화면의 "바꾸기"가 실제로는
     지우기 하나뿐이었다. 고른 값은 조용히 버려졌다.
     """
+    # **위치는 죄목과 따로 처리한다.** 같은 요청에 함께 와도 서로를 막지 않는다.
+    if body.place is not None:
+        accounts = request.app.state.account_repo
+        accounts.save_place(
+            account.id,
+            Place(
+                sido=body.place.sido,
+                district=body.place.district,
+                dong=body.place.dong,
+                # 좌표는 짝으로만 쓴다. 하나만 오면 없는 것으로 친다.
+                lat=body.place.lat if body.place.lng is not None else None,
+                lng=body.place.lng if body.place.lat is not None else None,
+            ),
+            utcnow(),
+        )
+
     crimes = getattr(request.app.state, "crime_repo", None)
     if crimes is None:
         raise HTTPException(

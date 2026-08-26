@@ -15,6 +15,30 @@ from uuid import UUID
 
 
 @dataclass(frozen=True)
+class Place:
+    """마지막으로 알아낸 자리 (2026-08-26 결정 F-1).
+
+    **예선부터 이어온 "좌표를 우리 서버로 보내지 않는다"를 뒤집은 것이다.** 시군구까지만
+    아는 서버는 그 동네 기관들의 한가운데로 거리를 쟀는데, 시군구 안에서 그 한가운데가
+    엉뚱한 곳을 가리켰다 — 군포역에 사는 사람에게 산본 주민센터가 먼저 나왔다.
+
+    지역을 직접 고른 경우에는 좌표가 없다. 그때는 예전처럼 동네 한가운데로 가늠한다.
+    """
+
+    sido: str
+    district: str
+    dong: str = ""
+    lat: float | None = None
+    lng: float | None = None
+
+    def origin(self) -> tuple[float, float] | None:
+        """거리를 잴 기준점. **좌표는 짝으로만 쓴다** — 하나만 있으면 없는 것이다."""
+        if self.lat is None or self.lng is None:
+            return None
+        return (self.lat, self.lng)
+
+
+@dataclass(frozen=True)
 class Account:
     """사용자 한 명. **죄목은 여기 없다.**"""
 
@@ -24,6 +48,9 @@ class Account:
     release_date: date
     created_at: datetime
     last_seen_on: date
+    # 마지막으로 알아낸 자리. 아직 위치를 알린 적이 없으면 None이다.
+    place: Place | None = None
+    place_at: datetime | None = None
 
     def days_since_release(self, today: date) -> int:
         """출소 후 경과 일수. 기한이 있는 제도(긴급복지 등)의 판정 입력이다.

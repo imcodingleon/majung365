@@ -153,8 +153,15 @@ class JsonMapCenterRepository:
 
     # ── 조회 ──
 
-    def by_region(self, sido: str, district: str) -> list[Center]:
+    def by_region(
+        self, sido: str, district: str, origin: Point | None = None
+    ) -> list[Center]:
         """그 지역의 기관을 **갈래마다 가까운 순 세 곳씩**.
+
+        `origin`은 사용자가 지금 있는 자리다. 주면 그 점에서 거리를 잰다 (2026-08-26
+        결정). 안 주면 예전처럼 그 동네 기관들의 한가운데를 기준으로 삼는데, **그
+        한가운데는 시군구 안에서 엉뚱한 곳을 가리킬 수 있다** — 군포시는 기관이
+        산본신도시에 몰려 있어, 군포역에 사는 사람에게 산본 주민센터가 먼저 나왔다.
 
         **주소 문자열로 거른다.** 세 자료의 시도 표기가 서로 달라("서울" · "서울특별시")
         필드를 맞대면 한쪽이 통째로 빠진다. 주소에는 어느 쪽 표기든 들어 있다.
@@ -185,9 +192,10 @@ class JsonMapCenterRepository:
             elif c.category != DISTRICT:
                 elsewhere.append(c)
 
-        # 기준점은 그 동네 기관들의 한가운데다. **사용자 좌표를 받지 않으므로**(§5.4)
-        # 그 지역에 있는 것들의 평균으로 동네 위치를 가늠한다.
-        origin = _center_of(in_town)
+        # **사용자가 있는 자리를 알면 그것이 기준이다.** 모르면 그 동네 기관들의
+        # 한가운데로 가늠한다 — 시군구까지만 아는 경우가 그렇다.
+        if origin is None:
+            origin = _center_of(in_town)
         if origin is None:
             # 그 동네에 아무것도 없으면 거리를 잴 기준이 없다. 갈래별로 앞에서 자른다.
             return _take_by_category(elsewhere)
