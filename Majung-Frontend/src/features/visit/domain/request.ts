@@ -13,6 +13,14 @@ export type { VisitStatus };
 export type VisitConfirmation = {
   /** 사람이 읽는 형태의 확정 시각. 예: "8월 25일 오후 2시" */
   whenLabel: string;
+  /**
+   * 만나기로 한 시각(ISO). **알림을 언제까지 남길지 이 값으로 정한다** (§7.1).
+   *
+   * 사람이 읽는 `whenLabel`로는 날짜를 견줄 수 없다. 서버가 주지 않으면 없다.
+   */
+  whenIso?: string | null;
+  /** 담당자가 확정을 누른 시각(ISO). 알림이 온 때가 이때다. */
+  decidedAt?: string | null;
   /** 만날 담당자 이름. */
   staffName: string;
   /** 만날 장소. 예: "2층 상담실" */

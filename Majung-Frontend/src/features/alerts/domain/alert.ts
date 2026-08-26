@@ -47,13 +47,15 @@ function alertFor(r: VisitRequest): Alert | null {
   if (r.status === "confirmed") {
     // **만날 사람과 장소가 이 알림의 전부다**(§7.1). 없으면 알릴 내용이 없다.
     if (!r.confirmation) return null;
-    const { whenLabel, staffName, place } = r.confirmation;
+    const { whenLabel, staffName, place, decidedAt } = r.confirmation;
     return {
       id: `${r.id}:confirmed`,
       kind: "confirmed",
       title: "방문이 확정되었어요",
       body: `${whenLabel}에 ${staffName}을 ${place}에서 만나요.`,
-      at,
+      // **확정을 누른 때가 이 소식이 온 때다.** 요청을 보낸 때가 아니다 — 그것을
+      // 쓰면 며칠 전에 보낸 요청이 확정되어도 알림이 목록 아래에 묻힌다.
+      at: decidedAt ?? at,
       visitId: r.id,
     };
   }
@@ -86,12 +88,86 @@ function alertFor(r: VisitRequest): Alert | null {
   return null;
 }
 
-/** 최근 것이 위로 온다. */
-export function toAlerts(requests: readonly VisitRequest[]): Alert[] {
+/**
+ * 방문이 끝난 확정 소식인가.
+ *
+ * **약속한 날까지는 남긴다** (2026-08-26 결정 G-5). "약속 시간이 언제였지?" 할 때
+ * 알림을 눌러 바로 확인하는 것이 이 목록의 쓸모다. 확인하자마자 사라지면 그 쓸모가
+ * 없어진다.
+ *
+ * 그날이 지나면 내린다 — 지난 약속이 계속 위에 남아 있으면 다음 소식이 묻힌다.
+ * 날짜 단위로 본다: 오후 2시 약속이 오후 3시에 사라지면 그날 안에 다시 볼 수 없다.
+ */
+function isPastVisit(r: VisitRequest, now: Date): boolean {
+  const when = r.confirmation?.whenIso;
+  if (!when) return false;
+  const at = new Date(when);
+  if (Number.isNaN(at.getTime())) return false;
+  const endOfVisitDay = new Date(at.getFullYear(), at.getMonth(), at.getDate() + 1);
+  return now.getTime() >= endOfVisitDay.getTime();
+}
+
+/**
+ * 최근 것이 위로 온다.
+ *
+ * **지난 약속은 내린다.** 그 밖의 소식은 그대로 쌓인다 — 취소 사유처럼 나중에 다시
+ * 읽을 것이 있다.
+ */
+export function toAlerts(requests: readonly VisitRequest[], now: Date = new Date()): Alert[] {
   return requests
+    .filter((r) => !(r.status === "confirmed" && r.unread === 0 && isPastVisit(r, now)))
     .map(alertFor)
     .filter((a): a is Alert => a !== null)
     .sort((a, b) => b.at.localeCompare(a.at));
+}
+
+/**
+ * 같은 날 온 소식을 묶는 이름. 메신저에서 날짜 줄이 하는 일과 같다.
+ *
+ * **오늘·어제는 날짜로 적지 않는다.** "8월 26일"보다 "오늘"이 먼저 읽히고, 방금 온
+ * 소식인지 아닌지가 그 한 단어로 갈린다.
+ */
+export function dayLabel(iso: string, now: Date = new Date()): string {
+  const at = new Date(iso);
+  if (!iso || Number.isNaN(at.getTime())) return "";
+
+  const startOf = (d: Date) => new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
+  const days = Math.round((startOf(now) - startOf(at)) / 86_400_000);
+  if (days <= 0) return "오늘";
+  if (days === 1) return "어제";
+  const WEEKDAY = ["일", "월", "화", "수", "목", "금", "토"] as const;
+  return `${at.getMonth() + 1}월 ${at.getDate()}일 ${WEEKDAY[at.getDay()]}요일`;
+}
+
+/** 소식이 온 시각. 예: "오후 2시 30분". 목록 오른쪽에 작게 붙는다. */
+export function timeLabel(iso: string): string {
+  const at = new Date(iso);
+  if (!iso || Number.isNaN(at.getTime())) return "";
+  const half = at.getHours() < 12 ? "오전" : "오후";
+  const hour = at.getHours() % 12 === 0 ? 12 : at.getHours() % 12;
+  return `${half} ${hour}시 ${String(at.getMinutes()).padStart(2, "0")}분`;
+}
+
+export type AlertDay = {
+  label: string;
+  items: readonly Alert[];
+};
+
+/**
+ * 날짜별로 묶는다. **순서는 건드리지 않는다** — 이미 최근 것이 위에 있다.
+ *
+ * 시각을 모르는 소식은 맨 아래에 "언제인지 모름"으로 모은다. 날짜를 지어내면 그것이
+ * 곧 틀린 정보가 된다.
+ */
+export function groupByDay(alerts: readonly Alert[], now: Date = new Date()): AlertDay[] {
+  const days: AlertDay[] = [];
+  for (const alert of alerts) {
+    const label = dayLabel(alert.at, now) || "언제인지 모름";
+    const last = days[days.length - 1];
+    if (last && last.label === label) (last.items as Alert[]).push(alert);
+    else days.push({ label, items: [alert] });
+  }
+  return days;
 }
 
 /**

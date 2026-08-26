@@ -45,6 +45,9 @@ function toRequest(v: VisitResponse): VisitRequest {
             // **`confirmed_for`다.** `confirmed_at`은 담당자가 확정을 누른 시각이라
             // 그것을 내면 새벽에 만나자는 안내가 나간다.
             whenLabel: isoLabel(v.confirmed_for),
+            // 날짜를 견주려면 원본이 필요하다. 알림을 언제까지 남길지 이 값으로 정한다.
+            whenIso: v.confirmed_for,
+            decidedAt: v.confirmed_at,
             staffName: v.staff_name,
             place: v.meeting_place,
           }

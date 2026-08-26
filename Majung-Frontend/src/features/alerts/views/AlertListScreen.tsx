@@ -9,7 +9,13 @@ import { AppHeader } from "@/shared/components/AppHeader";
 import { Icon, type IconName } from "@/shared/components/Icon";
 import { COLORS } from "@/shared/theme/colors";
 
-import { isUnseen, type Alert, type AlertKind } from "../domain/alert";
+import {
+  groupByDay,
+  isUnseen,
+  timeLabel,
+  type Alert,
+  type AlertKind,
+} from "../domain/alert";
 
 /** 소식의 성격을 그림으로도 알린다. 글을 빨리 읽지 못해도 무슨 일인지 보인다. */
 const ICON: Record<AlertKind, IconName> = {
@@ -61,39 +67,58 @@ export function AlertListScreen({
         <EmptyNote />
       ) : (
         <ScrollView className="flex-1">
-          {alerts.map((a) => {
-            // **판정을 여기서 다시 쓰지 않는다.** 하단 바의 숫자와 같은 함수를 쓴다.
-            const unseen = isUnseen(a, lastSeen);
-            return (
-              <Pressable
-                key={a.id}
-                onPress={() => onOpen(a)}
-                accessibilityRole="button"
-                accessibilityLabel={`${a.title}. ${a.body}`}
-                className="flex-row items-start gap-3 border-b border-line bg-white px-5 py-4 active:opacity-90"
-              >
-                {/* 안 읽은 것에만 점을 찍는다. 자리는 늘 잡아 두어야 글이 밀리지 않는다 */}
-                <View
-                  style={{
-                    width: 8,
-                    height: 8,
-                    borderRadius: 4,
-                    marginTop: 8,
-                    backgroundColor: unseen ? COLORS.alert : "transparent",
-                  }}
-                />
+          {/* **날짜로 묶는다.** 메신저의 날짜 줄과 같은 일을 한다 — 언제 온 소식인지
+              한눈에 갈리고, "약속 시간이 언제였지?" 할 때 되짚기 쉬워진다 */}
+          {groupByDay(alerts).map((day) => (
+            <View key={day.label}>
+              <View className="bg-page px-5 py-2">
+                <Text className="text-caption font-bold text-ink-muted">{day.label}</Text>
+              </View>
 
-                <Icon name={ICON[a.kind]} size={24} color={TONE[a.kind]} />
+              {day.items.map((a) => {
+                // **판정을 여기서 다시 쓰지 않는다.** 하단 바의 숫자와 같은 함수를 쓴다.
+                const unseen = isUnseen(a, lastSeen);
+                const when = timeLabel(a.at);
+                return (
+                  <Pressable
+                    key={a.id}
+                    onPress={() => onOpen(a)}
+                    accessibilityRole="button"
+                    accessibilityLabel={`${day.label} ${when}. ${a.title}. ${a.body}`}
+                    className="flex-row items-start gap-3 border-b border-line bg-white px-5 py-4 active:opacity-90"
+                  >
+                    {/* 안 읽은 것에만 점을 찍는다. 자리는 늘 잡아 두어야 글이 밀리지 않는다 */}
+                    <View
+                      style={{
+                        width: 8,
+                        height: 8,
+                        borderRadius: 4,
+                        marginTop: 8,
+                        backgroundColor: unseen ? COLORS.alert : "transparent",
+                      }}
+                    />
 
-                <View className="min-w-0 flex-1">
-                  <Text className="text-body-lg font-bold text-ink-strong">{a.title}</Text>
-                  {a.body ? (
-                    <Text className="mt-1 text-body text-ink-sub">{a.body}</Text>
-                  ) : null}
-                </View>
-              </Pressable>
-            );
-          })}
+                    <Icon name={ICON[a.kind]} size={24} color={TONE[a.kind]} />
+
+                    <View className="min-w-0 flex-1">
+                      <View className="flex-row items-baseline gap-2">
+                        <Text className="flex-1 text-body-lg font-bold text-ink-strong">
+                          {a.title}
+                        </Text>
+                        {/* 시각을 모르는 소식도 있다. 그때는 자리만 비운다 */}
+                        {when ? (
+                          <Text className="text-caption text-ink-muted">{when}</Text>
+                        ) : null}
+                      </View>
+                      {a.body ? (
+                        <Text className="mt-1 text-body text-ink-sub">{a.body}</Text>
+                      ) : null}
+                    </View>
+                  </Pressable>
+                );
+              })}
+            </View>
+          ))}
         </ScrollView>
       )}
     </SafeAreaView>

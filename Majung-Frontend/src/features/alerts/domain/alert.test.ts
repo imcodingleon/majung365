@@ -2,7 +2,15 @@ import { describe, expect, it } from "@jest/globals";
 
 import type { VisitRequest, VisitStatus } from "@/features/visit/domain/request";
 
-import { countUnseen, isUnseen, toAlerts, type Alert } from "./alert";
+import {
+  countUnseen,
+  dayLabel,
+  groupByDay,
+  isUnseen,
+  timeLabel,
+  toAlerts,
+  type Alert,
+} from "./alert";
 
 function req(over: Partial<VisitRequest> & { status: VisitStatus }): VisitRequest {
   return {
@@ -173,5 +181,125 @@ describe("countUnseen — 두 종류의 안 읽음", () => {
     const seenAt = "2026-08-26T23:00:00+09:00";
     expect(isUnseen(message, seenAt)).toBe(true);
     expect(countUnseen([message], seenAt)).toBe(1);
+  });
+});
+
+describe("날짜로 묶고 지난 약속은 내린다 (2026-08-26 결정 G-5)", () => {
+  /** 그날 정오. 기기 시간대 기준으로 만든다. */
+  const noonOf = (y: number, m: number, d: number) => new Date(y, m - 1, d, 12, 0, 0);
+
+  const confirmed = (whenIso: string, decidedAt: string) =>
+    req({
+      status: "confirmed",
+      confirmation: { ...CONFIRMED, whenIso, decidedAt },
+    });
+
+  it("약속한 날까지는 남는다", () => {
+    // **"약속 시간이 언제였지?" 할 때 눌러 보는 것이 이 목록의 쓸모다.**
+    // 확인하자마자 사라지면 그 쓸모가 없어진다.
+    const visit = noonOf(2026, 8, 28).toISOString();
+    const list = toAlerts([confirmed(visit, visit)], noonOf(2026, 8, 28));
+    expect(list.map((a) => a.kind)).toEqual(["confirmed"]);
+  });
+
+  it("약속 시간이 지나도 그날 안에는 남는다", () => {
+    // 오후 2시 약속이 오후 3시에 사라지면 그날 안에 다시 볼 수 없다.
+    const visit = new Date(2026, 7, 28, 14, 0, 0).toISOString();
+    const list = toAlerts([confirmed(visit, visit)], new Date(2026, 7, 28, 18, 0, 0));
+    expect(list).toHaveLength(1);
+  });
+
+  it("그날이 지나면 내린다", () => {
+    // 지난 약속이 계속 위에 남아 있으면 다음 소식이 묻힌다.
+    const visit = noonOf(2026, 8, 28).toISOString();
+    const list = toAlerts([confirmed(visit, visit)], noonOf(2026, 8, 29));
+    expect(list).toEqual([]);
+  });
+
+  it("안 읽은 메시지가 있으면 지난 약속이어도 남긴다", () => {
+    // 담당자가 방문 뒤에 말을 걸 수 있다. 그 말이 목록에서 사라지면 안 된다.
+    const visit = noonOf(2026, 8, 20).toISOString();
+    const withMessage = req({
+      status: "confirmed",
+      unread: 1,
+      confirmation: { ...CONFIRMED, whenIso: visit, decidedAt: visit },
+    });
+    const list = toAlerts([withMessage], noonOf(2026, 8, 29));
+    expect(list.map((a) => a.kind)).toEqual(["message"]);
+  });
+
+  it("취소 소식은 날짜와 무관하게 남는다", () => {
+    // 왜 취소됐는지는 나중에 다시 읽을 것이 있다.
+    const list = toAlerts(
+      [req({ status: "cancelled", cancelReason: "그날은 문을 닫아요." })],
+      noonOf(2026, 12, 31),
+    );
+    expect(list).toHaveLength(1);
+  });
+
+  it("확정 소식의 시각은 확정을 누른 때다", () => {
+    // 요청을 보낸 때를 쓰면 며칠 전 요청이 확정되어도 목록 아래에 묻힌다.
+    const decided = new Date(2026, 7, 27, 10, 0, 0).toISOString();
+    const list = toAlerts(
+      [confirmed(noonOf(2026, 8, 28).toISOString(), decided)],
+      noonOf(2026, 8, 27),
+    );
+    expect(list[0].at).toBe(decided);
+  });
+});
+
+describe("dayLabel · groupByDay", () => {
+  const now = new Date(2026, 7, 26, 12, 0, 0);
+
+  it("오늘과 어제는 날짜로 적지 않는다", () => {
+    // "8월 26일"보다 "오늘"이 먼저 읽힌다.
+    expect(dayLabel(new Date(2026, 7, 26, 9, 0, 0).toISOString(), now)).toBe("오늘");
+    expect(dayLabel(new Date(2026, 7, 25, 9, 0, 0).toISOString(), now)).toBe("어제");
+  });
+
+  it("그 전은 날짜와 요일로 적는다", () => {
+    expect(dayLabel(new Date(2026, 7, 24, 9, 0, 0).toISOString(), now)).toBe("8월 24일 월요일");
+  });
+
+  it("읽을 수 없는 값이면 빈 말로 둔다", () => {
+    // 날짜를 지어내면 그것이 곧 틀린 정보가 된다.
+    expect(dayLabel("어제쯤", now)).toBe("");
+    expect(dayLabel("", now)).toBe("");
+  });
+
+  it("같은 날 온 것을 한 묶음으로 낸다", () => {
+    const alerts = [
+      { id: "a", kind: "confirmed", title: "", body: "", visitId: "v", at: new Date(2026, 7, 26, 9).toISOString() },
+      { id: "b", kind: "cancelled", title: "", body: "", visitId: "v", at: new Date(2026, 7, 26, 8).toISOString() },
+      { id: "c", kind: "cancelled", title: "", body: "", visitId: "v", at: new Date(2026, 7, 24, 8).toISOString() },
+    ] as Alert[];
+    const days = groupByDay(alerts, now);
+    expect(days.map((d) => [d.label, d.items.length])).toEqual([
+      ["오늘", 2],
+      ["8월 24일 월요일", 1],
+    ]);
+  });
+
+  it("시각을 모르는 소식은 따로 모은다", () => {
+    const alerts = [
+      { id: "a", kind: "cancelled", title: "", body: "", visitId: "v", at: "" },
+    ] as Alert[];
+    expect(groupByDay(alerts, now)[0].label).toBe("언제인지 모름");
+  });
+});
+
+describe("timeLabel", () => {
+  it("오전·오후로 읽는다", () => {
+    expect(timeLabel(new Date(2026, 7, 26, 9, 5, 0).toISOString())).toBe("오전 9시 05분");
+    expect(timeLabel(new Date(2026, 7, 26, 14, 30, 0).toISOString())).toBe("오후 2시 30분");
+  });
+
+  it("정오는 낮 12시가 아니라 오후 12시로 둔다", () => {
+    // 알림 시각은 기록이라 읽기 쉬움보다 정확한 시계 표기가 낫다.
+    expect(timeLabel(new Date(2026, 7, 26, 12, 0, 0).toISOString())).toBe("오후 12시 00분");
+  });
+
+  it("읽을 수 없으면 빈 말로 둔다", () => {
+    expect(timeLabel("방금")).toBe("");
   });
 });
