@@ -3,5 +3,6 @@
   "buildCommand": "INCLUDE_ADMIN=1 npx expo export -p web",
   "outputDirectory": "dist",
   "installCommand": "npm install",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [{ "source": "/qr", "destination": "/api/qr" }]
 }
