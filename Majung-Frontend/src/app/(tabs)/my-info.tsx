@@ -85,11 +85,26 @@ export default function MyInfoRoute() {
 
   if (!profile) {
     // 불러오는 중이거나 실패한 상태다. 실패를 조용히 넘기지 않는다.
-    return <BirthGate storedBirth="" onPass={() => undefined} onClose={close} error={error} />;
+    return (
+      <BirthGate
+        storedBirth=""
+        onPass={() => undefined}
+        onClose={close}
+        onEraseAll={() => void erase("account")}
+        error={error}
+      />
+    );
   }
 
   if (!passed) {
-    return <BirthGate storedBirth={profile.birth} onPass={() => setPassed(true)} onClose={close} />;
+    return (
+      <BirthGate
+        storedBirth={profile.birth}
+        onPass={() => setPassed(true)}
+        onClose={close}
+        onEraseAll={() => void erase("account")}
+      />
+    );
   }
 
   return (
