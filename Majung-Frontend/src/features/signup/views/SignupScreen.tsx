@@ -69,14 +69,12 @@ const BIRTH_DEFAULT_YEAR = 1975;
 /** 출소일 범위. 곧 나올 사람이 시설 안에서 쓰는 것을 전제하므로 내년까지 열어 둔다 (A 프레임). */
 const RELEASE_SPAN_YEARS = 5;
 
-function FieldLabel({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
+// **"(안 고르셔도 돼요)"를 걷었다** (2026-08-26). 안 골라도 된다는 말을 제목에 붙이니
+// 오히려 골라야 하나 망설이게 됐다. 안 고르고 넘어가는 길은 선택지에 이미 있다
+// ("말하고 싶지 않아요") — 거기서 말하는 편이 낫다.
+function FieldLabel({ children }: { children: React.ReactNode }) {
   return (
-    <Text className="mb-2 mt-6 text-body-lg font-extrabold text-ink-strong">
-      {children}
-      {optional ? (
-        <Text className="text-caption font-semibold text-ink-muted"> (안 고르셔도 돼요)</Text>
-      ) : null}
-    </Text>
+    <Text className="mb-2 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>
   );
 }
 
@@ -193,7 +191,7 @@ export function SignupScreen({
 
         {/* "말하고 싶지 않아요"도 다른 선택지와 같은 간격으로 놓는다. 구분선으로 떼어 놓으면
             고르지 않는 편이 낫다는 뜻으로 읽힌다. 말하지 않는 것도 똑같은 선택이다 (§3.3). */}
-        <FieldLabel optional>어떤 일로 계셨나요</FieldLabel>
+        <FieldLabel>어떤 일로 계셨나요</FieldLabel>
         <View>
           {CRIME_CATEGORIES.map((c) => (
             <ChoiceButton

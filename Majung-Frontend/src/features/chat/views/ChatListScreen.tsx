@@ -11,7 +11,7 @@ import { Icon } from "@/shared/components/Icon";
 import { TabBadge } from "@/shared/components/TabBadge";
 import { COLORS } from "@/shared/theme/colors";
 
-import type { Conversation } from "../domain/conversation";
+import { groupByPeer, type Conversation } from "../domain/conversation";
 
 function EmptyNote() {
   return (
@@ -87,8 +87,17 @@ export function ChatListScreen({
         <EmptyNote />
       ) : (
         <ScrollView className="flex-1">
-          {conversations.map((c) => (
-            <Row key={`${c.kind}:${c.id}`} item={c} onOpen={onOpen} />
+          {/* **누구와 나눈 이야기인지로 묶는다.** 아이콘만으로는 한 목록에 섞여 있어,
+              지금 보는 줄이 담당자인지 마중365인지 제목을 읽어야 알 수 있었다 */}
+          {groupByPeer(conversations).map((group) => (
+            <View key={group.title}>
+              <View className="bg-page px-5 py-2">
+                <Text className="text-caption font-bold text-ink-muted">{group.title}</Text>
+              </View>
+              {group.items.map((c) => (
+                <Row key={`${c.kind}:${c.id}`} item={c} onOpen={onOpen} />
+              ))}
+            </View>
           ))}
         </ScrollView>
       )}

@@ -13,6 +13,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import { COLORS } from "@/shared/theme/colors";
 import { deferClose } from "@/shared/utils/deferClose";
 
+import { totalToShow } from "../domain/progress";
 import { isAnswered, type IntakeAnswers, type IntakeQuestion } from "../domain/questionTypes";
 import type { SectionId } from "../domain/sections";
 import { urgentNoticeFor, type UrgentNotice as Notice } from "../domain/urgent";
@@ -100,6 +101,20 @@ export function QuestionFlow({
   const total = questions.length;
   const question = questions[step];
 
+  /**
+   * 진행 막대에 적는 총 개수. **실제 문항 수와 다를 수 있다** (결정 H-4).
+   *
+   * 꼬리질문이 열리면 실제 수가 그 자리에서 늘어나는데, 그대로 그리면 답 하나
+   * 골랐다고 막대가 뒤로 밀리는 것처럼 보인다. 이동할 때만 따라간다.
+   */
+  const [shownTotal, setShownTotal] = useState(total);
+  const move = (next: number) => {
+    setStep(next);
+    setShownTotal((prev) => totalToShow(prev, questions.length, next, true));
+  };
+  // 답이 바뀌어 목록이 늘거나 줄어도, 지금 보는 자리를 벗어나지 않는 선에서 그대로 둔다.
+  const displayedTotal = totalToShow(shownTotal, total, step, false);
+
   // **다 마칠 때까지 기다리지 않는다.** 고르는 순간 안내가 나가야 하는 답이 있다 (§3.9-⑩).
   useEffect(() => {
     if (!question) return;
@@ -116,13 +131,15 @@ export function QuestionFlow({
   // 닫기를 미루지 않으면 이 클릭이 뒤 화면의 분야 격자까지 눌러 다른 팝업이 열린다.
   const close = deferClose(onClose);
 
-  const goPrev = () => setStep((prev) => Math.max(0, prev - 1));
+  const goPrev = () => move(Math.max(0, step - 1));
   const goNext = () => {
+    // **끝인지는 실제 문항 수로 본다.** 화면에 적힌 수로 보면 방금 열린 꼬리질문을
+    // 건너뛰고 팝업이 닫힌다.
     if (last) {
       close();
       return;
     }
-    setStep((prev) => prev + 1);
+    move(step + 1);
   };
 
   if (!sectionId) return null;
@@ -162,12 +179,13 @@ export function QuestionFlow({
               className="h-full rounded-full"
               style={{
                 backgroundColor: COLORS.brand,
-                width: total > 0 ? `${((step + 1) / total) * 100}%` : "0%",
+                width:
+                  displayedTotal > 0 ? `${((step + 1) / displayedTotal) * 100}%` : "0%",
               }}
             />
           </View>
           <Text className="mt-2 text-caption font-bold text-ink-muted">
-            {total}개 중 {Math.min(step + 1, total)}번째
+            {displayedTotal}개 중 {Math.min(step + 1, displayedTotal)}번째
           </Text>
         </View>
 

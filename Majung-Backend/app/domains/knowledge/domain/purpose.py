@@ -48,18 +48,43 @@ def _subject_particle(word: str) -> str:
     return "이" if has_final else "가"
 
 
+def _join_korean(words: list[str]) -> str:
+    """"병원비와 월세나 방값" — 받침에 따라 과/와를 고른다.
+
+    조사가 틀리면 기계가 쓴 문장으로 읽힌다. 마지막 이음말만 앞 낱말의 받침을 본다.
+    """
+    if not words:
+        return ""
+    joined = words[0]
+    for word in words[1:]:
+        last = joined[-1] if joined else ""
+        has_final = "가" <= last <= "힣" and (ord(last) - 0xAC00) % 28 != 0
+        joined = f"{joined}{'과' if has_final else '와'} {word}"
+    return joined
+
+
 def expense_purpose(route: RouteId, answers: Mapping[str, object]) -> str | None:
     """이 항목의 안내에 채워 넣을 용도. 채울 것이 없으면 None.
 
     R2 말고는 채울 자리가 없다. "지금은 필요 없어요"·"잘 모르겠어요"를 골랐으면
     채울 용도 자체가 없으므로 원문을 그대로 둔다.
+
+    **여러 개를 고를 수 있다** (2026-08-26 결정 H-2). 병원비와 월세가 동시에 급한
+    사람이 실제로 있고, 하나만 받으면 창구에서 한쪽 서류를 안 들고 가게 된다.
+    고른 것을 모두 안내한다 — 챙겨 갈 것이 늘어나도 되돌아오는 것보다 낫다.
+
+    **순서는 문항의 선택지 순서다.** 누른 순서를 따르면 같은 답에 다른 문장이 나온다.
     """
     if route is not RouteId.R2:
         return None
     answer = answers.get("emergencyExpenseType")
-    if not isinstance(answer, str):
+    picked = [answer] if isinstance(answer, str) else answer
+    if not isinstance(picked, (list, tuple)):
         return None
-    return _EXPENSE_PURPOSE.get(answer)
+
+    chosen = {str(v) for v in picked}
+    words = [label for key, label in _EXPENSE_PURPOSE.items() if key in chosen]
+    return _join_korean(words) or None
 
 
 def docs_with_purpose(docs: tuple[str, ...], purpose: str | None) -> tuple[str, ...]:

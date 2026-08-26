@@ -105,8 +105,10 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
           {done ? (
             <View className="flex-row items-center gap-1">
               <Icon name="check" size={15} color={FOLDER_DONE.title} />
+              {/* **"끝"이 아니라 "완료"다.** 한 글자로 줄이니 딱 자르는 말이 되어,
+                  마친 일을 다시 들여다볼 수 있다는 것이 안 읽혔다 */}
               <Text className="text-body font-extrabold" style={{ color: FOLDER_DONE.title }}>
-                끝
+                완료
               </Text>
             </View>
           ) : (
