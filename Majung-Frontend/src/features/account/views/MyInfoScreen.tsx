@@ -50,6 +50,8 @@ export function MyInfoScreen({
   error,
 }: Props) {
   const [editingCrime, setEditingCrime] = useState(false);
+  /** 밝히겠다고 고른 값. 동의를 받기 전까지는 보내지 않는다 (§9.5). */
+  const [pendingCrime, setPendingCrime] = useState<CrimeCategoryId | null>(null);
   const [confirming, setConfirming] = useState<EraseScope | null>(null);
 
   // **무엇을 고르셨는지는 여기 나오지 않는다** (§2.5 — 화면에 띄우면 어깨 너머로 보인다).
@@ -88,6 +90,44 @@ export function MyInfoScreen({
           </View>
         </View>
 
+        {/* **민감정보라 따로 받는다** (§3.4-1·§9.5). 가입 화면에서 쓰는 것과 같은 문구다. */}
+        {pendingCrime ? (
+          <View className="mt-3 rounded-2xl border-[1.5px] border-brand-soft bg-white p-4">
+            <Text className="text-body-lg font-extrabold text-ink-strong">
+              민감정보 수집·이용 동의
+            </Text>
+            <Text className="mt-2 text-body text-ink-body">
+              어떤 일로 계셨는지 모으고 쓰는 데 동의해요.
+            </Text>
+            <Text className="mt-2 text-caption text-ink-muted">
+              담당자에게는 전해지지 않아요. 언제든 다시 지우실 수 있어요.
+            </Text>
+            <View className="mt-4 flex-row gap-2">
+              <Pressable
+                onPress={() => {
+                  const picked = pendingCrime;
+                  setPendingCrime(null);
+                  onChangeCrime(picked);
+                }}
+                accessibilityRole="button"
+                accessibilityLabel="동의하고 저장하기"
+                className="rounded-xl px-4 py-3 active:opacity-90"
+                style={{ backgroundColor: COLORS.brand }}
+              >
+                <Text className="text-body font-extrabold text-white">동의하고 저장할게요</Text>
+              </Pressable>
+              <Pressable
+                onPress={() => setPendingCrime(null)}
+                accessibilityRole="button"
+                accessibilityLabel="그만두기"
+                className="rounded-xl border border-line bg-white px-4 py-3 active:opacity-90"
+              >
+                <Text className="text-body font-semibold text-ink-sub">그만두기</Text>
+              </Pressable>
+            </View>
+          </View>
+        ) : null}
+
         {/* 처음에는 말하고 싶지 않았다가 서비스를 써보고 마음이 바뀔 수 있다 (§3.3-3). */}
         {editingCrime ? (
           <View className="mt-3 rounded-2xl border-[1.5px] border-brand-soft bg-white p-4">
@@ -105,8 +145,14 @@ export function MyInfoScreen({
                   label={c.label}
                   selected={selected}
                   onPress={() => {
-                    onChangeCrime(c.id === "undisclosed" ? null : c.id);
                     setEditingCrime(false);
+                    if (c.id === "undisclosed") {
+                      // 지우는 데에는 새 동의가 필요 없다. 철회는 권리다 (§9.5).
+                      onChangeCrime(null);
+                      return;
+                    }
+                    // **밝히는 것은 동의를 먼저 받는다.** 가입 때와 같은 규칙이다.
+                    setPendingCrime(c.id);
                   }}
                   className="mb-2"
                 />
@@ -122,19 +168,19 @@ export function MyInfoScreen({
         {onRetake ? (
           <>
             <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">
-              상황이 달라졌나요
+              상황이 변하셨나요?
             </Text>
             <Pressable
               onPress={onRetake}
               accessibilityRole="button"
-              accessibilityLabel="상황 알아보기 다시 하기"
+              accessibilityLabel="설문조사 다시 진행하기"
               className="mb-3 rounded-xl border-[1.5px] border-brand-soft bg-white px-4 py-4 active:opacity-80"
             >
               <Text className="text-body-lg font-bold" style={{ color: COLORS.brand }}>
-                상황 다시 알아보기
+                설문조사 다시 진행하기
               </Text>
               <Text className="mt-1 text-caption text-ink-muted">
-                지금에 맞게 할 일을 다시 골라 드려요. 끝낸 표시는 지워져요.
+                설문조사를 다시 진행합니다. 끝낸 표시는 지워집니다.
               </Text>
             </Pressable>
           </>

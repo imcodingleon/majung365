@@ -102,6 +102,17 @@ class SupabaseAccountRepository:
             ).execute()
         return account
 
+    def record_consent(self, user_id: UUID, consent: Consent) -> None:
+        """가입 이후에 한 동의. 이력이므로 덮어쓰지 않고 한 줄 더 쌓는다."""
+        self._db.table("user_consent").insert(
+            {
+                "user_id": str(user_id),
+                "kind": consent.kind,
+                "agreed": consent.agreed,
+                "at": consent.at.isoformat(),
+            }
+        ).execute()
+
     def by_id(self, user_id: UUID) -> Account | None:
         result = (
             self._db.table("app_user")

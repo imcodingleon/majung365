@@ -56,6 +56,27 @@ export default function MyInfoRoute() {
     };
   }, [close]);
 
+  /**
+   * 죄목을 새로 밝힌다 (§3.3-3).
+   *
+   * **오래 빠져 있던 짝이다.** 철회만 있고 밝히는 길이 없어서, 화면에서 고른 값은
+   * 아무 데도 가지 않고 사라졌다. "바꾸기"라고 적혀 있는데 실제로는 지우기뿐이었다.
+   */
+  const tell = useCallback(async (crime: CrimeCategoryId) => {
+    const token = await loadToken();
+    if (!token) return;
+    try {
+      const me = await patchMe(token, {
+        crime_category: crime,
+        crime_consent_agreed: true,
+      });
+      setProfile((p) => (p ? { ...p, hasCrime: me.has_crime_category } : p));
+      setError(null);
+    } catch (err) {
+      setError(err instanceof ApiError ? err.message : "지금은 저장하지 못했어요.");
+    }
+  }, []);
+
   const erase = useCallback(
     async (scope: EraseScope) => {
       const token = await loadToken();
@@ -112,8 +133,13 @@ export default function MyInfoRoute() {
       profile={profile}
       error={error}
       onChangeCrime={(crime: CrimeCategoryId | null) => {
-        // 화면에서 바꿀 수 있는 것은 철회뿐이다. 다른 값으로 고치는 경로는 서버에 없다.
-        if (crime === null) void erase("crime");
+        // 지우는 것과 밝히는 것이 다른 길이다. 철회는 권리라 동의를 다시 받지 않고,
+        // 밝히는 것은 민감정보라 동의를 먼저 받는다 (§9.5). 동의는 화면이 받아 왔다.
+        if (crime === null) {
+          void erase("crime");
+          return;
+        }
+        void tell(crime);
       }}
       onErase={erase}
       // 이 화면을 덮고 열지 않고 밀어 넣는다. 다시 하기를 그만두면 여기로 돌아온다.

@@ -30,6 +30,15 @@ class AccountRepository(Protocol):
         매 요청마다 쓰면 읽기만 하는 화면에서도 쓰기가 생긴다."""
         ...
 
+    def record_consent(self, user_id: UUID, consent: Consent) -> None:
+        """이미 가입한 사람이 새로 한 동의를 남긴다.
+
+        **가입할 때만 동의를 받는 것이 아니다.** 처음에는 말하지 않다가 나중에 밝힐 수
+        있고(§3.3-3), 그때도 민감정보 동의는 받아야 한다(§9.5). 이 자리가 없으면
+        동의 없이 죄목이 저장되거나, 밝힐 길 자체가 막힌다.
+        """
+        ...
+
     def delete(self, user_id: UUID) -> None:
         """즉시 파기(§9.4). 죄목·동의·세션이 함께 지워진다(on delete cascade)."""
         ...
