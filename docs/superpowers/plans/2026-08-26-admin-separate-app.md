@@ -364,24 +364,34 @@ npx jest app.config.test.ts
 
 테스트는 파일을 직접 부르지만, Expo가 플러그인까지 적용한 결과는 다를 수 있다. 눈으로 대조한다.
 
+**`--json`을 반드시 붙인다.** 없으면 색 입힌 사람용 텍스트가 나와 파싱할 수 없다.
+
+**출력 파일을 `/tmp`에 두지 않는다.** Git Bash의 `/tmp`와 윈도우 파이썬이 보는 경로가 달라 파일을 찾지 못한다. 프로젝트 안에 두고 확인 뒤 지운다.
+
+**읽을 때 `encoding='utf-8'`을 명시한다.** 기본값이 cp949라 한글이 든 JSON에서 깨진다.
+
 ```bash
 cd Majung-Frontend
-npx expo config --type public > /tmp/cfg-user.json
-APP_VARIANT=admin npx expo config --type public > /tmp/cfg-admin.json
+npx expo config --type public --json > cfg-user.json
+APP_VARIANT=admin npx expo config --type public --json > cfg-admin.json
 python3 -c "
 import json
-u = json.load(open('/tmp/cfg-user.json'))
-a = json.load(open('/tmp/cfg-admin.json'))
+def load(n): return json.load(open(n, encoding='utf-8'))
+u, a = load('cfg-user.json'), load('cfg-admin.json')
 for k in ('name', 'slug', 'scheme'):
-    print(f'{k:8} {u.get(k)!r:20} -> {a.get(k)!r}')
-print('android ', u['android']['package'], '->', a['android']['package'])
-print('ios     ', u['ios']['bundleIdentifier'], '->', a['ios']['bundleIdentifier'])
+    print(f'{k:8} {u.get(k)} -> {a.get(k)}')
+print('android    ', u['android']['package'], '->', a['android']['package'])
+print('ios        ', u['ios']['bundleIdentifier'], '->', a['ios']['bundleIdentifier'])
+print('typedRoutes', u['experiments']['typedRoutes'], '->', a['experiments']['typedRoutes'])
 assert u['android']['package'] != a['android']['package']
 print('OK')
 "
+rm -f cfg-user.json cfg-admin.json
 ```
 
-기대: 이름·slug·scheme·패키지·번들 ID가 모두 갈리고 마지막에 `OK`.
+기대: 이름·slug·scheme·패키지·번들 ID가 모두 갈리고, `typedRoutes`가 `True -> False`이며, 마지막에 `OK`.
+
+담당자 쪽 `extra.eas.projectId`는 이 단계에서 `{}`로 보인다. Expo가 `null`을 그렇게 바꾼 것이며 **Task 6이 실제 값을 넣을 때까지는 정상이다.**
 
 - [ ] **Step 7: 타입 검사**
 
