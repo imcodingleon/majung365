@@ -3,5 +3,6 @@
   "installCommand": "cd Majung-Frontend && npm install",
   "buildCommand": "cd Majung-Frontend && INCLUDE_ADMIN=1 EXPO_PUBLIC_API_URL=https://3-34-251-223.sslip.io npx expo export -p web",
   "outputDirectory": "Majung-Frontend/dist",
-  "cleanUrls": true
+  "cleanUrls": true,
+  "rewrites": [{ "source": "/qr", "destination": "/api/qr" }]
 }
