@@ -14,10 +14,30 @@
         "buildType": "apk"
       }
     },
-    "production": {}
+    "production": {},
+    "admin-preview": {
+      "distribution": "internal",
+      "env": {
+        "APP_VARIANT": "admin"
+      },
+      "android": {
+        "buildType": "apk"
+      }
+    },
+    "admin-production": {
+      "env": {
+        "APP_VARIANT": "admin"
+      }
+    }
   },
   "submit": {
     "production": {
+      "android": {
+        "serviceAccountKeyPath": "./google-play-service-account.json",
+        "track": "internal"
+      }
+    },
+    "admin-production": {
       "android": {
         "serviceAccountKeyPath": "./google-play-service-account.json",
         "track": "internal"
