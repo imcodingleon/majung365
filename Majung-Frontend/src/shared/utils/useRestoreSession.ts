@@ -13,7 +13,7 @@ import type { RouteId } from "@/shared/types/route";
 import { ApiError, getTasks } from "@/shared/utils/api";
 import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
 import { getSession, startSession } from "@/shared/utils/session";
-import { lastAnswers } from "@/shared/utils/storage";
+import { lastAnswers, lastPlace } from "@/shared/utils/storage";
 import { clearToken, loadToken } from "@/shared/utils/tokenStore";
 
 /** 되살리는 중인가. 그동안 화면을 가입 쪽으로 보내면 안 된다. */
@@ -42,6 +42,10 @@ export function useRestoreSession(): { checking: boolean } {
           // 원문이 없어서(§9.1) 여기서 채우지 않으면, 방문 알림의 "담당자에게 이만큼
           // 알려주기"(§7.4-1)가 새로고침 한 번에 통째로 사라진다.
           rawAnswers: (lastAnswers() ?? undefined) as IntakeAnswers | undefined,
+          // **위치도 되살린다.** 홈 화면은 이 값으로 카드에 가까운 공단 지부를 붙이는데
+          // (§5.4), 여기서 안 채우면 새로고침한 뒤 그 자리가 일반 안내로 돌아간다.
+          // 지도 탭은 `useRegionLookup`이 기기에서 직접 읽어 멀쩡했고, 홈만 비었다.
+          place: lastPlace() ?? undefined,
         });
       } catch (err) {
         // **아무 실패에나 토큰을 지우지 않는다.** 서버가 잠깐 안 되거나 인터넷이
