@@ -31,13 +31,18 @@ const LAST_RESORT = "https://majung365.vercel.app";
 type Connection = { baseUrl: string; token: string };
 
 /**
- * `EDGE_CONFIG` 환경변수를 읽는다. 대시보드에서 Edge Config를 프로젝트에 연결하면
- * Vercel이 이 이름으로 넣어 준다.
+ * 연결 문자열을 읽는다. 대시보드에서 Global Config를 프로젝트에 연결하면 Vercel이
+ * `GLOBAL_CONFIG`라는 이름으로 넣어 준다.
+ *
+ * **이름이 둘인 이유가 있다.** 이 제품은 Edge Config였다가 Global Config로 이름이
+ * 바뀌었고, 예전에 연결한 프로젝트에는 `EDGE_CONFIG`가 들어 있다. 우리 프로젝트는
+ * 2026-08-26에 연결해 `GLOBAL_CONFIG`를 받았다 — 처음에 옛 이름만 보다가 값을
+ * 못 읽었고, 그때도 최후 목적지가 같은 주소라 겉보기에는 멀쩡했다.
  *
  * 꼴은 `https://edge-config.vercel.com/ecfg_xxx?token=yyy` 이다.
  */
 function connection(): Connection | null {
-  const raw = process.env.EDGE_CONFIG;
+  const raw = process.env.GLOBAL_CONFIG ?? process.env.EDGE_CONFIG;
   if (!raw) return null;
 
   try {
@@ -47,7 +52,7 @@ function connection(): Connection | null {
     if (!id || !token) return null;
     return { baseUrl: `https://edge-config.vercel.com/${id}`, token };
   } catch {
-    console.error("[qr] EDGE_CONFIG가 주소 꼴이 아니다");
+    console.error("[qr] 연결 문자열이 주소 꼴이 아니다");
     return null;
   }
 }
@@ -105,7 +110,9 @@ async function readTarget(conn: Connection, key: string): Promise<string | null>
 async function pickTarget(userAgent: string): Promise<string> {
   const conn = connection();
   if (!conn) {
-    console.error("[qr] EDGE_CONFIG가 없다 — 연결이 빠졌거나 재배포가 필요하다");
+    console.error(
+      "[qr] GLOBAL_CONFIG도 EDGE_CONFIG도 없다 — 연결이 빠졌거나 재배포가 필요하다",
+    );
     return LAST_RESORT;
   }
 
