@@ -2,11 +2,21 @@
 //
 // ⚠️ **이 파일이 문항 값의 유일한 자리다.** 화면 코드는 questionTypes.ts의 타입만 보고 그린다.
 //
-// 두 가지가 아직 기획 검토 중이다. 확정되면 **이 파일의 값만 바꾸면 반영된다.**
-//   1. `optionId` 값 (intake-questions.md §9-1)
-//   2. 문항 최종 문구 검수 (기획서 §12-11)
+// `optionId` 값은 아직 기획 검토 중이다 (intake-questions.md §9-1). 확정되면 **이 파일의
+// 값만 바꾸면 반영된다.**
+//
+// **질문 문구는 2026-08-31에 확정했다.** 25개를 하나씩 정해 격식체 어휘로 바꿨다 —
+// "지금 머물 곳은 어떤 상황인가요?"가 "현재 거주 상황을 선택해 주세요."가 된 식이다.
+// 선택지를 봐야 뜻을 알던 질문("어떤 상황인가요"가 세 문항에 반복됐다)을 걷어내는 것이
+// 목적이었다. **선택지는 바꾸지 않는다** — 사용자가 자기 상황을 고르는 말이라, 서류의
+// 말로 옮기면 뜻이 달라진다. 그래서 한 화면 안에서 질문과 선택지의 어투가 갈리는데
+// 그것은 감수한 것이다.
+//
+// **질문에 제도 이름을 올릴 때는 `help`를 함께 본다.** "공식 이름은 ‘전입신고’예요" 같은
+// 줄이 질문과 같은 말을 두 번 하게 된다. 실제로 세 문항에서 그랬다.
 //
 // 정본: `_bmad-output/specs/spec-majung-2nd/intake-questions.md`
+// 어체 규칙: `_bmad-output/specs/spec-majung-2nd/copy-voice.md` 다섯째 갈래
 // 문구 규칙: 기획서 §3.9 (판단하는 어감 금지 · 쉬운 말 · 1인칭 진술 · 한 문장에 한 가지)
 import type { IntakeQuestion } from "./questionTypes";
 
@@ -35,7 +45,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q1-1",
     sectionId: "housing",
     routeId: "R1",
-    prompt: "지금 머물 곳은 어떤 상황인가요?",
+    prompt: "현재 거주 상황을 선택해 주세요.",
     kind: "single",
     dataKey: "accommodationStatus",
     options: [
@@ -52,7 +62,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q1-1-1",
     sectionId: "housing",
     routeId: "R1",
-    prompt: "지금 머무는 곳은 언제까지 있을 수 있나요?",
+    prompt: "현재 거주지에 언제까지 있을 수 있나요?",
     kind: "date",
     dataKey: "temporaryStayEndDate",
     allowUnknown: true,
@@ -73,11 +83,11 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     // **"장기 거주"라고 못 박는다** (2026-08-26). "오래 지낼 집"은 앞 문항의 "잠시
     // 머물 곳"과 눈으로 갈리지 않아, 도움말로 그 차이를 설명하고 있었다. 물음 자체가
     // 구별되면 도움말이 필요 없다.
-    prompt: "장기 거주 할 집을 구해야 하나요?",
+    prompt: "장기 거주할 집을 구해야 하나요?",
     kind: "single",
     dataKey: "housingNeed",
     options: [
-      { id: "NEEDED", label: "네, 장기 거주 할 집이 필요해요" },
+      { id: "NEEDED", label: "네, 장기 거주할 집이 필요해요" },
       NOT_NEEDED,
       UNKNOWN,
     ],
@@ -88,7 +98,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     routeId: "R11",
     // 도움말을 걷었다 (2026-08-26). 선택지에 "일정하게 지내는 곳이 없어요"가 이미
     // 있어서, 그것을 고르라고 다시 적으면 같은 말을 두 번 하는 셈이었다.
-    prompt: "지금 지내는 곳이 주민등록 주소와 같나요?",
+    prompt: "현재 거주지와 주민등록 주소가 같나요?",
     kind: "single",
     dataKey: "addressStatus",
     options: [
@@ -107,8 +117,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q1-3-1",
     sectionId: "housing",
     routeId: "R11",
-    prompt: "지금 지내는 곳을 새 주민등록 주소로 신고할 수 있나요?",
-    help: "공식 이름은 ‘전입신고’예요.",
+    prompt: "현재 거주지로 전입신고가 가능한가요?",
     kind: "single",
     dataKey: "canRegisterCurrentResidence",
     showWhen: { questionId: "Q1-3", optionIds: ["MISMATCHED"] },
@@ -147,7 +156,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     // **`help`를 두지 않는다** (2026-08-31). "여러 개를 고르셔도 돼요."라고 적혀 있었는데,
     // 여러 개 고르는 문항에는 화면이 "맞는 것을 모두 골라 주세요"를 따로 붙인다. 같은 말이
     // 두 줄로 겹쳐 나왔다. 안내는 화면이 붙이는 한 줄이 맡는다.
-    prompt: "지금 급하게 필요한 돈은 어디에 쓰나요?",
+    prompt: "급하게 필요한 비용의 용도를 선택해 주세요.",
     kind: "multi",
     dataKey: "emergencyExpenseType",
     options: [
@@ -163,8 +172,8 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q2-2",
     sectionId: "living",
     routeId: "R12",
-    prompt: "정부가 매달 주는 생활비 지원을 신청했나요?",
-    help: "소득과 재산이 적은 집에 정부가 매달 생활비를 주는 제도예요. 공식 이름은 ‘생계급여’예요.",
+    prompt: "생계급여를 신청하셨나요?",
+    help: "소득과 재산이 적은 집에 정부가 매달 생활비를 주는 제도예요.",
     kind: "single",
     dataKey: "livelihoodBenefitStatus",
     options: [
@@ -181,7 +190,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q2-2-1",
     sectionId: "living",
     routeId: "R12",
-    prompt: "지금 생활비가 얼마나 급한가요?",
+    prompt: "생활비는 언제까지 필요하세요?",
     kind: "single",
     dataKey: "livelihoodUrgency",
     showWhen: { questionId: "Q2-2", optionIds: ["PENDING", "NOT_APPLIED", "UNKNOWN"] },
@@ -198,7 +207,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-1",
     sectionId: "identity",
     routeId: "R9",
-    prompt: "지금 바로 쓸 수 있는 신분증이 있나요?",
+    prompt: "사용 가능한 신분증을 가지고 계신가요?",
     help: "주민등록증, 운전면허증, 사진이 붙은 임시 신분증을 말해요. 임시 신분증은 주민센터에서 받아요.",
     kind: "single",
     dataKey: "identityStatus",
@@ -212,7 +221,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-1-1",
     sectionId: "identity",
     routeId: "R9",
-    prompt: "신분증은 지금 어떤 상황인가요?",
+    prompt: "신분증 상태를 선택해 주세요.",
     help: "주민등록증을 신청한 다음 주민센터에 말하면 임시 신분증을 받을 수 있어요. 사진이 붙어 있고 30일 동안 쓸 수 있어요. 공식 이름은 ‘주민등록증 발급신청 확인서’예요.",
     kind: "single",
     dataKey: "identityDetail",
@@ -238,7 +247,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-2",
     sectionId: "identity",
     routeId: "R10",
-    prompt: "내 이름으로 된 통장을 지금 쓸 수 있나요?",
+    prompt: "본인 명의 계좌를 사용하실 수 있나요?",
     help: "지원금을 받고, 필요할 때 돈을 찾거나 보낼 수 있는 통장을 말해요.",
     kind: "single",
     dataKey: "bankAccountStatus",
@@ -253,7 +262,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-2-1",
     sectionId: "identity",
     routeId: "R10",
-    prompt: "통장을 쓸 때 어떤 점이 어려운가요?",
+    prompt: "계좌 이용에 어려운 점이 있으신가요?",
     kind: "single",
     dataKey: "bankAccountDetail",
     showWhen: { questionId: "Q3-2", optionIds: ["UNUSABLE"] },
@@ -268,7 +277,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q3-2-2",
     sectionId: "identity",
     routeId: "R10",
-    prompt: "통장은 지금 어떤 상황인가요?",
+    prompt: "계좌 상태를 선택해 주세요.",
     kind: "single",
     dataKey: "bankAccountDetail",
     showWhen: { questionId: "Q3-2", optionIds: ["NONE"] },
@@ -287,7 +296,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     sectionId: "employment",
     routeId: "R6",
     // 희망·현재 상태·과거 이력을 한 목록에 섞지 않는다. 두 단계로 나눴다 (규칙 ⑨).
-    prompt: "지금 일을 하고 있나요?",
+    prompt: "현재 직장은 있으신가요?",
     kind: "single",
     dataKey: "employmentCurrentStatus",
     options: [
@@ -304,7 +313,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q4-1-1",
     sectionId: "employment",
     routeId: "R6",
-    prompt: "일자리 문제로 어떤 도움이 필요한가요?",
+    prompt: "필요한 취업 지원을 선택해 주세요.",
     kind: "single",
     dataKey: "employmentSupportNeed",
     showWhen: {
@@ -324,7 +333,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     sectionId: "employment",
     routeId: "R6",
     // 희망 사항과 섞으면 안 되는 과거 이력이다. 재참여 자격 판정에 쓴다.
-    prompt: "허그일자리에 참여해 본 적 있나요?",
+    prompt: "허그일자리 참여 경험이 있으신가요?",
     kind: "single",
     dataKey: "hugJobHistory",
     showWhen: {
@@ -341,7 +350,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q4-2",
     sectionId: "employment",
     routeId: "R7",
-    prompt: "장사나 사업을 시작하려고 하나요?",
+    prompt: "창업할 계획이 있으신가요?",
     kind: "single",
     dataKey: "startupIntent",
     options: [
@@ -355,7 +364,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q4-2-1",
     sectionId: "employment",
     routeId: "R7",
-    prompt: "장사나 사업을 하려고 준비한 것이 있나요?",
+    prompt: "창업 준비 사항을 선택해 주세요.",
     kind: "multi",
     dataKey: "startupReadinessIds",
     showWhen: { questionId: "Q4-2", optionIds: ["PREPARING"] },
@@ -380,7 +389,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     // **"가족의 병원비"는 뺐다.** 공단 기초건강지원은 본인 대상이라 그 답을 고르면
     // 답이 없는 안내가 나간다. **"우울하거나 불안해서"도 뺐다.** 바로 다음 문항이
     // 마음 상담을 전담한다 (2026-08-23).
-    prompt: "건강 때문에 어떤 도움이 필요한가요?",
+    prompt: "필요한 의료 지원을 선택해 주세요.",
     kind: "single",
     dataKey: "healthSupportNeed",
     options: [
@@ -399,7 +408,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     // 상담 방식(1:1·집단·심리검사·가족)을 넷으로 물었는데 **센터에 가면 거기서 정하는 일이다.**
     // R8 카드에도 방식을 나누는 내용이 없어, 고른 답이 안내를 바꾸지 못했다.
     // 미리 정하게 하면 무엇이 자기에게 맞는지 또 판단해야 한다 (2026-08-23).
-    prompt: "마음이 힘들 때 상담을 받아 보시겠어요?",
+    prompt: "심리 상담을 받아보시겠습니까?",
     help: "어떤 방식으로 상담할지는 가서 함께 정해요. 지금 고르지 않으셔도 돼요.",
     kind: "single",
     dataKey: "counselingNeed",
@@ -413,8 +422,8 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q6-1",
     sectionId: "rights",
     routeId: "R13",
-    prompt: "교도소·구치소에 있던 기간과 출소한 날이 적힌 증명서가 있나요?",
-    help: "공식 이름은 ‘수용·출소증명서’예요. 형사사법포털이나 가까운 교도소·구치소에서 받을 수 있어요.",
+    prompt: "수용·출소증명서를 가지고 계신가요?",
+    help: "형사사법포털이나 가까운 교도소·구치소에서 받을 수 있어요.",
     kind: "single",
     dataKey: "releaseCertificateStatus",
     options: [
@@ -428,7 +437,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q6-2",
     sectionId: "rights",
     routeId: "R14",
-    prompt: "빚 문제는 지금 어떻게 하고 있나요?",
+    prompt: "빚은 지금 어떻게 되어 있나요?",
     kind: "single",
     dataKey: "debtProcedureStage",
     options: [
@@ -447,7 +456,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     sectionId: "rights",
     routeId: "R14",
     // "장사로 버는 돈"으로 좁히지 않는다. 프리랜서 수입이 빠지면 자격 판정이 틀어진다.
-    prompt: "월급, 연금, 직접 일해서 버는 돈처럼 매달 들어오는 돈이 있나요?",
+    prompt: "매달 정기적으로 들어오는 소득이 있나요?",
     kind: "single",
     dataKey: "incomeContinuity",
     showWhen: { questionId: "Q6-2", optionIds: ["STARTING"] },
@@ -462,7 +471,7 @@ export const INTAKE_QUESTIONS: readonly IntakeQuestion[] = [
     id: "Q6-3",
     sectionId: "rights",
     routeId: "R15",
-    prompt: "출소하고 나서 병원비를 줄여주는 보험이나 지원을 확인했나요?",
+    prompt: "의료급여 또는 건강보험 자격을 확인하셨나요?",
     help: "‘의료급여’는 생활이 어려운 사람의 병원비를 정부가 도와주는 제도예요. 건강보험이 직장 가입인지 지역 가입인지는 몰라도 괜찮아요.",
     kind: "single",
     dataKey: "medicalCoverageStatus",
