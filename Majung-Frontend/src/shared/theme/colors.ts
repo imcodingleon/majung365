@@ -7,6 +7,8 @@
 export const COLORS = {
   brand: "#024f9f",
   brandSoft: "#e1eefa",
+  /** 고른 것을 나타내는 배경. soft보다 옅어 흰 카드 위에서 글자를 밀어내지 않는다. */
+  brandTint: "#f1f7ff",
   brandMuted: "#b9cde4",
 
   sun500: "#EF9F27",
@@ -15,6 +17,8 @@ export const COLORS = {
   inkStrong: "#1c2333",
   inkSub: "#5b6474",
   inkBody: "#333c4e",
+  /** 항목에 딸린 한 줄 설명. sub보다 밝고 muted보다 어둡다. */
+  inkHint: "#7a8291",
   inkMuted: "#939393",
 
   /**
@@ -49,9 +53,13 @@ export const COLORS = {
   alertInk: "#991b1b",
 
   // 완료 표시 계열. 인덱스 탭의 항목별 색과 달리 상태를 뜻한다.
-  doneBg: "#eef9f0",
+  //
+  // **2026-08-31에 tailwind 쪽 값으로 맞췄다.** 여기가 `#eef9f0`·`#2c6e3b`였고
+  // tailwind의 `folder.done-bg`·`folder.done-ink`가 `#f3faf4`·`#3e7a49`라 같은 자리를
+  // 두 값이 칠하고 있었다. `palette.ts`의 `FOLDER_DONE`이 tailwind 쪽과 같아 그것을 정본으로 봤다.
+  doneBg: "#f3faf4",
   doneLine: "#bfe3c6",
-  doneInk: "#2c6e3b",
+  doneInk: "#3e7a49",
 
   // 담당자 연결처럼 안내와 성격이 다른 동작에 쓰는 파랑.
   action: "#2563eb",

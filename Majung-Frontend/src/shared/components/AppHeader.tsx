@@ -6,6 +6,8 @@
 // 오른쪽 자리는 비워 둘 수 있다. 갈 곳이 없는 화면에 억지로 버튼을 만들지 않는다.
 import { Pressable, Text, View } from "react-native";
 
+import { COLORS } from "../theme/colors";
+import { Icon } from "./Icon";
 import { Logo } from "./Logo";
 
 type Props = {
@@ -24,13 +26,17 @@ export function AppHeader({ actionLabel, actionHint, onAction }: Props) {
       </View>
 
       {actionLabel && onAction ? (
+        // **주황에서 브랜드 네이비로 바꿨다** (2026-08-31 시안). 주황은 이 버튼 하나만
+        // 쓰던 색이라 화면에서 홀로 튀었다. 대신 수화기 아이콘을 붙여, 색이 아니라
+        // 그림으로 "전화를 거는 자리"임을 드러낸다.
         <Pressable
           onPress={onAction}
           accessibilityRole="button"
           accessibilityLabel={actionHint ?? actionLabel}
-          className="rounded-full bg-sun-500 px-4 py-3 active:opacity-90"
+          className="flex-row items-center gap-1.5 rounded-full bg-brand px-4 py-1.5 active:opacity-90"
         >
-          <Text className="text-body font-extrabold text-white">{actionLabel}</Text>
+          <Icon name="phone" size={16} color={COLORS.surface} />
+          <Text className="text-body-lg font-semibold text-white">{actionLabel}</Text>
         </Pressable>
       ) : null}
     </View>
