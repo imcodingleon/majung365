@@ -138,7 +138,12 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
 
   return (
     <View>
-      <Text className="text-title font-extrabold text-ink-strong">
+      {/* 가입 화면 제목과 같은 규격이다 (2026-08-31 시안 · Bold 26px). 문항 팝업은
+          화면을 통째로 덮으므로 그 화면의 제목 자리가 맞다 */}
+      <Text
+        className="text-display font-bold text-ink-strong"
+        style={{ letterSpacing: 0.2 }}
+      >
         {question.prompt}
       </Text>
 
