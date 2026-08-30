@@ -133,7 +133,9 @@ function Send({ color }: { color: string }) {
 }
 
 function Down({ color }: { color: string }) {
-  return <Path d="M7 10.5 12 15.5l5-5" stroke={color} fill="none" {...line} />;
+  // 아래꺾쇠. **피그마 원본**(`assets/icons/figma/chevron-down.svg`)을 그대로 옮겼다.
+  // 전에 쓰던 것보다 폭이 넓어 작은 크기에서도 방향이 또렷하다.
+  return <Path d="M19 9L12 16L5 9" stroke={color} fill="none" {...line} />;
 }
 
 function Back({ color }: { color: string }) {
@@ -152,28 +154,40 @@ function Key({ color }: { color: string }) {
 }
 
 function Chat({ color }: { color: string }) {
-  // 말풍선. 꼬리가 있어야 대화로 읽힌다.
+  // 말풍선. **피그마 원본**(`assets/icons/figma/home-icon3.svg`)을 그대로 옮겼다.
+  // 격자가 22×22다 — `VIEWBOX`가 따로 잡아 준다.
   return (
     <Path
-      d="M4 6.5A2.5 2.5 0 0 1 6.5 4h11A2.5 2.5 0 0 1 20 6.5v7a2.5 2.5 0 0 1-2.5 2.5H10l-4 4v-4h-.5A1.5 1.5 0 0 1 4 14.5Z"
+      d="M3.66667 5.95833C3.66667 5.35055 3.90811 4.76765 4.33788 4.33788C4.76765 3.90811 5.35055 3.66667 5.95833 3.66667H16.0417C16.6495 3.66667 17.2323 3.90811 17.6621 4.33788C18.0919 4.76765 18.3333 5.35055 18.3333 5.95833V12.375C18.3333 12.9828 18.0919 13.5657 17.6621 13.9955C17.2323 14.4252 16.6495 14.6667 16.0417 14.6667H9.16667L5.5 18.3333V14.6667H5.04167C4.67699 14.6667 4.32726 14.5218 4.06939 14.2639C3.81153 14.0061 3.66667 13.6563 3.66667 13.2917V5.95833Z"
       stroke={color}
       fill="none"
-      {...line}
+      strokeWidth={1.83333}
+      strokeLinecap="round"
+      strokeLinejoin="round"
     />
   );
 }
 
 function Bell({ color }: { color: string }) {
-  // 종. 미리 알린다는 뜻이다 (§7).
+  // 종. **피그마 원본**(`assets/icons/figma/home-icon4.svg`)을 그대로 옮겼다. 격자가 22×22다.
   return (
     <>
       <Path
-        d="M6.5 16V10.5a5.5 5.5 0 0 1 11 0V16l1.5 2.5H5Z"
+        d="M5.95833 14.6667V9.625C5.95833 8.28787 6.48951 7.0055 7.435 6.06C8.3805 5.11451 9.66287 4.58333 11 4.58333C12.3371 4.58333 13.6195 5.11451 14.565 6.06C15.5105 7.0055 16.0417 8.28787 16.0417 9.625V14.6667L17.4167 16.9583H4.58333L5.95833 14.6667Z"
         stroke={color}
         fill="none"
-        {...line}
+        strokeWidth={1.83333}
+        strokeLinecap="round"
+        strokeLinejoin="round"
       />
-      <Path d="M10 21h4" stroke={color} {...line} />
+      <Path
+        d="M9.16667 19.25H12.8333"
+        stroke={color}
+        fill="none"
+        strokeWidth={1.83333}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </>
   );
 }
@@ -189,11 +203,24 @@ function Undo({ color }: { color: string }) {
 }
 
 function CheckCircle({ color }: { color: string }) {
-  // 마쳤다는 표시. 맨 체크보다 무게가 있어 "끝냈다"에 어울린다.
+  // 마쳤다는 표시. **피그마 원본**(`assets/icons/figma/home-icon5.svg`)을 그대로 옮겼다.
+  // 격자가 22×22다.
   return (
     <>
-      <Circle cx={12} cy={12} r={8.5} stroke={color} fill="none" strokeWidth={STROKE} />
-      <Path d="m8.2 12.2 2.6 2.6 5-5.2" stroke={color} fill="none" {...line} />
+      <Path
+        d="M11 18.7917C15.3032 18.7917 18.7917 15.3032 18.7917 11C18.7917 6.69678 15.3032 3.20833 11 3.20833C6.69678 3.20833 3.20833 6.69678 3.20833 11C3.20833 15.3032 6.69678 18.7917 11 18.7917Z"
+        stroke={color}
+        fill="none"
+        strokeWidth={1.83333}
+      />
+      <Path
+        d="M7.51667 11.1833L9.9 13.5667L14.4833 8.8"
+        stroke={color}
+        fill="none"
+        strokeWidth={1.83333}
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      />
     </>
   );
 }
@@ -240,11 +267,19 @@ function Person({ color }: { color: string }) {
 }
 
 function Search({ color }: { color: string }) {
-  // 돋보기. 원과 손잡이. 찾는다는 뜻이 굳은 그림이다.
+  // 돋보기. **피그마 원본**(`assets/icons/figma/home-icon0.svg`)을 그대로 옮겼다.
+  // 원을 `Circle`이 아니라 곡선 `Path`로 그리는 것도 원본 그대로다.
   return (
     <>
-      <Circle cx={11} cy={11} r={6.5} stroke={color} fill="none" strokeWidth={STROKE} />
-      <Path d="M15.8 15.8 20.5 20.5" stroke={color} fill="none" {...line} />
+      <Path
+        d="M8 12C10.2091 12 12 10.2091 12 8C12 5.79086 10.2091 4 8 4C5.79086 4 4 5.79086 4 8C4 10.2091 5.79086 12 8 12Z"
+        stroke={color}
+        fill="none"
+        strokeWidth={STROKE}
+      />
+      <Path d="M11 11L19 19" stroke={color} fill="none" {...line} />
+      {/* 손잡이에 그은 짧은 획. 손으로 쥐는 자리를 나타낸다 */}
+      <Path d="M16.5 16.5L18.5 14.5" stroke={color} fill="none" {...line} />
     </>
   );
 }
@@ -295,6 +330,9 @@ const SHAPES: Record<
 const VIEWBOX: Partial<Record<IconName, string>> = {
   phone: "0 0 18 18",
   phoneRound: "0 0 31 30",
+  chat: "0 0 22 22",
+  bell: "0 0 22 22",
+  checkCircle: "0 0 22 22",
 };
 
 export function Icon({ name, size = 24, color, filled }: Props) {

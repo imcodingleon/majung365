@@ -118,7 +118,7 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
             // 글자로 그리던 꺾쇠를 그림으로 바꿨다 (2026-08-31 시안). 글자로 두면
             // 기기마다 모양과 기준선이 달라 카드마다 삐뚤어 보인다
             <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
-              <Icon name="down" size={24} color={COLORS.inkStrong} />
+              <Icon name="down" size={24} color={COLORS.inkMuted} />
             </View>
           )}
         </View>
