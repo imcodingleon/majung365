@@ -95,7 +95,9 @@ class ChatUseCase:
 
         # 1) triage (구조화)
         try:
-            triage = await self._llm.triage(cmd.message, history)
+            triage = await self._llm.triage(
+                cmd.message, history, name=cmd.user_name
+            )
         except Exception:
             logger.warning("triage 실패 (upstream)")  # 사용자 입력 원문은 로그에 남기지 않는다
             yield ErrorEvent()
@@ -201,6 +203,7 @@ class ChatUseCase:
                 history=history,
                 context=context,
                 allow_web_search=True,
+                name=cmd.user_name,
             ):
                 if chunk.web_search_started and not evidence_sent:
                     evidence_sent = True

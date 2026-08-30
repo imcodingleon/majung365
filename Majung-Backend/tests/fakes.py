@@ -24,8 +24,15 @@ class FakeLlm:
         self.searches = False
         self.last_allow_web: bool | None = None
         self.last_context: str | None = None
+        # 마스킹에 쓸 이름이 실제로 흘러왔는지 센다.
+        # **`assert_masked`가 이름은 못 잡으므로 배선 자체가 유일한 방어선이다.**
+        self.last_triage_name: str | None = None
+        self.last_stream_name: str | None = None
 
-    async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+    async def triage(
+        self, message: str, history: list[Turn], *, name: str | None = None
+    ) -> TriageResult:
+        self.last_triage_name = name
         if self._raise_triage:
             raise RuntimeError("upstream down")
         return self._triage
@@ -37,7 +44,9 @@ class FakeLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
+        name: str | None = None,
     ) -> AsyncIterator[GuidanceChunk]:
+        self.last_stream_name = name
         self.last_allow_web = allow_web_search
         self.last_context = context
         if self._raise_stream:

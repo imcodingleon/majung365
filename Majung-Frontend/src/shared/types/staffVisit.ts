@@ -52,7 +52,25 @@ export interface StaffVisitResponse {
   /** 마지막으로 말한 때(ISO 8601). 목록 순서를 이 값으로 정한다. */
   last_message_at?: string | null;
   shared_answers?: SharedAnswerOut[];
+  /**
+   * 담당자가 먼저 읽는 요약 (§7.4).
+   *
+   * **원문을 대체하지 않는다.** 화면은 요약을 위에 놓고, 답변 원문은 버튼을 눌러
+   * 펼쳐 보게 한다. 만들지 못했으면 빈 문자열이다.
+   */
+  summary?: string;
+  /**
+   * 요약이 어떤 상태인가.
+   *
+   * **없는 것과 못 만든 것을 구분한다.** 둘을 같게 다루면 답변을 보내지 않은
+   * 요청에도 "요약을 만들지 못했습니다"가 뜬다 — 있지도 않은 것이 빠진 것처럼 보인다.
+   * 예전 요청에는 이 필드가 아예 없을 수 있다.
+   */
+  summary_status?: SummaryStatus;
 }
+
+/** none: 만들 것이 없다 / pending: 만드는 중 / ready: 있다 / failed: 못 만들었다 */
+export type SummaryStatus = "none" | "pending" | "ready" | "failed";
 
 /**
  * 담당자가 상태를 바꿀 때 보내는 값.

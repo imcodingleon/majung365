@@ -80,7 +80,7 @@ def _extract_gate_token(body: ChatIn) -> str | None:
     return body.token
 
 
-def _to_command(body: ChatIn) -> ChatCommand:
+def _to_command(body: ChatIn, user_name: str | None = None) -> ChatCommand:
     turns = [
         Turn(role=t.role, content=t.content[:_MAX_TURN_LEN])
         for t in body.history[-_MAX_HISTORY:]
@@ -92,7 +92,10 @@ def _to_command(body: ChatIn) -> ChatCommand:
     if route_id not in _KNOWN_ROUTES:
         route_id = ""
     return ChatCommand(
-        message=body.message.strip(), history=tuple(turns), route_id=route_id
+        message=body.message.strip(),
+        history=tuple(turns),
+        route_id=route_id,
+        user_name=user_name,
     )
 
 
@@ -121,7 +124,8 @@ async def chat(
             status_code=429, detail="지금 이용이 많아요. 잠시 후 다시 시도해 주세요."
         )
 
-    command = _to_command(body)
+    # **이름은 지우려고 싣는다.** 로그인하지 않았으면 없는 채로 간다.
+    command = _to_command(body, account.name if account else None)
     if not command.message:  # 공백/개행만 입력 → strip 후 빈 문자열 방지
         raise HTTPException(status_code=400, detail="메시지를 입력해 주세요.")
 

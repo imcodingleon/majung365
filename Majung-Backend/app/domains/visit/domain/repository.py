@@ -9,7 +9,7 @@ from typing import Protocol
 from uuid import UUID
 
 from app.domains.staff.domain.entity import OrgKind
-from app.domains.visit.domain.entity import VisitRequest, VisitStatus
+from app.domains.visit.domain.entity import SummaryStatus, VisitRequest, VisitStatus
 from app.domains.visit.domain.message import Message, SenderRole
 
 
@@ -48,6 +48,21 @@ class VisitRepository(Protocol):
         cancel_reason: str | None = None,
         now: datetime | None = None,
     ) -> None: ...
+
+    def save_summary(
+        self,
+        request_id: UUID,
+        summary: str,
+        status: SummaryStatus,
+        *,
+        now: datetime,
+    ) -> None:
+        """담당자가 먼저 읽는 요약을 붙인다 (§7.4).
+
+        **실패도 여기로 남긴다.** 상태만 바꾸는 별도 메서드를 두면, 성공했을 때와
+        실패했을 때가 다른 경로를 타게 되어 한쪽만 고치는 일이 생긴다.
+        """
+        ...
 
 
 class MessageRepository(Protocol):

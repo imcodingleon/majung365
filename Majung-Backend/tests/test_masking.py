@@ -230,3 +230,82 @@ def test_weak_intro_keeps_ordinary_sentences() -> None:
         "제가 사기로 3년 살았어요",
     ):
         assert mask_text(text) == text, text
+
+
+# ── 2026-08-31 실측에서 드러난 것들 ──
+
+
+def test_account_number_is_not_eaten_by_the_phone_pattern() -> None:
+    """**계좌번호 안쪽이 전화번호로 잡히면 안 된다.**
+
+    "1002-345-678901"에서 "02-345-6789"가 유선전화 패턴에 먼저 걸려
+    "10[전화번호]01"이 됐다. 계좌번호 전체가 새지는 않았지만 남은 네 자리가
+    계좌번호의 일부이고, 담당자·모델이 읽는 표식도 사실과 달랐다.
+    """
+    out = mask_text("우리은행 1002-345-678901 계좌는 압류됐어요")
+
+    assert MASK_ACCOUNT in out
+    assert MASK_PHONE not in out
+    assert "1002" not in out
+    assert "678901" not in out
+
+
+def test_ordinary_phone_numbers_still_get_masked() -> None:
+    """경계를 세운 것이 정상 전화번호를 놓치는 쪽으로 작동하면 안 된다."""
+    for text in ("연락처는 02-123-4567이에요", "010-1234-5678로 주세요", "031 123 4567"):
+        assert MASK_PHONE in mask_text(text), text
+
+
+def test_particle_after_an_email_survives() -> None:
+    """단어 문자 패턴이 한글까지 먹어 "…com으로"가 통째로 지워졌다. 조사는 돌려준다."""
+    out = mask_text("kim.pansu@example.com으로 남겨 주세요")
+
+    assert out == f"{MASK_EMAIL}으로 남겨 주세요"
+
+
+def test_a_hangul_domain_address_is_still_masked_whole() -> None:
+    """조사를 떼어낸 나머지가 이메일 꼴이 아니면 통째로 가린다 —
+    한글 도메인을 놓치는 쪽으로 고치지 않는다."""
+    out = mask_text("사람@한글.한국 으로 연락 주세요")
+
+    assert "한글.한국" not in out
+    assert MASK_EMAIL in out
+
+
+def test_masked_numbers_pass_the_gate() -> None:
+    """가린 결과가 전송 직전 검문을 통과해야 실제로 나간다."""
+    assert_masked(mask_text("우리은행 1002-345-678901로 보내주세요"))
+    assert_masked(mask_text("kim@example.com으로 연락 주세요"))
+
+
+# ── 이름 경계 — 배선 전에는 한 번도 실행되지 않던 경로다 ──
+
+
+def test_a_name_inside_an_ordinary_word_is_left_alone() -> None:
+    """**앞에 한글이 붙어 있으면 이름이 아니다.**
+
+    이름이 "김정민"인 사용자의 "행정민원실"에서 "정민"이 지워지면 어디를
+    다녀왔는지가 사라진다.
+    """
+    out = mask_text("행정민원실에 다녀왔어요", name="김정민")
+
+    assert out == "행정민원실에 다녀왔어요"
+
+
+def test_a_two_letter_name_needs_context() -> None:
+    """두 글자는 일반 낱말과 겹칠 확률이 높아 뒤 문맥까지 본다.
+
+    상태 어휘가 지워지면 안내 자체가 틀린다 — 과잉 마스킹이 누출보다 낫다는
+    원칙이 여기서는 뒤집힌다(test_review_2026_08_24와 같은 판단).
+    """
+    assert mask_text("교육을 이수했어요", name="이수") == "교육을 이수했어요"
+    assert mask_text("하나만 물어볼게요", name="김하나") == "하나만 물어볼게요"
+    # 문맥이 있으면 잡는다.
+    assert MASK_NAME in mask_text("이수입니다", name="이수")
+
+
+def test_known_name_masking_still_works_after_the_boundary_rule() -> None:
+    """경계를 세운 뒤에도 실제 자기소개는 그대로 잡혀야 한다."""
+    assert MASK_NAME in mask_text("안녕하세요 저는 김판수입니다", name="김판수")
+    assert MASK_NAME in mask_text("다들 저를 판수라고 불러요", name="김판수")
+    assert "김판수" not in mask_text("김판수 왔습니다", name="김 판수")

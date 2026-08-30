@@ -35,6 +35,7 @@ from app.domains.chat.domain.triage import (
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
+from app.domains.visit.domain.summary import SUMMARY_INSTRUCTION, normalize_summary
 from app.infrastructure.security.masking import assert_masked, mask_text
 
 logger = logging.getLogger("majung.cli")
@@ -153,8 +154,10 @@ class CliChatLlm:
     def __init__(self, model: str = "sonnet") -> None:
         self._model = model
 
-    async def triage(self, message: str, history: list[Turn]) -> TriageResult:
-        masked = mask_text(message)
+    async def triage(
+        self, message: str, history: list[Turn], *, name: str | None = None
+    ) -> TriageResult:
+        masked = mask_text(message, name=name)
         prompt = (
             f"{TRIAGE_INSTRUCTION}\n\n"
             "아래 형식의 JSON만 출력하세요. 다른 말은 붙이지 마세요.\n"
@@ -191,14 +194,15 @@ class CliChatLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
+        name: str | None = None,
     ) -> AsyncIterator[GuidanceChunk]:
         # 웹 검색은 켜지 않는다. CLI에서는 도메인 화이트리스트를 강제할 수 없어서,
         # 공공 도메인 한정이라는 규칙(MUST 9)이 깨진다. 검증 목적에는 텍스트면 충분하다.
         parts = [build_system_prompt(), context]
-        past = _history_block(history, None)
+        past = _history_block(history, name)
         if past:
             parts.append(f"[지난 대화]\n{past}")
-        parts.append(f"[사용자의 말]\n{mask_text(message)}")
+        parts.append(f"[사용자의 말]\n{mask_text(message, name=name)}")
         text = await _run_claude("\n\n".join(parts), model=self._model)
 
         buf = ""
@@ -211,8 +215,19 @@ class CliChatLlm:
         if buf:
             yield GuidanceChunk(text=buf)
 
+    async def summarize_visit(self, *, text: str, name: str | None = None) -> str:
+        """담당자가 먼저 읽는 요약 (§7.4). 실 API 경로와 같은 프롬프트를 쓴다."""
+        prompt = "\n\n".join([
+            SUMMARY_INSTRUCTION,
+            "아래 형식의 JSON만 출력하세요. 다른 말은 붙이지 마세요.",
+            '{"headline": "...", "points": [{"label": "...", "text": "..."}], '
+            '"prepare": ["..."]}',
+            mask_text(text, name=name),
+        ])
+        return normalize_summary(await _run_claude(prompt, model=self._model))
+
     async def extract_narrative_states(
-        self, nodes: dict[str, str], narrative: str
+        self, nodes: dict[str, str], narrative: str, *, name: str | None = None
     ) -> dict[str, NodeState]:
         node_list = "\n".join(f"- {nid}: {name}" for nid, name in nodes.items())
         prompt = (
@@ -222,7 +237,7 @@ class CliChatLlm:
             "상태: O(있고 쓸 수 있다) / X(없다) / BLOCKED(있지만 정지·분실로 못 쓴다)\n"
             "언급되지 않은 항목은 넣지 마세요. 애매하면 넣지 마세요.\n\n"
             '아래 형식의 JSON만 출력하세요: {"mentions": [{"node_id": "...", "state": "O"}]}\n\n'
-            f"사용자의 글: {mask_text(narrative)}"
+            f"사용자의 글: {mask_text(narrative, name=name)}"
         )
         try:
             raw = await _run_claude(prompt, model=self._model)

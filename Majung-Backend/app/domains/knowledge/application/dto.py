@@ -17,6 +17,9 @@ class AnalyzeCommand:
     # 온보딩 마지막 자유서술(선택). 있으면 C6이 그래프 전체 노드를 다시 검토해
     # 언급된 항목의 상태를 버튼 답변보다 우선 적용한다.
     narrative: str | None = None
+    # 가입 때 받은 이름. **모델에게 보낼 값이 아니라 지울 값이다**(§9.3).
+    # 헤더에 토큰이 없으면 `None`이고, 그때는 정규식이 문맥으로 잡는 이름만 가려진다.
+    user_name: str | None = None
 
 
 @dataclass(frozen=True)

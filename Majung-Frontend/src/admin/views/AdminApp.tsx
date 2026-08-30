@@ -105,6 +105,13 @@ export function AdminApp() {
       <View className="flex-1" onTouchStart={session.touch}>
         <RequestDetailScreen
           request={open}
+          // 간추린 내용은 요청을 보낸 뒤 서버가 뒤에서 만든다 (§7.4). 아직 만드는
+          // 중이면 상세 화면이 잠시 뒤 한 번만 다시 부른다 — 담당자가 화면을
+          // 닫았다 열지 않아도 채워진 것을 보게 하려는 것이다.
+          //
+          // **함수를 그대로 넘긴다.** 여기서 새로 감싸면 렌더마다 다른 함수가 되어,
+          // 담당자가 화면을 만질 때마다 상세 화면의 기다림이 처음부터 다시 시작된다.
+          onReload={visits.reload}
           onAcknowledge={touched<void>(() => void visits.act(open.id, "acknowledged"))}
           onConfirm={touched<ConfirmInput>((input) => {
             // **장소만 보낸다. 담당자 이름은 서버가 채운다.**

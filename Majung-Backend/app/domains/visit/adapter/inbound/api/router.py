@@ -11,7 +11,7 @@ from datetime import UTC, datetime
 from typing import Annotated
 from uuid import UUID
 
-from fastapi import APIRouter, Depends, HTTPException, Request
+from fastapi import APIRouter, BackgroundTasks, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from app.domains.account.adapter.inbound.api.deps import require_account
@@ -20,6 +20,7 @@ from app.domains.shared.routes import RouteId
 from app.domains.staff.adapter.inbound.api.deps import require_staff
 from app.domains.staff.domain.entity import Staff, org_for
 from app.domains.visit.application.chat_usecase import RoomGlance, VisitChatUseCase
+from app.domains.visit.application.summary_usecase import VisitSummaryUseCase
 from app.domains.visit.application.usecase import VisitError, VisitUseCase
 from app.domains.visit.domain.entity import SharedAnswer, VisitRequest, VisitStatus
 from app.domains.visit.domain.message import SenderRole
@@ -52,6 +53,16 @@ def _usecase(request: Request) -> VisitUseCase:
             status_code=503, detail="지금은 이용할 수 없어요. 잠시 후 다시 시도해 주세요."
         )
     return usecase
+
+
+def _summary(request: Request) -> VisitSummaryUseCase | None:
+    """요약 유스케이스. **없으면 막지 않고 `None`을 돌려준다.**
+
+    요약은 곁들이는 것이라, 만들 수 없다고 방문 요청까지 거절할 이유가 없다.
+    담당자는 요약이 없어도 답변 원문을 그대로 본다.
+    """
+    usecase = getattr(request.app.state, "visit_summary_usecase", None)
+    return usecase if isinstance(usecase, VisitSummaryUseCase) else None
 
 
 def _chat(request: Request) -> VisitChatUseCase | None:
@@ -204,8 +215,12 @@ def _fail(err: VisitError) -> HTTPException:
 
 @router.post("/visits", response_model=VisitOut)
 def create_visit(
-    body: VisitCreateIn, request: Request, account: CurrentAccount
+    body: VisitCreateIn,
+    request: Request,
+    account: CurrentAccount,
+    background: BackgroundTasks,
 ) -> VisitOut:
+    now = datetime.now(UTC)
     try:
         created = _usecase(request).request_visit(
             user_id=account.id,
@@ -214,13 +229,39 @@ def create_visit(
             preferred_at_2=body.preferred_at_2,
             prepared_docs=body.prepared_docs,
             note=body.note.strip(),
-            now=datetime.now(UTC),
+            now=now,
             shared_answers=[a.model_dump() for a in body.shared_answers],
             share_consented=body.share_consented,
         )
     except VisitError as err:
         raise _fail(err) from None
+    _queue_summary(request, background, created, now)
     return _to_out(created)
+
+
+def _queue_summary(
+    request: Request,
+    background: BackgroundTasks,
+    created: VisitRequest,
+    now: datetime,
+) -> None:
+    """담당자가 먼저 읽을 요약을 뒤에서 만든다 (§7.4).
+
+    **응답을 붙잡아 두지 않는다.** 담당자 쪽은 목록을 다시 불러 보는 구조라 몇 초
+    늦게 채워져도 문제가 없는데, 여기서 기다리면 보내는 사람이 그만큼 멈춰 선다.
+
+    지출 상한에 걸리면 요약만 건너뛴다 — **429를 내지 않는다.** 사용자가 보낸 것은
+    요약이 아니라 방문 요청이고, 그것은 이미 저장됐다. 다만 그때도 상태는 정리한다.
+    pending으로 두고 떠나면 담당자 화면이 오지 않을 요약을 계속 기다린다.
+    """
+    summary = _summary(request)
+    if summary is None or not created.shared_answers:
+        return
+    spend = getattr(request.app.state, "spend", None)
+    if spend is not None and not spend.check():
+        summary.skip(created.id, now=now)
+        return
+    background.add_task(summary.generate, created.id, now=now)
 
 
 @router.get("/visits", response_model=list[VisitOut])
@@ -274,6 +315,14 @@ class StaffVisitOut(BaseModel):
     last_message_at: datetime | None = None
     # 사용자가 동의하고 보낸 진단 답변(§7.4). 동의가 없으면 빈 목록이다.
     shared_answers: list[SharedAnswerOut] = []
+    # 담당자가 먼저 읽는 요약(§7.4). **원문을 대체하지 않는다** — 화면은 요약을
+    # 위에 놓고, 답변 원문은 버튼을 눌러 펼쳐 보게 한다.
+    summary: str = ""
+    # none: 만들 것이 없다 / pending: 만드는 중 / ready: 있다 / failed: 못 만들었다
+    #
+    # **없는 것과 못 만든 것을 구분해 보낸다.** 화면이 둘을 같게 다루면, 답변을
+    # 보내지 않은 요청에도 "요약을 만들지 못했습니다"가 뜬다.
+    summary_status: str = "none"
 
 
 class StaffActionIn(BaseModel):
@@ -304,6 +353,8 @@ def _staff_out(
         unread=glance.unread,
         last_message=glance.preview,
         last_message_at=glance.at,
+        summary=r.summary,
+        summary_status=r.summary_status.value,
         shared_answers=[
             SharedAnswerOut(
                 route_id=a.route_id,

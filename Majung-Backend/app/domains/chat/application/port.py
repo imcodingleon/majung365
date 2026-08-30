@@ -22,7 +22,15 @@ class GuidanceChunk:
 
 
 class ChatLlm(Protocol):
-    async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+    """모델로 나가는 문. **`name`은 보낼 값이 아니라 지울 값이다.**
+
+    구현이 그 이름을 `mask_text(name=...)`에 넘겨 대화에서 지운다. 로그인하지
+    않은 사용자는 `None`이며, 그때는 정규식이 문맥으로 잡는 이름만 가려진다.
+    """
+
+    async def triage(
+        self, message: str, history: list[Turn], *, name: str | None = None
+    ) -> TriageResult:
         """상황을 6영역으로 분류하고 급한 순위를 정한다(구조화 출력)."""
         ...
 
@@ -33,6 +41,7 @@ class ChatLlm(Protocol):
         history: list[Turn],
         context: str,
         allow_web_search: bool,
+        name: str | None = None,
     ) -> AsyncIterator[GuidanceChunk]:
         """쉬운 말 안내를 스트리밍으로 생성한다.
 

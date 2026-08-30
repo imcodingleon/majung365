@@ -2,7 +2,7 @@
 //
 // 담당자가 상태를 바꾸는 자리다. **확정할 때 만날 사람과 만날 장소를 받는다.**
 // 그 두 값이 출소자 화면의 확정 문구를 이룬다. 빠지면 이 기능의 목적이 사라진다.
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
@@ -19,13 +19,24 @@ import { timeLabel } from "../domain/fromServer";
 import {
   canConfirm,
   missingDocs,
+  parseSummary,
   statusLabel,
   type ConfirmInput,
   type StaffRequest,
 } from "../domain/staffRequest";
 
+/**
+ * 요약이 채워지기를 기다리는 시간.
+ *
+ * 모델이 답하는 데 보통 몇 초면 되고, 그 사이 담당자는 위쪽 준비물과 하고 싶은
+ * 말을 읽는다. 너무 짧으면 아직 없는 것을 확인하려고 또 부르는 셈이 된다.
+ */
+const SUMMARY_RECHECK_MS = 6000;
+
 type Props = {
   request: StaffRequest;
+  /** 요약이 늦게 채워졌을 때 목록을 다시 부른다. 없으면 다시 부르지 않는다. */
+  onReload?: () => void;
   onAcknowledge: () => void;
   onConfirm: (input: ConfirmInput) => void;
   onCancel: (reason: string) => void;
@@ -80,6 +91,7 @@ function Button({
 
 export function RequestDetailScreen({
   request,
+  onReload,
   onAcknowledge,
   onConfirm,
   onCancel,
@@ -97,6 +109,41 @@ export function RequestDetailScreen({
   const [when, setWhen] = useState<VisitTime>(() => fromIso(request.wantedAt));
   const [cancelReason, setCancelReason] = useState("");
   const [cancelling, setCancelling] = useState(false);
+
+  /**
+   * 답한 내용을 그대로 펼쳤는가 (§7.4).
+   *
+   * **요약이 없으면 처음부터 펼쳐 둔다.** 접는 것은 요약이 대신 읽어 줄 때만
+   * 뜻이 있고, 요약을 만들지 못했는데 접혀 있으면 담당자는 한 번 더 눌러야
+   * 원래 보던 것을 본다.
+   */
+  const summary = useMemo(
+    () => (request.summaryStatus === "ready" ? parseSummary(request.summary) : null),
+    [request.summaryStatus, request.summary],
+  );
+  const summarised = summary !== null;
+  const [showRaw, setShowRaw] = useState(!summarised);
+  const showToggle = summarised;
+
+  // 요약이 늦게 채워져도 담당자가 화면을 닫았다 열지 않아도 되게 한 번만 다시 부른다.
+  //
+  // **되풀이해 두드리지 않는다.** 담당자 목록은 요청 하나마다 대화까지 읽어 오므로
+  // 짧은 주기로 다시 부르면 조회가 요청 수만큼 계속 늘어난다.
+  useEffect(() => {
+    if (request.summaryStatus !== "pending" || !onReload) return;
+    const timer = setTimeout(() => onReload(), SUMMARY_RECHECK_MS);
+    return () => clearTimeout(timer);
+  }, [request.id, request.summaryStatus, onReload]);
+
+  // 다른 요청을 열 때만 접힘을 다시 잡는다.
+  //
+  // **요약이 늦게 도착해도 펼쳐 둔 것을 접지 않는다.** `summarised`를 함께 보면,
+  // 기다리는 동안 원문을 읽던 담당자의 화면이 6초 뒤에 저 혼자 접힌다.
+  // 요약은 위에 새로 나타나므로 접지 않아도 놓치는 것이 없다.
+  useEffect(() => {
+    setShowRaw(parseSummary(request.summaryStatus === "ready" ? request.summary : "") === null);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [request.id]);
 
   // 오늘은 렌더마다 새로 만들지 않는다. 매번 새 객체면 고르기 목록이 계속 다시 만들어진다.
   const today = useMemo(() => new Date(), []);
@@ -162,28 +209,131 @@ export function RequestDetailScreen({
             순서는 서버가 방문 목적에 가깝게 정렬해 보낸 것이므로 건드리지 않는다 */}
         {request.sharedAnswers.length > 0 ? (
           <>
-            <Text className="mb-2 mt-8 text-body-lg font-extrabold text-ink-strong">
+            <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">
               본인이 미리 알려 온 것
             </Text>
-            {/* **말하지 않은 것을 물으면 안 된다.** 창구에서 다시 설명하지 않아도 되게
-                하려고 미리 받은 답이므로, 이 목록이 상담 범위를 넓히는 근거가 아니다 */}
-            <Text className="mb-3 text-caption text-ink-sub">
-              본인이 동의해 보낸 내용입니다. 여기 없는 것은 묻지 않으셔도 됩니다.
-            </Text>
-            <View className="rounded-2xl bg-white px-4 py-2">
-              {request.sharedAnswers.map((answer, index) => (
-                <View
-                  key={`${answer.route_id}-${index}`}
-                  className={index === 0 ? "py-3" : "border-t border-line py-3"}
-                >
-                  <Text className="text-caption font-bold text-ink-header">{answer.section}</Text>
-                  <Text className="mt-1 text-body text-ink-sub">{answer.question}</Text>
-                  <Text className="mt-1 text-body-lg font-bold text-ink-strong">
-                    {answer.answer}
+
+            {/* 요약을 먼저 놓는다 (§7.4). **원문을 대체하지 않는다** — 만들지
+                못했으면 아래 원문이 처음부터 펼쳐진다.
+                **조각으로 그린다** (2026-08-31). 문단 하나로 붙여 놓으니 담당자가
+                창구에서 훑지 못하고 원문을 읽는 것과 다르지 않았다 */}
+            {summary ? (
+              <View className="overflow-hidden rounded-2xl border-[1.5px] border-brand-soft bg-white">
+                <View className="border-b border-brand-soft bg-brand-soft/40 px-4 py-3">
+                  <Text className="text-caption font-bold text-brand">
+                    출소자 응답 요약 (AI 요약)
                   </Text>
                 </View>
-              ))}
-            </View>
+
+                <View className="px-4 py-4">
+                  {summary.headline ? (
+                    <Text className="text-body-lg font-bold leading-7 text-ink-strong">
+                      {summary.headline}
+                    </Text>
+                  ) : null}
+
+                  {/* 옛 형식으로 저장된 요약. 조각이 아니라 통째로 그린다 */}
+                  {summary.paragraph ? (
+                    <Text className="text-body-lg leading-7 text-ink-strong">
+                      {summary.paragraph}
+                    </Text>
+                  ) : null}
+
+                  {summary.points.length > 0 ? (
+                    <View className="mt-4 rounded-xl bg-page px-4 py-1">
+                      {summary.points.map((point, index) => (
+                        <View
+                          key={`${point.label}-${index}`}
+                          className={index === 0 ? "py-3" : "border-t border-line py-3"}
+                        >
+                          {point.label ? (
+                            <Text className="mb-1 text-caption font-bold text-ink-header">
+                              {point.label}
+                            </Text>
+                          ) : null}
+                          <Text className="text-body leading-6 text-ink-strong">
+                            {point.text}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+
+                  {summary.prepare.length > 0 ? (
+                    <View className="mt-4">
+                      <Text className="mb-2 text-caption font-bold text-ink-header">
+                        미리 챙기면 좋은 것
+                      </Text>
+                      {summary.prepare.map((item) => (
+                        <View key={item} className="mb-1 flex-row gap-2">
+                          <Text className="text-body text-ink-muted">·</Text>
+                          <Text className="flex-1 text-body leading-6 text-ink-sub">
+                            {item}
+                          </Text>
+                        </View>
+                      ))}
+                    </View>
+                  ) : null}
+                </View>
+
+                {/* **간추린 것임을 밝힌다.** 담당자가 이것을 본인이 쓴 말로 읽으면,
+                    없는 말을 근거로 응대하게 된다 */}
+                <View className="border-t border-line px-4 py-3">
+                  <Text className="text-caption text-ink-muted">
+                    본인이 답한 내용을 간추린 것입니다. 그대로 옮긴 말은 아닙니다.
+                  </Text>
+                </View>
+              </View>
+            ) : null}
+
+            {request.summaryStatus === "pending" ? (
+              <NoteBox tone="info">
+                <NoteLine tone="info">
+                  요약을 만들고 있습니다. 아래 답한 내용을 먼저 보셔도 됩니다.
+                </NoteLine>
+              </NoteBox>
+            ) : null}
+
+            {/* 요약이 있을 때만 접는다. 없으면 접을 이유가 없다 — 담당자가 볼 것이
+                사라지는 경우를 만들지 않는다 */}
+            {showToggle ? (
+              <Pressable
+                onPress={() => setShowRaw((v) => !v)}
+                accessibilityRole="button"
+                accessibilityState={{ expanded: showRaw }}
+                accessibilityLabel={
+                  showRaw
+                    ? "본인이 답한 내용 접기"
+                    : `본인이 답한 내용 ${request.sharedAnswers.length}가지 펼쳐 보기`
+                }
+                className="mt-3 rounded-2xl border-[1.5px] border-dashed border-line px-4 py-4 active:opacity-80"
+              >
+                <Text className="text-body font-semibold text-ink-sub">
+                  {showRaw
+                    ? "답한 내용 접기 ⌃"
+                    : `본인이 답한 그대로 보기 (${request.sharedAnswers.length}가지) ⌄`}
+                </Text>
+              </Pressable>
+            ) : null}
+
+            {showRaw ? (
+              <View className="mt-3 rounded-2xl bg-white px-4 py-2">
+                {request.sharedAnswers.map((answer, index) => (
+                  <View
+                    key={`${answer.route_id}-${index}`}
+                    className={index === 0 ? "py-3" : "border-t border-line py-3"}
+                  >
+                    <Text className="text-caption font-bold text-ink-header">
+                      {answer.section}
+                    </Text>
+                    <Text className="mt-1 text-body text-ink-sub">{answer.question}</Text>
+                    <Text className="mt-1 text-body-lg font-bold text-ink-strong">
+                      {answer.answer}
+                    </Text>
+                  </View>
+                ))}
+              </View>
+            ) : null}
           </>
         ) : null}
 

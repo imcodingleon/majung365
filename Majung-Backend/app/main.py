@@ -60,6 +60,7 @@ from app.domains.staff.infrastructure.supabase_repository import (
 from app.domains.visit.adapter.inbound.api.router import router as visit_router
 from app.domains.visit.adapter.inbound.socket.server import create_socket_app
 from app.domains.visit.application.chat_usecase import VisitChatUseCase
+from app.domains.visit.application.summary_usecase import VisitSummaryUseCase
 from app.domains.visit.application.usecase import VisitUseCase
 from app.domains.visit.infrastructure.message_repository import (
     SupabaseMessageRepository as SupabaseVisitMessageRepository,
@@ -225,6 +226,15 @@ def create_app() -> FastAPI:
         app.state.visit_usecase = VisitUseCase(
             visits=app.state.visit_repo,
             access_log=app.state.access_log_repo,
+        )
+        # 담당자가 먼저 읽는 요약(§7.4). **채팅 클라이언트를 그대로 쓴다** —
+        # Claude 호출은 claude_client.py 한 곳에만 있어야 하고(MUST 3), 요약을
+        # 위해 두 번째 클라이언트를 세우면 마스킹 출구가 둘이 된다.
+        app.state.visit_summary_usecase = VisitSummaryUseCase(
+            visits=app.state.visit_repo,
+            llm=llm,
+            # 이름은 마스킹에 넘기려고 꺼낸다 — 요약문에 쓰지 않는다(§7.4).
+            accounts=app.state.account_repo,
         )
         # 담당자 채팅(§7.3). 저장이 켜졌을 때만 연다 —
         # 대화를 남기지 못하는 채팅은 열어 두어도 소용이 없다.

@@ -4,10 +4,13 @@
 외부 호출 0 → 지출 0. ANTHROPIC_API_KEY가 없거나 USE_MOCK_LLM=true면 이걸 쓴다.
 
 보안: 사용자 입력 원문을 로그에 남기지 않는다(이 파일은 로깅 자체를 하지 않는다).
+**`name`을 받고도 마스킹하지 않는다.** 외부 호출이 0이라 나갈 곳이 없다 — 포트를
+만족시키려고 인자만 받는다.
 환각 금지: 제도 카드(사실)는 UseCase가 KB에서 붙인다. 여기 텍스트는 '따뜻한 안내 틀'만.
 """
 
 import asyncio
+import json
 import re
 from collections.abc import AsyncIterator
 
@@ -156,7 +159,9 @@ def _compose(qtype: QuestionType, routes: tuple[RouteId, ...]) -> list[str]:
 class MockChatLlm:
     """실 Claude 없이 동작하는 ChatLlm 구현(무비용 데모). 외부 호출 없음."""
 
-    async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+    async def triage(
+        self, message: str, history: list[Turn], *, name: str | None = None
+    ) -> TriageResult:
         await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 타이핑 인디케이터 노출
         qtype, routes = _detect(message)
         priorities = tuple(RoutePriority(route=r) for r in routes)
@@ -169,6 +174,7 @@ class MockChatLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
+        name: str | None = None,
     ) -> AsyncIterator[GuidanceChunk]:
         qtype, routes = _detect(message)
         text = "".join(_compose(qtype, routes))
@@ -183,8 +189,34 @@ class MockChatLlm:
         if buf:
             yield GuidanceChunk(text=buf)
 
+    async def summarize_visit(self, *, text: str, name: str | None = None) -> str:
+        """담당자가 먼저 읽는 요약 (§7.4) — 목업.
+
+        **내용을 지어내지 않는다.** 답변 줄 수만 세어 틀을 돌려준다. 목업이 그럴싸한
+        문장을 만들면 배선을 확인하는 자리에서 요약 품질까지 확인한 것으로 오해한다.
+        """
+        await asyncio.sleep(_THINK_DELAY_SECONDS)
+        lines = [ln for ln in text.splitlines() if ln.startswith("- [")]
+        has_note = "본인이 직접 쓴 말:" in text
+        return json.dumps(
+            {
+                "headline": f"본인이 미리 답한 것이 {len(lines)}가지 있습니다.",
+                "points": [
+                    {"label": "답변", "text": "방문 목적과 이어지는 것부터 확인해 주시면 됩니다."},
+                    {
+                        "label": "직접 쓴 말",
+                        "text": "본인이 적어 보낸 말이 함께 왔습니다."
+                        if has_note
+                        else "직접 쓴 말은 없습니다.",
+                    },
+                ],
+                "prepare": ["무비용 데모 요약입니다 — 실제 문장은 Claude가 만듭니다."],
+            },
+            ensure_ascii=False,
+        )
+
     async def extract_narrative_states(
-        self, nodes: dict[str, str], narrative: str
+        self, nodes: dict[str, str], narrative: str, *, name: str | None = None
     ) -> dict[str, NodeState]:
         await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 분석 로딩 화면이 자연스레 보인다
         sentences = _SENTENCE_SPLIT.split(narrative)

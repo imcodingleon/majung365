@@ -6,11 +6,14 @@
 - extract_narrative_states: 온보딩 마지막 자유서술 1건 → 언급된 그래프 노드들의
   상태(O/X/BLOCKED) 일괄 판정. knowledge 도메인이 쓰지만, "Claude 호출은
   claude_client.py에서만" 규칙 때문에 여기 둔다.
+- summarize_visit: 담당자가 먼저 읽는 요약(§7.4). 같은 이유로 여기 둔다 —
+  프롬프트는 visit 도메인에 있고 호출만 이 파일이 맡는다.
 보안: 사용자 입력 원문을 로그에 남기지 않는다. API 키는 settings 경유.
 **사용자가 쓴 텍스트는 전부 마스킹을 거쳐 나간다**(infrastructure/security/masking.py).
 이 파일이 Claude로 나가는 유일한 출구이므로, 여기서 새면 다른 방어가 의미 없다.
 """
 
+import asyncio
 import json
 import logging
 from collections.abc import AsyncIterator, Callable
@@ -32,11 +35,21 @@ from app.domains.chat.domain.triage import (
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
+from app.domains.visit.domain.summary import (
+    SUMMARY_INSTRUCTION,
+    SUMMARY_SCHEMA,
+    normalize_summary,
+)
 from app.infrastructure.config.settings import Settings
 from app.infrastructure.security.masking import assert_masked, mask_text
 from app.infrastructure.tls import make_async_http_client
 
 logger = logging.getLogger("majung.claude")
+
+# 요약 한 건에 걸어 두는 상한. 담당자는 몇 초 뒤에 다시 열어 보는 구조라
+# 오래 기다릴 이유가 없고, **늘어지면 상태가 pending에 머문 채 남는다.**
+# 채팅 스트리밍에는 걸지 않는다 — 긴 안내는 원래 오래 흐른다.
+_SUMMARY_TIMEOUT_SECONDS = 45
 
 _NARRATIVE_EXTRACT_SCHEMA = {
     "type": "object",
@@ -169,7 +182,9 @@ class ClaudeChatLlm:
         # 실제 Claude 호출마다 지출 카운트 증가(콜 단위). 없으면 무시.
         self._record_call = record_call or (lambda: None)
 
-    async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+    async def triage(
+        self, message: str, history: list[Turn], *, name: str | None = None
+    ) -> TriageResult:
         self._record_call()
         # 외부 SDK(TypedDict) 경계 — dict 리터럴은 런타임엔 유효하나 strict 타입 매칭만 예외
         create_kwargs: dict[str, Any] = {
@@ -181,7 +196,7 @@ class ClaudeChatLlm:
                 "format": {"type": "json_schema", "schema": _TRIAGE_SCHEMA},
             },
             "system": TRIAGE_INSTRUCTION,
-            "messages": _to_messages(history, message),
+            "messages": _to_messages(history, message, name=name),
         }
         resp = await self._client.messages.create(**create_kwargs)
         text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
@@ -215,6 +230,7 @@ class ClaudeChatLlm:
         history: list[Turn],
         context: str,
         allow_web_search: bool,
+        name: str | None = None,
     ) -> AsyncIterator[GuidanceChunk]:
         self._record_call()
         system = build_system_prompt() + "\n\n" + context
@@ -239,7 +255,7 @@ class ClaudeChatLlm:
             "model": self._model,
             "max_tokens": 2048,
             "system": system,
-            "messages": _to_messages(history, message),
+            "messages": _to_messages(history, message, name=name),
         }
         if tools is not None:
             kwargs["tools"] = tools
@@ -255,11 +271,11 @@ class ClaudeChatLlm:
                         yield GuidanceChunk(text=event.delta.text)
 
     async def extract_narrative_states(
-        self, nodes: dict[str, str], narrative: str
+        self, nodes: dict[str, str], narrative: str, *, name: str | None = None
     ) -> dict[str, NodeState]:
         self._record_call()
         # 온보딩 자유서술은 사용자가 자기 사정을 길게 쓰는 자리라 이름·연락처가 가장 잘 섞인다.
-        masked_narrative = mask_text(narrative)
+        masked_narrative = mask_text(narrative, name=name)
         assert_masked(masked_narrative)
         node_list = "\n".join(f"- {nid}: {name}" for nid, name in nodes.items())
         create_kwargs: dict[str, Any] = {
@@ -276,6 +292,41 @@ class ClaudeChatLlm:
         resp = await self._client.messages.create(**create_kwargs)
         text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
         return self._parse_narrative(text, valid_ids=set(nodes))
+
+    async def summarize_visit(self, *, text: str, name: str | None = None) -> str:
+        """담당자가 먼저 읽는 요약을 만든다 (§7.4).
+
+        **`_to_messages`를 지나지 않으므로 마스킹을 여기서 직접 건다.** 답변은
+        선택지에서 고른 문장이 대부분이지만 자유 입력이 섞이는 문항이 있고,
+        마스킹을 통과하지 못하면 요약을 포기한다 — 유스케이스가 그 실패를 받아
+        상태로 남기고, 담당자는 답변 원문을 그대로 본다.
+
+        스트리밍하지 않는다. 담당자는 완성된 것만 본다.
+        """
+        self._record_call()
+        masked = mask_text(text, name=name)
+        assert_masked(masked)
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            "max_tokens": 512,
+            "thinking": {"type": "disabled"},
+            "output_config": {
+                "effort": "low",
+                # **조각으로 받는다.** 문단 하나로 받으면 담당자가 창구에서 훑지
+                # 못하고, 화면도 제목과 줄로 나눌 수 없다.
+                "format": {"type": "json_schema", "schema": SUMMARY_SCHEMA},
+            },
+            "system": SUMMARY_INSTRUCTION,
+            "messages": [{"role": "user", "content": masked}],
+        }
+        resp = await asyncio.wait_for(
+            self._client.messages.create(**create_kwargs),
+            timeout=_SUMMARY_TIMEOUT_SECONDS,
+        )
+        text = next(
+            (b.text for b in resp.content if getattr(b, "type", None) == "text"), ""
+        )
+        return normalize_summary(text)
 
     def _parse_narrative(self, text: str, valid_ids: set[str]) -> dict[str, NodeState]:
         try:
