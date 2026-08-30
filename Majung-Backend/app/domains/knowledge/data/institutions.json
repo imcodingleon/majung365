@@ -30,8 +30,6 @@
       "deadline": null,
       "source_url": "https://www.koreha.or.kr",
       "contact_key": "1363",
-      "desk_place": "출소하신 교정시설",
-      "desk_say": "수용증명서 떼러 왔어요",
       "source_urls": [
         "https://www.corrections.go.kr/corrections/1075/subview.do",
         "https://www.kics.go.kr/"
@@ -384,7 +382,7 @@
       "summary_easy": "많이 힘들고 불안하면 혼자 견디지 않아도 돼요. 지역 정신건강복지센터에서 무료로 마음 상담을 받을 수 있어요.",
       "where": "지역 정신건강복지센터 (전화 1577-0199)",
       "docs": [],
-      "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해도 괜찮아요.",
+      "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해 보세요.",
       "deadline": null,
       "source_url": "https://www.mohw.go.kr",
       "source_urls": [
@@ -509,8 +507,6 @@
       "next_step": "가까운 은행 창구에 가서 '생계비계좌 만들러 왔어요'라고 말하세요.",
       "deadline": null,
       "source_url": "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
-      "desk_place": "가까운 은행 창구",
-      "desk_say": "생계비계좌 만들러 왔어요",
       "source_urls": [
         "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
         "https://obank.kbstar.com/quics?page=C020722&boardId=669&compId=b058336&articleId=142978&bbsMode=view&viewPage=1&articleClass=2&searchCondition=title&searchStr="
@@ -612,8 +608,6 @@
       "deadline": null,
       "source_url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
       "contact_key": "110",
-      "desk_place": "가까운 주민센터",
-      "desk_say": "주민등록증 재발급하러 왔어요. 임시 신분증도 받고 싶어요",
       "source_urls": [
         "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
         "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_2/screen.do",
