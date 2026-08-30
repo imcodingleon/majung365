@@ -153,6 +153,9 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
         </Text>
       ) : null}
 
+      {/* **여러 개 고르는 문항의 안내는 이 줄이 맡는다.** 문항 데이터의 `help`에 같은
+          말을 또 적으면 두 줄로 겹쳐 나온다 — 실제로 Q2-1이 그랬다. `help`는 이 문항에만
+          있는 설명을 담는 자리이고, 여러 개를 고를 수 있다는 사실은 여기가 말한다 */}
       {question.kind === "multi" ? (
         <Text className="mt-2 text-caption font-bold" style={{ color: COLORS.brand }}>
           맞는 것을 모두 골라 주세요
