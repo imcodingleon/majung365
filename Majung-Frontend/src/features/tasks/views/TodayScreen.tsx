@@ -63,7 +63,7 @@ function Progress({ done, total }: { done: number; total: number }) {
         <Text className="text-body font-extrabold" style={{ color: COLORS.brand }}>
           진행 상황
         </Text>
-        <Text className="text-body font-bold text-ink-sub">
+        <Text className="text-body font-medium text-ink-muted">
           {done} / {total}
         </Text>
       </View>

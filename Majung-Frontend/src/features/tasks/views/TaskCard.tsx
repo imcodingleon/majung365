@@ -53,9 +53,11 @@ export function TaskCard({
 
   return (
     <View className="px-4 pb-4 pt-4">
-      {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2) */}
+      {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2).
+          아이콘을 열쇠에서 돋보기로 바꿨다 (2026-08-31 시안) — 잠긴 것을 여는 그림은
+          "먼저 해야 열린다"로 읽히는데, 실제로는 막고 있지 않고 권하는 자리다 */}
       {showGuide ? (
-        <NoteBox tone="warn" icon="key" className="mb-4">
+        <NoteBox tone="warn" icon="search" className="mb-4">
           {/* **뒷문장을 걷었다.** "그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요"는
               막지 않는다는 말인데, 애초에 막고 있지 않으므로 없는 걱정을 만들었다 */}
           {`${pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.`}
@@ -123,6 +125,7 @@ export function TaskCard({
                 : `${task.visitLabel} 방문 예약하기`
             }
             tone="secondary"
+            ink={COLORS.brand}
             onPress={onNotifyStaff}
           />
         ) : null}
@@ -134,7 +137,13 @@ export function TaskCard({
             onPress={onUncomplete ?? onComplete}
           />
         ) : (
-          <Button icon="checkCircle" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
+          <Button
+            icon="checkCircle"
+            label="이 일을 끝냈어요"
+            tone="secondary"
+            ink={COLORS.doneInk}
+            onPress={onComplete}
+          />
         )}
       </View>
     </View>
