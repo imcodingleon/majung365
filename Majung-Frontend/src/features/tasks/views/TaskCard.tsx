@@ -67,8 +67,9 @@ export function TaskCard({
       <View className="mb-4">
         {task.info.map((line) => (
           <View key={line} className="mb-2 flex-row pr-1">
-            <View className="mr-2 mt-0.5">
-              <Icon name="check" size={16} color={COLORS.doneMark} />
+            {/* 24px은 시안 실측값이다. 16px로 두었더니 글자에 눌려 잘 안 보였다 */}
+            <View className="mr-2">
+              <Icon name="check" size={24} color={COLORS.doneMark} />
             </View>
             <Text className="flex-1 text-body text-ink-body">{line}</Text>
           </View>
