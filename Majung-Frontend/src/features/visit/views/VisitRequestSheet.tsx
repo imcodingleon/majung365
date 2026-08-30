@@ -8,6 +8,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
+import { FONTS } from "@/shared/theme/fonts";
 
 import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
 import { SECTIONS, type SectionId } from "@/features/intake/domain/sections";
@@ -308,7 +309,7 @@ export function VisitRequestSheet({
                           className="flex-1 text-body"
                           style={{
                             color: on ? COLORS.brand : COLORS.inkStrong,
-                            fontWeight: on ? "800" : "600",
+                            fontFamily: on ? FONTS.extrabold : FONTS.semibold,
                           }}
                         >
                           {sec.label}

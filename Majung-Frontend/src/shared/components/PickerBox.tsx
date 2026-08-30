@@ -13,6 +13,7 @@ import { useEffect, useRef, useState } from "react";
 import { Animated, Easing, Pressable, ScrollView, Text, View } from "react-native";
 
 import { COLORS } from "../theme/colors";
+import { FONTS } from "../theme/fonts";
 import { FramedModal } from "./FramedModal";
 import { Icon } from "./Icon";
 
@@ -53,7 +54,7 @@ export function PickerBox({
         className="text-body-lg"
         style={{
           color: filled ? COLORS.inkStrong : COLORS.inkMuted,
-          fontWeight: filled ? "700" : "500",
+          fontFamily: filled ? FONTS.bold : FONTS.medium,
         }}
       >
         {text}
@@ -189,7 +190,7 @@ export function PickerSheet({
                     className="text-title"
                     style={{
                       color: on ? COLORS.surface : COLORS.inkStrong,
-                      fontWeight: on ? "800" : "600",
+                      fontFamily: on ? FONTS.extrabold : FONTS.semibold,
                     }}
                   >
                     {text}

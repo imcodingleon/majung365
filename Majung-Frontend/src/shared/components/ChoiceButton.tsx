@@ -10,6 +10,7 @@ import { Pressable, Text, View } from "react-native";
 import { Icon } from "./Icon";
 
 import { COLORS } from "../theme/colors";
+import { FONTS } from "../theme/fonts";
 
 type Props = {
   label: string;
@@ -64,7 +65,7 @@ export function ChoiceButton({
 
       <Text
         className="flex-1 text-body-lg"
-        style={{ color: ink, fontWeight: selected || urgent ? "800" : "600" }}
+        style={{ color: ink, fontFamily: selected || urgent ? FONTS.extrabold : FONTS.semibold }}
       >
         {label}
       </Text>

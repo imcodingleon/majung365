@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
 import { COLORS } from "@/shared/theme/colors";
+import { FONTS } from "@/shared/theme/fonts";
 
 import {
   canCancel,
@@ -122,7 +123,7 @@ export function RequestStatusStrip({
                 color: tone.ink,
                 // 확정 문구는 실제로 찾아가야 할 정보를 담고 있으므로 더 크고 굵게 낸다.
                 fontSize: confirmed ? 16 : 14.5,
-                fontWeight: i === 0 ? (confirmed ? "800" : "700") : "600",
+                fontFamily: i === 0 ? (confirmed ? FONTS.extrabold : FONTS.bold) : FONTS.semibold,
                 opacity: i === 0 ? 1 : 0.85,
               }}
             >

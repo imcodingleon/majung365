@@ -6,6 +6,7 @@ import { useState } from "react";
 import { Pressable, ScrollView, Text, View } from "react-native";
 
 import { COLORS } from "@/shared/theme/colors";
+import { FONTS } from "@/shared/theme/fonts";
 
 import { districtsOf, REGIONS, type SelectedRegion } from "../domain/region";
 
@@ -38,7 +39,7 @@ function Chip({
         className="text-body"
         style={{
           color: selected ? COLORS.brand : COLORS.inkStrong,
-          fontWeight: selected ? "800" : "600",
+          fontFamily: selected ? FONTS.extrabold : FONTS.semibold,
         }}
       >
         {label}
