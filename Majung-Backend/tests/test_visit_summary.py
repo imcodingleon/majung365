@@ -529,3 +529,25 @@ def test_mock_client_answers_in_pieces() -> None:
     parsed = json.loads(reply)
     assert parsed["headline"]
     assert parsed["points"]
+
+
+def test_schema_avoids_keywords_the_api_rejects() -> None:
+    """**Anthropic 구조화 출력이 배열의 `maxItems`를 받지 않는다.**
+
+    배포하고 나서야 400으로 드러났다 — 로컬은 CLI 경로로만 확인해서 실 API
+    스키마 검증을 한 번도 지나지 않았다. 개수는 프롬프트로 부탁하고 넘치면
+    `normalize_summary`가 잘라낸다.
+    """
+    def walk(node: object) -> list[str]:
+        found: list[str] = []
+        if isinstance(node, dict):
+            if node.get("type") == "array":
+                found += [k for k in ("maxItems", "minItems", "uniqueItems") if k in node]
+            for value in node.values():
+                found += walk(value)
+        elif isinstance(node, list):
+            for value in node:
+                found += walk(value)
+        return found
+
+    assert walk(SUMMARY_SCHEMA) == []

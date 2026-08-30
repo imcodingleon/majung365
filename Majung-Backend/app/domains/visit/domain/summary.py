@@ -28,6 +28,10 @@ MAX_POINTS = 4
 MAX_PREPARE = 3
 
 # 모델에게 요구하는 모양. 조각으로 받아야 화면이 제목과 줄로 나눌 수 있다.
+#
+# **`maxItems`를 쓰지 않는다.** Anthropic 구조화 출력이 배열에서 그 키워드를 받지
+# 않아 400으로 막힌다("For 'array' type, property 'maxItems' is not supported").
+# 개수는 프롬프트로 부탁하고, 넘치면 `normalize_summary`가 잘라낸다.
 SUMMARY_SCHEMA = {
     "type": "object",
     "properties": {
@@ -37,7 +41,6 @@ SUMMARY_SCHEMA = {
         },
         "points": {
             "type": "array",
-            "maxItems": MAX_POINTS,
             "items": {
                 "type": "object",
                 "properties": {
@@ -53,7 +56,6 @@ SUMMARY_SCHEMA = {
         },
         "prepare": {
             "type": "array",
-            "maxItems": MAX_PREPARE,
             "items": {"type": "string"},
             "description": "담당자가 미리 챙기면 좋을 것. 없으면 빈 목록.",
         },
