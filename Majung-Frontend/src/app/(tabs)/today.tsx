@@ -14,7 +14,11 @@ import { ChatPopup } from "@/features/chat/views/ChatPopup";
 import { HelpScreen } from "@/features/help";
 import type { RouteId } from "@/features/tasks/domain/task";
 import { toTasks } from "@/features/tasks/domain/fromServer";
-import { useNearbyPlaces, nearbyKindFor } from "@/features/tasks/hooks/useNearbyPlaces";
+import {
+  useNearbyPlaces,
+  nearbyKindFor,
+  officeNoteFor,
+} from "@/features/tasks/hooks/useNearbyPlaces";
 import { NearbyPlaces } from "@/features/tasks/views/NearbyPlaces";
 import { useServerTasks } from "@/features/tasks/hooks/useServerTasks";
 import { TodayScreen } from "@/features/tasks";
@@ -117,9 +121,8 @@ export default function TodayRoute() {
               offices={nearby.offices}
               institutions={nearby.institutions}
               place={session?.place ?? null}
-              // 신분증은 어느 주민센터에서나 된다. 그 말이 없으면 자기 동 주민센터를
-              // 찾아 멀리 가는 사람이 생긴다 (§5.4)
-              anyBranch={nearbyKindFor(taskId) === "office"}
+              // 관할 규칙이 항목마다 달라 붙는 말도 다르다 (§5.4)
+              officeNote={officeNoteFor(taskId)}
             />
           ) : null
         }
