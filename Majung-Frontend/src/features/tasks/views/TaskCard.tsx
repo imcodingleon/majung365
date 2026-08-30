@@ -2,7 +2,6 @@
 // 채팅은 이 카드 안에 그리지 않는다. "AI 챗봇과 대화하기"를 누르면 화면 전체를 덮는 팝업이 열린다.
 //
 // 카드 머리(제목·번호·기관)는 TaskRow가 그린다. 여기는 그 아래 내용만 맡는다.
-import { useState } from "react";
 import { Text, View } from "react-native";
 
 import { Button } from "@/shared/components/Button";
@@ -11,7 +10,7 @@ import { COLORS } from "@/shared/theme/colors";
 import { joinKorean, josa } from "@/shared/utils/korean";
 
 import type { Task } from "../domain/task";
-import { visitPlaceOf, VISIT_PENDING_NOTE } from "../domain/visitPlace";
+import { visitPlaceOf } from "../domain/visitPlace";
 import { Icon } from "@/shared/components/Icon";
 
 type Props = {
@@ -20,6 +19,13 @@ type Props = {
   pendingMust: readonly string[];
   onOpenChat: () => void;
   onNotifyStaff?: () => void;
+  /**
+   * 아직 협의 중인 기관의 방문 예약을 눌렀을 때.
+   *
+   * **팝업을 카드가 직접 띄우지 않는다.** 카드는 목록이 다시 그려질 때마다 새로
+   * 만들어져 그 안의 상태가 지워진다. 실제로 팝업이 떴다가 곧 닫혔다.
+   */
+  onPendingVisit?: () => void;
   onComplete: () => void;
   /**
    * 완료를 되돌린다. **실수로 누르는 일이 실제로 일어난다.**
@@ -42,6 +48,7 @@ export function TaskCard({
   pendingMust,
   onOpenChat,
   onNotifyStaff,
+  onPendingVisit,
   onComplete,
   onUncomplete,
   statusStrip,
@@ -55,7 +62,6 @@ export function TaskCard({
 
   // 방문 예약을 받는 곳. 전화 문의처(`contact.org`)와 다른 값이다.
   const place = visitPlaceOf(task.id);
-  const [pendingNote, setPendingNote] = useState(false);
 
   return (
     <View className="px-4 pb-4 pt-4">
@@ -120,27 +126,20 @@ export function TaskCard({
       {/* 세 버튼의 순서가 곧 권하는 순서다. 물어보기가 먼저이고 끝냈다는 표시가 마지막이다 */}
       <View className="gap-2">
         <Button icon="chat" label="AI 챗봇과 대화하기" onPress={onOpenChat} />
+        {/* **어디에 가는 것인지가 먼저다.** "숙식제공 담당자"는 우리 쪽 분류 이름이라
+            사용자에게는 그런 사람이 어디 있는지 짚이지 않는다.
+            **기관 이름은 `visitPlace`가 정한다** — 전에는 `contact.org`를 썼는데 그것은
+            전화 문의처라, 콜센터에 방문 예약을 거는 라벨이 나왔다 */}
         {task.visitLabel && onNotifyStaff && place ? (
-          <>
-            {/* **어디에 가는 것인지가 먼저다.** "숙식제공 담당자"는 우리 쪽 분류
-                이름이라 사용자에게는 그런 사람이 어디 있는지 짚이지 않는다.
-                **기관 이름은 `visitPlace`가 정한다** — 전에는 `contact.org`를 썼는데
-                그것은 전화 문의처라, 콜센터에 방문 예약을 거는 라벨이 나왔다 */}
-            <Button
-              icon="bell"
-              label={`${place.label}에 방문 예약하기`}
-              tone="secondary"
-              ink={place.pending ? COLORS.inkMuted : COLORS.brand}
-              // 협의 중인 곳은 요청을 보내지 않고 왜 못 보내는지 알린다.
-              // 웹에서는 올려 보기만 해도 알 수 있고, 앱에서는 눌러야 안다.
-              onPress={place.pending ? () => setPendingNote(true) : onNotifyStaff}
-              onHoverIn={place.pending ? () => setPendingNote(true) : undefined}
-              onHoverOut={place.pending ? () => setPendingNote(false) : undefined}
-            />
-            {place.pending && pendingNote ? (
-              <Text className="px-1 text-caption text-ink-muted">{VISIT_PENDING_NOTE}</Text>
-            ) : null}
-          </>
+          <Button
+            icon="bell"
+            label={`${place.label}에 방문 예약하기`}
+            tone="secondary"
+            ink={place.pending ? COLORS.inkMuted : COLORS.brand}
+            // 협의 중인 곳은 요청을 보내지 않고 왜 못 보내는지 알린다. 알릴 길을
+            // 놓는 쪽이 주지 않았으면 눌러도 아무 일도 일어나지 않는다.
+            onPress={place.pending ? (onPendingVisit ?? (() => {})) : onNotifyStaff}
+          />
         ) : null}
         {task.done ? (
           <Button
@@ -159,6 +158,7 @@ export function TaskCard({
           />
         )}
       </View>
+
     </View>
   );
 }

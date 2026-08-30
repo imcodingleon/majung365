@@ -36,6 +36,8 @@ type Props = {
   onOpenHelp: () => void;
   /** 담당자에게 방문을 미리 알린다 (§7.2). 동의하지 않았으면 넘기지 않는다. */
   onNotifyStaff?: (taskId: RouteId) => void;
+  /** 아직 협의 중인 기관의 방문 예약을 눌렀을 때. 라우트가 팝업을 띄운다. */
+  onPendingVisit?: () => void;
   /** 이미 보낸 요청이 있으면 그 상태 표시를 그린다 (§7.1). */
   renderStatusStrip?: (taskId: RouteId) => React.ReactNode;
   /** 이 할 일에 알리기 버튼을 감출지. 이미 보낸 요청이 있을 때 참이다. */
@@ -93,6 +95,7 @@ export function TodayScreen({
   onOpenChat,
   onOpenHelp,
   onNotifyStaff,
+  onPendingVisit,
   renderStatusStrip,
   hideNotifyFor,
   renderNearby,
@@ -174,6 +177,7 @@ export function TodayScreen({
                     ? () => onNotifyStaff(task.id)
                     : undefined
                 }
+                onPendingVisit={onPendingVisit}
                 onComplete={() => handleComplete(task.id)}
                 onUncomplete={onUncomplete ? () => onUncomplete(task.id) : undefined}
                 statusStrip={renderStatusStrip?.(task.id)}

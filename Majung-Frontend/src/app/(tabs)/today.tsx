@@ -30,6 +30,7 @@ import { VisitRequestSheet } from "@/features/visit/views/VisitRequestSheet";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { getSession } from "@/shared/utils/session";
 import { FramedModal } from "@/shared/components/FramedModal";
+import { VISIT_PENDING_NOTE } from "@/features/tasks/domain/visitPlace";
 
 export default function TodayRoute() {
   const session = getSession();
@@ -42,6 +43,13 @@ export default function TodayRoute() {
   const chat = useTaskThreads();
   const visit = useVisitRequests();
   const [helpOpen, setHelpOpen] = useState(false);
+  /**
+   * 아직 협의 중인 기관의 방문 예약을 눌렀는지.
+   *
+   * **카드가 아니라 여기가 들고 있다.** 카드는 목록이 다시 그려질 때마다 새로 만들어져
+   * 그 안의 상태가 지워진다 — 실제로 팝업이 떴다가 곧 닫혔다.
+   */
+  const [visitPending, setVisitPending] = useState(false);
   /**
    * 담당자 채팅을 연 방문 요청. **방은 요청 하나에 하나다**(§7.3) — 할 일이 아니라
    * 요청을 들고 있어야 어느 방을 열지 정해진다.
@@ -127,6 +135,7 @@ export default function TodayRoute() {
           ) : null
         }
         pendingMust={pendingMust}
+        onPendingVisit={() => setVisitPending(true)}
         headId={headId}
         total={server.total}
         userName={session.name}
@@ -208,6 +217,32 @@ export default function TodayRoute() {
           error={visit.error}
         />
       ) : null}
+
+      {/* 아직 예약을 받을 수 없는 기관이다. 버튼을 지우는 대신 왜 못 누르는지 말한다 —
+          없애 버리면 그 기관에는 갈 수 없는 것으로 읽힌다 */}
+      <FramedModal
+        visible={visitPending}
+        animationType="fade"
+        transparent
+        onRequestClose={() => setVisitPending(false)}
+      >
+        <View className="flex-1 items-center justify-center bg-black/40 px-8">
+          <View className="w-full rounded-2xl bg-white px-5 py-6">
+            <Text className="text-body-lg text-ink-strong">{VISIT_PENDING_NOTE}</Text>
+            <Text className="mt-2 text-body text-ink-sub">
+              지금은 방문 예약을 보낼 수 없습니다. 준비되면 알려드리겠습니다.
+            </Text>
+            <Pressable
+              onPress={() => setVisitPending(false)}
+              accessibilityRole="button"
+              accessibilityLabel="알겠어요"
+              className="mt-5 items-center rounded-xl bg-brand py-4 active:opacity-90"
+            >
+              <Text className="text-body-lg font-extrabold text-white">알겠어요</Text>
+            </Pressable>
+          </View>
+        </View>
+      </FramedModal>
 
       {/* 상한에 닿아도 그냥 막지 않는다. 왜 막혔는지 알려준다 (§7.5). */}
       <FramedModal

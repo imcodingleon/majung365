@@ -46,14 +46,6 @@ type Props = {
    * 놓는 쪽이 색을 준다. 주지 않으면 톤이 정하는 기본색을 그대로 쓴다.
    */
   ink?: string;
-  /**
-   * 마우스를 올렸다 뗄 때. **웹에서만 불린다** — 앱에는 커서가 없다.
-   *
-   * 눌러야만 알 수 있는 것을 올려 보는 것만으로 알리는 자리에 쓴다. 앱에서는
-   * 같은 것을 `onPress`가 맡아야 하므로, 이것만으로 뜻이 전해지게 두지 않는다.
-   */
-  onHoverIn?: () => void;
-  onHoverOut?: () => void;
   /** 바깥 여백. 버튼이 스스로 정하지 않고 놓는 쪽이 정한다. */
   className?: string;
 };
@@ -67,8 +59,6 @@ export function Button({
   icon,
   size = "md",
   ink: inkOverride,
-  onHoverIn,
-  onHoverOut,
   className,
 }: Props) {
   const filled = tone === "primary";
@@ -93,8 +83,6 @@ export function Button({
   return (
     <Pressable
       onPress={onPress}
-      onHoverIn={onHoverIn}
-      onHoverOut={onHoverOut}
       disabled={disabled}
       accessibilityRole="button"
       accessibilityState={{ disabled: Boolean(disabled) }}
