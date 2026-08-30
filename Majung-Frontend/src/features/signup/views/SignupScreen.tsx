@@ -163,8 +163,10 @@ export function SignupScreen({
 
         {/* ① 개인정보 */}
         <FieldLabel>이름</FieldLabel>
+        {/* 채워진 칸은 테두리가 진해진다 (시안). 어디까지 적었는지 색으로 먼저 읽힌다 */}
         <TextInput
-          className="rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-title font-medium text-ink-strong"
+          className="rounded-xl border-[1.5px] bg-white px-4 py-4 text-title font-medium text-ink-strong"
+          style={{ borderColor: form.name ? COLORS.brand : COLORS.line }}
           value={form.name}
           onChangeText={form.setName}
           placeholder="이름을 입력해 주세요"
