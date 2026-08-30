@@ -41,10 +41,15 @@ function LineButton({
         borderColor: emergency ? COLORS.alertLine : COLORS.brandSoft,
       }}
     >
-      {/* 카드 세로 가운데에 둔다 (2026-08-31 시안). 번호 줄에 맞춰 위로 올려 두었었는데,
-          세 줄짜리 카드에서는 위쪽에 치우쳐 보였다 */}
-      <View className="mr-3">
-        <Icon name="phone" size={30} color={emergency ? COLORS.alert : COLORS.brand} />
+      {/* 수화기가 **연한 원 위에 얹힌다** (2026-08-31 시안). 원본 SVG에는 원과 수화기가
+          한 덩어리로 들어 있는데, 바탕색과 획색이 따로 놀아야 해서 원은 여기서 그린다.
+          카드 세로 가운데에 둔다 — 번호 줄에 맞춰 위로 올려 두었었는데 세 줄짜리
+          카드에서는 치우쳐 보였다 */}
+      <View
+        className="mr-3 size-[30px] items-center justify-center rounded-full"
+        style={{ backgroundColor: emergency ? COLORS.alertLine : COLORS.brandSoft }}
+      >
+        <Icon name="phoneRound" size={30} color={emergency ? COLORS.alert : COLORS.brand} />
       </View>
       <View className="flex-1">
         <Text

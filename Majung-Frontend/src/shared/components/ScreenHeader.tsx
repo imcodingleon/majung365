@@ -44,8 +44,7 @@ export function ScreenHeader({
         accessibilityLabel={closeHint ?? (back ? "앞 화면으로" : `${title} 닫기`)}
         className="size-10 items-center justify-center rounded-full active:opacity-70"
       >
-        {/* 색을 진하게 올렸다 (2026-08-31 시안). 연한 회색이면 나가는 길이 흐려 보인다 */}
-        <Icon name={back ? "back" : "close"} size={22} color={COLORS.inkStrong} />
+        <Icon name={back ? "back" : "close"} size={22} color={COLORS.inkMuted} />
       </Pressable>
 
       <View className="flex-1 px-1">
