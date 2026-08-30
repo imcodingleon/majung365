@@ -43,10 +43,11 @@ function LineButton({
     >
       {/* 수화기가 **연한 원 위에 얹힌다** (2026-08-31 시안). 원본 SVG에는 원과 수화기가
           한 덩어리로 들어 있는데, 바탕색과 획색이 따로 놀아야 해서 원은 여기서 그린다.
-          카드 세로 가운데에 둔다 — 번호 줄에 맞춰 위로 올려 두었었는데 세 줄짜리
-          카드에서는 치우쳐 보였다 */}
+          **번호 줄에 맞춰 위에 둔다.** 시안의 아이콘 자리가 `items-start`이고, 원과
+          번호 줄이 둘 다 30px이라 나란히 선다. 카드 세로 가운데로 옮겼다가 되돌렸다 —
+          가운데로 두면 아이콘이 설명 줄 옆으로 내려가 번호와 짝이 아닌 것처럼 보인다 */}
       <View
-        className="mr-3 size-[30px] items-center justify-center rounded-full"
+        className="mr-2 size-[30px] items-center justify-center self-start rounded-full"
         style={{ backgroundColor: emergency ? COLORS.alertLine : COLORS.brandSoft }}
       >
         <Icon name="phoneRound" size={30} color={emergency ? COLORS.alert : COLORS.brand} />
