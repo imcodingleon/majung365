@@ -54,15 +54,18 @@ type Props = {
 /**
  * 진행 표시.
  *
- * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다.
+ * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. **마친 것을 센다.**
  *
- * **2026-08-31에 세는 대상이 바뀌었다.** 전에는 마친 개수를 셌고("0 / 14"), 지금은
- * 지금 열려 있는 카드가 몇 번째인지를 센다("14개 중 1번째"). 시안을 따른 것이다.
- * 막대도 같은 기준으로 찬다 — 숫자와 막대가 다른 것을 가리키면 둘 중 무엇을 믿어야
- * 할지 알 수 없다.
+ * **2026-08-31에 한 번 열려 있는 카드의 순번으로 바꿨다가 되돌렸다.** 시안이
+ * "9개 중 1번째"라 그것을 따랐는데, "진행 상황"이라는 제목과 막대 아래에 순번이
+ * 있으면 그 순번이 진행도로 읽힌다. **아무것도 끝내지 않고 여덟 번째 카드를 궁금해서
+ * 눌러 보기만 해도 막대가 8/14까지 차올랐다.**
+ *
+ * 시안 자체가 어긋나 있었다 — "9개 중 1번째"인데 막대는 33% 차 있다(1/9라면 11%다).
+ * 디자이너가 막대를 임의로 그린 것으로 보고, 문구 모양만 시안에서 가져온다.
  */
-function Progress({ current, total }: { current: number; total: number }) {
-  const ratio = total > 0 ? Math.min(1, current / total) : 0;
+function Progress({ done, total }: { done: number; total: number }) {
+  const ratio = total > 0 ? Math.min(1, done / total) : 0;
   return (
     <View className="mb-5">
       <View className="mb-2 flex-row items-end justify-between">
@@ -70,7 +73,7 @@ function Progress({ current, total }: { current: number; total: number }) {
           진행 상황
         </Text>
         <Text className="text-body font-medium text-ink-muted">
-          {total}개 중 {current}번째
+          {total}개 중 {done}개 완료
         </Text>
       </View>
       <View className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: COLORS.line }}>
@@ -104,9 +107,6 @@ export function TodayScreen({
   const scrollRef = useRef<ScrollView>(null);
   const rowOffsets = useRef<Record<string, number>>({});
 
-  // 진행 표시가 세는 값. 라우트가 `openId`에 이미 `headId`를 채워 넘기므로
-  // 아무것도 안 고른 처음에도 첫 항목이 잡힌다.
-  const openIndex = tasks.findIndex((t) => t.id === openId);
 
   // 완료 후 다음 탭이 열릴 때 그 위치로 스크롤한다. 열렸는데 화면 밖이면 열린 줄 모른다 (§5.2).
   const handleComplete = useCallback(
@@ -136,14 +136,7 @@ export function TodayScreen({
       />
 
       <ScrollView ref={scrollRef} className="flex-1" contentContainerClassName="px-5 pb-16 pt-5">
-        {/* 열려 있는 카드가 몇 번째인지를 센다. 아무것도 열려 있지 않으면 — 모두 마쳐
-            `headId`까지 비었을 때다 — 마지막 번째로 놓는다 */}
-        <Progress
-          current={
-            openIndex >= 0 ? openIndex + 1 : (total ?? tasks.length)
-          }
-          total={total ?? tasks.length}
-        />
+        <Progress done={tasks.filter((t) => t.done).length} total={total ?? tasks.length} />
 
         <Text className="text-body text-ink-sub">
           {userName ? `${userName}님, 어서 오세요.` : "어서 오세요."}
