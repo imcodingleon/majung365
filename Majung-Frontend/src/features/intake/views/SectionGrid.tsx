@@ -65,8 +65,13 @@ function SectionBox({
       }}
     >
       {/* 그릇 위 12px과 라벨 줄높이 27px은 시안 실측값이다. 둘을 빼면 카드가 9px
-          낮아지고, 두 칸씩 세 줄로 놓였을 때 그 차이가 격자 전체에서 27px로 쌓인다 */}
-      <View className="items-start pt-3">
+          낮아지고, 두 칸씩 세 줄로 놓였을 때 그 차이가 격자 전체에서 27px로 쌓인다.
+
+          **`flex-1`이 없으면 안 된다.** 이 칸이 라벨 길이만큼 벌어지면서 오른쪽
+          동그라미를 카드 밖으로 밀어낸다 — 여섯 자짜리 "생계·긴급비용"과
+          "기타·권리구제"에서 실제로 그랬다. 남은 폭만 쓰게 하고, 모자라면 라벨을
+          두 줄로 접는다. **글자를 잘라내지 않는다** */}
+      <View className="flex-1 items-start pt-3">
         <View
           className="size-9 items-center justify-center rounded-2xl"
           style={{ backgroundColor: COLORS.brandSoft }}
@@ -74,18 +79,25 @@ function SectionBox({
           <SectionIcon id={id} size={32} color={COLORS.brand} />
         </View>
 
+        {/* **두 줄 자리를 미리 잡는다.** 좁은 화면에서는 "생계·긴급비용"처럼 여섯 자인
+            라벨이 두 줄로 접히는데, 자리를 안 잡아 두면 그 카드만 27px 높아져 같은 줄의
+            짝과 격자가 어긋난다. 한 줄짜리도 같은 높이를 차지하게 해서 여섯 칸이
+            가지런히 선다 */}
         <Text
           className="mt-3 text-title font-bold leading-[27px]"
-          style={{ color: COLORS.inkBody }}
+          style={{ color: COLORS.inkBody, minHeight: 54 }}
         >
           {label}
         </Text>
       </View>
 
       {/* 다 했는지 나타내는 표시. 도형은 같고 원 색만 갈린다 — 켜짐과 꺼짐이
-          같은 자리에서 같은 크기로 보여야 무엇이 달라졌는지 읽힌다 */}
+          같은 자리에서 같은 크기로 보여야 무엇이 달라졌는지 읽힌다.
+
+          **`shrink-0`으로 눌리지 않게 한다.** 좁은 화면에서 이것이 찌그러지면
+          동그라미가 타원이 된다 */}
       <View
-        className="size-6 items-center justify-center rounded-full"
+        className="size-6 shrink-0 items-center justify-center rounded-full"
         style={{ backgroundColor: done ? COLORS.brand : COLORS.brandMuted }}
       >
         <Icon name="check" size={24} color={COLORS.surface} />
