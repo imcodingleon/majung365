@@ -29,12 +29,14 @@ import { RequestStatusStrip } from "@/features/visit/views/RequestStatusStrip";
 import { UserChatSheet } from "@/features/visit/views/UserChatSheet";
 import { VisitRequestSheet } from "@/features/visit/views/VisitRequestSheet";
 import { NoteBox } from "@/shared/components/NoteBox";
+import { useRegionLookup } from "@/shared/location";
 import { getSession } from "@/shared/utils/session";
 import { FramedModal } from "@/shared/components/FramedModal";
 import { VISIT_PENDING_NOTE } from "@/features/tasks/domain/visitPlace";
 
 export default function TodayRoute() {
   const session = getSession();
+  const lookup = useRegionLookup();
   const server = useServerTasks(
     session?.answers ?? null,
     session?.tasks ? toTasks(session.tasks) : undefined,
@@ -83,7 +85,15 @@ export default function TodayRoute() {
   // 비어 있고 첫 항목이 열린 채로 시작하는데(§5.2), 그때 `openId`만 보면 근처 기관을
   // 부르지 않아 **가장 많이 보게 되는 첫 화면에서만 비는** 상태가 된다.
   const shownId = openId ?? headId;
-  const nearby = useNearbyPlaces(shownId, session?.place ?? null);
+  /**
+   * 지금 있는 곳. **화면들이 함께 보는 값을 먼저 쓴다.**
+   *
+   * 세션의 값만 보던 때는 지도에서 "지역 변경"으로 지역을 바꿔도 이 자리가 예전
+   * 지역에 머물렀다. 세션은 가입·복원 때만 채워지는데 그 뒤로 다시 읽을 계기가
+   * 없었고, 탭은 화면을 살려 두므로 되돌아와도 그대로였다. 새로고침해야만 맞았다.
+   */
+  const place = lookup.place ?? session?.place ?? null;
+  const nearby = useNearbyPlaces(shownId, place);
 
   const pendingMust = tasks.filter((t) => t.must).map((t) => t.title);
 
@@ -129,7 +139,7 @@ export default function TodayRoute() {
             <NearbyPlaces
               offices={nearby.offices}
               institutions={nearby.institutions}
-              place={session?.place ?? null}
+              place={place}
               // 관할 규칙이 항목마다 달라 붙는 말도 다르다 (§5.4)
               officeNote={officeNoteFor(taskId)}
             />

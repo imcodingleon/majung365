@@ -18,7 +18,15 @@
 // 둘. **웹에는 그 함수의 구현이 없다.** 그냥 오류를 던진다. 심사·시연을 웹으로 하면
 // 그 자리에서 기능이 죽는다.
 import * as Location from "expo-location";
-import { useCallback, useEffect, useMemo, useState } from "react";
+import {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useMemo,
+  useState,
+  type ReactNode,
+} from "react";
 
 import { getMe, patchMe } from "@/shared/utils/api";
 import { lastPlace, markPlace } from "@/shared/utils/storage";
@@ -46,7 +54,7 @@ export type LookupState =
  */
 const LOCATE_TIMEOUT_MS = 15_000;
 
-export function useRegionLookup() {
+function useRegionLookupState() {
   const [state, setState] = useState<LookupState>({ status: "idle" });
   /** 직접 고른 지역. 위치로 알아낸 것보다 이쪽이 우선한다. */
   const [picked, setPicked] = useState<SelectedRegion | null>(null);
@@ -191,4 +199,34 @@ export function useRegionLookup() {
   }, [place]);
 
   return { state, place, locate, pick, reset };
+}
+
+/**
+ * 지금 있는 곳을 화면들이 **함께** 본다.
+ *
+ * **훅을 화면마다 부르면 각자 다른 곳을 들게 된다.** 실제로 그래서, 지도에서 "지역
+ * 변경"으로 지역을 바꿔도 **홈의 "가까운 곳"이 예전 지역 그대로 남았다** — 지도는
+ * 자기 훅 인스턴스의 값을 보고, 홈은 가입할 때 세션에 박힌 값을 보고 있었다. 새 값은
+ * 기기와 서버에만 적히므로 새로고침 전에는 어느 쪽도 그것을 몰랐다.
+ *
+ * **`(tabs)`가 아니라 루트에 둔다.** 가입 화면(`app/signup.tsx`)이 탭 밖인데 이 값을
+ * 쓴다.
+ */
+const RegionLookupContext = createContext<ReturnType<typeof useRegionLookupState> | null>(
+  null,
+);
+
+export function RegionLookupProvider({ children }: { children: ReactNode }) {
+  const value = useRegionLookupState();
+  return <RegionLookupContext.Provider value={value}>{children}</RegionLookupContext.Provider>;
+}
+
+export function useRegionLookup() {
+  const shared = useContext(RegionLookupContext);
+  if (shared === null) {
+    // **Provider 없이 부르면 조용히 어긋난다.** 자기만의 위치를 들고 도는데 화면은
+    // 그것을 알 수 없어, 한쪽만 갱신되는 이유를 찾기 어려워진다.
+    throw new Error("RegionLookupProvider 안에서만 쓸 수 있어요.");
+  }
+  return shared;
 }

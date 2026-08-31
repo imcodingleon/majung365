@@ -7,6 +7,7 @@ import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
 
 import { AppFrame } from "@/shared/components/AppFrame";
+import { RegionLookupProvider } from "@/shared/location";
 import { COLORS } from "@/shared/theme/colors";
 import { useRestoreSession } from "@/shared/utils/useRestoreSession";
 
@@ -61,7 +62,11 @@ export default function RootLayout() {
 
   return (
     <SafeAreaProvider>
-      <AppFrame>
+      {/* **지금 있는 곳을 화면들이 함께 본다.** 훅을 화면마다 부르면 각자 다른 곳을
+          들게 되어, 지도에서 지역을 바꿔도 홈의 "가까운 곳"이 예전 지역에 머물렀다.
+          `(tabs)`가 아니라 여기에 두는 것은 가입 화면이 탭 밖인데 이 값을 쓰기 때문이다 */}
+      <RegionLookupProvider>
+        <AppFrame>
         {/* 되살리는 동안에는 아무 화면도 그리지 않는다. 그리면 세션이 없는 상태로
             한 번 판단이 내려져, 되살아나기 전에 가입 화면으로 넘어가 버린다.
             글꼴 대기도 여기 얹는다 — 먼저 그리면 시스템 글꼴로 한 번 그려졌다가
@@ -74,7 +79,8 @@ export default function RootLayout() {
         ) : (
           <Stack screenOptions={{ headerShown: false }} />
         )}
-      </AppFrame>
+        </AppFrame>
+      </RegionLookupProvider>
       <StatusBar style="dark" />
     </SafeAreaProvider>
   );
