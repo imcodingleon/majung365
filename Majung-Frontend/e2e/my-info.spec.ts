@@ -119,3 +119,42 @@ test.describe("내 정보 — 열람과 삭제", () => {
     await expect(page.getByText("모든 정보를 지울까요?")).toBeHidden();
   });
 });
+
+// **삭제 카드가 화면 밖으로 밀리는 결함은 여기서 못 잡는다** (2026-08-31).
+//
+// 생일을 틀리면 네 줄짜리 안내와 삭제 카드가 아래로 붙는데, `BirthGate`가 그냥 `View`
+// 이던 때는 폰에서 그것이 잘린 채 밀어 내릴 수단이 없었다. **지울 길이 유일한 사람이
+// 갇혔다.**
+//
+// 그런데 웹에서는 재현되지 않는다. RN Web은 넘친 내용을 페이지 스크롤로 흘려보내고
+// `AppFrame`이 440px 프레임을 씌운다. 뷰포트를 360×800으로 줄여도 `scrollIntoView`가
+// body를 굴려 버튼에 닿는다 — 실제로 `View`로 되돌려 놓고 확인했더니 그대로 통과했다.
+//
+// **통과하는 것을 남겨 두면 지켜지고 있다고 착각하게 된다.** 이 자리는 폰에서 눈으로
+// 확인한다. 고친 내용은 `BirthGate.tsx`의 `ScrollView` 주석에 적어 두었다.
+
+// 내 정보를 못 불러왔을 때 (2026-08-31).
+//
+// **맞게 적은 사람에게 "등록한 정보와 달라요"가 나갔다.** 응답이 오기 전에는 화면이
+// 빈 문자열과 맞대 보고 있어서 어떤 생일도 안 맞았고, 그 거짓 실패가 삭제 카드까지
+// 펼쳐 **맞게 적은 사람에게 지우라고 권하는** 꼴이 되었다.
+test.describe("내 정보 — 불러오지 못했을 때", () => {
+  test.beforeEach(async ({ page }) => {
+    await openApp(page, "/my-info", { freezeClock: false, meFails: true });
+    await expect(page.getByText("생년월일을 입력해주세요")).toBeVisible();
+  });
+
+  test("맞는 생일을 넣어도 틀렸다고 하지 않는다", async ({ page }) => {
+    // 맞대 볼 값이 없으면 확인 자체를 받지 않는다. 지어낸 판정을 내리지 않는 것이다.
+    await fillBirth(page, BIRTH);
+
+    await expect(page.getByRole("button", { name: "확인" })).toBeDisabled();
+    await expect(page.getByText(/가입할 때 등록한 정보와 달라요/)).toBeHidden();
+  });
+
+  test("왜 안 되는지 알리고 지울 길을 남긴다", async ({ page }) => {
+    // **여기서 길이 끊기면 갇힌다.** 못 불러온 사람에게도 지우는 자리는 있어야 한다.
+    await expect(page.getByText(/불러오지 못했어요/)).toBeVisible();
+    await expect(page.getByText("모든 정보를 지울까요?")).toBeVisible();
+  });
+});

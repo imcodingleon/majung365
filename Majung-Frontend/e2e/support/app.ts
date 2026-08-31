@@ -55,6 +55,8 @@ export type Mocks = {
   starterQuestions?: Record<string, string[]>;
   /** `GET /api/centers` — 지도에 찍고 목록에 낼 기관. 비면 "조건에 맞는 센터가 없어요"다. */
   centers?: unknown[];
+  /** `GET /api/me`를 실패시킨다. 내 정보를 못 불러온 사람이 갇히지 않는지 볼 때 쓴다. */
+  meFails?: boolean;
   /** 토큰을 심을지. 거짓이면 가입 안 한 사람으로 들어간다. */
   signedIn?: boolean;
   /**
@@ -184,6 +186,15 @@ async function installApi(page: Page, mocks: Mocks): Promise<void> {
     }
 
     if (path === "/api/me") {
+      // **못 불러오는 경우를 만들 수 있어야 한다.** 그때 화면이 맞는 생일까지 틀렸다고
+      // 하던 결함이 있었다.
+      if (mocks.meFails) {
+        return route.fulfill({
+          status: 500,
+          headers: CORS,
+          body: JSON.stringify({ detail: "내 정보를 불러오지 못했어요." }),
+        });
+      }
       // 생일 확인 화면을 지나려면 저장된 값이 있어야 한다. `BIRTH`가 그 값이다.
       return json(route, {
         user_id: "e2e",
@@ -191,7 +202,9 @@ async function installApi(page: Page, mocks: Mocks): Promise<void> {
         birth_date: BIRTH,
         release_date: "2026-08-30",
         days_since_release: 1,
-        has_crime: true,
+        // **서버가 주는 이름 그대로다.** `has_crime`으로 적어 두었던 때는 화면이 읽는
+        // `has_crime_category`가 늘 비어, 죄목을 밝힌 사람도 안 밝힌 것으로 보였다.
+        has_crime_category: true,
       });
     }
 
