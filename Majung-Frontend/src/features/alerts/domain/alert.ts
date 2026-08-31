@@ -6,6 +6,7 @@
 //
 // 이 파일은 계산만 한다. 화면도 서버 호출도 없다.
 import type { VisitRequest } from "@/features/visit/domain/request";
+import { josa } from "@/shared/utils/korean";
 
 export type AlertKind = "confirmed" | "proposed" | "cancelled" | "message";
 
@@ -36,7 +37,11 @@ function alertFor(r: VisitRequest): Alert | null {
       kind: "message",
       title: "담당자가 메시지를 보냈어요",
       body: r.unread === 1 ? "새 메시지가 있어요." : `안 읽은 메시지가 ${r.unread}개 있어요.`,
-      at,
+      // **말이 온 때가 이 소식이 온 때다.** 요청을 보낸 때를 쓰면 사흘 전에 보낸
+      // 요청에 방금 답이 와도 알림이 사흘 전 날짜 묶음에 들어가, 가장 새로운 소식이
+      // 목록 아래에 묻힌다. 확정 알림은 같은 이유로 이미 `decidedAt`을 쓰는데
+      // 이쪽만 그대로였다.
+      at: r.lastMessageAt ?? at,
       visitId: r.id,
     };
   }
@@ -67,7 +72,9 @@ function alertFor(r: VisitRequest): Alert | null {
       id: `${r.id}:proposed`,
       kind: "proposed",
       title: "담당자가 다른 시간을 이야기했어요",
-      body: `${r.proposedTime}은 어떠신지 물어보셨어요.`,
+      // **받침을 보고 조사를 고른다.** "은"으로 박아 두었더니 "오전 9시은 어떠신지"가
+      // 나왔다. 같은 문구를 만드는 `statusMessage`는 이미 `josa`를 쓰고 있었다.
+      body: `${r.proposedTime}${josa(r.proposedTime, "은", "는")} 어떠신지 물어보셨어요.`,
       at,
       visitId: r.id,
     };

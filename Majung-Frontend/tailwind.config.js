@@ -25,7 +25,10 @@ module.exports = {
         caption: ["13px", { lineHeight: "21px" }], // 보조 설명
       },
       colors: {
-        brand: { DEFAULT: "#024f9f", soft: "#e1eefa", muted: "#b9cde4" }, // 주 색 / 주 색 배경 / 비활성
+        // tint는 **고른 것을 나타내는 배경**이다 (2026-08-31 시안). soft보다 옅어서
+        // 흰 카드 위에 얹어도 글자를 밀어내지 않는다. soft는 안내 상자처럼 덩어리로
+        // 칠하는 자리에 그대로 둔다.
+        brand: { DEFAULT: "#024f9f", soft: "#e1eefa", tint: "#f1f7ff", muted: "#b9cde4" }, // 주 색 / 주 색 배경 / 선택 배경 / 비활성
         sun: { 500: "#EF9F27", 700: "#e04e00", 100: "#FAEEDA", 900: "#412402" }, // 강조·포인트
         chip: { DEFAULT: "#ffdcc0", ink: "#874700" }, // 프리셋 칩
         page: "#f9fbff", // 화면 배경
@@ -38,6 +41,9 @@ module.exports = {
           strong: "#1c2333", // 제목·강조 (프로토타입 --ink)
           sub: "#5b6474", // 보조 설명 (프로토타입 --sub)
           body: "#333c4e", // 카드 본문
+          // 항목에 딸린 한 줄 설명 (2026-08-31 시안). sub보다 밝고 muted보다 어둡다 —
+          // 본문으로 읽히면 안 되지만 placeholder처럼 흐려도 안 되는 자리다.
+          hint: "#7a8291",
         },
         // strong은 말풍선 안쪽처럼 배경이 이미 회색인 곳의 구분선이다.
         line: { DEFAULT: "#f1f1f1", strong: "#dfe3ec" },

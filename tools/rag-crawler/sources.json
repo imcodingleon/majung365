@@ -1,0 +1,799 @@
+{
+  "bokjiro": [
+    {
+      "id": "saenggye-geubyeo",
+      "name": "생계급여(맞춤형 급여)",
+      "url": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001132&wlfareInfoReldBztpCd=01",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "uiryo-geubyeo",
+      "name": "의료급여",
+      "url": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00000102&wlfareInfoReldBztpCd=01",
+      "route_ids": [
+        "R15"
+      ]
+    }
+  ],
+  "general": [
+    {
+      "id": "금융위원회_비대면_실명확인",
+      "name": "금융위원회 비대면 실명확인",
+      "url": "https://www.fsc.go.kr/no010101/71982?curPage=435",
+      "domain": "www.fsc.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "우체국_비대면계좌개설",
+      "name": "우체국 비대면계좌개설",
+      "url": "https://m.epostbank.go.kr/MWNFOP0000.do",
+      "domain": "m.epostbank.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "서울회생법원_개인회생",
+      "name": "서울회생법원 개인회생",
+      "url": "https://slb.scourt.go.kr/rel/guide/personal_r/index.jsp",
+      "domain": "slb.scourt.go.kr",
+      "route_ids": [
+        "R14"
+      ]
+    },
+    {
+      "id": "법제처_기초생활보장_신청",
+      "name": "법제처 기초생활보장 신청",
+      "url": "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?ccfNo=2&cciNo=1&cnpClsNo=1&csmSeq=1533",
+      "domain": "www.easylaw.go.kr",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "숙식제공",
+      "name": "숙식제공",
+      "url": "https://koreha.or.kr/sub/02_01.do?MN=207&MN1=3&MN2=16&MN3=207",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R1",
+        "R9",
+        "R11"
+      ]
+    },
+    {
+      "id": "긴급지원",
+      "name": "긴급지원",
+      "url": "https://koreha.or.kr/sub/02_01_2.do",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R2",
+        "R10"
+      ]
+    },
+    {
+      "id": "기초건강지원",
+      "name": "기초건강지원",
+      "url": "https://koreha.or.kr/sub/02_01_15.do?MN1=3&MN2=244&MN3=273&MN=273",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R3"
+      ]
+    },
+    {
+      "id": "주거지원",
+      "name": "주거지원",
+      "url": "https://koreha.or.kr/sub/02_01_6.do?MN1=3&MN2=247&MN3=248&MN=248",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R4",
+        "R9",
+        "R11"
+      ]
+    },
+    {
+      "id": "가족지원",
+      "name": "가족지원",
+      "url": "https://koreha.or.kr/sub/02_01_7.do",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R5"
+      ]
+    },
+    {
+      "id": "취업지원·허그일자리",
+      "name": "취업지원·허그일자리",
+      "url": "https://www.koreha.or.kr/sub/02_01_4.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R6",
+        "R11"
+      ]
+    },
+    {
+      "id": "창업지원",
+      "name": "창업지원",
+      "url": "https://www.koreha.or.kr/sub/02_01_5.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R7",
+        "R9"
+      ]
+    },
+    {
+      "id": "심리상담",
+      "name": "심리상담",
+      "url": "https://koreha.or.kr/sub/02_01_12.do",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R8"
+      ]
+    },
+    {
+      "id": "주민등록증_재발급",
+      "name": "주민등록증 재발급",
+      "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R9"
+      ]
+    },
+    {
+      "id": "금융위원회_한도제한계좌_안내",
+      "name": "금융위원회 한도제한계좌 안내",
+      "url": "https://www.fsc.go.kr/no010101/82205",
+      "domain": "www.fsc.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "전입신고",
+      "name": "전입신고",
+      "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R9",
+        "R11"
+      ]
+    },
+    {
+      "id": "수용·출소증명서",
+      "name": "수용·출소증명서",
+      "url": "https://www.corrections.go.kr/corrections/1075/subview.do",
+      "domain": "www.corrections.go.kr",
+      "route_ids": [
+        "R13"
+      ]
+    },
+    {
+      "id": "건강보험_자격_취득·변동",
+      "name": "건강보험 자격 취득·변동",
+      "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=14600000232",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "온라인_긴급지원_신청",
+      "name": "온라인 긴급지원 신청",
+      "url": "https://koreha.or.kr/emergApply/info.do?MN1=3&MN2=239&MN3=242&MN=242",
+      "domain": "koreha.or.kr",
+      "route_ids": [
+        "R2"
+      ]
+    },
+    {
+      "id": "행정안전부_사진규격",
+      "name": "행정안전부 사진규격",
+      "url": "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_5/screen.do",
+      "domain": "www.mois.go.kr",
+      "route_ids": [
+        "R9"
+      ]
+    },
+    {
+      "id": "주민등록법_시행령_제41조",
+      "name": "주민등록법 시행령 제41조",
+      "url": "https://www.law.go.kr/법령/주민등록법시행령/제41조",
+      "domain": "www.law.go.kr",
+      "route_ids": [
+        "R9"
+      ]
+    },
+    {
+      "id": "주민등록증_재발급_신청",
+      "name": "주민등록증 재발급 신청",
+      "url": "https://www.gov.kr/mw/AA040OfferMainFrm.do?capp_biz_cd=13100000018&HighCtgCD=-&FAX_TYPE=&img=02&selectedSeq=",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R9"
+      ]
+    },
+    {
+      "id": "법무부_생계비계좌_공식_안내",
+      "name": "법무부 생계비계좌 공식 안내",
+      "url": "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
+      "domain": "www.moj.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "KB생계비계좌_공식_상품_안내",
+      "name": "KB생계비계좌 공식 상품 안내",
+      "url": "https://obank.kbstar.com/quics?page=C020722&boardId=669&compId=b058336&articleId=142978&bbsMode=view&viewPage=1&articleClass=2&searchCondition=title&searchStr=",
+      "domain": "obank.kbstar.com",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "법제처_행복지킴이통장_안내",
+      "name": "법제처 행복지킴이통장 안내",
+      "url": "https://www.easylaw.go.kr/CSP/OnhunqueansInfoRetrieve.laf?onhunqnaAstSeq=97&onhunqueSeq=5742&search_put",
+      "domain": "www.easylaw.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "내_계좌_조회_-_금융결제원_어카운트인포",
+      "name": "내 계좌 조회 - 금융결제원 어카운트인포",
+      "url": "https://www.payinfo.or.kr/gatePay.html",
+      "domain": "www.payinfo.or.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "KB생계비계좌_공식_안내·앱_신청",
+      "name": "KB생계비계좌 공식 안내·앱 신청",
+      "url": "https://obank.kbstar.com/quics?page=C041244&scheme=kbbank&pageid=D008809&urlparam=브랜드상품코드:DP01001643",
+      "domain": "obank.kbstar.com",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "압류금지채권_범위변경신청_-_대한민국_법원",
+      "name": "압류금지채권 범위변경신청 - 대한민국 법원",
+      "url": "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA18M02",
+      "domain": "ecfs.scourt.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "법률구조_플랫폼",
+      "name": "법률구조 플랫폼",
+      "url": "https://www.helplaw24.go.kr/",
+      "domain": "www.helplaw24.go.kr",
+      "route_ids": [
+        "R10"
+      ]
+    },
+    {
+      "id": "정부24_주민등록_재등록_신고",
+      "name": "정부24 주민등록 재등록 신고",
+      "url": "https://www.gov.kr/mw/AA020InfoCappView.do?HighCtgCD=A01010&CappBizCD=13100000011",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R11"
+      ]
+    },
+    {
+      "id": "정부24_주민등록표_등·초본_발급",
+      "name": "정부24 주민등록표 등·초본 발급",
+      "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000015",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R11"
+      ]
+    },
+    {
+      "id": "행정안전부_주민등록증_재발급",
+      "name": "행정안전부 주민등록증 재발급",
+      "url": "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_3/screen.do",
+      "domain": "www.mois.go.kr",
+      "route_ids": [
+        "R11"
+      ]
+    },
+    {
+      "id": "경상북도_수감_중_말소_재등록_과태료_안내",
+      "name": "경상북도 수감 중 말소 재등록 과태료 안내",
+      "url": "https://gb.go.kr/Main/chi/page.do?mnu_uid=6664&dept_code=&dept_name=&BD_CODE=life_faq&bdName=&cmd=2&Start=60&B_NUM=58&B_STEP=2045299&B_LEVEL=0&key=4&word=&p1=0&p2=0&V_NUM=108&tbbscode1=life_faq",
+      "domain": "gb.go.kr",
+      "route_ids": [
+        "R11",
+        "R13"
+      ]
+    },
+    {
+      "id": "보건복지부_사회보장급여_실거주지_신청",
+      "name": "보건복지부 사회보장급여 실거주지 신청",
+      "url": "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=1480887&tag=&nPage=1",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R11",
+        "R12"
+      ]
+    },
+    {
+      "id": "온라인_전입신고",
+      "name": "온라인 전입신고",
+      "url": "https://www.gov.kr/mw/AA040NewJunipNotice.do?capp_biz_cd=13100000016&NEW_JUNIP=Y",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R11"
+      ]
+    },
+    {
+      "id": "보건복지부_2026_선정기준",
+      "name": "보건복지부 2026 선정기준",
+      "url": "https://www.mohw.go.kr/board.es?mid=a10503010100&bid=0027&act=view&list_no=1487098&tag=&nPage=1",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R12",
+        "R15"
+      ]
+    },
+    {
+      "id": "법제처_신청·처리기간",
+      "name": "법제처 신청·처리기간",
+      "url": "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=1533&ccfNo=2&cciNo=1&cnpClsNo=1",
+      "domain": "www.easylaw.go.kr",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "법제처_출소자_10일_특례",
+      "name": "법제처 출소자 10일 특례",
+      "url": "https://easylaw.go.kr/CSP/CnpClsMainBtr.laf?ccfNo=2&cciNo=1&cnpClsNo=2&csmSeq=1533&popMenu=ov",
+      "domain": "easylaw.go.kr",
+      "route_ids": [
+        "R12",
+        "R13"
+      ]
+    },
+    {
+      "id": "긴급복지지원_위기사유_고시",
+      "name": "긴급복지지원 위기사유 고시",
+      "url": "https://www.law.go.kr/LSW/admRulInfoP.do?admRulSeq=2100000280438&chrClsCd=010201",
+      "domain": "www.law.go.kr",
+      "route_ids": [
+        "R12",
+        "R13"
+      ]
+    },
+    {
+      "id": "송파구_국가_긴급복지_구비서류",
+      "name": "송파구 국가 긴급복지 구비서류",
+      "url": "https://www.songpa.go.kr/www/contents.do?key=2917&",
+      "domain": "www.songpa.go.kr",
+      "route_ids": [
+        "R12",
+        "R13"
+      ],
+      "caveats": [
+        "국가 긴급지원사업과 서울형 긴급복지 지원사업이 한 페이지에 있다. 서울형 항목을 국가 제도로 인용하지 않는다.",
+        "국가 긴급지원의 구비서류는 보건복지부 지침 기반이라 전국 통용이다.",
+        "위기사유 표에 '(교정시설출소자) 출소증명서'가 명시되어 있다. 다른 문서에 없는 값이다.",
+        "인용할 때 '송파구 안내 기준'을 표시한다."
+      ]
+    },
+    {
+      "id": "보건복지부_긴급복지",
+      "name": "보건복지부 긴급복지",
+      "url": "https://www.mohw.go.kr/menu.es?mid=a10708010100",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "LH_주거급여",
+      "name": "LH 주거급여",
+      "url": "https://www.lh.or.kr/menu.es?mid=a10401050100",
+      "domain": "www.lh.or.kr",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "형사사법포털",
+      "name": "형사사법포털",
+      "url": "https://www.kics.go.kr/",
+      "domain": "www.kics.go.kr",
+      "route_ids": [
+        "R13"
+      ]
+    },
+    {
+      "id": "대한민국_법원_개인파산·면책",
+      "name": "대한민국 법원 개인파산·면책",
+      "url": "https://ecfs.scourt.go.kr/psp/index.on?m=PSP734M01",
+      "domain": "ecfs.scourt.go.kr",
+      "route_ids": [
+        "R14"
+      ]
+    },
+    {
+      "id": "신용회복위원회_제도_비교",
+      "name": "신용회복위원회 제도 비교",
+      "url": "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490",
+      "domain": "www.ccrs.or.kr",
+      "route_ids": [
+        "R14"
+      ]
+    },
+    {
+      "id": "전자소송포털",
+      "name": "전자소송포털",
+      "url": "https://ecfs.scourt.go.kr/psp/index.on?m=PSPA17M01",
+      "domain": "ecfs.scourt.go.kr",
+      "route_ids": [
+        "R14"
+      ]
+    },
+    {
+      "id": "신용회복위원회_무료_신청_지원",
+      "name": "신용회복위원회 무료 신청 지원",
+      "url": "https://slb.scourt.go.kr/rel/guide/support/index_a.jsp",
+      "domain": "slb.scourt.go.kr",
+      "route_ids": [
+        "R14"
+      ]
+    },
+    {
+      "id": "서울회생법원_NEW_START_상담센터",
+      "name": "서울회생법원 NEW START 상담센터",
+      "url": "https://slb.scourt.go.kr/rel/guide/support/index_f.jsp",
+      "domain": "slb.scourt.go.kr",
+      "route_ids": [
+        "R14"
+      ]
+    },
+    {
+      "id": "국민건강보험법_제54조",
+      "name": "국민건강보험법 제54조",
+      "url": "https://www.law.go.kr/LSW//lsLawLinkInfo.do?lsJoLnkSeq=1000622060&lsId=001971&chrClsCd=010202&print=print",
+      "domain": "www.law.go.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "교정본부_수용_중_의료급여_FAQ",
+      "name": "교정본부 수용 중 의료급여 FAQ",
+      "url": "https://www.corrections.go.kr/corrections/1054/subview.do",
+      "domain": "www.corrections.go.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "법제처_출소_후_의료급여_중앙부처_해석",
+      "name": "법제처 출소 후 의료급여 중앙부처 해석",
+      "url": "https://www.law.go.kr/LSW/cgmExpcInfoP.do?mode=2&cgmExpcDatSeq=2290431&ofiClsCd=350116",
+      "domain": "www.law.go.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "정부24_건강보험_자격확인서",
+      "name": "정부24 건강보험 자격확인서",
+      "url": "https://www.gov.kr/portal/service/serviceInfo/PTR000050332",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "보건복지부_의료급여",
+      "name": "보건복지부 의료급여",
+      "url": "https://www.mohw.go.kr/menu.es?mid=a10708030100",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "보건복지부_병원_본인확인",
+      "name": "보건복지부 병원 본인확인",
+      "url": "https://www.mohw.go.kr/board.es?act=view&bid=0027&list_no=1481541&mid=a10503010100&nPage=1&tag",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "국민건강보험공단",
+      "name": "국민건강보험공단",
+      "url": "https://www.nhis.or.kr/",
+      "domain": "www.nhis.or.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "공단_기관_찾기",
+      "name": "공단 기관 찾기",
+      "url": "https://www.koreha.or.kr/sub/06_03_2.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R1"
+      ]
+    },
+    {
+      "id": "공단_직업훈련",
+      "name": "공단 직업훈련",
+      "url": "https://www.koreha.or.kr/sub/02_01_3.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R6"
+      ]
+    },
+    {
+      "id": "공단_기술교육원",
+      "name": "공단 기술교육원",
+      "url": "https://www.koreha.or.kr/sub/02_04_1.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R6"
+      ]
+    },
+    {
+      "id": "법무부_일자리_우수기업",
+      "name": "법무부 일자리 우수기업",
+      "url": "https://www.koreha.or.kr/sub/02_04.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R6"
+      ]
+    },
+    {
+      "id": "국민취업지원제도_취업지원신청_소개",
+      "name": "국민취업지원제도 취업지원신청 소개",
+      "url": "https://www.work24.go.kr/ua/z/z/1300/selectEmssRqutIntro.do",
+      "domain": "www.work24.go.kr",
+      "route_ids": [
+        "R6"
+      ]
+    },
+    {
+      "id": "국민취업지원제도_제도안내",
+      "name": "국민취업지원제도 제도안내",
+      "url": "https://www.work24.go.kr/cm/c/f/1100/selecSystInfo.do?systId=SI00000316",
+      "domain": "www.work24.go.kr",
+      "route_ids": [
+        "R6"
+      ]
+    },
+    {
+      "id": "정부24_국민취업지원제도_취업지원신청",
+      "name": "정부24 국민취업지원제도 취업지원신청",
+      "url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=14920000086",
+      "domain": "www.gov.kr",
+      "route_ids": [
+        "R6"
+      ]
+    },
+    {
+      "id": "공단_사전상담",
+      "name": "공단 사전상담",
+      "url": "https://www.koreha.or.kr/sub/02_01_10.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R8"
+      ]
+    },
+    {
+      "id": "공단_멘토링_및_사후관리",
+      "name": "공단 멘토링 및 사후관리",
+      "url": "https://www.koreha.or.kr/sub/02_01_13.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R8"
+      ]
+    },
+    {
+      "id": "공단_중독예방교육",
+      "name": "공단 중독예방교육",
+      "url": "https://www.koreha.or.kr/sub/02_01_20.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R3",
+        "R8"
+      ]
+    },
+    {
+      "id": "공단_주거환경개선",
+      "name": "공단 주거환경개선",
+      "url": "https://www.koreha.or.kr/sub/02_01_16.do",
+      "domain": "www.koreha.or.kr",
+      "route_ids": [
+        "R4"
+      ]
+    },
+    {
+      "id": "보건복지부_정신건강복지센터_운영",
+      "name": "보건복지부 정신건강복지센터 운영",
+      "url": "https://www.mohw.go.kr/menu.es?mid=a10706040100",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R8"
+      ]
+    },
+    {
+      "id": "보건복지부_기초정신건강복지센터",
+      "name": "보건복지부 기초정신건강복지센터",
+      "url": "https://www.mohw.go.kr/menu.es?mid=a10706040300",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R8"
+      ],
+      "caveats": [
+        "표 머리글의 시도별 개수가 본문보다 오래되었다. 머리글은 대구(8)인데 본문에는 군위군이 포함되어 대구 (9)다. 군위군의 경북 → 대구 편입이 본문에만 반영되었다.",
+        "시군구 칸에 센터 이름이 들어간 행이 있다(예: '삼산' — 실제 소재지는 부평구).",
+        "주소에 시군구가 빠지거나 띄어쓰기가 없는 행이 있다(예: '마포구성산로4길').",
+        "운영구분이 있는 줄은 244개인데 전화번호는 247개로 행 수가 맞지 않는다.",
+        "따라서 이 문서에서 **개수를 인용하지 않는다.** 개별 센터의 주소·전화번호를 안내하는 용도로만 쓴다."
+      ]
+    },
+    {
+      "id": "보건복지부_정신건강_심리상담_바우처",
+      "name": "보건복지부 정신건강 심리상담 바우처",
+      "url": "https://www.mohw.go.kr/menu.es?mid=a10706040800",
+      "domain": "www.mohw.go.kr",
+      "route_ids": [
+        "R8"
+      ]
+    },
+    {
+      "id": "소상공인정책자금_안내",
+      "name": "소상공인정책자금 안내",
+      "url": "https://ols.semas.or.kr/ols/pfa/SPFA207P/page.do",
+      "domain": "ols.semas.or.kr",
+      "route_ids": [
+        "R7"
+      ],
+      "caveats": [
+        "표준산업분류 코드로 된 지원 제외업종 표다. 코드와 업종명을 화면에 그대로 내지 않는다.",
+        "공단 창업지원의 공식 요건이 '소상공인정책자금 지원제외업종 외 업종 창업희망자'이므로 그 요건을 판정하는 근거로만 쓴다.",
+        "화면에는 '약국·성인용품·도박기계처럼 지원되지 않는 업종이 있어요. 상담에서 확인해요' 수준으로 풀어 쓴다."
+      ]
+    },
+    {
+      "id": "채무불이행자명부등재_절차안내",
+      "name": "채무불이행자명부등재 절차안내",
+      "url": "https://ecfs.scourt.go.kr/psp/index.on?m=PSP735M09",
+      "domain": "ecfs.scourt.go.kr",
+      "route_ids": [
+        "R7",
+        "R14"
+      ]
+    },
+    {
+      "id": "법제처_채무불이행_강제집행",
+      "name": "법제처 채무불이행 강제집행",
+      "url": "https://easylaw.go.kr/CSP/CnpClsMain.laf?popMenu=ov&csmSeq=272&ccfNo=4&cciNo=7&cnpClsNo=1",
+      "domain": "easylaw.go.kr",
+      "route_ids": [
+        "R7",
+        "R14"
+      ]
+    },
+    {
+      "id": "행정안전부_주민등록증_발급·재발급",
+      "name": "행정안전부 주민등록증 발급·재발급",
+      "url": "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_2/screen.do",
+      "domain": "www.mois.go.kr",
+      "route_ids": [
+        "R9"
+      ]
+    },
+    {
+      "id": "법제처_전입신고하기",
+      "name": "법제처 전입신고하기",
+      "url": "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=666&ccfNo=4&cciNo=1&cnpClsNo=1",
+      "domain": "www.easylaw.go.kr",
+      "route_ids": [
+        "R11"
+      ]
+    },
+    {
+      "id": "국민건강보험_자격득실확인서_안내",
+      "name": "국민건강보험 자격득실확인서 안내",
+      "url": "https://www.nhis.or.kr/nhis/minwon/minwonServiceBoard.do?mode=view&articleNo=10945783",
+      "domain": "www.nhis.or.kr",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "신한은행_실명확인증표_안내",
+      "name": "신한은행 실명확인증표 안내",
+      "url": "https://www.shinhangroup.com/kr/archive/insight/extend/detail/32891",
+      "domain": "www.shinhangroup.com",
+      "route_ids": [
+        "R9"
+      ],
+      "caveats": [
+        "민간 금융사가 만든 정리글이다. 인용할 때 기관명(신한은행)을 반드시 표시한다.",
+        "실명확인증표 인정 범위 자체는 금융실명법과 금융위 규정에서 나오므로 전국 통용이다."
+      ]
+    }
+  ],
+  "files": [
+    {
+      "id": "행정안전부_주민등록_수수료·과태료_질의답변",
+      "name": "행정안전부 주민등록 수수료·과태료 질의답변",
+      "url": "https://www.mois.go.kr/cmm/fms/FileDown.do?atchFileId=FILE_00078108vRPOevt&fileSn=6",
+      "domain": "www.mois.go.kr",
+      "route_ids": [
+        "R9",
+        "R13"
+      ]
+    },
+    {
+      "id": "주민등록증_발급신청_확인서_공식_서식",
+      "name": "주민등록증 발급신청 확인서 공식 서식",
+      "url": "https://www.law.go.kr/LSW//flDownload.do?bylClsCd=110202&flSeq=116820239&gubun",
+      "domain": "www.law.go.kr",
+      "route_ids": [
+        "R9"
+      ]
+    }
+  ],
+  "skipped": [
+    {
+      "id": "생계급여",
+      "name": "생계급여",
+      "url": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001132&wlfareInfoReldBztpCd=01%20%20",
+      "domain": "www.bokjiro.go.kr",
+      "reason": "생계급여 중복 URL",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "의료급여",
+      "name": "의료급여",
+      "url": "https://www.bokjiro.go.kr/ssis-tbu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00000102&wlfareInfoReldBztpCd=01",
+      "domain": "www.bokjiro.go.kr",
+      "reason": "의료급여 — bokjiro 그룹에서 수집",
+      "route_ids": [
+        "R15"
+      ]
+    },
+    {
+      "id": "복지로_생계급여",
+      "name": "복지로 생계급여",
+      "url": "https://www.bokjiro.go.kr/ssis-teu/twataa/wlfareInfo/moveTWAT52011M.do?wlfareInfoId=WLF00001132&wlfareInfoReldBztpCd=01",
+      "domain": "www.bokjiro.go.kr",
+      "reason": "생계급여 중복 URL(구 경로)",
+      "route_ids": [
+        "R12"
+      ]
+    },
+    {
+      "id": "복지로_복지급여_신청",
+      "name": "복지로 복지급여 신청",
+      "url": "https://www.bokjiro.go.kr/ssis-tbu/twoaa/aplySrvChc/selectServChs.do?menuGb=twoaa",
+      "domain": "www.bokjiro.go.kr",
+      "reason": "로그인 필요(신청 화면)",
+      "route_ids": [
+        "R12"
+      ]
+    }
+  ]
+}

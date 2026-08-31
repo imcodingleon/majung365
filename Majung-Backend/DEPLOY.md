@@ -12,7 +12,8 @@
 | 고정 IP (EIP) | `3.34.251.223` (alloc `eipalloc-06e090cd4154e1863`) |
 | 공개 API | **https://3-34-251-223.sslip.io** (sslip.io = 무료 IP→호스트명, 도메인/DNS 설정 불필요) |
 | HTTPS | Caddy 자동 Let's Encrypt (발급·갱신 자동) |
-| 보안그룹 | `sg-0e65887f93481d3fc` — 22←사용자 IP만 / 80·443←전체 |
+| 보안그룹 | `sg-0e65887f93481d3fc` — 22←작업자 IP만(**한 줄만 유지한다**) / 80·443←전체 |
+| 앱 `.env` | EC2 **`/home/ec2-user/majung-backend/.env`**. `ANTHROPIC_API_KEY`가 여기 있다 — 로컬 어디에도 없다 |
 | SSH 키 | **`C:\Users\skwog\Documents\freedom_project\majung_backend.pem`** (ed25519, gitignore됨). 공개키만 AWS import(`majung-backend`) |
 | 앱 디렉토리 | EC2 `/home/ec2-user/majung-backend` |
 | 서비스 | systemd `majung-backend`(uvicorn 127.0.0.1:8000) + `caddy` |
@@ -25,12 +26,27 @@
 
 ## 보안 설계 (요금 폭탄 방어)
 
-- **Mock LLM** → 유료 외부 호출 원천 0. 챗 남용해도 Claude 비용 0.
+- **실 Claude API가 돌고 있다.** 유료 호출이 실제로 나가며, 방어는 지출 서킷브레이커와
+  rate limit이 맡는다.
+
+  > ⚠️ **여기에 "Mock LLM → 유료 호출 0"이라고 적혀 있었다.** 2026-08-23에 실 키로
+  > 전환하면서 위 인프라 표(`LLM` 행)만 고치고 이 줄을 안 고쳤다. 그 결과 2026-08-31
+  > 세션이 **"배포 서버가 목업이라 확인이 안 된다"고 잘못 판단**했다. 실제로는
+  > EC2 `.env`에 `ANTHROPIC_API_KEY`가 있고 `USE_MOCK_LLM=false`다.
+  >
+  > **로컬과 서버가 다르다.** 로컬 `Majung-Backend/.env`는 `USE_MOCK_LLM=true`이고
+  > Claude 키가 아예 없다 — 키는 **EC2에만** 있다. 로컬에서 띄우면 목업 문구만
+  > 나오므로 프롬프트 변경은 로컬로 확인되지 않는다.
 - SSH는 **작업하는 사람의 IP만** 연다. 비번 로그인 없음(키 전용).
 
   **IP 값을 여기에 적지 않는다.** 집·회사·모바일 테더링에 따라 바뀌고, 실제로 문서에
   적힌 값이 두 번 어긋난 채로 남아 있었다(`220.120.196.8` → `61.77.23.157` → …).
   아래로 그때그때 갱신한다.
+
+  > **막히면 열려 있는 목록부터 본다.** 22번에 옛 IP만 남아 있어 `Connection timed out`이
+  > 나는 것이 흔한 모양이다. **연 뒤에는 안 쓰는 IP를 그 자리에서 지운다** — 유동 IP라
+  > 옛 값은 지금 다른 사람에게 넘어가 있을 수 있다. 키가 없으면 못 들어오지만 열어 둘
+  > 이유도 없다. (2026-08-31에 `220.120.54.135/32`를 이 이유로 지웠다.)
 
   ```bash
   G=sg-0e65887f93481d3fc
@@ -55,7 +71,8 @@
   Connection timed out            IP가 막혔다 — 보안그룹 22번 인바운드를 갱신한다
   ```
 - uvicorn은 localhost 바인딩 → Caddy만 외부 노출. 앱 포트 직접 노출 X.
-- 인스턴스 롤 없음 + Mock → 박스에 고가치 비밀 없음(blast radius 최소).
+- 인스턴스 롤 없음(훔칠 AWS 자격증명 0). **다만 박스에 Claude 키·Supabase service_role 키·
+  필드 암호화 키가 있다.** "Mock이라 고가치 비밀 없음"은 전환 전 이야기다.
 - 계정 $50 예산 알람 기존 존재(skwogusdld@gmail.com).
 - rate limit 20/min + 지출 서킷브레이커(백스톱).
 
@@ -120,6 +137,10 @@ FIELD_ENCRYPTION_KEY=<base64 32바이트>
 
 스키마는 `migrations/*.sql`에 있고 Supabase에 이미 적용되어 있다. 새 마이그레이션을 만들면
 Supabase 콘솔이나 MCP로 적용한 뒤 파일로 남긴다.
+
+**`0011_chat_suggestions.sql`은 코드 배포보다 먼저 적용한다.** 컬럼이 없는 채로 새 코드가
+올라가도 저장·조회는 살아남게 폴백을 두었지만(`chat/infrastructure/message_repository.py`),
+그 폴백이 도는 동안에는 추천 질문이 남지 않는다.
 
 ## 실 Claude 키로 전환 (본선/유료)
 

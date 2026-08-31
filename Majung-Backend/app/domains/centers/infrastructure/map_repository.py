@@ -4,8 +4,9 @@
 자리가 없다. `tools/fill_coordinates.py`가 채우지 못한 항목은 여기서 조용히 빠지고,
 그 사실은 그 스크립트가 목록으로 보고한다.
 
-**시군구를 반드시 받는다.** 주민센터만 3,555건이라 전부 보내면 화면이 받아 들 수도,
-사용자가 훑어볼 수도 없다.
+**시도는 반드시 받는다.** 주민센터만 3,555건이라 전부 보내면 화면이 받아 들 수도,
+사용자가 훑어볼 수도 없다. 시군구는 없어도 되며, 없으면 그 시도 전체에서 고른다
+(2026-08-31). 지역 선택 화면이 시도만 고르고 넘어가는 길을 열어 두었기 때문이다.
 """
 
 import json
@@ -54,6 +55,32 @@ def _distance_km(origin: Point, c: Center) -> float:
     """정렬용 거리. 좌표가 없으면 맨 뒤로 보낸다."""
     found = distance_km(origin, c.lat, c.lng)
     return _UNKNOWN if found is None else found
+
+
+def _rank(c: Center, origin: Point, dong: str, in_town: set[str]) -> float:
+    """줄 세우는 값. **고른 동의 주민센터만 거리를 제치고 맨 앞에 선다.**
+
+    좌표를 못 믿기 때문이다. 주민센터 3,348곳을 행정동 경계에 대조해 보니 93곳이
+    자기 동 밖에 찍혀 있었다. 안양 호계3동은 호계1동과 좌표가 같아서(주소는 경수대로
+    504와 538로 다르다) 자기 동 한가운데에서 1.22km로 밀렸고, 갈래마다 셋에서 잘려
+    **고른 사람에게 자기 동 센터가 안 보였다.**
+
+    좌표를 다시 받아 봐야 다 풀리지 않는다. 칠곡군 왜관읍은 주소에 "(임시청사)"라고
+    적혀 있고 파주시 장단면 청사는 민통선 밖에 있다 — **정당하게 밖에 있는 것**이라
+    오류와 구분되지 않는다. 게다가 경계 데이터가 2021년이라 그 뒤 분동된 207곳은
+    대조할 짝조차 없다.
+
+    반면 이름은 3,495개 중 3,356개(96.0%)가 맞는다. 나머지 4%는 두 자료의 시점이
+    달라 못 맞추는 것이고, **그때는 아무것도 걸리지 않아 예전처럼 거리로 선다.**
+
+    동 이름은 `_district_offices`가 `tags`에 담아 둔다. **그 지역 안에서만 찾는다** —
+    "중앙동"이 전국에 서른두 곳이라 지역을 안 보면 남의 동네를 끌어온다. 지역 판정은
+    이미 끝나 있으므로 그 결과를 id 집합으로 받는다 (목록을 훑으면 서울처럼 주민센터가
+    수백 건인 시도에서 정렬 한 번이 수십만 번 비교가 된다).
+    """
+    if dong and c.category == DISTRICT and dong in c.tags and c.id in in_town:
+        return -1.0
+    return _distance_km(origin, c)
 
 _DATA_DIR = Path(__file__).resolve().parent.parent / "data"
 
@@ -154,9 +181,17 @@ class JsonMapCenterRepository:
     # ── 조회 ──
 
     def by_region(
-        self, sido: str, district: str, origin: Point | None = None
+        self,
+        sido: str,
+        district: str = "",
+        origin: Point | None = None,
+        dong: str = "",
     ) -> list[Center]:
         """그 지역의 기관을 **갈래마다 가까운 순 세 곳씩**.
+
+        **시군구는 없어도 된다** (2026-08-31). 비면 그 시도 전체를 그 지역으로 본다.
+        지역 선택 화면이 시도만 고르고 넘어가는 길을 열어 두었는데, 그 경우를 여기서
+        받지 않으면 조회가 다른 자료로 빠져 **엉뚱한 시도의 기관이 나간다.**
 
         `origin`은 사용자가 지금 있는 자리다. 주면 그 점에서 거리를 잰다 (2026-08-26
         결정). 안 주면 예전처럼 그 동네 기관들의 한가운데를 기준으로 삼는데, **그
@@ -165,6 +200,9 @@ class JsonMapCenterRepository:
 
         **주소 문자열로 거른다.** 세 자료의 시도 표기가 서로 달라("서울" · "서울특별시")
         필드를 맞대면 한쪽이 통째로 빠진다. 주소에는 어느 쪽 표기든 들어 있다.
+
+        `dong`을 주면 **그 이름의 주민센터를 거리와 무관하게 맨 앞에 둔다** (2026-08-31).
+        관할이 아닌 곳을 찾아가면 헛걸음이라 거리보다 이름이 앞선다.
 
         **거리로 자르지 않고 개수로 자른다.** 시군구별로 가장 가까운 공단까지 거리를
         재 보니 중앙값 15km인데 울릉군은 176km였다. 어떤 반경을 잡아도 섬과 산간은
@@ -186,7 +224,13 @@ class JsonMapCenterRepository:
         in_town: list[Center] = []
         elsewhere: list[Center] = []
         for c in self._items:
-            same_place = bool(head and town) and self._sido[c.id] == head and town in c.address
+            # 시군구가 비면 시도만 맞으면 그 지역으로 친다. 주민센터가 시도 하나에
+            # 수백 건이지만 갈래마다 셋에서 잘리므로 화면에 쏟아지지는 않는다.
+            same_place = (
+                bool(head)
+                and self._sido[c.id] == head
+                and (not town or town in c.address)
+            )
             if same_place:
                 in_town.append(c)
             elif c.category != DISTRICT:
@@ -200,5 +244,8 @@ class JsonMapCenterRepository:
             # 그 동네에 아무것도 없으면 거리를 잴 기준이 없다. 갈래별로 앞에서 자른다.
             return _take_by_category(elsewhere)
 
-        ordered = sorted([*in_town, *elsewhere], key=lambda c: _distance_km(origin, c))
+        here = {c.id for c in in_town}
+        ordered = sorted(
+            [*in_town, *elsewhere], key=lambda c: _rank(c, origin, dong, here)
+        )
         return _take_by_category(ordered)

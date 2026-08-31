@@ -33,3 +33,17 @@ ser-lab/
 
 .vercel
 .env*
+
+# ── 작업 부산물 (여러 세션이 한 폴더를 쓰면서 루트에 쌓인 것) ──
+#
+# **`/`로 시작해 루트만 막는다.** 안 그러면 `assets/images/region-banner.png` 같은
+# 코드 자산까지 함께 사라진다.
+.agents/
+_workspace/
+tools/rag-crawler/output/
+questions-review.md
+r2.txt
+/*.png
+/*.svg
+/*.docx
+/majung365_simple_architecture.html

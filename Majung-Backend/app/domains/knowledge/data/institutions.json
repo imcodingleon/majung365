@@ -30,8 +30,6 @@
       "deadline": null,
       "source_url": "https://www.koreha.or.kr",
       "contact_key": "1363",
-      "desk_place": "출소하신 교정시설",
-      "desk_say": "수용증명서 떼러 왔어요",
       "source_urls": [
         "https://www.corrections.go.kr/corrections/1075/subview.do",
         "https://www.kics.go.kr/"
@@ -48,11 +46,11 @@
       ],
       "name": "전입신고(주소지 등록)",
       "summary_easy": "지금 지내는 곳을 주소지로 등록하는 절차예요. 신분증 재발급이나 다른 지원 신청에도 필요해요.",
-      "where": "가까운 주민센터(행정복지센터)",
+      "where": "가까운 행정복지센터",
       "docs": [
         "수용증명서 또는 신분 확인 서류(있는 대로)"
       ],
-      "next_step": "지내실 곳이 정해지면 주민센터에 가서 '전입신고 하러 왔다'고 말하세요.",
+      "next_step": "지내실 곳이 정해지면 행정복지센터에 가서 '전입신고 하러 왔다'고 말하세요.",
       "deadline": null,
       "source_url": "https://www.gov.kr",
       "source_urls": [
@@ -61,7 +59,7 @@
       ],
       "verified_at": "2026-08-22",
       "contact_key": "110",
-      "desk_place": "가까운 주민센터",
+      "desk_place": "가까운 행정복지센터",
       "desk_say": "전입신고 하러 왔어요"
     },
     {
@@ -122,13 +120,13 @@
       ],
       "lead_for": [],
       "name": "주민등록 재등록",
-      "summary_easy": "주민센터에서 주민등록 재등록을 신청할 수 있어요. 다른 신청들도 대부분 여기서 시작돼요.",
-      "where": "가까운 주민센터(행정복지센터)",
+      "summary_easy": "행정복지센터에서 주민등록 재등록을 신청할 수 있어요. 다른 신청들도 대부분 여기서 시작돼요.",
+      "where": "가까운 행정복지센터",
       "docs": [
         "본인 신분 확인 서류(있는 대로)",
         "출소 사실을 확인할 수 있는 서류"
       ],
-      "next_step": "내일 오전, 사는 곳 주민센터에 가서 '주민등록 재등록하러 왔다'고 말하세요.",
+      "next_step": "내일 오전, 사는 곳 행정복지센터에 가서 '주민등록 재등록하러 왔다'고 말하세요.",
       "deadline": null,
       "source_url": "https://www.gov.kr",
       "source_urls": [
@@ -137,7 +135,7 @@
       ],
       "verified_at": "2026-08-22",
       "contact_key": "110",
-      "desk_place": "가까운 주민센터",
+      "desk_place": "가까운 행정복지센터",
       "desk_say": "주민등록 재등록하러 왔어요",
       "companion_for": [
         "R11"
@@ -179,12 +177,12 @@
       ],
       "name": "기초생활보장(생계급여)",
       "summary_easy": "소득이 거의 없으면 매달 생활비를 지원받을 수 있는 제도예요.",
-      "where": "주민센터(행정복지센터)",
+      "where": "행정복지센터",
       "docs": [
         "신분 확인 서류",
         "소득·재산을 확인할 수 있는 서류"
       ],
-      "next_step": "주민센터에서 '기초생활보장 신청 상담'을 받아 내가 대상이 되는지 확인하세요.",
+      "next_step": "행정복지센터에서 '기초생활보장 신청 상담'을 받아 내가 대상이 되는지 확인하세요.",
       "deadline": null,
       "source_url": "https://www.bokjiro.go.kr",
       "source_urls": [
@@ -192,7 +190,7 @@
       ],
       "verified_at": "2026-08-22",
       "contact_key": "129",
-      "desk_place": "가까운 주민센터",
+      "desk_place": "가까운 행정복지센터",
       "desk_say": "생계급여 상담받으러 왔어요"
     },
     {
@@ -207,12 +205,12 @@
       ],
       "name": "긴급복지지원제도",
       "summary_easy": "당장 먹고 지내기 어려우면 생계비·의료비 등을 지원받을 수 있는 제도예요.",
-      "where": "주민센터 또는 보건복지상담센터(전화 129)",
+      "where": "행정복지센터 또는 보건복지상담센터(전화 129)",
       "docs": [
         "신분 확인 서류",
         "지금 형편을 설명할 수 있는 자료(있는 대로)"
       ],
-      "next_step": "주민센터에 가거나 129로 전화해서 '긴급복지지원 신청하고 싶다'고 말하세요.",
+      "next_step": "행정복지센터에 가거나 129로 전화해서 '긴급복지지원 신청하고 싶다'고 말하세요.",
       "deadline": "빠른 시일",
       "source_url": "https://www.bokjiro.go.kr",
       "source_urls": [
@@ -221,7 +219,7 @@
       ],
       "verified_at": "2026-08-22",
       "contact_key": "129",
-      "desk_place": "가까운 주민센터",
+      "desk_place": "가까운 행정복지센터",
       "desk_say": "긴급복지지원 신청하러 왔어요"
     },
     {
@@ -284,12 +282,12 @@
       "lead_for": [],
       "name": "긴급복지 주거지원",
       "summary_easy": "지낼 곳이 필요하면 긴급복지제도로 임시 거처나 주거비를 지원받을 수 있어요.",
-      "where": "주민센터 또는 보건복지상담센터(129)",
+      "where": "행정복지센터 또는 보건복지상담센터(129)",
       "docs": [
         "신분 확인 서류",
         "주거가 곤란한 사정을 설명할 자료"
       ],
-      "next_step": "주민센터나 129에 '긴급복지 주거지원'을 문의하세요.",
+      "next_step": "행정복지센터나 129에 '긴급복지 주거지원'을 문의하세요.",
       "deadline": "빠른 시일",
       "source_url": "https://www.bokjiro.go.kr",
       "source_urls": [
@@ -357,11 +355,11 @@
       ],
       "name": "의료급여·건강보험 확인",
       "summary_easy": "몸이 아픈데 병원비가 걱정되면 의료급여 대상인지 확인하거나 건강보험에 다시 가입할 수 있어요.",
-      "where": "주민센터 / 국민건강보험공단",
+      "where": "행정복지센터 / 국민건강보험공단",
       "docs": [
         "신분 확인 서류"
       ],
-      "next_step": "주민센터에서 '의료급여 대상인지'와 '건강보험 상태'를 함께 확인하세요.",
+      "next_step": "행정복지센터에서 '의료급여 대상인지'와 '건강보험 상태'를 함께 확인하세요.",
       "deadline": null,
       "source_url": "https://www.bokjiro.go.kr",
       "source_urls": [
@@ -384,7 +382,7 @@
       "summary_easy": "많이 힘들고 불안하면 혼자 견디지 않아도 돼요. 지역 정신건강복지센터에서 무료로 마음 상담을 받을 수 있어요.",
       "where": "지역 정신건강복지센터 (전화 1577-0199)",
       "docs": [],
-      "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해도 괜찮아요.",
+      "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해 보세요.",
       "deadline": null,
       "source_url": "https://www.mohw.go.kr",
       "source_urls": [
@@ -509,8 +507,6 @@
       "next_step": "가까운 은행 창구에 가서 '생계비계좌 만들러 왔어요'라고 말하세요.",
       "deadline": null,
       "source_url": "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
-      "desk_place": "가까운 은행 창구",
-      "desk_say": "생계비계좌 만들러 왔어요",
       "source_urls": [
         "https://www.moj.go.kr/bbs/moj/189/603060/artclView.do",
         "https://obank.kbstar.com/quics?page=C020722&boardId=669&compId=b058336&articleId=142978&bbsMode=view&viewPage=1&articleClass=2&searchCondition=title&searchStr="
@@ -601,19 +597,17 @@
         "R9"
       ],
       "name": "주민등록증 재발급",
-      "summary_easy": "신분증을 잃어버렸거나 못 쓰게 됐으면 주민센터에서 다시 만들 수 있어요. 만드는 데 2주쯤 걸리는데, 그동안 쓸 수 있는 임시 신분증을 신청한 자리에서 받을 수 있어요. 그 임시 신분증은 30일 동안 쓸 수 있어요.",
-      "where": "가까운 주민센터",
+      "summary_easy": "신분증을 잃어버렸거나 못 쓰게 됐으면 행정복지센터에서 다시 만들 수 있어요. 만드는 데 2주쯤 걸리는데, 그동안 쓸 수 있는 임시 신분증을 신청한 자리에서 받을 수 있어요. 그 임시 신분증은 30일 동안 쓸 수 있어요.",
+      "where": "가까운 행정복지센터",
       "docs": [
         "6개월 안에 찍은 사진 1장 (가로 3.5cm 세로 4.5cm, 모자 안 쓴 상반신)",
         "신분 확인 서류",
         "수수료 5,000원 (칩을 넣으면 10,000원)"
       ],
-      "next_step": "사진을 챙겨 주민센터에 가서 '주민등록증 재발급하러 왔어요'라고 말하고, '임시 신분증도 받고 싶어요'라고 함께 말하세요.",
+      "next_step": "사진을 챙겨 행정복지센터에 가서 '주민등록증 재발급하러 왔어요'라고 말하고, '임시 신분증도 받고 싶어요'라고 함께 말하세요.",
       "deadline": null,
       "source_url": "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
       "contact_key": "110",
-      "desk_place": "가까운 주민센터",
-      "desk_say": "주민등록증 재발급하러 왔어요. 임시 신분증도 받고 싶어요",
       "source_urls": [
         "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000018",
         "https://www.mois.go.kr/frt/sub/a06/b06/IDCard_2/screen.do",

@@ -49,7 +49,7 @@ export function ScreenHeader({
 
       <View className="flex-1 px-1">
         {eyebrow ? <Text className="text-caption text-ink-muted">{eyebrow}</Text> : null}
-        <Text className="text-heading font-extrabold text-ink-strong">{title}</Text>
+        <Text className="text-title font-bold text-ink-strong">{title}</Text>
       </View>
 
       {right}

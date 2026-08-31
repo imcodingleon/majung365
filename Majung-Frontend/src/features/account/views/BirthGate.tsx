@@ -17,7 +17,9 @@ import { NoteBox } from "@/shared/components/NoteBox";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { COLORS } from "@/shared/theme/colors";
 
-import { birthMatches, eraseConfirmLabel, eraseDetail, eraseTitle } from "../domain/account";
+import { birthMatches } from "../domain/account";
+
+import { EraseCard } from "./EraseCard";
 
 type Props = {
   storedBirth: string;
@@ -36,8 +38,6 @@ type Props = {
 export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: Props) {
   const [parts, setParts] = useState({ year: "", month: "", day: "" });
   const [failed, setFailed] = useState(false);
-  /** 정말 지울지 한 번 더 묻는 중인가. 되돌릴 수 없는 일이라 바로 실행하지 않는다. */
-  const [confirming, setConfirming] = useState(false);
 
   const check = () => {
     if (birthMatches(storedBirth, parts)) {
@@ -48,8 +48,9 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
   };
 
   const filled = parts.year.length === 4 && parts.month !== "" && parts.day !== "";
+  // 높이 62는 시안 값이다. `py`만 주면 글꼴에 따라 칸마다 높이가 흔들린다.
   const box =
-    "rounded-xl border-[1.5px] border-line bg-white px-3 py-4 text-center text-body-lg text-ink-strong";
+    "h-[62px] rounded-xl border-[1.5px] border-line bg-white px-3 text-center text-body-lg text-ink-strong";
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
@@ -64,10 +65,12 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
         ) : null}
 
         <Text className="text-title font-extrabold text-ink-strong">
-          생일을 알려주세요
+          생년월일을 입력해주세요
         </Text>
+        {/* **무엇에 쓰는지 밝힌다** (2026-08-31 시안). "다른 사람이 보지 못하게"는 막는
+            이야기라 잠금으로 읽혔는데, 이 자리는 본인인지 한 번 확인하는 곳이다 */}
         <Text className="mb-8 mt-2 text-body-lg text-ink-sub">
-          다른 사람이 내 정보를 보지 못하게 한 번만 확인할게요.
+          입력하신 정보는 본인 확인을 위한 용도로만 사용됩니다.
         </Text>
 
         <View className="flex-row items-center gap-2">
@@ -76,7 +79,6 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
             value={parts.year}
             onChangeText={(t) => {
               setFailed(false);
-              setConfirming(false);
               setParts((p) => ({ ...p, year: t.replace(/\D/g, "").slice(0, 4) }));
             }}
             keyboardType="number-pad"
@@ -90,7 +92,6 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
             value={parts.month}
             onChangeText={(t) => {
               setFailed(false);
-              setConfirming(false);
               setParts((p) => ({ ...p, month: t.replace(/\D/g, "").slice(0, 2) }));
             }}
             keyboardType="number-pad"
@@ -104,7 +105,6 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
             value={parts.day}
             onChangeText={(t) => {
               setFailed(false);
-              setConfirming(false);
               setParts((p) => ({ ...p, day: t.replace(/\D/g, "").slice(0, 2) }));
             }}
             keyboardType="number-pad"
@@ -116,7 +116,9 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
         </View>
 
         {failed ? (
-          <NoteBox tone="alert" className="mt-4">가입할 때 적으신 생일과 달라요. 다시 한번 봐 주세요.</NoteBox>
+          <NoteBox tone="alert" className="mt-4">
+            {"입력하신 생년월일이 가입할 때 등록한 정보와 달라요.\n입력한 내용을 다시 한번 확인해주세요.\n\n생년월일이 일치해야 내 정보를 확인할 수 있어요."}
+          </NoteBox>
         ) : null}
 
         <Pressable
@@ -125,64 +127,18 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
           accessibilityRole="button"
           accessibilityState={{ disabled: !filled }}
           accessibilityLabel="확인"
-          className="mt-6 items-center rounded-2xl py-4 active:opacity-90"
-          style={{ backgroundColor: filled ? COLORS.brand : COLORS.brandMuted }}
+          className="mt-6 items-center justify-center rounded-2xl active:opacity-90"
+          style={{ height: 59, backgroundColor: filled ? COLORS.brand : COLORS.brandMuted }}
         >
           <Text className="text-body-lg font-extrabold text-white">확인</Text>
         </Pressable>
 
-        {/* **틀린 뒤에만 낸다.** 처음부터 보이면 지우는 쪽이 쉬운 길처럼 읽힌다. */}
-        {failed && !confirming ? (
-          <Pressable
-            onPress={() => setConfirming(true)}
-            accessibilityRole="button"
-            accessibilityLabel="생일을 잘못 적었어요"
-            className="mt-6 items-center py-2 active:opacity-70"
-          >
-            <Text className="text-body text-ink-sub underline">
-              가입할 때 생일을 잘못 적으셨나요?
-            </Text>
-          </Pressable>
-        ) : null}
-
-        {confirming ? (
-          <View className="mt-6 rounded-2xl border-[1.5px] border-alert-line bg-white p-5">
-            <Text className="text-body-lg font-extrabold text-alert-ink">
-              {eraseTitle("account")}
-            </Text>
-            <Text className="mt-2 text-body text-ink-body">
-              생일이 맞지 않으면 내 정보를 열 수 없어요. 다 지우고 처음부터 하는 길밖에 없어요.
-            </Text>
-            <View className="mt-3">
-              {eraseDetail("account").map((line) => (
-                <Text key={line} className="mb-1 text-body text-ink-body">
-                  · {line}
-                </Text>
-              ))}
-            </View>
-            <View className="mt-4 flex-row gap-2">
-              <Pressable
-                onPress={() => {
-                  setConfirming(false);
-                  onEraseAll();
-                }}
-                accessibilityRole="button"
-                accessibilityLabel={eraseConfirmLabel("account")}
-                className="rounded-xl bg-alert px-4 py-3 active:opacity-90"
-              >
-                <Text className="text-body font-extrabold text-white">
-                  {eraseConfirmLabel("account")}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setConfirming(false)}
-                accessibilityRole="button"
-                accessibilityLabel="그만두기"
-                className="rounded-xl border border-line bg-white px-4 py-3 active:opacity-90"
-              >
-                <Text className="text-body font-semibold text-ink-sub">그만두기</Text>
-              </Pressable>
-            </View>
+        {/* **틀린 뒤에만 낸다.** 처음부터 보이면 지우는 쪽이 쉬운 길처럼 읽힌다.
+            2026-08-31 시안이 링크 한 단계를 없앴다 — 틀린 사람에게는 이 카드가 유일한
+            길인데, 그것을 밑줄 친 글씨 뒤에 숨겨 두면 갇힌 채로 나가는 사람이 생긴다 */}
+        {failed ? (
+          <View className="mt-6">
+            <EraseCard scope="account" onErase={onEraseAll} onCancel={onClose} />
           </View>
         ) : null}
       </View>

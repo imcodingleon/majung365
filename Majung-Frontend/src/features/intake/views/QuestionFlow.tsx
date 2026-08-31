@@ -154,26 +154,29 @@ export function QuestionFlow({
     >
       <SafeAreaView className="flex-1 bg-white" edges={["top", "bottom"]}>
         {/* 어느 분야를 답하는 중인지 항상 보인다. 팝업은 앞뒤 맥락이 없어 더 필요하다. */}
-        <View className="flex-row items-center gap-3 border-b border-line px-5 py-4">
+        {/* 아이콘 그릇은 6분야 격자와 같은 규격(36px·32px 아이콘)이다. 방금 누른 박스와
+            같은 그림이 같은 크기로 이어져야 어디에서 들어왔는지 알 수 있다.
+            닫기는 글자 버튼에서 X 표시로 바꿨다 (2026-08-31 시안) */}
+        <View className="flex-row items-center gap-[18px] border-b border-line px-6 py-4">
           <View
-            className="size-10 items-center justify-center rounded-xl"
+            className="size-9 items-center justify-center rounded-2xl"
             style={{ backgroundColor: COLORS.brandSoft }}
           >
-            <SectionIcon id={sectionId} size={22} color={COLORS.brand} />
+            <SectionIcon id={sectionId} size={32} color={COLORS.brand} />
           </View>
-          <Text className="flex-1 text-heading font-extrabold text-ink-strong">{sectionLabel}</Text>
+          <Text className="flex-1 text-title font-bold text-ink-strong">{sectionLabel}</Text>
           <Pressable
             onPress={close}
             accessibilityRole="button"
             accessibilityLabel="닫기. 답하신 것은 그대로 남아요"
-            className="rounded-xl border border-line px-4 py-3 active:opacity-70"
+            className="p-1 active:opacity-70"
           >
-            <Text className="text-body font-bold text-ink-sub">닫기</Text>
+            <Icon name="close" size={16} color={COLORS.inkStrong} />
           </Pressable>
         </View>
 
         {/* 몇 개 남았는지 모르면 도중에 그만두게 된다. 막대와 숫자를 함께 낸다. */}
-        <View className="px-5 pt-4">
+        <View className="px-5 pt-8">
           <View className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: COLORS.line }}>
             <View
               className="h-full rounded-full"
@@ -184,7 +187,7 @@ export function QuestionFlow({
               }}
             />
           </View>
-          <Text className="mt-2 text-caption font-bold text-ink-muted">
+          <Text className="mt-2 text-caption font-medium text-ink-muted">
             {displayedTotal}개 중 {Math.min(step + 1, displayedTotal)}번째
           </Text>
         </View>
@@ -256,7 +259,7 @@ export function QuestionFlow({
               고르면 저절로 넘어간다고 읽혀 사용자가 화면을 보며 기다리게 된다.
               실제로는 답을 골라야 버튼이 켜지고, 넘기는 것은 사용자가 한다 */}
           {!answered && question ? (
-            <Text className="mb-3 text-center text-caption text-ink-muted">
+            <Text className="mb-3 text-center text-body font-medium text-ink-muted">
               답을 고르시면 다음으로 갈 수 있어요.
             </Text>
           ) : null}
@@ -274,7 +277,7 @@ export function QuestionFlow({
                 opacity: step === 0 ? 0.4 : 1,
               }}
             >
-              <Text className="text-body-lg font-bold text-ink-sub">이전</Text>
+              <Text className="text-title font-bold text-ink-sub">이전</Text>
             </Pressable>
 
             <Pressable
@@ -286,7 +289,7 @@ export function QuestionFlow({
               className="flex-[1.6] items-center rounded-2xl py-4 active:opacity-90"
               style={{ backgroundColor: answered ? COLORS.brand : COLORS.brandMuted }}
             >
-              <Text className="text-body-lg font-extrabold text-white">
+              <Text className="text-title font-bold text-white">
                 {last ? "다 답했어요" : "다음"}
               </Text>
             </Pressable>

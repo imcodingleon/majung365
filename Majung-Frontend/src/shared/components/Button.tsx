@@ -30,6 +30,22 @@ type Props = {
   hint?: string;
   /** 글 앞에 붙는 그림. 글을 읽기 어려운 사람에게 종류를 먼저 알린다. */
   icon?: IconName;
+  /**
+   * 글자 크기 (2026-08-31 시안).
+   *
+   * 화면에 하나뿐인 마무리 버튼("시작하기")은 카드 안에 여럿 놓이는 버튼보다 크다.
+   * 시안이 그렇게 갈라 놓았고, 그 자리에서만 `lg`를 쓴다.
+   */
+  size?: "md" | "lg";
+  /**
+   * 글자와 그림 색 (2026-08-31 시안).
+   *
+   * **테두리 버튼은 자리마다 색이 다르다.** 할 일 카드에서 방문 예약은 파랑,
+   * 끝냈다는 표시는 초록이다 — 하나는 어디로 가는 일이고 하나는 마치는 일이라
+   * 성격이 다르다. 톤 셋(`primary`·`secondary`·`danger`)으로는 그 갈래를 낼 수 없어
+   * 놓는 쪽이 색을 준다. 주지 않으면 톤이 정하는 기본색을 그대로 쓴다.
+   */
+  ink?: string;
   /** 바깥 여백. 버튼이 스스로 정하지 않고 놓는 쪽이 정한다. */
   className?: string;
 };
@@ -41,6 +57,8 @@ export function Button({
   disabled,
   hint,
   icon,
+  size = "md",
+  ink: inkOverride,
   className,
 }: Props) {
   const filled = tone === "primary";
@@ -60,7 +78,7 @@ export function Button({
       : danger
         ? COLORS.alertLine
         : COLORS.lineStrong;
-  const ink = filled ? COLORS.surface : danger ? COLORS.alert : COLORS.inkStrong;
+  const ink = inkOverride ?? (filled ? COLORS.surface : danger ? COLORS.alert : COLORS.inkStrong);
 
   return (
     <Pressable
@@ -76,7 +94,10 @@ export function Button({
           그러면 기기마다 크기와 색이 달라지고 글자 기준선과도 어긋났다 */}
       <View className="flex-row items-center justify-center gap-2">
         {icon ? <Icon name={icon} size={22} color={ink} /> : null}
-        <Text className="text-body-lg font-extrabold" style={{ color: ink }}>
+        <Text
+          className={`font-extrabold ${size === "lg" ? "text-title" : "text-body-lg"}`}
+          style={{ color: ink }}
+        >
           {label}
         </Text>
       </View>

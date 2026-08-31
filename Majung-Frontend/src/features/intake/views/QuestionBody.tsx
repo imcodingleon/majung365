@@ -138,7 +138,12 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
 
   return (
     <View>
-      <Text className="text-title font-extrabold text-ink-strong">
+      {/* 가입 화면 제목과 같은 규격이다 (2026-08-31 시안 · Bold 26px). 문항 팝업은
+          화면을 통째로 덮으므로 그 화면의 제목 자리가 맞다 */}
+      <Text
+        className="text-display font-bold text-ink-strong"
+        style={{ letterSpacing: 0.2 }}
+      >
         {question.prompt}
       </Text>
 
@@ -148,6 +153,9 @@ export function QuestionBody({ question, answers, onSelectSingle, onToggleMulti 
         </Text>
       ) : null}
 
+      {/* **여러 개 고르는 문항의 안내는 이 줄이 맡는다.** 문항 데이터의 `help`에 같은
+          말을 또 적으면 두 줄로 겹쳐 나온다 — 실제로 Q2-1이 그랬다. `help`는 이 문항에만
+          있는 설명을 담는 자리이고, 여러 개를 고를 수 있다는 사실은 여기가 말한다 */}
       {question.kind === "multi" ? (
         <Text className="mt-2 text-caption font-bold" style={{ color: COLORS.brand }}>
           맞는 것을 모두 골라 주세요

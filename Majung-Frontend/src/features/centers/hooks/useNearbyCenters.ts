@@ -32,17 +32,29 @@ export function useNearbyCenters() {
   // 고른 경우에는 없다 — 그때는 서버가 동네 한가운데로 가늠한다.
   const lat = place?.lat;
   const lng = place?.lng;
+  // **고른 동의 주민센터를 빠뜨리지 않게 이름도 함께 보낸다** (2026-08-31). 좌표만으로는
+  // 자기 동 센터가 갈래별 세 곳에서 밀려 잘리는 일이 있었다.
+  const dong = place?.dong;
 
   useEffect(() => {
     // **지역이 정해지기 전에는 부르지 않는다.** 지역 없이 부르면 전국 목록이 오는데,
     // 지금 서버는 좌표가 있는 것만 3,839건 들고 있다.
-    if (!sido || !district) return;
+    //
+    // **시·군·구는 없어도 부른다** (2026-08-31). 전에는 둘 다 있어야 불렀는데, 지역
+    // 선택 화면이 시·도만 고르고 넘어가는 길을 열면서 그 경우 이 자리를 그냥 빠져나가
+    // **화면이 "불러오는 중"에 영영 머물렀다.**
+    //
+    // **서버가 그 경우를 받는지 확인했다** (2026-08-31). 확인해 보니 안 받고 있었다 —
+    // 시·군·구가 없으면 조회가 수도권 다섯 곳짜리 다른 자료로 빠져 부산 사용자에게
+    // 서울 지부가 나갔다. 서버를 함께 고쳤고(`centers/adapter/.../router.py`), 지금은
+    // 시·군·구가 비면 그 시·도 전체에서 갈래마다 가까운 순 세 곳씩 돌려준다.
+    if (!sido) return;
 
     let alive = true;
     void (async () => {
       try {
         // 갈래를 고르지 않고 그 지역 전부를 받는다. 거르는 일은 화면의 칩이 한다.
-        const all = await getCenters({ sido, district, lat, lng });
+        const all = await getCenters({ sido, district: district ?? "", dong, lat, lng });
         if (alive) setCenters(all);
       } catch {
         if (alive) setError("기관을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -53,7 +65,7 @@ export function useNearbyCenters() {
     return () => {
       alive = false;
     };
-  }, [sido, district, lat, lng]);
+  }, [sido, district, dong, lat, lng]);
 
   return { centers, loading, error, place, pick: lookup.pick };
 }

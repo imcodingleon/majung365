@@ -76,6 +76,83 @@ def test_stored_message_keeps_role_and_time() -> None:
     assert m.content and m.at
 
 
+def test_suggestions_are_encrypted_and_come_back() -> None:
+    """추천 질문도 저장하고 되살린다 (§6.1).
+
+    **저장만 하고 복원을 안 하는 것이 이 프로젝트에서 되풀이된 결함 모양이다.**
+    넣는 쪽과 꺼내는 쪽을 한 번에 본다. 무엇을 물으려 했는지가 곧 그 사람의
+    사정을 드러내므로 본문과 같은 방식으로 암호화한다.
+    """
+    from app.domains.chat.infrastructure.message_repository import (
+        SupabaseMessageRepository,
+    )
+
+    table = FakeTable()
+
+    class Client:
+        def table(self, name: str) -> FakeTable:
+            return table
+
+    cipher = FieldCipher(load_key(generate_key()))
+    repo = SupabaseMessageRepository(Client(), cipher)  # type: ignore[arg-type]
+    repo.append(
+        uuid4(),
+        "R9",
+        "assistant",
+        "행정복지센터에서 받으실 수 있어요",
+        suggestions=("얼마나 걸려요?", "돈이 드나요?", "사진이 필요해요?"),
+    )
+
+    sealed = str(table.rows[0]["suggestions_enc"])
+    assert "얼마나" not in sealed
+    assert repo._suggestions_of(sealed) == ("얼마나 걸려요?", "돈이 드나요?", "사진이 필요해요?")
+
+
+def test_missing_column_still_saves_the_answer() -> None:
+    """추천 질문 칸이 없는 서버에서도 답변은 남는다.
+
+    **컬럼이 없다고 저장이 통째로 실패하면, 예외를 삼키는 구조라 오류도 없이
+    그 답변이 사라진다.** 다시 열었을 때 어제 받은 안내가 없어지는 것이 §6.3이
+    막으려던 바로 그것이다. 마이그레이션 0011이 늦게 적용되는 경우를 가린다.
+    """
+    from app.domains.chat.infrastructure.message_repository import (
+        SupabaseMessageRepository,
+    )
+
+    saved: list[dict[str, object]] = []
+
+    class PickyTable:
+        """새 칸이 든 insert만 거절한다 — 컬럼이 없는 서버의 모양이다."""
+
+        def insert(self, row: dict[str, object]) -> "PickyTable":
+            if "suggestions_enc" in row:
+                raise RuntimeError('column "suggestions_enc" does not exist')
+            saved.append(row)
+            return self
+
+        def execute(self) -> object:
+            return type("R", (), {"data": list(saved)})()
+
+    class Client:
+        def table(self, name: str) -> PickyTable:
+            return PickyTable()
+
+    repo = SupabaseMessageRepository(
+        Client(),  # type: ignore[arg-type]
+        FieldCipher(load_key(generate_key())),
+    )
+    repo.append(
+        uuid4(),
+        "R9",
+        "assistant",
+        "받으실 수 있어요",
+        suggestions=("가요?", "나요?", "다요?"),
+    )
+
+    assert len(saved) == 1
+    assert "suggestions_enc" not in saved[0]
+
+
 def test_room_id_separates_conversations() -> None:
     """할 일마다 방이 따로 생긴다(§6.1). 방이 섞이면 엉뚱한 맥락이 딸려온다."""
     rows = [

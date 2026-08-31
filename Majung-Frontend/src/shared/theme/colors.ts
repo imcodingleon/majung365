@@ -7,7 +7,14 @@
 export const COLORS = {
   brand: "#024f9f",
   brandSoft: "#e1eefa",
+  /** 고른 것을 나타내는 배경. soft보다 옅어 흰 카드 위에서 글자를 밀어내지 않는다. */
+  brandTint: "#f1f7ff",
   brandMuted: "#b9cde4",
+  /**
+   * 브랜드색 글자를 얹는 작은 배지의 바탕 ("복수 선택 가능", 전화 아이콘 원).
+   * `soft`보다 조금 진해서 흰 바탕 위에서 덩어리로 읽힌다.
+   */
+  brandBadge: "#dce9f4",
 
   sun500: "#EF9F27",
   sun700: "#e04e00",
@@ -15,7 +22,11 @@ export const COLORS = {
   inkStrong: "#1c2333",
   inkSub: "#5b6474",
   inkBody: "#333c4e",
+  /** 항목에 딸린 한 줄 설명. sub보다 밝고 muted보다 어둡다. */
+  inkHint: "#7a8291",
   inkMuted: "#939393",
+  /** 말풍선과 목록에 붙는 시각. 본문을 읽는 데 방해되지 않을 만큼 옅다. */
+  inkFaint: "#a3a3a3",
 
   /**
    * 웹에서 모바일 프레임 바깥. **앱에는 없는 색이다.**
@@ -48,10 +59,22 @@ export const COLORS = {
   alertLine: "#fecaca",
   alertInk: "#991b1b",
 
+  /**
+   * 카드 안 체크 목록의 체크 (2026-08-31 시안).
+   *
+   * **`doneInk`와 다른 초록이다.** 이쪽은 밝고 저쪽은 짙다. 시안이 둘을 갈라 놓았는데,
+   * 체크 목록은 "이런 것이 있다"는 안내이고 완료 표시는 "끝냈다"는 상태라 무게가 다르다.
+   */
+  doneMark: "#34c759",
+
   // 완료 표시 계열. 인덱스 탭의 항목별 색과 달리 상태를 뜻한다.
-  doneBg: "#eef9f0",
+  //
+  // **2026-08-31에 tailwind 쪽 값으로 맞췄다.** 여기가 `#eef9f0`·`#2c6e3b`였고
+  // tailwind의 `folder.done-bg`·`folder.done-ink`가 `#f3faf4`·`#3e7a49`라 같은 자리를
+  // 두 값이 칠하고 있었다. `palette.ts`의 `FOLDER_DONE`이 tailwind 쪽과 같아 그것을 정본으로 봤다.
+  doneBg: "#f3faf4",
   doneLine: "#bfe3c6",
-  doneInk: "#2c6e3b",
+  doneInk: "#3e7a49",
 
   // 담당자 연결처럼 안내와 성격이 다른 동작에 쓰는 파랑.
   action: "#2563eb",

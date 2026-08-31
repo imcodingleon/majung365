@@ -41,18 +41,25 @@ function LineButton({
         borderColor: emergency ? COLORS.alertLine : COLORS.brandSoft,
       }}
     >
-      {/* 번호 줄에 맞춰 위쪽에 둔다. 가운데로 두면 큰 번호와 어긋나 보인다 */}
-      <View className="mr-3 mt-1 self-start">
-        <Icon name="phone" size={26} color={emergency ? COLORS.alert : COLORS.brand} />
+      {/* 수화기가 **연한 원 위에 얹힌다** (2026-08-31 시안). 원본 SVG에는 원과 수화기가
+          한 덩어리로 들어 있는데, 바탕색과 획색이 따로 놀아야 해서 원은 여기서 그린다.
+          **번호 줄에 맞춰 위에 둔다.** 시안의 아이콘 자리가 `items-start`이고, 원과
+          번호 줄이 둘 다 30px이라 나란히 선다. 카드 세로 가운데로 옮겼다가 되돌렸다 —
+          가운데로 두면 아이콘이 설명 줄 옆으로 내려가 번호와 짝이 아닌 것처럼 보인다 */}
+      <View
+        className="mr-2 size-[30px] items-center justify-center self-start rounded-full"
+        style={{ backgroundColor: emergency ? COLORS.alertLine : COLORS.brandSoft }}
+      >
+        <Icon name="phoneRound" size={30} color={emergency ? COLORS.alert : COLORS.brand} />
       </View>
       <View className="flex-1">
         <Text
-          className="text-title font-extrabold"
+          className="text-title font-bold"
           style={{ color: emergency ? COLORS.alert : COLORS.brand }}
         >
           {line.label}
         </Text>
-        <Text className="mt-1 text-body-lg text-ink-body">{line.when}</Text>
+        <Text className="mt-1 text-body-lg font-medium text-ink-hint">{line.when}</Text>
         <Text className="mt-1 text-caption text-ink-muted">{line.org}</Text>
       </View>
     </Pressable>
@@ -65,33 +72,39 @@ export function HelpScreen({ onClose }: Props) {
 
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-      <ScreenHeader title="도움 연결" closeHint="도움 연결 화면 닫기" onClose={onClose} />
+      <ScreenHeader title="긴급 연락처" closeHint="긴급 연락처 화면 닫기" onClose={onClose} />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-10 pt-6">
-        <Text className="text-title font-extrabold text-ink-strong">
+        <Text
+          className="text-display font-bold text-ink-strong"
+          style={{ letterSpacing: 0.2 }}
+        >
           지금 도움이 필요하신가요?
         </Text>
-        <Text className="mb-6 mt-2 text-body-lg text-ink-sub">
-          어떤 상황인지 정리해서 말하지 않아도 괜찮아요.
+        <Text className="mt-2 text-body-lg text-ink-sub">
+          상황에 맞는 기관으로 바로 연결됩니다.
         </Text>
 
+        {/* **번호 목록 위로 올렸다** (2026-08-31 시안). 전화를 걸기 전에 읽어야 하는
+            말인데 목록 아래에 있어서, 이미 걸고 난 뒤에야 눈에 들어왔다 */}
+        <View className="mb-6 mt-4 rounded-xl px-4 py-4" style={{ backgroundColor: COLORS.line }}>
+          <Text className="text-caption text-ink-sub">번호 선택 시 전화 앱으로 연결됩니다.</Text>
+          <Text className="mt-1 text-caption text-ink-sub">
+            통화 기록은 별도로 저장되지 않습니다.
+          </Text>
+        </View>
+
+        {/* 구역 제목이 새로 생겼다. 전에는 긴급 쪽에만 있어서 위쪽 목록이 무엇인지 말해
+            주는 것이 없었다 */}
+        <Text className="mb-3 text-heading font-extrabold text-brand">상담이 필요한 경우</Text>
         {COUNSEL_LINES.map((line) => (
           <LineButton key={line.dial} line={line} tone="counsel" onFail={setFailedLabel} />
         ))}
 
-        <View className="mt-4 rounded-xl bg-white px-4 py-4">
-          <Text className="text-caption text-ink-sub">
-            번호를 누르면 전화 앱이 열려요.
-          </Text>
-          <Text className="mt-1 text-caption text-ink-sub">
-            통화 내용은 이 화면에 남지 않아요.
-          </Text>
-        </View>
-
         {/* 상담과 긴급신고는 성격이 다르므로 영역을 나눈다 */}
         <View className="mt-8 border-t border-line pt-6">
           <Text className="mb-3 text-heading font-extrabold text-alert">
-            생명이 위급하거나 큰 사고라면
+            긴급 신고가 필요한 경우
           </Text>
           {EMERGENCY_LINES.map((line) => (
             <LineButton key={line.dial} line={line} tone="emergency" onFail={setFailedLabel} />
@@ -100,7 +113,7 @@ export function HelpScreen({ onClose }: Props) {
 
         {failedLabel ? (
           <NoteBox tone="warn" className="mt-6">
-            <NoteLine tone="warn">이 기기에서는 전화 앱이 열리지 않았어요.{"\n"}
+            <NoteLine tone="warn">이 기기에서는 전화 앱이 열리지 않았습니다.{"\n"}
               다른 전화기로 {failedLabel}번을 눌러 주세요.</NoteLine>
           </NoteBox>
         ) : null}

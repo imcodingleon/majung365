@@ -22,6 +22,7 @@ import {
 import { Icon, type IconName } from "@/shared/components/Icon";
 import { TabBadge } from "@/shared/components/TabBadge";
 import { COLORS } from "@/shared/theme/colors";
+import { FONTS } from "@/shared/theme/fonts";
 
 // **색을 `tabBarIcon`이 주는 값으로 받지 않는다.** 그 값은 `ColorValue`라서 플랫폼이
 // 불투명한 객체를 넘길 수 있고, SVG의 `stroke`는 문자열만 받는다. 켜짐과 꺼짐 두 색을
@@ -72,7 +73,7 @@ function ChatFabButton({
         <Icon name="chat" size={29} color={COLORS.surface} />
         {badge === undefined ? null : <TabBadge count={badge} />}
       </View>
-      <Text style={{ fontSize: 11, color: COLORS.inkMuted, fontWeight: "600" }}>상담</Text>
+      <Text style={{ fontSize: 11, color: COLORS.inkMuted, fontFamily: FONTS.semibold }}>상담</Text>
     </Pressable>
   );
 }
@@ -98,7 +99,7 @@ function TabsBar() {
         tabBarActiveTintColor: COLORS.brand,
         tabBarInactiveTintColor: COLORS.inkMuted,
         tabBarStyle: { height: 74, paddingBottom: 12, paddingTop: 8, overflow: "visible" },
-        tabBarLabelStyle: { fontSize: 11, marginTop: 2, fontWeight: "600" },
+        tabBarLabelStyle: { fontSize: 11, marginTop: 2, fontFamily: FONTS.semibold },
       }}
     >
       <Tabs.Screen

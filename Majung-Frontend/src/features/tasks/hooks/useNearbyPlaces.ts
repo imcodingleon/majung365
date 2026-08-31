@@ -17,11 +17,18 @@ export type NearbyKind = "office" | "institution" | "none";
  * 이 지원 항목에서 안내할 곳.
  *
  * **R11(주소)은 일부러 뺀다.** 전입신고는 새 주소지 관할이고 재등록은 거주지 관할이라,
- * **지금 있는 곳의 주민센터를 짚으면 틀린 곳으로 보내게 된다.** §5.4가 "사용자가
+ * **지금 있는 곳의 행정복지센터를 짚으면 틀린 곳으로 보내게 된다.** §5.4가 "사용자가
  * 자기가 살 곳을 알고 있다"고 정리해 둔 자리다.
  *
- * R9는 반대다. 전국 어느 주민센터에서나 되므로 가까운 곳을 짚는 것이 정확한 답이다.
+ * R9는 반대다. 전국 어느 곳에서나 되므로 가까운 곳을 짚는 것이 정확한 답이다.
+ *
+ * **R12(생계급여)를 여기 넣었다** (2026-08-31). 전에는 이 목록에 없어 `institution`으로
+ * 떨어졌고, 그래서 **주민등록 창구에 가야 하는 일에 공단 지부가 떴다.** 주소지 관할에서
+ * 신청하는 것이라 R9처럼 "어디서나"는 아니지만, 공단 지부를 짚는 것보다는 가까운
+ * 행정복지센터를 세우고 관할을 확인하라고 말하는 편이 맞다.
  */
+const OFFICE_ROUTES = new Set(["R9", "R12"]);
+
 /**
  * 안내할 기관이 없는 항목.
  *
@@ -32,9 +39,23 @@ export type NearbyKind = "office" | "institution" | "none";
 const NO_NEARBY = new Set(["R10", "R11", "R13", "R14"]);
 
 export function nearbyKindFor(routeId: string): NearbyKind {
-  if (routeId === "R9") return "office";
+  if (OFFICE_ROUTES.has(routeId)) return "office";
   if (NO_NEARBY.has(routeId)) return "none";
   return "institution";
+}
+
+/**
+ * 행정복지센터 목록 아래에 붙는 한 줄.
+ *
+ * **항목마다 관할 규칙이 달라 같은 말을 쓸 수 없다.** R9는 어디서나 되고 R12는
+ * 주소지 관할이다. 이 말이 없으면 R9에서는 자기 동을 찾아 멀리 가고, R12에서는
+ * 가까운 곳에 갔다가 헛걸음한다.
+ */
+export function officeNoteFor(routeId: string): string | undefined {
+  if (routeId === "R9") return "어느 행정복지센터에서나 하실 수 있어요. 가까운 곳으로 가세요.";
+  if (routeId === "R12")
+    return "주민등록 주소지의 행정복지센터에서 신청해요. 아래는 가까운 순서예요.";
+  return undefined;
 }
 
 type State = {

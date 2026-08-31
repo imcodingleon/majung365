@@ -36,6 +36,8 @@ type Props = {
   onOpenHelp: () => void;
   /** 담당자에게 방문을 미리 알린다 (§7.2). 동의하지 않았으면 넘기지 않는다. */
   onNotifyStaff?: (taskId: RouteId) => void;
+  /** 아직 협의 중인 기관의 방문 예약을 눌렀을 때. 라우트가 팝업을 띄운다. */
+  onPendingVisit?: () => void;
   /** 이미 보낸 요청이 있으면 그 상태 표시를 그린다 (§7.1). */
   renderStatusStrip?: (taskId: RouteId) => React.ReactNode;
   /** 이 할 일에 알리기 버튼을 감출지. 이미 보낸 요청이 있을 때 참이다. */
@@ -50,10 +52,17 @@ type Props = {
 };
 
 /**
- * 진행 표시 (2026-08-23 시안).
+ * 진행 표시.
  *
- * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. **마친 것을 그대로 센다** —
- * 마친 항목이 목록에 남게 된 뒤로(§5.2) 거꾸로 셀 이유가 없어졌다.
+ * 몇 개 중 몇 개인지가 없으면 목록이 끝이 없어 보인다. **마친 것을 센다.**
+ *
+ * **2026-08-31에 한 번 열려 있는 카드의 순번으로 바꿨다가 되돌렸다.** 시안이
+ * "9개 중 1번째"라 그것을 따랐는데, "진행 상황"이라는 제목과 막대 아래에 순번이
+ * 있으면 그 순번이 진행도로 읽힌다. **아무것도 끝내지 않고 여덟 번째 카드를 궁금해서
+ * 눌러 보기만 해도 막대가 8/14까지 차올랐다.**
+ *
+ * 시안 자체가 어긋나 있었다 — "9개 중 1번째"인데 막대는 33% 차 있다(1/9라면 11%다).
+ * 디자이너가 막대를 임의로 그린 것으로 보고, 문구 모양만 시안에서 가져온다.
  */
 function Progress({ done, total }: { done: number; total: number }) {
   const ratio = total > 0 ? Math.min(1, done / total) : 0;
@@ -63,8 +72,8 @@ function Progress({ done, total }: { done: number; total: number }) {
         <Text className="text-body font-extrabold" style={{ color: COLORS.brand }}>
           진행 상황
         </Text>
-        <Text className="text-body font-bold text-ink-sub">
-          {done} / {total}
+        <Text className="text-body font-medium text-ink-muted">
+          {total}개 중 {done}개 완료
         </Text>
       </View>
       <View className="h-2 overflow-hidden rounded-full" style={{ backgroundColor: COLORS.line }}>
@@ -89,6 +98,7 @@ export function TodayScreen({
   onOpenChat,
   onOpenHelp,
   onNotifyStaff,
+  onPendingVisit,
   renderStatusStrip,
   hideNotifyFor,
   renderNearby,
@@ -96,6 +106,7 @@ export function TodayScreen({
 }: Props) {
   const scrollRef = useRef<ScrollView>(null);
   const rowOffsets = useRef<Record<string, number>>({});
+
 
   // 완료 후 다음 탭이 열릴 때 그 위치로 스크롤한다. 열렸는데 화면 밖이면 열린 줄 모른다 (§5.2).
   const handleComplete = useCallback(
@@ -159,6 +170,7 @@ export function TodayScreen({
                     ? () => onNotifyStaff(task.id)
                     : undefined
                 }
+                onPendingVisit={onPendingVisit}
                 onComplete={() => handleComplete(task.id)}
                 onUncomplete={onUncomplete ? () => onUncomplete(task.id) : undefined}
                 statusStrip={renderStatusStrip?.(task.id)}

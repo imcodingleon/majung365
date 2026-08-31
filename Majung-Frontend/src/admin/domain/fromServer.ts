@@ -65,5 +65,9 @@ export function toStaffRequest(v: StaffVisitResponse): StaffRequest {
     receivedAt: receivedLabel(v.created_at),
     // 서버가 정렬해 보낸 순서를 그대로 둔다.
     sharedAnswers: v.shared_answers ?? [],
+    // 요약을 붙이기 전에 보낸 요청에는 두 필드가 아예 없다. 그때는 요약이 없는
+    // 것으로 보고 원문만 그린다 — 화면이 빈 카드를 그리지 않게 하려는 것이다.
+    summary: v.summary ?? "",
+    summaryStatus: v.summary_status ?? "none",
   };
 }

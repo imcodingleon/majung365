@@ -44,7 +44,9 @@ class AnalyzeUseCase:
         if narrative:
             node_names = {nid: node.name for nid, node in self._nodes.items()}
             try:
-                narrative_states = await self._llm.extract_narrative_states(node_names, narrative)
+                narrative_states = await self._llm.extract_narrative_states(
+                    node_names, narrative, name=cmd.user_name
+                )
                 states.update(narrative_states)  # 서술이 버튼 답변보다 최신 정보로 우선
             except Exception:
                 # 사용자 입력 원문은 로그에 남기지 않는다

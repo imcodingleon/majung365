@@ -19,6 +19,7 @@ from app.domains.staff.domain.entity import OrgKind
 from app.domains.visit.domain.entity import (
     LIVE_STATUSES,
     SharedAnswer,
+    SummaryStatus,
     VisitRequest,
     VisitStatus,
 )
@@ -45,6 +46,7 @@ class SupabaseVisitRepository:
                 # 한 건이 깨졌다고 목록 전체가 안 열리면 안 된다.
                 logger.warning("방문 요청 메모를 읽지 못했다")
 
+        summary, summary_status = self._summary(row)
         created = _parse_ts(str(row["created_at"]))
         preferred_1 = _parse_ts(str(row["preferred_at_1"]))
         assert preferred_1 is not None  # not null 컬럼
@@ -74,7 +76,28 @@ class SupabaseVisitRepository:
             shared_answers_consented_at=_parse_ts(
                 row.get("shared_answers_consented_at")
             ),
+            summary=summary,
+            summary_status=summary_status,
         )
+
+    def _summary(self, row: dict[str, Any]) -> tuple[str, SummaryStatus]:
+        """요약과 그 상태. **못 읽으면 실패로 본다.**
+
+        빈 요약을 ready로 두면 담당자 화면이 빈 카드를 그린다. 요약이 안 열려도
+        답변 원문은 그대로 보여야 하므로, 여기서 목록 전체를 막지는 않는다.
+        """
+        try:
+            status = SummaryStatus(str(row.get("summary_status") or "none"))
+        except ValueError:
+            status = SummaryStatus.NONE
+        raw = row.get("summary_enc")
+        if not raw:
+            return "", SummaryStatus.FAILED if status is SummaryStatus.READY else status
+        try:
+            return self._cipher.decrypt(str(raw)), status
+        except CryptoError:
+            logger.warning("방문 요약을 읽지 못했다")
+            return "", SummaryStatus.FAILED
 
     def _shared_answers(self, row: dict[str, Any]) -> tuple[SharedAnswer, ...]:
         raw = row.get("shared_answers_enc")
@@ -167,6 +190,13 @@ class SupabaseVisitRepository:
                         if shared_answers and consented_at
                         else None
                     ),
+                    # 답변이 실려 갈 때만 요약을 기다린다. 답변이 없으면 만들 것도
+                    # 없으므로 none으로 두고, 담당자 화면은 요약 자리를 그리지 않는다.
+                    "summary_status": (
+                        SummaryStatus.PENDING.value
+                        if shared_answers and consented_at
+                        else SummaryStatus.NONE.value
+                    ),
                 }
             )
             .execute()
@@ -240,3 +270,28 @@ class SupabaseVisitRepository:
         if cancel_reason is not None:
             patch["cancel_reason"] = cancel_reason
         self._db.table("visit_request").update(patch).eq("id", str(request_id)).execute()
+
+    def save_summary(
+        self,
+        request_id: UUID,
+        summary: str,
+        status: SummaryStatus,
+        *,
+        now: datetime,
+    ) -> None:
+        """담당자가 먼저 읽는 요약을 붙인다 (§7.4).
+
+        요약문도 자유 문장이므로 **답변 원문과 같이 암호화한다.** 실패로 남길
+        때는 본문을 지운다 — 반쯤 만들어진 문장이 남아 있으면 다음에 읽는 쪽이
+        그것을 완성본으로 오해한다.
+        """
+        ready = status is SummaryStatus.READY and bool(summary)
+        # 빈 본문을 ready로 두지 않는다 — 담당자 화면에 빈 카드가 그려진다.
+        stored = status if ready or status is not SummaryStatus.READY else SummaryStatus.FAILED
+        self._db.table("visit_request").update(
+            {
+                "summary_enc": self._cipher.encrypt(summary) if ready else None,
+                "summary_status": stored.value,
+                "summary_at": now.isoformat(),
+            }
+        ).eq("id", str(request_id)).execute()

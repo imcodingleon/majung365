@@ -65,7 +65,7 @@
           ],
           "action": "긴급복지 주거지원 신청",
           "kb_ref": "housing-emergency-welfare-housing",
-          "where": "주민센터 또는 보건복지상담센터(129)",
+          "where": "행정복지센터 또는 보건복지상담센터(129)",
           "docs": [
             "신분증"
           ],
@@ -96,9 +96,9 @@
           "for_state": [
             "X"
           ],
-          "action": "주민센터에서 전입신고",
+          "action": "행정복지센터에서 전입신고",
           "kb_ref": "identity-address-registration",
-          "where": "가까운 주민센터",
+          "where": "가까운 행정복지센터",
           "docs": [
             "수용증명서 또는 신분 확인 서류(있는 대로)"
           ],
@@ -128,7 +128,7 @@
           ],
           "action": "주민등록증 재발급 신청하기",
           "kb_ref": "identity-id-card-reissue",
-          "where": "가까운 주민센터",
+          "where": "가까운 행정복지센터",
           "docs": [
             "사진 1장(6개월 이내, 3.5×4.5cm)",
             "수수료 5,000원"
@@ -218,9 +218,9 @@
           "for_state": [
             "X"
           ],
-          "action": "주민센터 또는 129로 신청",
+          "action": "행정복지센터 또는 129로 신청",
           "kb_ref": "welfare-emergency-support",
-          "where": "주민센터 또는 보건복지상담센터(전화 129)",
+          "where": "행정복지센터 또는 보건복지상담센터(전화 129)",
           "docs": [
             "신분 확인 서류"
           ],
@@ -248,9 +248,9 @@
           "for_state": [
             "X"
           ],
-          "action": "주민센터에서 상담·신청",
+          "action": "행정복지센터에서 상담·신청",
           "kb_ref": "welfare-basic-livelihood",
-          "where": "주민센터(행정복지센터)",
+          "where": "행정복지센터",
           "docs": [
             "신분 확인 서류",
             "소득·재산을 확인할 수 있는 서류"
@@ -289,9 +289,9 @@
           "for_state": [
             "X"
           ],
-          "action": "주민센터 또는 건강보험공단에서 확인",
+          "action": "행정복지센터 또는 건강보험공단에서 확인",
           "kb_ref": "health-medical-aid",
-          "where": "주민센터 / 국민건강보험공단",
+          "where": "행정복지센터 / 국민건강보험공단",
           "docs": [
             "신분 확인 서류"
           ],

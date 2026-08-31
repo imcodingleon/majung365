@@ -11,6 +11,8 @@ import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Icon } from "@/shared/components/Icon";
+import { districtLabel } from "@/shared/location";
+import { FONTS } from "@/shared/theme/fonts";
 import { Logo } from "@/shared/components/Logo";
 import { RegionPicker } from "@/features/institutions/views/RegionPicker";
 import { COLORS } from "@/shared/theme/colors";
@@ -60,6 +62,11 @@ function FilterChips({
         return (
           <Pressable
             key={c}
+            // **역할을 밝힌다.** 없으면 낭독기가 글자만 읽고 지나가서, 누를 수 있는
+            // 것인지 알 수 없다. 지금 무엇이 골라져 있는지도 함께 알린다
+            accessibilityRole="button"
+            accessibilityState={{ selected: active }}
+            accessibilityLabel={c}
             className={`rounded-full border px-4 py-2 active:opacity-80 ${
               active ? "border-brand bg-brand" : "border-[#b4b4b4] bg-white"
             }`}
@@ -84,7 +91,18 @@ function CenterTag({ label, primary }: { label: string; primary: boolean }) {
 function CenterCard({ center, distance }: { center: Center; distance: string }) {
   const [fav, setFav] = useState(false);
   return (
-    <View className="gap-2 rounded-2xl border border-line bg-white p-4 shadow">
+    <View
+      className="gap-2 rounded-2xl border border-line bg-white p-4"
+      // **번짐을 시안 값으로 못 박는다** (2026-08-31 · `43:7364`). `shadow` 한 마디에
+      // 맡겨 두었더니 번짐이 4px으로 나와, 시안의 2px보다 그림자가 넓게 퍼졌다.
+      style={{
+        shadowColor: "#000",
+        shadowOffset: { width: 0, height: 1 },
+        shadowOpacity: 0.35,
+        shadowRadius: 2,
+        elevation: 2,
+      }}
+    >
       <View className="flex-row items-start justify-between gap-2">
         <View className="flex-1 gap-1">
           <View className="flex-row items-center gap-2">
@@ -118,7 +136,11 @@ function CenterCard({ center, distance }: { center: Center; distance: string }) 
       </View>
 
       <View className="flex-row gap-3 pt-2">
+        {/* **어디로 거는 전화인지 함께 읽어준다.** "전화"만으로는 카드가 여럿일 때
+            어느 기관 것인지 낭독기 사용자가 알 수 없다 */}
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${center.name}에 전화`}
           className="flex-1 flex-row items-center justify-center gap-1 rounded-xl border border-brand py-3 active:opacity-80"
           onPress={() => Linking.openURL(`tel:${center.phone}`)}
         >
@@ -126,6 +148,8 @@ function CenterCard({ center, distance }: { center: Center; distance: string }) 
           <Text className="text-sm font-medium text-brand">전화</Text>
         </Pressable>
         <Pressable
+          accessibilityRole="button"
+          accessibilityLabel={`${center.name} 길찾기`}
           className="flex-1 flex-row items-center justify-center gap-1 rounded-xl bg-brand py-3 active:opacity-80"
           onPress={() =>
             Linking.openURL(
@@ -177,10 +201,60 @@ function CenterList({
   );
 }
 
-function ListHeading({ error }: { error: string | null }) {
+function ListHeading({
+  error,
+  region,
+  onChangeRegion,
+}: {
+  error: string | null;
+  /** 지금 어느 지역을 보고 있는지. 모르면 배지를 만들지 않는다. */
+  region: string;
+  onChangeRegion: () => void;
+}) {
   return (
     <View className="gap-1">
-      <Text className="text-xl font-bold text-[#1d1b20]">센터 위치 정보</Text>
+      {/* **어느 지역을 보고 있는지 제목 옆에 붙인다** (2026-08-31 시안). 위치를 잘못
+          잡았을 때 목록만 보고는 알 수 없어서, 엉뚱한 동네의 기관에 전화를 건다 */}
+      <View className="flex-row items-center justify-between gap-2">
+        <View className="min-w-0 flex-1 flex-row items-center gap-2">
+          <Text
+            className="shrink-0 text-ink-strong"
+            style={{ fontSize: 20, lineHeight: 28, fontFamily: FONTS.bold }}
+          >
+            센터 위치 정보
+          </Text>
+          {region ? (
+            <View
+              className="shrink rounded-full border-[1.5px] px-3 py-1"
+              style={{ backgroundColor: COLORS.brandSoft, borderColor: COLORS.brand }}
+            >
+              <Text
+                numberOfLines={1}
+                style={{ fontSize: 14, lineHeight: 18, fontFamily: FONTS.semibold, color: COLORS.brand }}
+              >
+                {region}
+              </Text>
+            </View>
+          ) : null}
+        </View>
+
+        {/* 잘못 잡힌 지역을 고칠 길. 없으면 앱을 지웠다 깔거나 위치를 다시 켜는 수밖에 없다 */}
+        <Pressable
+          onPress={onChangeRegion}
+          accessibilityRole="button"
+          accessibilityLabel="지역 변경"
+          className="shrink-0 flex-row items-center gap-0.5 rounded-lg border-[1.5px] bg-white py-1 pl-3 pr-1 active:opacity-80"
+          style={{ borderColor: COLORS.brand }}
+        >
+          <Text
+            style={{ fontSize: 14, lineHeight: 20, fontFamily: FONTS.semibold, color: COLORS.brand }}
+          >
+            지역 변경
+          </Text>
+          <Icon name="next" size={16} color={COLORS.brand} />
+        </Pressable>
+      </View>
+
       {/* **없는 기관을 있는 것처럼 보여주지 않는다.** 예선은 서버가 안 되면 시연용
           고정 데이터로 넘어갔는데, 그것을 보고 찾아가면 헛걸음이다 */}
       {error ? <Text className="text-xs text-ink-muted">{error}</Text> : null}
@@ -191,6 +265,13 @@ function ListHeading({ error }: { error: string | null }) {
 export function MapScreen() {
   const [cat, setCat] = useState<string>("전체");
   const [query, setQuery] = useState("");
+  /**
+   * 지역을 다시 고르는 중인가.
+   *
+   * **저장된 위치를 지우지 않는다.** 가입할 때 알아낸 곳은 다른 화면도 쓰므로, 여기서
+   * 비우면 근처 기관 안내까지 함께 사라진다. 이 화면 안에서만 고르는 자리를 다시 낸다.
+   */
+  const [changing, setChanging] = useState(false);
   const { centers, loading, error, place, pick } = useNearbyCenters();
 
   /**
@@ -219,13 +300,22 @@ export function MapScreen() {
 
   // **위치를 못 받으면 지역을 직접 고르게 한다** (§5.4). 위치를 거부하는 것은
   // 이 서비스에서 흔한 선택이고, 거부했다고 화면이 비면 쓸 수 없는 것과 같다.
-  if (!place) {
+  if (!place || changing) {
     return (
       <SafeAreaView className="flex-1 bg-page" edges={["top"]}>
         <View className="border-b border-line bg-white px-5 py-4">
           <Logo height={26} />
         </View>
-        <RegionPicker onPick={pick} />
+        <RegionPicker
+          onPick={(region) => {
+            pick(region);
+            setChanging(false);
+          }}
+          // **처음 뜬 화면에는 돌아갈 자리가 없다.** 위치를 못 잡아 여기로 온 사람에게
+          // "이전"을 보여주면 눌러도 아무 데도 가지 못한다.
+          onCancel={place ? () => setChanging(false) : undefined}
+          banner
+        />
       </SafeAreaView>
     );
   }
@@ -245,7 +335,18 @@ export function MapScreen() {
         <SearchBar value={query} onChange={setQuery} />
         <FilterChips selected={cat} onSelect={setCat} />
         <CenterMap centers={shown} />
-        <ListHeading error={error} />
+        <ListHeading
+          error={error}
+          region={
+            // **시·도는 뺀다.** 방금 스스로 고른 값이라 헷갈릴 일이 없고, 440px에서
+            // "경기 군포시 산본1동"은 "지역 변경" 버튼과 한 줄에 못 들어간다.
+            // `districtLabel`을 거치는 것은 자동 감지가 "수원시장안구"를 주기 때문이다.
+            place.district
+              ? `${districtLabel(place.district)}${place.dong ? ` ${place.dong}` : ""}`
+              : place.sido
+          }
+          onChangeRegion={() => setChanging(true)}
+        />
         <CenterList loading={loading} shown={shown} origin={origin} />
       </ScrollView>
     </SafeAreaView>

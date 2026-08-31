@@ -48,16 +48,33 @@ _MASKS = (MASK_NAME, MASK_PHONE, MASK_RRN, MASK_EMAIL, MASK_ADDRESS, MASK_ACCOUN
 # 주민등록번호 — 뒷자리 첫 글자는 1~8(내국인·외국인·1900/2000년대).
 _RRN = re.compile(r"\d{6}\s*[-–]\s*[1-8]\d{6}")
 
+# 전화번호 셋 모두 **앞뒤 숫자 경계를 요구한다.** 없으면 더 긴 숫자 묶음의 안쪽을
+# 전화번호로 잘못 집는다 — 계좌번호 "1002-345-678901" 안의 "02-345-6789"가 유선전화로
+# 잡혀 "10[전화번호]01"이 됐다. 계좌번호 전체가 새지는 않았지만 남은 네 자리가
+# 계좌번호의 일부이고 표식도 사실과 다르다.
+#
+# **아래 순서를 바꿔서 고치지 않는다.** 계좌를 먼저 돌리면 "02-123-4567"이 계좌로
+# 잡히는 반대 사고가 되돌아온다(_mask_numbers 주석 참고).
+
 # 휴대폰. 구분자 없이 붙여 쓰는 경우(01012345678)까지 잡는다.
-_MOBILE = re.compile(r"01[0-9][\s\-.]?\d{3,4}[\s\-.]?\d{4}")
+_MOBILE = re.compile(r"(?<!\d)01[0-9][\s\-.]?\d{3,4}[\s\-.]?\d{4}(?!\d)")
 
 # 지역번호 유선전화. 02는 국번이 3~4자리다.
-_LANDLINE = re.compile(r"0(?:2|[3-6][1-5])[\s\-.]\d{3,4}[\s\-.]\d{4}")
+_LANDLINE = re.compile(r"(?<!\d)0(?:2|[3-6][1-5])[\s\-.]\d{3,4}[\s\-.]\d{4}(?!\d)")
 
 # 대표번호(15xx·16xx·18xx). 공공 상담번호는 아래에서 되돌린다.
-_SERVICE_NUMBER = re.compile(r"1(?:5|6|8)\d{2}[\s\-.]?\d{4}")
+_SERVICE_NUMBER = re.compile(r"(?<!\d)1(?:5|6|8)\d{2}[\s\-.]?\d{4}(?!\d)")
 
 _EMAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]+")
+
+# 이메일 매치 끝에 딸려 들어온 한국어 조사. `\w`가 한글까지 포함해
+# "kim@example.com으로"가 통째로 한 덩어리로 잡히고 "으로"가 함께 사라졌다.
+_EMAIL_TRAILING_HANGUL = re.compile(r"[가-힣]+$")
+
+# 조사를 떼어낸 나머지가 그래도 이메일 꼴인지 본다.
+# **패턴을 ASCII로 좁혀서 고치지 않는다** — 그러면 한글 도메인 주소를 놓치고,
+# 그것은 누출 방향이다. 뗀 나머지가 이메일이 아니면 통째로 가린다.
+_EMAIL_WITHOUT_TAIL = re.compile(r"[\w.+-]+@[\w-]+\.[\w.-]*[A-Za-z0-9]")
 
 # 계좌번호 — 은행마다 자릿수가 달라 형태로만 잡는다. 하이픈으로 끊긴 숫자 묶음 셋.
 # 단어 경계(\b) 대신 숫자 경계를 쓴다 — 한국어는 "567890으로"처럼 조사가 바로 붙어
@@ -114,6 +131,12 @@ _NOT_A_NAME = frozenset({
 # 서술어로 끝나는 말은 이름이 아니다. "제 이름은 없어요"의 "없어요"가 이름으로
 # 잡혀 "제 이름은 [이름]"이 됐다. 강한 문맥은 성 목록을 안 보므로 여기서 막는다.
 _PREDICATE_TAIL = ("어요", "아요", "예요", "에요", "네요", "구요", "은데", "습니다", "십니다")
+
+# 이름 뒤에 붙어 "지금 이 사람을 부르는 중"임을 확인해 주는 말.
+# **두 글자 이름 변형에만 요구한다** — 아래 _name_pattern 주석 참고.
+_NAME_TAILS = (
+    "이라고", "라고", "이라는", "라는", "입니다", "이에요", "예요", "이라", "씨", "님",
+)
 
 # 흔한 성. 성만 밝히는 경우를 잡되, 성이 아닌 한 글자까지 지우지 않으려면 목록이 필요하다.
 _SURNAMES: frozenset[str] = frozenset(
@@ -190,6 +213,40 @@ def _mask_numbers(text: str) -> str:
     return _ACCOUNT.sub(MASK_ACCOUNT, text)
 
 
+def _mask_email(m: re.Match[str]) -> str:
+    """이메일을 가리되 **뒤에 딸려 온 조사는 돌려준다.**
+
+    "kim@example.com으로 주세요"가 "[이메일] 주세요"가 되어 조사가 사라졌다.
+    문장이 무너지지는 않지만 모델이 받는 글이 조금씩 어색해진다.
+    """
+    raw = m.group(0)
+    tail = _EMAIL_TRAILING_HANGUL.search(raw)
+    if tail and _EMAIL_WITHOUT_TAIL.fullmatch(raw[: tail.start()]):
+        return MASK_EMAIL + tail.group(0)
+    return MASK_EMAIL
+
+
+def _name_pattern(variant: str) -> re.Pattern[str]:
+    """이름 변형 하나를 찾는 정규식.
+
+    **앞에 한글이 붙어 있으면 이름이 아니다.** 이름이 "김정민"인 사용자의
+    "행정민원실에 다녀왔어요"에서 "정민"이 지워지면 어디를 다녀왔는지가 사라진다.
+
+    **두 글자 변형은 뒤 문맥까지 요구한다.** 두 글자는 일반 낱말과 겹칠 확률이
+    훨씬 높다 — "이수"·"보람"·"하나"가 이름인 사용자에게 "교육을 이수했어요"가
+    "교육을 [이름]했어요"가 되면 R6 판정의 근거가 통째로 없어진다. 여기서는
+    §9.3의 "과잉 마스킹이 누출보다 낫다"가 뒤집힌다(test_review_2026_08_24와 같은 판단).
+
+    세 글자 이상은 앞 경계만 본다. 우연히 일반 낱말과 통째로 겹칠 일이 드물고,
+    조사가 무엇이 붙든 잡아야 하기 때문이다.
+    """
+    body = re.escape(variant)
+    if len(variant.replace(" ", "")) >= 3:
+        return re.compile(rf"(?<![가-힣]){body}")
+    tails = "|".join(_NAME_TAILS)
+    return re.compile(rf"(?<![가-힣]){body}(?=[^가-힣]|$|{tails})")
+
+
 def _name_variants(name: str) -> list[str]:
     """이름이 대화에 나타날 수 있는 형태들.
 
@@ -256,12 +313,14 @@ def mask_text(text: str, *, name: str | None = None) -> str:
 
     masked = text
     if name:
+        # **통째로 치환하지 않는다.** 이름이 일반 낱말에 박혀 있는 경우가 있어
+        # 경계를 함께 본다 — 자세한 판단은 _name_pattern 주석에 있다.
         for variant in _name_variants(name):
-            masked = masked.replace(variant, MASK_NAME)
+            masked = _name_pattern(variant).sub(MASK_NAME, masked)
     # 아는 이름을 지운 뒤에도 모르는 이름이 남는다 — 자기소개 구문으로 한 번 더 훑는다.
     masked = _mask_introductions(masked)
     masked = _mask_surname_only(masked)
-    masked = _EMAIL.sub(MASK_EMAIL, masked)
+    masked = _EMAIL.sub(_mask_email, masked)
     masked = _ADDRESS.sub(MASK_ADDRESS, masked)
     return _mask_numbers(masked)
 

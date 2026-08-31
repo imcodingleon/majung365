@@ -18,7 +18,6 @@ import { SEARCH_NOTICE, type ChatMessage } from "../domain/chatMessage";
 
 type Threads = Record<string, ChatMessage[]>;
 
-/** 서버가 준 제도 카드를 말풍선에 담는다. 카드 전용 렌더는 §4.1 결과 카드 작업이다. */
 /**
  * 배지에 적을 출처.
  *
@@ -29,33 +28,19 @@ function sourceLabel(stage: EvidenceEvent["stage"]): string {
   return stage === "web" ? "인터넷 검색" : "마중365가 모아둔 자료";
 }
 
-function cardToMessage(id: string, card: CardData): ChatMessage {
-  // 창구 안내(desk)로 옮기지 않는다. §6.4의 창구 안내는 "주민센터에 가서 '전입신고
-  // 하러 왔어요'라고 말하면 돼요" 형태인데, KB의 next_step은 그런 짧은 대사가 아니라
-  // 안내 문장이다. 그대로 넣으면 문장이 이중으로 감싸여 읽기 어려워진다.
-  const lines = [card.summary_easy, card.where ? `어디서: ${card.where}` : "", card.next_step]
-    .filter(Boolean)
-    .join("\n");
-
-  return {
-    id,
-    role: "assistant",
-    text: lines,
-    // 서버가 KB에서 찾아준 것이므로 확인한 자료다 (§6.4 ①단계).
-    //
-    // ⚠️ org에 제도명이 들어간다. §6.4가 요구하는 것은 **출처 기관명**이고 응답에 아직
-    // 그 필드가 없다. 계약에 기관명이 실리면 여기를 바꾼다.
-    evidence: { stage: "rag", org: card.name },
-    // 서버가 완성 문장으로 준다. 카드마다 자기 날짜를 갖는다.
-  };
-}
-
 export function useTaskThreads(initial: Threads = {}) {
   const [threads, setThreads] = useState<Threads>(initial);
   /** 지금 열려 있는 대화방. 닫혀 있으면 null. */
   const [openTaskId, setOpenTaskId] = useState<string | null>(null);
   /** 답변을 기다리는 중인 방. 입력을 잠근다. */
   const [busyId, setBusyId] = useState<string | null>(null);
+  /**
+   * 방마다 AI가 제안한 다음 질문 (§6.1).
+   *
+   * **새 답변이 시작되면 그 방의 앞 제안을 버린다.** 쌓아 두면 지난 답변에 딸린
+   * 제안이 새 답변 아래에 그대로 남아, 무엇에 대한 제안인지 알 수 없게 된다.
+   */
+  const [suggestions, setSuggestions] = useState<Record<string, readonly string[]>>({});
   /** 지난 대화를 이미 불러온 방. 열 때마다 다시 부르지 않는다. */
   const loaded = useRef<Set<string>>(new Set());
   /** 열려 있는 방의 스트림. 방을 닫거나 새로 보내면 끊는다. */
@@ -100,6 +85,13 @@ export function useTaskThreads(initial: Threads = {}) {
           // 전까지 지난 대화를 영영 못 불러온다.
           loaded.current.add(taskId);
           if (past.length === 0) return;
+          // **마지막 답변에 딸린 제안을 되살린다.** 저장하기로 한 이유가 여기 있다 —
+          // 어제 받은 안내를 다시 열었을 때 이어서 물을 것도 함께 있어야 한다.
+          const lastReply = [...past].reverse().find((t) => t.role === "assistant");
+          if (lastReply?.suggestions?.length) {
+            const restored = lastReply.suggestions;
+            setSuggestions((prev) => (prev[taskId]?.length ? prev : { ...prev, [taskId]: restored }));
+          }
           setThreads((prev) => {
             // 그 사이에 말을 걸었으면 덮지 않는다.
             if ((prev[taskId] ?? []).length > 0) return prev;
@@ -109,6 +101,9 @@ export function useTaskThreads(initial: Threads = {}) {
                 id: `${taskId}-past-${i}`,
                 role: turn.role,
                 text: turn.content,
+                // 서버가 담아 보낸 시각을 그대로 쓴다. 지난 대화를 다시 열었을 때
+                // 언제 오간 말인지 보여야 한다 (2026-08-31 시안).
+                at: turn.at,
               })),
             };
           });
@@ -136,9 +131,18 @@ export function useTaskThreads(initial: Threads = {}) {
       const taskId = openTaskId;
       if (!taskId) return;
 
+      // **묻기 시작하면 앞의 제안부터 버린다.** 답을 기다리는 내내 지난 제안이
+      // 남아 있으면, 방금 누른 그 문장이 아직 칩으로 보인다.
+      setSuggestions((prev) => ({ ...prev, [taskId]: [] }));
+
       const room = threads[taskId] ?? [];
       const seq = room.length + 1;
-      append(taskId, { id: `${taskId}-${seq}`, role: "user", text });
+      append(taskId, {
+        id: `${taskId}-${seq}`,
+        role: "user",
+        text,
+        at: new Date().toISOString(),
+      });
 
       // 서버는 대화 히스토리를 요청에 함께 받는다. 안내 문구(사전 고지)는 대화가 아니라
       // 화면 장치이므로 빼고 보낸다.
@@ -150,6 +154,12 @@ export function useTaskThreads(initial: Threads = {}) {
         }));
 
       const replyId = `${taskId}-${seq + 1}`;
+      /**
+       * 답이 오기 시작한 때. **한 번 정하고 바꾸지 않는다.**
+       *
+       * 델타가 올 때마다 다시 재면 말풍선의 시각이 글자가 늘어나는 내내 흔들린다.
+       */
+      const replyAt = new Date().toISOString();
       let streamed = "";
       /** 카드가 한 장이라도 왔는지. 본문이 비어도 카드가 있으면 빈 응답이 아니다. */
       let gotCard = false;
@@ -191,6 +201,7 @@ export function useTaskThreads(initial: Threads = {}) {
                       id: replyId,
                       role: "assistant",
                       text: streamed,
+                      at: replyAt,
                       streaming: true,
                       // 어디서 온 답인지를 말풍선이 직접 드러낸다 (§6.4).
                       // 근거를 모르면 아무 말도 하지 않는다 — 없는 근거를 있다고 하지 않는다.
@@ -243,15 +254,58 @@ export function useTaskThreads(initial: Threads = {}) {
               // 고지가 통째로 사라지고 답변만 흘러나온 뒤 배지가 뒤따랐다 — 신호가
               // 정보 뒤로 간다. 이 문장은 대기 안내도 겸하므로 비면 대기 화면도 빈다.
               const notice = ev.notice?.trim() || SEARCH_NOTICE;
-              append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: notice });
+              append(taskId, { id: `${replyId}-notice`, role: "search-notice", text: notice, at: new Date().toISOString() });
             }
           },
+          // **카드는 답변에 붙는다. 말풍선을 따로 세우지 않는다.**
+          //
+          // 예전에는 카드마다 별도 말풍선을 만들었는데, 값이 KB에서 그대로 온
+          // 고정 서식이라 대화 가운데에 안내문이 끼어든 것처럼 읽혔다. 답변 아래에
+          // 붙여 두면 무엇에 대한 안내인지가 분명해진다.
           onCard: (card) => {
             gotCard = true;
-            append(taskId, cardToMessage(`${replyId}-card`, card));
+            setThreads((prev) => {
+              const current = prev[taskId] ?? [];
+              const attached = current.map((m) =>
+                m.id === replyId && m.role === "assistant"
+                  ? { ...m, cards: [...(m.cards ?? []), card] }
+                  : m,
+              );
+              // **본문 없이 카드만 오는 경우가 있다.** 모델이 항목은 맞혔는데
+              // 질문 유형을 다르게 판정하면 본문이 비어 온다. 그때는 붙일 말풍선이
+              // 없으므로 여기서 하나 세운다.
+              if (started) return { ...prev, [taskId]: attached };
+              started = true;
+              return {
+                ...prev,
+                [taskId]: [
+                  ...current,
+                  {
+                    id: replyId,
+                    role: "assistant",
+                    text: "",
+                    at: replyAt,
+                    cards: [card],
+                    ...(stage
+                      ? {
+                          evidence: {
+                            stage: stage === "web" ? ("web" as const) : ("rag" as const),
+                            org: sourceLabel(stage),
+                          },
+                        }
+                      : {}),
+                  },
+                ],
+              };
+            });
+          },
+          // **답변 본문이 다 흐른 뒤에 온다** (`done` 직전). 그 답을 보고 이어서
+          // 물을 것이 정해지므로 순서가 뒤집히면 제안이 앞 답변을 가리킨다.
+          onSuggestions: (questions) => {
+            setSuggestions((prev) => ({ ...prev, [taskId]: questions }));
           },
           onError: (message) => {
-            append(taskId, { id: `${replyId}-err`, role: "assistant", text: message });
+            append(taskId, { id: `${replyId}-err`, role: "assistant", text: message, at: new Date().toISOString() });
           },
           onDone: () => {
             // **답변도 카드도 없이 끝나는 응답이 있다.** 모델이 항목은 맞혔는데 질문 유형을
@@ -264,6 +318,7 @@ export function useTaskThreads(initial: Threads = {}) {
                 id: `${replyId}-empty`,
                 role: "assistant",
                 text: "지금은 답을 찾지 못했어요.\n사람에게 물어보시는 편이 빠를 수 있어요.",
+                at: new Date().toISOString(),
               });
             }
             setThreads((prev) => ({
@@ -283,7 +338,7 @@ export function useTaskThreads(initial: Threads = {}) {
           err instanceof ApiError
             ? err.message
             : "지금 답을 받지 못했어요. 잠시 뒤에 다시 물어봐 주세요.";
-        append(taskId, { id: `${replyId}-err`, role: "assistant", text: message });
+        append(taskId, { id: `${replyId}-err`, role: "assistant", text: message, at: new Date().toISOString() });
         setBusyId(null);
       });
     },
@@ -303,6 +358,9 @@ export function useTaskThreads(initial: Threads = {}) {
     abort.current?.abort();
     setBusyId(null);
     setThreads((prev) => ({ ...prev, [taskId]: [] }));
+    // **제안도 함께 비운다.** 대화를 지웠는데 칩만 남으면, 지워졌다고 믿은 것의
+    // 자취가 화면에 그대로 있는 셈이다.
+    setSuggestions((prev) => ({ ...prev, [taskId]: [] }));
     void (async () => {
       const token = await loadToken();
       if (!token) return;
@@ -324,6 +382,8 @@ export function useTaskThreads(initial: Threads = {}) {
     threads,
     openTaskId,
     messages: openTaskId ? (threads[openTaskId] ?? []) : [],
+    /** 열린 방에서 AI가 제안한 다음 질문. 못 만들었으면 비어 있다. */
+    suggestions: openTaskId ? (suggestions[openTaskId] ?? []) : [],
     busy: busyId !== null && busyId === openTaskId,
     open,
     close,

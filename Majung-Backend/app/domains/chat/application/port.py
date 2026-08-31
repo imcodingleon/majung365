@@ -22,7 +22,15 @@ class GuidanceChunk:
 
 
 class ChatLlm(Protocol):
-    async def triage(self, message: str, history: list[Turn]) -> TriageResult:
+    """모델로 나가는 문. **`name`은 보낼 값이 아니라 지울 값이다.**
+
+    구현이 그 이름을 `mask_text(name=...)`에 넘겨 대화에서 지운다. 로그인하지
+    않은 사용자는 `None`이며, 그때는 정규식이 문맥으로 잡는 이름만 가려진다.
+    """
+
+    async def triage(
+        self, message: str, history: list[Turn], *, name: str | None = None
+    ) -> TriageResult:
         """상황을 6영역으로 분류하고 급한 순위를 정한다(구조화 출력)."""
         ...
 
@@ -33,11 +41,27 @@ class ChatLlm(Protocol):
         history: list[Turn],
         context: str,
         allow_web_search: bool,
+        name: str | None = None,
     ) -> AsyncIterator[GuidanceChunk]:
         """쉬운 말 안내를 스트리밍으로 생성한다.
 
         **텍스트만이 아니라 '지금 검색을 시작했다'도 흘린다.** §6.4는 검색 전에
         먼저 알리라고 정하는데, 검색 여부는 모델이 답을 쓰는 도중에 정해진다.
         코드가 미리 판정하면 문서에 답이 있는지 모르는 채로 정하게 된다.
+        """
+        ...
+
+    async def suggest_questions(
+        self, history: list[Turn], *, context: str = "", name: str | None = None
+    ) -> tuple[str, ...]:
+        """이어서 물어볼 만한 질문을 뽑는다(구조화 출력) — §6.1.
+
+        **`history`의 마지막이 방금 한 답변이다.** 그 답을 봐야 이어서 물을 것이
+        정해지므로 `message`를 따로 받지 않는다. 답변 본문도 마스킹 대상이라
+        구현이 `history` 전체를 마스킹 경로로 지나 보낸다.
+
+        **거르는 일은 여기서 하지 않는다.** 개수와 모양 판정은
+        `domain/suggestions.normalize_suggestions`가 맡는다 — 구현이 셋이라
+        어댑터에 두면 세 벌이 되고, 유스케이스 테스트가 그 규칙을 못 잡는다.
         """
         ...

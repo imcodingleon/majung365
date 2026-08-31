@@ -49,7 +49,7 @@ export function NoteBox({ tone = "info", children, title, icon, className }: Pro
           줄이 넘어갈 때 두 번째 줄이 그림 아래로 들어가 어긋난다 */}
       {title ? (
         <View className="mb-2 flex-row items-center gap-2">
-          {icon ? <Icon name={icon} size={20} color={c.ink} /> : null}
+          {icon ? <Icon name={icon} size={24} color={c.ink} /> : null}
           <Text className="flex-1 text-body font-extrabold" style={{ color: c.ink }}>
             {title}
           </Text>
@@ -58,7 +58,7 @@ export function NoteBox({ tone = "info", children, title, icon, className }: Pro
       {plain ? (
         !title && icon ? (
           <View className="flex-row items-start gap-2">
-            <Icon name={icon} size={20} color={c.ink} />
+            <Icon name={icon} size={24} color={c.ink} />
             <Text className="flex-1 text-body" style={{ color: c.ink }}>
               {children}
             </Text>

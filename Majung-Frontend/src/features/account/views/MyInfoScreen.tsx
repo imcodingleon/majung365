@@ -7,19 +7,17 @@ import { Pressable, ScrollView, Text, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { ChoiceButton } from "@/shared/components/ChoiceButton";
+import { FramedModal } from "@/shared/components/FramedModal";
+import { Icon } from "@/shared/components/Icon";
+import { InfoPanel } from "@/shared/components/InfoPanel";
 import { ScreenHeader } from "@/shared/components/ScreenHeader";
 import { NoteBox } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
 import { CRIME_CATEGORIES, type CrimeCategoryId } from "@/shared/types/crime";
 
-import {
-  eraseConfirmLabel,
-  eraseDetail,
-  eraseTitle,
-  formatDate,
-  type EraseScope,
-  type StoredProfile,
-} from "../domain/account";
+import { formatDate, type EraseScope, type StoredProfile } from "../domain/account";
+
+import { EraseCard } from "./EraseCard";
 
 type Props = {
   profile: StoredProfile;
@@ -31,6 +29,19 @@ type Props = {
   /** 상황 알아보기를 다시 하러 간다 (§3.7). 없으면 그 자리를 만들지 않는다. */
   onRetake?: () => void;
 };
+
+/** 구역 제목. 위로 넉넉히 띄워 앞 구역과 갈린다 (2026-08-31 시안). */
+function SectionHeading({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      className="mb-3 mt-8 font-extrabold text-ink-strong"
+      style={{ fontSize: 17, lineHeight: 27 }}
+      accessibilityRole="header"
+    >
+      {children}
+    </Text>
+  );
+}
 
 function Row({ label, value }: { label: string; value: string }) {
   return (
@@ -73,15 +84,16 @@ export function MyInfoScreen({
           <Row label="이름" value={profile.name} />
           <Row label="생일" value={formatDate(profile.birth)} />
           <Row label="출소한 날" value={formatDate(profile.releaseDate)} />
-          {/* 라벨이 길어 다른 행처럼 옆에 붙이지 않는다. 위아래로 놓아 두 줄로 접히지 않게 한다. */}
-          <View className="py-4">
-            <Text className="text-body font-bold text-ink-header">어떤 일로 계셨는지</Text>
-            <Text className="mt-2 text-body-lg text-ink-strong">{crimeLabel}</Text>
+          {/* **바꾸기를 오른쪽 끝에 붙인다** (2026-08-31 시안). 아래에 두면 이 행만
+              세 줄로 길어져, 위의 세 줄과 같은 표로 읽히지 않는다 */}
+          <View className="flex-row items-center gap-3 py-4">
+            <Text className="w-24 text-body font-bold text-ink-header">어떤 일로 계셨는지</Text>
+            <Text className="flex-1 text-body-lg text-ink-strong">{crimeLabel}</Text>
             <Pressable
               onPress={() => setEditingCrime((v) => !v)}
               accessibilityRole="button"
               accessibilityLabel="어떤 일로 계셨는지 바꾸기"
-              className="mt-3 self-start rounded-lg border border-line px-3 py-2 active:opacity-70"
+              className="shrink-0 rounded-lg border border-line px-3 py-1 active:opacity-70"
             >
               <Text className="text-caption font-bold text-ink-sub">
                 {editingCrime ? "그만두기" : "바꾸기"}
@@ -161,45 +173,59 @@ export function MyInfoScreen({
           </View>
         ) : null}
 
-        <NoteBox tone="info" className="mt-6">마지막으로 앱을 쓰신 날부터 1년이 지나면 저절로 지워져요.</NoteBox>
+        <View className="mt-6">
+          <InfoPanel title="정보 보관 안내" icon="lock">
+            {"마지막으로 이용한 날로부터 1년이 지나면 저장된 정보가\n자동으로 삭제됩니다."}
+          </InfoPanel>
+        </View>
 
         {/* **지우기 앞에 둔다.** 상황이 달라졌을 때 사람들이 먼저 찾는 것이 이 자리인데,
             없으면 계정을 지우고 새로 가입하는 쪽으로 간다 — 되돌릴 수 없는 길이다 */}
         {onRetake ? (
           <>
-            <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">
-              상황이 변하셨나요?
-            </Text>
+            <SectionHeading>정보 업데이트</SectionHeading>
             <Pressable
               onPress={onRetake}
               accessibilityRole="button"
               accessibilityLabel="설문조사 다시 진행하기"
-              className="mb-3 rounded-xl border-[1.5px] border-brand-soft bg-white px-4 py-4 active:opacity-80"
+              className="mb-3 rounded-xl border-[1.5px] bg-white p-4 active:opacity-80"
+              style={{ borderColor: COLORS.brandSoft }}
             >
-              <Text className="text-body-lg font-bold" style={{ color: COLORS.brand }}>
-                설문조사 다시 진행하기
-              </Text>
+              <View className="flex-row items-center">
+                <Text
+                  className="flex-1 font-bold"
+                  style={{ fontSize: 17, lineHeight: 27, color: COLORS.brand }}
+                >
+                  설문조사 다시 진행하기
+                </Text>
+                {/* 눌러서 다른 화면으로 간다는 표시. 글만 있으면 접히는 자리로 읽힌다 */}
+                <Icon name="next" size={24} color={COLORS.brand} />
+              </View>
               <Text className="mt-1 text-caption text-ink-muted">
-                설문조사를 다시 진행합니다. 끝낸 표시는 지워집니다.
+                현재 상황에 맞게 설문조사를 다시 진행할 수 있어요.{"\n"}
+                다시 진행하면 기존 완료 기록은 초기화됩니다.
               </Text>
             </Pressable>
           </>
         ) : null}
 
-        <Text className="mb-3 mt-8 text-body-lg font-extrabold text-ink-strong">정보 지우기</Text>
+        <SectionHeading>정보 삭제</SectionHeading>
 
         {profile.hasCrime ? (
           <Pressable
             onPress={() => setConfirming("crime")}
             accessibilityRole="button"
-            accessibilityLabel="어떤 일로 계셨는지 지우기"
-            className="mb-3 rounded-xl border-[1.5px] border-line bg-white px-4 py-4 active:opacity-80"
+            accessibilityLabel="어떤 일로 계셨는지에 대한 정보 삭제"
+            className="mb-3 rounded-xl border-[1.5px] border-line bg-white p-4 active:opacity-80"
           >
-            <Text className="text-body-lg font-bold text-ink-strong">
-              어떤 일로 계셨는지 지우기
+            <Text
+              className="font-bold text-ink-strong"
+              style={{ fontSize: 17, lineHeight: 27 }}
+            >
+              어떤 일로 계셨는지에 대한 정보 삭제
             </Text>
             <Text className="mt-1 text-caption text-ink-muted">
-              다른 정보는 그대로 있어요.
+              해당 정보만 삭제되며, 다른 정보는 그대로 유지됩니다.
             </Text>
           </Pressable>
         ) : null}
@@ -207,54 +233,47 @@ export function MyInfoScreen({
         <Pressable
           onPress={() => setConfirming("account")}
           accessibilityRole="button"
-          accessibilityLabel="모든 정보 지우기"
-          className="rounded-xl border-[1.5px] border-alert-line bg-alert-soft px-4 py-4 active:opacity-80"
+          accessibilityLabel="모든 정보 삭제"
+          className="rounded-xl border-[1.5px] border-alert-line bg-alert-soft p-4 active:opacity-80"
         >
-          <Text className="text-body-lg font-bold text-alert">모든 정보 지우기</Text>
+          <Text className="font-bold text-alert" style={{ fontSize: 17, lineHeight: 27 }}>
+            모든 정보 삭제
+          </Text>
           <Text className="mt-1 text-caption text-alert-ink">
-            지우면 되돌릴 수 없어요.
+            저장된 모든 정보와 대화 기록, 할 일 목록이 삭제됩니다.{"\n"}
+            삭제한 정보는 복구할 수 없습니다.
           </Text>
         </Pressable>
 
-        {confirming ? (
-          <View className="mt-4 rounded-2xl border-[1.5px] border-alert-line bg-white p-5">
-            <Text className="text-body-lg font-extrabold text-alert-ink">
-              {eraseTitle(confirming)}
-            </Text>
-            <View className="mt-3">
-              {eraseDetail(confirming).map((line) => (
-                <Text key={line} className="mb-1 text-body text-ink-body">
-                  · {line}
-                </Text>
-              ))}
-            </View>
-            <View className="mt-4 flex-row gap-2">
-              <Pressable
-                onPress={() => {
+      </ScrollView>
+
+      {/* **화면을 덮어서 묻는다** (2026-08-31). 전에는 목록 아래에 카드를 펼쳤는데,
+          누른 자리가 화면 끝이라 카드가 접힌 곳 밖에 서서 아무 일도 안 난 것처럼
+          보였다. 되돌릴 수 없는 일을 묻는 자리가 눈에 안 들어오면 안 된다.
+          **카드 양식은 그대로 쓴다** — 생일 확인 화면과 같은 카드라 한쪽만 달라지면
+          같은 일을 두 모양으로 묻게 된다 */}
+      {confirming ? (
+        <FramedModal visible animationType="fade" transparent onRequestClose={() => setConfirming(null)}>
+          <View className="flex-1 items-center justify-center bg-black/50 px-6">
+            {/* 카드가 화면보다 길어지면 안에서 구른다. 지우는 항목이 늘면 잘린다 */}
+            <ScrollView
+              className="w-full grow-0"
+              contentContainerClassName="py-2"
+              showsVerticalScrollIndicator={false}
+            >
+              <EraseCard
+                scope={confirming}
+                onErase={() => {
                   const scope = confirming;
                   setConfirming(null);
                   onErase(scope);
                 }}
-                accessibilityRole="button"
-                accessibilityLabel={eraseConfirmLabel(confirming)}
-                className="rounded-xl bg-alert px-4 py-3 active:opacity-90"
-              >
-                <Text className="text-body font-extrabold text-white">
-                  {eraseConfirmLabel(confirming)}
-                </Text>
-              </Pressable>
-              <Pressable
-                onPress={() => setConfirming(null)}
-                accessibilityRole="button"
-                accessibilityLabel="그만두기"
-                className="rounded-xl border border-line bg-white px-4 py-3 active:opacity-90"
-              >
-                <Text className="text-body font-semibold text-ink-sub">그만두기</Text>
-              </Pressable>
-            </View>
+                onCancel={() => setConfirming(null)}
+              />
+            </ScrollView>
           </View>
-        ) : null}
-      </ScrollView>
+        </FramedModal>
+      ) : null}
     </SafeAreaView>
   );
 }

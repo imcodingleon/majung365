@@ -262,3 +262,32 @@ async def test_unknown_route_id_is_ignored() -> None:
     ]
     routes = next(e for e in events if isinstance(e, TriageEvent)).routes
     assert routes[0].key == "R9"
+
+
+# ── 마스킹에 쓸 이름이 실제로 흘러가는가 ──
+#
+# **`assert_masked`는 이름을 잡지 못한다**(masking.py의 docstring). 이 배선이
+# 끊기면 이름에 대한 방어가 아예 없어지는데, 끊긴 것을 알려 줄 안전망이 없다.
+# 그래서 흘러가는지를 여기서 센다.
+
+
+async def test_the_name_reaches_both_model_calls() -> None:
+    llm = FakeLlm(TriageResult(question_type=QuestionType.DAILY, priorities=()))
+    command = ChatCommand(message="안녕하세요", user_name="김판수")
+
+    async for _ in ChatUseCase(llm, _repo()).run(command):
+        pass
+
+    assert llm.last_triage_name == "김판수"
+    assert llm.last_stream_name == "김판수"
+
+
+async def test_signed_out_chat_still_answers() -> None:
+    """로그인하지 않고도 챗을 열 수 있다. 이름 없이 흐르는 것이 정상 경로다."""
+    llm = FakeLlm(TriageResult(question_type=QuestionType.DAILY, priorities=()))
+
+    events = [ev async for ev in ChatUseCase(llm, _repo()).run(ChatCommand(message="안녕하세요"))]
+
+    assert llm.last_triage_name is None
+    assert llm.last_stream_name is None
+    assert any(isinstance(ev, DoneEvent) for ev in events)

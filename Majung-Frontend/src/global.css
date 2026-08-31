@@ -3,6 +3,64 @@
 @tailwind utilities;
 
 /*
+ * Pretendard 잇기 (2026-08-31 · 디자이너 시안 반영).
+ *
+ * **왜 클래스를 고치지 않고 클래스가 무엇으로 풀리는지를 바꾸는가.**
+ * 굵기 클래스는 코드에 138군데 박혀 있다. 그 자리를 전부 새 클래스로 갈아 끼우는 대신,
+ * 여기서 `font-bold`가 무엇을 가리키는지만 다시 정의한다. 한 군데도 안 고쳐도 된다.
+ *
+ * **왜 굵기마다 파일 이름이 다른가.** 안드로이드는 `fontFamily` 하나에 `fontWeight`를
+ * 얹어 굵기를 골라 주지 않는다. 한 이름만 등록하면 나머지 굵기는 기기가 억지로 만들어
+ * 내고, 그것은 진짜 굵기와 다르게 보인다. **웹에서는 잘 보이고 안드로이드에서만
+ * 어긋나는 종류의 문제라 브라우저 확인으로는 잡히지 않는다.**
+ *
+ * **왜 `font-weight`를 되돌리는가.** 이미 굵은 파일을 지정해 놓고 굵기 값까지 얹으면
+ * 웹 브라우저가 그 위에 굵기를 한 번 더 씌운다. 굵기가 두 겹이 된다.
+ *
+ * **크기 클래스에도 글꼴을 건다.** 굵기 클래스가 없는 `Text`가 몇 개 있는데,
+ * RN은 부모에서 자식 `Text`로 글꼴을 물려주지 않아 그 자리가 시스템 글꼴로 남는다.
+ * 크기 클래스는 거의 모든 `Text`에 붙어 있어서 그물이 된다.
+ * **이 규칙은 굵기 규칙보다 앞에 있어야 한다** — 둘 다 걸린 자리에서는 뒤가 이긴다.
+ */
+@layer utilities {
+  .text-display,
+  .text-title,
+  .text-heading,
+  .text-body-lg,
+  .text-body,
+  .text-caption,
+  .text-xs,
+  .text-sm,
+  .text-base,
+  .text-lg,
+  .text-xl,
+  .text-2xl {
+    font-family: Pretendard-Regular;
+  }
+
+  .font-normal {
+    font-family: Pretendard-Regular;
+    font-weight: normal;
+  }
+  .font-medium {
+    font-family: Pretendard-Medium;
+    font-weight: normal;
+  }
+  .font-semibold {
+    font-family: Pretendard-SemiBold;
+    font-weight: normal;
+  }
+  .font-bold {
+    font-family: Pretendard-Bold;
+    font-weight: normal;
+  }
+  .font-extrabold {
+    font-family: Pretendard-ExtraBold;
+    font-weight: normal;
+  }
+}
+
+/*
  * RN-web 보정: 가로 ScrollView(예: 챗봇 프리셋 칩)의 콘텐츠 폭이 #root를 뷰포트 너머로
  * 늘려 페이지가 가로로 밀리는 문제 방지. 루트를 뷰포트 폭으로 고정하면 stretch 캐스케이드로
  * 하위 컨테이너가 전부 뷰포트 폭에 갇힌다(내부 ScrollView는 자체 overflow로 정상 스크롤).

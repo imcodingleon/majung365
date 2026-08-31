@@ -8,6 +8,7 @@
 원문이고, LLM으로 나갈 때는 마스킹을 그대로 거친다.
 """
 
+import json
 import logging
 from dataclasses import dataclass
 from datetime import datetime
@@ -30,6 +31,9 @@ class StoredMessage:
     role: str  # user | assistant
     content: str
     at: datetime
+    # 그 답변에 딸렸던 다음 질문 제안 (§6.1). 답변 턴에만 있고, 못 만든 답변에는
+    # 없다. **비는 것이 정상 경로다.**
+    suggestions: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -47,28 +51,53 @@ class SupabaseMessageRepository:
         self._db = client
         self._cipher = cipher
 
-    def append(self, user_id: UUID, route_id: str, role: str, content: str) -> None:
+    def append(
+        self,
+        user_id: UUID,
+        route_id: str,
+        role: str,
+        content: str,
+        suggestions: tuple[str, ...] = (),
+    ) -> None:
         """한 줄 저장. 실패해도 예외를 밖으로 던지지 않는다 —
-        **저장이 안 됐다고 대화가 멈추면 안 된다.** 지금 받는 답이 더 중요하다."""
+        **저장이 안 됐다고 대화가 멈추면 안 된다.** 지금 받는 답이 더 중요하다.
+
+        **제안이 없으면 그 칸을 아예 넣지 않는다.** 마이그레이션(0011)이 아직
+        안 올라간 서버에서도 평소 경로가 새 컬럼을 건드리지 않게 하려는 것이다.
+        컬럼이 없는데 넣으면 insert가 통째로 실패하고, 이 함수가 예외를 삼키므로
+        **오류도 없이 그 답변이 사라진다** — 다시 열었을 때 어제 받은 안내가
+        없어지는 것이 §6.3이 막으려던 바로 그것이다.
+        """
+        row: dict[str, Any] = {
+            "user_id": str(user_id),
+            "route_id": route_id,
+            "role": role,
+            "content_enc": self._cipher.encrypt(content),
+        }
+        if suggestions:
+            row["suggestions_enc"] = self._cipher.encrypt(
+                json.dumps(list(suggestions), ensure_ascii=False)
+            )
         try:
-            self._db.table("chat_message").insert(
-                {
-                    "user_id": str(user_id),
-                    "route_id": route_id,
-                    "role": role,
-                    "content_enc": self._cipher.encrypt(content),
-                }
-            ).execute()
+            self._db.table("chat_message").insert(row).execute()
         except Exception:
             # 사용자 입력 원문은 로그에 남기지 않는다.
-            logger.warning("대화 저장 실패 — 대화는 계속한다")
+            if "suggestions_enc" not in row:
+                logger.warning("대화 저장 실패 — 대화는 계속한다")
+                return
+            # **제안을 빼고 한 번만 다시 시도한다.** 컬럼이 없는 서버라면 이쪽이
+            # 통과한다. 제안은 잃어도 답변 본문은 남는다.
+            row.pop("suggestions_enc")
+            try:
+                self._db.table("chat_message").insert(row).execute()
+                logger.warning("추천 질문 칸 없이 저장했다 — 마이그레이션 0011을 확인하라")
+            except Exception:
+                logger.warning("대화 저장 실패 — 대화는 계속한다")
 
-    def history(self, user_id: UUID, route_id: str) -> list[StoredMessage]:
-        """그 방의 지난 대화. 복호화에 실패한 줄은 건너뛴다 —
-        한 줄이 깨졌다고 방 전체가 안 열리면 안 된다."""
+    def _rows_of(self, user_id: UUID, route_id: str, columns: str) -> list[dict[str, Any]]:
         result = (
             self._db.table("chat_message")
-            .select("role, content_enc, created_at")
+            .select(columns)
             .eq("user_id", str(user_id))
             .eq("route_id", route_id)
             # **최근 것부터 가져와 다시 뒤집는다.** 오름차순 + limit이면 가장
@@ -78,9 +107,24 @@ class SupabaseMessageRepository:
             .limit(_MAX_HISTORY)
             .execute()
         )
-        rows: list[dict[str, Any]] = [
-            r for r in (getattr(result, "data", None) or []) if isinstance(r, dict)
-        ]
+        return [r for r in (getattr(result, "data", None) or []) if isinstance(r, dict)]
+
+    def history(self, user_id: UUID, route_id: str) -> list[StoredMessage]:
+        """그 방의 지난 대화. 복호화에 실패한 줄은 건너뛴다 —
+        한 줄이 깨졌다고 방 전체가 안 열리면 안 된다.
+
+        **추천 질문 칸이 없는 서버에서도 열린다.** 마이그레이션(0011)이 아직 안
+        올라갔으면 그 칸을 빼고 한 번 더 조회한다. 이 폴백이 없으면 조회가 예외로
+        올라가 500이 되고, 화면은 그것을 조용히 삼켜(`useTaskThreads.open`)
+        **그 방의 지난 대화가 통째로 안 열린다** — 오류 표시조차 없다.
+        """
+        try:
+            rows = self._rows_of(
+                user_id, route_id, "role, content_enc, suggestions_enc, created_at"
+            )
+        except Exception:
+            logger.warning("추천 질문 칸 없이 조회한다 — 마이그레이션 0011을 확인하라")
+            rows = self._rows_of(user_id, route_id, "role, content_enc, created_at")
 
         messages: list[StoredMessage] = []
         for row in rows:
@@ -94,11 +138,30 @@ class SupabaseMessageRepository:
                     role=str(row["role"]),
                     content=content,
                     at=datetime.fromisoformat(str(row["created_at"]).replace("Z", "+00:00")),
+                    suggestions=self._suggestions_of(row.get("suggestions_enc")),
                 )
             )
         # 최근 것부터 받았으니 화면이 읽는 순서(시간순)로 되돌린다.
         messages.reverse()
         return messages
+
+    def _suggestions_of(self, raw: object) -> tuple[str, ...]:
+        """그 답변에 딸렸던 다음 질문. **못 읽으면 없는 것으로 둔다.**
+
+        한 칸이 깨졌다고 답변까지 사라지면 안 된다 — 본문이 여전히 쓸모 있고,
+        제안은 없어도 대화를 이어갈 수 있다. `rooms()`가 미리보기에 하는 처리와
+        같은 결이다.
+        """
+        if not raw:
+            return ()
+        try:
+            parsed = json.loads(self._cipher.decrypt(str(raw)))
+        except (CryptoError, ValueError):
+            logger.warning("추천 질문을 읽지 못했다 — 답변만 낸다")
+            return ()
+        if not isinstance(parsed, list):
+            return ()
+        return tuple(str(q) for q in parsed)
 
     def rooms(self, user_id: UUID) -> list[RoomSummary]:
         """대화가 있는 방들과 마지막으로 오간 말. 상담 탭의 목록이 이 값을 쓴다.

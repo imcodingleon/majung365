@@ -29,6 +29,54 @@ def test_centers_category_filter() -> None:
     assert all(c["category"] == "법무보호공단" for c in r.json())
 
 
+def test_centers_dong_brings_that_office() -> None:
+    """**동까지 주면 그 이름의 주민센터가 들어온다** (2026-08-31).
+
+    안양 호계3동에서 실제로 빠졌다. 좌표만으로 세우면 호계3동 센터가 자기 동
+    한가운데에서 1.22km로 밀려 갈래별 세 곳에서 잘렸다 — 데이터의 좌표가 호계1동과
+    같은 값이기 때문이다. 관할이 아닌 곳을 찾아가면 헛걸음이라 이름이 거리보다 앞선다.
+    """
+    params = {
+        "sido": "경기",
+        "district": "안양시",
+        "dong": "호계3동",
+        # 호계3동 경계 한가운데. 화면이 동을 고르면 이 좌표를 보낸다.
+        "lat": 37.36745,
+        "lng": 126.95825,
+    }
+    r = client.get("/api/centers", params=params)
+    assert r.status_code == 200
+    offices = [c for c in r.json() if c["category"] == "주민센터"]
+    assert any("호계3동" in c["name"] for c in offices), [c["name"] for c in offices]
+
+
+def test_centers_unknown_dong_is_harmless() -> None:
+    """**이름이 안 맞아도 화면이 비면 안 된다.**
+
+    경계 데이터와 주민센터 데이터의 시점이 달라 4%가 이 길로 온다. 그때는 아무것도
+    걸리지 않고 예전처럼 거리로 선다.
+    """
+    params = {"sido": "경기", "district": "안양시", "dong": "없는동"}
+    r = client.get("/api/centers", params=params)
+    assert r.status_code == 200
+    offices = [c for c in r.json() if c["category"] == "주민센터"]
+    assert offices, "이름이 안 맞았다고 주민센터가 통째로 사라졌다"
+
+
+def test_centers_sido_only_stays_in_that_sido() -> None:
+    """**시도만 골라도 그 시도의 기관이 나온다** (2026-08-31).
+
+    전에는 시군구까지 있어야 지도 자료로 들어갔고, 시도만 오면 수도권 다섯 곳이
+    담긴 `centers.json`으로 빠졌다. 지역 선택 화면이 시도만 고르고 넘어가는 길을
+    열어 두었으므로, 부산 사용자가 그 길로 오면 서울 지부를 받았다.
+    """
+    r = client.get("/api/centers", params={"sido": "부산광역시"})
+    assert r.status_code == 200
+    offices = [c for c in r.json() if c["category"] == "주민센터"]
+    assert offices, "그 시도의 주민센터가 하나도 안 나왔다"
+    assert all("부산" in c["address"] for c in offices)
+
+
 def test_gate_endpoint_exists() -> None:
     # 게이트 비활성(테스트 env엔 해시 없음)이면 어떤 코드든 토큰 발급
     r = client.post("/api/gate", json={"code": "anything"})

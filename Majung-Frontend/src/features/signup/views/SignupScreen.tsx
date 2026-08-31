@@ -73,9 +73,9 @@ const RELEASE_SPAN_YEARS = 5;
 // 오히려 골라야 하나 망설이게 됐다. 안 고르고 넘어가는 길은 선택지에 이미 있다
 // ("말하고 싶지 않아요") — 거기서 말하는 편이 낫다.
 function FieldLabel({ children }: { children: React.ReactNode }) {
-  return (
-    <Text className="mb-2 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>
-  );
+  // 굵기를 한 단계 내렸다 (2026-08-31 시안 · SemiBold). 라벨이 제목만큼 굵으면
+  // 화면을 훑을 때 무엇이 제목이고 무엇이 항목 이름인지 층이 갈리지 않는다.
+  return <Text className="mb-2 mt-6 text-body-lg font-semibold text-ink-strong">{children}</Text>;
 }
 
 export function SignupScreen({
@@ -154,17 +154,22 @@ export function SignupScreen({
       />
 
       <ScrollView className="flex-1" contentContainerClassName="px-5 pb-16 pt-6">
-        <Text className="text-display font-extrabold text-ink-strong">
-          몇 가지만{"\n"}알려주시겠어요?
+        <Text
+          className="text-display font-bold text-ink-strong"
+          style={{ letterSpacing: 0.2 }}
+        >
+          정확한 도움을 위해{"\n"}기본 정보를 입력해주세요.
         </Text>
 
         {/* ① 개인정보 */}
         <FieldLabel>이름</FieldLabel>
+        {/* 채워진 칸은 테두리가 진해진다 (시안). 어디까지 적었는지 색으로 먼저 읽힌다 */}
         <TextInput
-          className="rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-body-lg text-ink-strong"
+          className="rounded-xl border-[1.5px] bg-white px-4 py-4 text-title font-medium text-ink-strong"
+          style={{ borderColor: form.name ? COLORS.brand : COLORS.line }}
           value={form.name}
           onChangeText={form.setName}
-          placeholder="이름을 적어 주세요"
+          placeholder="이름을 입력해 주세요"
           placeholderTextColor={COLORS.inkMuted}
           accessibilityLabel="이름"
         />
@@ -191,7 +196,7 @@ export function SignupScreen({
 
         {/* "말하고 싶지 않아요"도 다른 선택지와 같은 간격으로 놓는다. 구분선으로 떼어 놓으면
             고르지 않는 편이 낫다는 뜻으로 읽힌다. 말하지 않는 것도 똑같은 선택이다 (§3.3). */}
-        <FieldLabel>어떤 일로 계셨나요</FieldLabel>
+        <FieldLabel>수용 사유를 선택해 주세요</FieldLabel>
         <View>
           {CRIME_CATEGORIES.map((c) => (
             <ChoiceButton
@@ -218,8 +223,8 @@ export function SignupScreen({
         />
 
         {!intakeDone ? (
-          <Text className="mt-4 text-center text-caption text-ink-muted">
-            6개 분야를 모두 마치면 시작할 수 있어요.
+          <Text className="mt-4 text-center text-body font-medium text-ink-muted">
+            6개 탭 전체 항목 확인 후 시작할 수 있습니다.
           </Text>
         ) : null}
 
@@ -242,6 +247,7 @@ export function SignupScreen({
             })
           }
           disabled={!canSubmit || submitting}
+          size="lg"
           className="mt-4"
         />
       </ScrollView>

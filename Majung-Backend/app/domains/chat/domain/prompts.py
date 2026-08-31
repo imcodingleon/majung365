@@ -29,6 +29,14 @@ _BASE_SYSTEM = """당신은 '마중365'의 대화 도우미입니다. 막 출소
 - 절대 판단하거나 훈계하지 않습니다. 죄나 과거를 캐묻지 않습니다.
 - 재촉하지 않고, 안심시키는 말투를 씁니다.
 - 답변 끝에는 '다음에 할 수 있는 행동' 하나를 알려줍니다.
+- **머리말로 항목을 나열하지 않습니다.** "어디서:", "준비할 서류:", "다음 단계:" 같은
+  라벨을 붙이지 마세요. 아래 자료가 그런 모양으로 정리되어 있어도 그 틀을 그대로
+  옮기지 말고, 그분에게 말하듯 문장으로 이어서 안내합니다. 같은 답이 매번 같은
+  서식으로 나오면 사람이 아니라 서식을 읽는 기분이 듭니다.
+- **그분이 물은 것에 먼저 답합니다.** 묻지 않은 것을 미리 늘어놓지 않습니다.
+  아래 자료에 담긴 내용이라도 이번 질문과 상관없으면 꺼내지 않습니다.
+- **이미 알고 계신 것을 되풀이하지 않습니다.** 앞선 대화에서 이미 말씀드린 것은
+  짧게 짚고 넘어가고, 그다음을 이야기합니다.
 - **이모지를 쓰지 않습니다.** 1️⃣ 👉 ✅ 같은 것을 넣지 마세요. 기기마다 다르게 그려져
   뜻이 흔들리고, 화면이 이미 SVG 아이콘으로 통일되어 있어 섞이면 어긋나 보입니다.
   순서를 매길 때는 "첫째", "1."처럼 글자로 씁니다.
@@ -91,23 +99,51 @@ def build_guidance_context(
     injected_cards: list[str],
     stage: EvidenceStage = EvidenceStage.CONFIRMED,
     passages: list[str] | None = None,
+    pinned: RouteId | None = None,
+    other_passages: list[str] | None = None,
+    user_context: str = "",
 ) -> str:
-    """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약)."""
+    """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약).
+
+    **탭에서 연 대화는 주제가 이미 정해져 있다.** 예전에는 triage가 고른 항목을
+    `[지금 급한 일]` 한 줄에 전부 나열했는데, 그러면 카드를 그 탭 것으로 막아도
+    본문이 다른 항목으로 끌려갔다 — 수용·출소증명서 대화에 주거비 안내가 끼어든
+    것이 그 경로다. 지금 보고 있는 항목과 곁가지로 나온 항목을 갈라서 적는다.
+    """
     lines: list[str] = []
-    if triage.priorities:
+    if pinned is not None:
+        lines.append(f"[지금 보고 있는 할 일] {label_for(pinned)}")
+        others = [p.route for p in triage.priorities if p.route != pinned]
+        if others:
+            # **곁가지를 막지는 않는다.** "잘 곳도 없어요"를 꺼낸 사람을 돌려보내지
+            # 않되, 그 항목의 자세한 안내는 그쪽 화면이 맡는다(§5.1 서류철 인덱스 탭).
+            lines.append(
+                f"[함께 꺼내신 이야기] {', '.join(label_for(r) for r in others)} — "
+                "짧게만 답하고, 자세한 것은 그 할 일 화면에서 볼 수 있다고 알려 주세요. "
+                "이 대화의 주제는 위의 '지금 보고 있는 할 일'입니다"
+            )
+    elif triage.priorities:
         prio = ", ".join(label_for(p.route) for p in triage.priorities)
         lines.append(f"[지금 급한 일] {prio}")
+    if user_context:
+        # 진단 판정. **판정만 오고 답변 원문은 오지 않는다**(user_context.py).
+        lines.append(user_context)
     if passages:
         # 근거 문서 본문. 카드가 제도의 요약이라면 이쪽은 원문이라 구체적인 질문에 답한다.
         lines.append("[수집한 공식 자료 — 이 내용을 근거로 답하고, 어느 기관 자료인지 밝히세요]")
         lines.extend(passages)
+    if other_passages:
+        # 그 항목에 근거가 없어 넓혀서 찾은 것. **어디서 온 자료인지 갈라서 준다** —
+        # 섞어 놓으면 곁가지 자료가 본 주제의 근거인 것처럼 읽힌다.
+        lines.append("[다른 할 일에 관한 자료 — 물어보신 만큼만 짧게 쓰세요]")
+        lines.extend(other_passages)
     if injected_cards:
         lines.append(
             "[확인된 정보 — 먼저 이 사실을 근거로 쉬운 말로 안내하세요. "
             "여기에 답이 없는 것을 물었다면 web_search로 찾아서 답하세요]"
         )
         lines.extend(injected_cards)
-    if not injected_cards and not passages:
+    if not injected_cards and not passages and not other_passages:
         lines.append(
             "[확인된 제도 정보 없음 — **먼저 web_search로 찾아보세요.** "
             "올해 기준액이나 최근 바뀐 제도처럼 우리 자료에 없는 것이 많습니다. "

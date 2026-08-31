@@ -3,7 +3,7 @@
 // **최소 노출 원칙이다.** 담당자가 방문 응대에 필요한 것만 담는다.
 // 죄목과 생일은 여기에 없다. 타입에 자리를 두지 않는 것이 필터로 거르는 것보다 확실하다.
 
-import type { SharedAnswerOut } from "@/shared/types/staffVisit";
+import type { SharedAnswerOut, SummaryStatus } from "@/shared/types/staffVisit";
 import type { VisitStatus } from "@/shared/types/visit";
 
 export type StaffRequest = {
@@ -39,6 +39,15 @@ export type StaffRequest = {
    * 동의하지 않았으면 비어 있으며, 그때는 구역 자체를 그리지 않는다.
    */
   sharedAnswers: readonly SharedAnswerOut[];
+  /**
+   * 담당자가 먼저 읽는 요약 (§7.4).
+   *
+   * **답변 원문을 대체하지 않는다.** 요약을 위에 놓고 원문은 접어 두되, 요약이
+   * 없거나 만들지 못했으면 원문을 그대로 펼쳐 보여 준다. 담당자가 볼 것이
+   * 사라지는 경우를 만들지 않는다.
+   */
+  summary: string;
+  summaryStatus: SummaryStatus;
 };
 
 /**
@@ -98,4 +107,55 @@ export function isNew(status: VisitStatus): boolean {
 /** 챙겨 오지 않는 준비물. 담당자가 미리 알면 헛걸음을 막는다. */
 export function missingDocs(request: StaffRequest): readonly string[] {
   return request.allDocs.filter((d) => !request.readyDocs.includes(d));
+}
+
+/**
+ * 화면이 그리는 요약의 모양 (§7.4).
+ *
+ * **조각으로 받는다** (2026-08-31 결정). 문단 하나로 받던 것을 나눴다 — 다섯
+ * 문장이 이어 붙으면 담당자가 창구에서 훑지 못하고 원문을 읽는 것과 다르지 않았다.
+ */
+export type SummaryPoint = { label: string; text: string };
+export type SummaryView = {
+  headline: string;
+  points: readonly SummaryPoint[];
+  prepare: readonly string[];
+  /** 옛 형식(문단 하나)으로 저장된 요약. 조각이 아니라 통째로 그린다. */
+  paragraph: string;
+};
+
+/**
+ * 저장된 요약을 화면이 쓸 모양으로.
+ *
+ * **옛 형식도 그린다.** 조각으로 바꾸기 전에 저장된 요약이 남아 있고, 그것도
+ * 담당자에게는 여전히 쓸모가 있다. 모양을 못 읽으면 문단으로 본다.
+ */
+export function parseSummary(raw: string): SummaryView | null {
+  const text = raw.trim();
+  if (!text) return null;
+
+  const empty = { headline: "", points: [], prepare: [], paragraph: text };
+  if (!text.startsWith("{")) return empty;
+
+  try {
+    const found: unknown = JSON.parse(text);
+    if (!found || typeof found !== "object" || Array.isArray(found)) return empty;
+    const data = found as Record<string, unknown>;
+
+    const points: SummaryPoint[] = Array.isArray(data.points)
+      ? data.points
+          .filter((p): p is Record<string, unknown> => Boolean(p) && typeof p === "object")
+          .map((p) => ({ label: String(p.label ?? "").trim(), text: String(p.text ?? "").trim() }))
+          .filter((p) => p.text.length > 0)
+      : [];
+    const prepare: string[] = Array.isArray(data.prepare)
+      ? data.prepare.map((x) => String(x).trim()).filter(Boolean)
+      : [];
+    const headline = String(data.headline ?? "").trim();
+
+    if (!headline && points.length === 0) return null;
+    return { headline, points, prepare, paragraph: "" };
+  } catch {
+    return empty;
+  }
 }

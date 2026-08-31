@@ -10,6 +10,7 @@ import { COLORS } from "@/shared/theme/colors";
 import { joinKorean, josa } from "@/shared/utils/korean";
 
 import type { Task } from "../domain/task";
+import { visitPlaceOf } from "../domain/visitPlace";
 import { Icon } from "@/shared/components/Icon";
 
 type Props = {
@@ -18,6 +19,13 @@ type Props = {
   pendingMust: readonly string[];
   onOpenChat: () => void;
   onNotifyStaff?: () => void;
+  /**
+   * 아직 협의 중인 기관의 방문 예약을 눌렀을 때.
+   *
+   * **팝업을 카드가 직접 띄우지 않는다.** 카드는 목록이 다시 그려질 때마다 새로
+   * 만들어져 그 안의 상태가 지워진다. 실제로 팝업이 떴다가 곧 닫혔다.
+   */
+  onPendingVisit?: () => void;
   onComplete: () => void;
   /**
    * 완료를 되돌린다. **실수로 누르는 일이 실제로 일어난다.**
@@ -40,6 +48,7 @@ export function TaskCard({
   pendingMust,
   onOpenChat,
   onNotifyStaff,
+  onPendingVisit,
   onComplete,
   onUncomplete,
   statusStrip,
@@ -51,11 +60,16 @@ export function TaskCard({
   // 끝낸 카드는 화면에 오지 않는다. 그 자리에 있던 "끝낸 일이에요" 분기는 죽은 코드였다.
   const showGuide = !task.must && pendingMust.length > 0;
 
+  // 방문 예약을 받는 곳. 전화 문의처(`contact.org`)와 다른 값이다.
+  const place = visitPlaceOf(task.id);
+
   return (
     <View className="px-4 pb-4 pt-4">
-      {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2) */}
+      {/* 차단이 아니라 유도다. 먼저 하면 쉬워진다고 알리되 지금 봐도 된다고 말한다 (§5.2).
+          아이콘을 열쇠에서 돋보기로 바꿨다 (2026-08-31 시안) — 잠긴 것을 여는 그림은
+          "먼저 해야 열린다"로 읽히는데, 실제로는 막고 있지 않고 권하는 자리다 */}
       {showGuide ? (
-        <NoteBox tone="warn" icon="key" className="mb-4">
+        <NoteBox tone="warn" icon="search" className="mb-4">
           {/* **뒷문장을 걷었다.** "그래도 지금 보고 싶으시면 계속 보셔도 괜찮아요"는
               막지 않는다는 말인데, 애초에 막고 있지 않으므로 없는 걱정을 만들었다 */}
           {`${pendingMust.join("과 ")}를 먼저 마치면 이 일이 훨씬 쉬워져요.`}
@@ -65,8 +79,9 @@ export function TaskCard({
       <View className="mb-4">
         {task.info.map((line) => (
           <View key={line} className="mb-2 flex-row pr-1">
-            <View className="mr-2 mt-0.5">
-              <Icon name="check" size={16} color={COLORS.doneInk} />
+            {/* 24px은 시안 실측값이다. 16px로 두었더니 글자에 눌려 잘 안 보였다 */}
+            <View className="mr-2">
+              <Icon name="check" size={24} color={COLORS.doneMark} />
             </View>
             <Text className="flex-1 text-body text-ink-body">{line}</Text>
           </View>
@@ -111,19 +126,19 @@ export function TaskCard({
       {/* 세 버튼의 순서가 곧 권하는 순서다. 물어보기가 먼저이고 끝냈다는 표시가 마지막이다 */}
       <View className="gap-2">
         <Button icon="chat" label="AI 챗봇과 대화하기" onPress={onOpenChat} />
-        {task.visitLabel && onNotifyStaff ? (
+        {/* **어디에 가는 것인지가 먼저다.** "숙식제공 담당자"는 우리 쪽 분류 이름이라
+            사용자에게는 그런 사람이 어디 있는지 짚이지 않는다.
+            **기관 이름은 `visitPlace`가 정한다** — 전에는 `contact.org`를 썼는데 그것은
+            전화 문의처라, 콜센터에 방문 예약을 거는 라벨이 나왔다 */}
+        {task.visitLabel && onNotifyStaff && place ? (
           <Button
             icon="bell"
-            // **어디에 가는 것인지가 먼저다.** "숙식제공 담당자"는 우리 쪽 분류
-            // 이름이라 사용자에게는 그런 사람이 어디 있는지 짚이지 않는다.
-            // 기관 이름이 있으면 그것을 쓰고, 없을 때만 항목 이름으로 물러선다.
-            label={
-              task.contact?.org
-                ? `${task.contact.org}에 방문 예약하기`
-                : `${task.visitLabel} 방문 예약하기`
-            }
+            label={`${place.label}에 방문 예약하기`}
             tone="secondary"
-            onPress={onNotifyStaff}
+            ink={place.pending ? COLORS.inkMuted : COLORS.brand}
+            // 협의 중인 곳은 요청을 보내지 않고 왜 못 보내는지 알린다. 알릴 길을
+            // 놓는 쪽이 주지 않았으면 눌러도 아무 일도 일어나지 않는다.
+            onPress={place.pending ? (onPendingVisit ?? (() => {})) : onNotifyStaff}
           />
         ) : null}
         {task.done ? (
@@ -134,9 +149,16 @@ export function TaskCard({
             onPress={onUncomplete ?? onComplete}
           />
         ) : (
-          <Button icon="checkCircle" label="이 일을 끝냈어요" tone="secondary" onPress={onComplete} />
+          <Button
+            icon="checkCircle"
+            label="이 일을 끝냈어요"
+            tone="secondary"
+            ink={COLORS.doneInk}
+            onPress={onComplete}
+          />
         )}
       </View>
+
     </View>
   );
 }

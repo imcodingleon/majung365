@@ -1,17 +1,25 @@
-// 날짜 고르기 (§3.2 · §3.7).
+// 날짜 적기 (§3.2 · §3.7).
 //
 // 가입 화면의 생일·출소일과 문항의 날짜가 **같은 방식으로 동작한다.** 한 앱 안에서 날짜를
-// 고르는 법이 두 가지면 배워야 할 것이 둘로 늘어난다.
+// 적는 법이 두 가지면 배워야 할 것이 둘로 늘어난다.
 //
-// 칸과 목록은 `PickerBox`가 맡는다 — 방문 시간 고르기(§7.2)도 같은 부품을 쓴다.
-// 여기는 년·월·일이라는 조합과 그 조합에만 있는 규칙(없는 날짜 당기기)을 맡는다.
-import { useMemo, useState } from "react";
-import { View } from "react-native";
+// **눌러서 고르는 방식에서 키보드로 적는 방식으로 바꿨다** (2026-08-31 · 디자이너 권고).
+// 생년월일은 사용자가 이미 외우고 있는 값이라 적는 편이 빠르다. 고르는 방식에서는
+// 1930년부터 시작하는 목록을 마흔 번 넘게 굴려야 1970년대에 닿았다.
+// 내 정보의 생일 확인 화면(`BirthGate`)이 이미 이 방식이라, 앱 안에서 생일을 적는
+// 자리가 하나로 모인다.
+//
+// **키보드로 바뀌면서 없던 문제가 생긴다.** 고르는 방식에서는 2월 30일이나 3000년을
+// 애초에 고를 수 없었지만, 적는 방식에서는 적을 수 있다. 그래서 여기가 직접 판정하고
+// 무엇이 잘못됐는지 한 줄로 알린다 — 판정만 하고 말하지 않으면 시작하기 버튼이 왜
+// 켜지지 않는지 사용자가 알 수 없다.
+//
+// **커서를 다음 칸으로 옮기지 않는다.** 년 네 자리를 채우면 자동으로 월로 넘어가게 할 수
+// 있지만, 손대지 않은 커서가 저 혼자 움직이면 어디에 적고 있는지 놓치기 쉽다.
+import { Text, TextInput, View } from "react-native";
 
-import { deferClose } from "@/shared/utils/deferClose";
-
-import type { DateParts } from "../types/date";
-import { PickerBox, PickerSheet, type PickerItem } from "./PickerBox";
+import { COLORS } from "../theme/colors";
+import { isValidDate, type DateParts } from "../types/date";
 
 type Props = {
   value: DateParts;
@@ -21,110 +29,126 @@ type Props = {
   minYear: number;
   maxYear: number;
   /**
-   * 아직 고른 적이 없을 때 년 목록이 서 있을 자리.
+   * 년 칸에 흐리게 비치는 예시 값.
    *
-   * 없으면 맨 위에서 시작하는데, 생일은 그 자리가 1930년이라 1970년대까지 마흔 번 넘게
-   * 굴려야 한다. 흔한 값 근처에서 시작하면 대부분 몇 번만 움직이면 닿는다.
+   * 고르는 방식이던 때에는 목록이 서 있을 자리였다. 적는 방식에서는 **네 자리로 적는
+   * 자리**임을 보이는 일을 맡는다 — "----"만 있으면 두 자리로 적는 사람이 나온다.
    */
   defaultYear: number;
 };
 
-/** 지금 어느 칸을 고르는 중인지. 닫혀 있으면 null. */
-type Unit = "year" | "month" | "day";
+/** 숫자만 남기고 자릿수를 자른다. 문자를 걸러내지 않으면 검사에서만 막혀 이유를 알 수 없다. */
+function digits(text: string, max: number): string {
+  return text.replace(/\D/g, "").slice(0, max);
+}
 
-const UNIT_LABEL: Record<Unit, string> = { year: "년", month: "월", day: "일" };
+function DateBox({
+  value,
+  onChangeText,
+  unit,
+  placeholder,
+  maxLength,
+  accessibilityLabel,
+  invalid,
+}: {
+  value: string;
+  onChangeText: (t: string) => void;
+  unit: string;
+  placeholder: string;
+  maxLength: number;
+  accessibilityLabel: string;
+  invalid: boolean;
+}) {
+  const filled = value !== "";
+  // 채워진 칸은 테두리가 진해진다 (시안). 어디까지 적었는지 색으로 먼저 읽힌다.
+  const border = invalid ? COLORS.alert : filled ? COLORS.brand : COLORS.line;
 
-/** 그 달에 실제로 있는 날짜 수. 2월 30일 같은 값이 애초에 만들어지지 않는다. */
-function daysIn(year: number, month: number): number {
-  if (!year || !month) return 31;
-  return new Date(year, month, 0).getDate();
+  return (
+    <View
+      className="flex-1 flex-row items-center justify-center gap-1 rounded-xl border-[1.5px] bg-white px-2 py-4"
+      style={{ borderColor: border }}
+    >
+      {/* **`min-w-0`이 없으면 안 된다.** 웹에서 flex 칸의 최소 폭은 기본이 `auto`라
+          입력칸이 부모보다 넓게 잡히고, 적은 숫자와 단위 글자가 통째로 상자 밖으로
+          밀려나 빈 상자만 보인다. 네이티브에는 아무 영향이 없다 */}
+      <TextInput
+        className="min-w-0 flex-1 text-title font-medium text-ink-strong"
+        style={{ textAlign: "right" }}
+        value={value}
+        onChangeText={(t) => onChangeText(digits(t, maxLength))}
+        keyboardType="number-pad"
+        maxLength={maxLength}
+        placeholder={placeholder}
+        placeholderTextColor={COLORS.inkMuted}
+        accessibilityLabel={accessibilityLabel}
+      />
+      <Text
+        className="text-title"
+        style={{ color: filled ? COLORS.inkStrong : COLORS.inkMuted }}
+      >
+        {unit}
+      </Text>
+    </View>
+  );
 }
 
 export function DateField({ value, onChange, label, minYear, maxYear, defaultYear }: Props) {
-  /** 열려 있는 칸. 한 번에 하나만 고른다. */
-  const [open, setOpen] = useState<Unit | null>(null);
+  const set = (unit: keyof DateParts, next: string) => onChange({ ...value, [unit]: next });
 
-  const years = useMemo(() => {
-    const list: number[] = [];
-    // 오래된 해가 위에 온다. 위에서 아래로 시간이 흐르는 순서가 달력과 같다.
-    for (let y = minYear; y <= maxYear; y += 1) list.push(y);
-    return list;
-  }, [minYear, maxYear]);
+  // **다 적기 전에는 나무라지 않는다.** 년을 두 자리 적은 중간 상태를 틀렸다고 하면
+  // 적는 내내 빨간 표시를 보게 된다.
+  const complete = value.year.length === 4 && value.month !== "" && value.day !== "";
+  const realDate = complete && isValidDate(value);
+  const inRange =
+    complete && Number(value.year) >= minYear && Number(value.year) <= maxYear;
 
-  const months = useMemo(() => Array.from({ length: 12 }, (_, i) => i + 1), []);
-  const days = useMemo(() => {
-    const count = daysIn(Number(value.year), Number(value.month));
-    return Array.from({ length: count }, (_, i) => i + 1);
-  }, [value.year, value.month]);
-
-  const numbers: readonly number[] = open === "year" ? years : open === "month" ? months : days;
-  const items: PickerItem[] = numbers.map((n) => ({ value: n }));
-  const current = open ? Number(value[open]) || null : null;
-
-  // 고른 값이 없을 때 목록이 설 자리. 년만 흔한 값 근처에서 시작하고 월·일은 맨 위에서 시작한다.
-  const restIndex = open === "year" ? Math.max(0, years.indexOf(defaultYear)) : 0;
-
-  const pick = (n: number) => {
-    if (open === null) return;
-    const next = { ...value, [open]: String(n) };
-    // 달을 바꿔 없는 날이 되면 그 달의 마지막 날로 당긴다. 손댄 적 없는 값이 틀린 채 남지 않는다.
-    if (open !== "day" && next.day) {
-      const last = daysIn(Number(next.year), Number(next.month));
-      if (Number(next.day) > last) next.day = String(last);
-    }
-    onChange(next);
-    // 닫기를 미루지 않으면 이 클릭이 뒤 화면의 죄목까지 누른다. deferClose 참고.
-    //
-    // **그 사이에 다른 칸이 열렸으면 건드리지 않는다.** 미룬 닫기가 뒤늦게 돌면서
-    // 방금 연 팝업을 닫아 버리면, 제목도 단위도 없는 빈 목록이 남는다.
-    const closing = open;
-    deferClose(() => setOpen((cur) => (cur === closing ? null : cur)))();
-  };
+  // **범위를 먼저 본다.** 1800년은 실제로 있는 해인데 `isValidDate`가 1900년 미만을
+  // 거부하기 때문에, 순서를 뒤집으면 "실제로 있는 날짜를 입력해 주세요"라는 틀린 말이 나온다.
+  const problem = !complete
+    ? null
+    : !inRange
+      ? `${minYear}년부터 ${maxYear}년 사이로 입력해 주세요.`
+      : !realDate
+        ? "실제로 있는 날짜를 입력해 주세요."
+        : null;
 
   return (
-    <>
+    <View>
       <View className="flex-row gap-2">
-        <PickerBox
-          text={value.year || "----"}
-          filled={Boolean(value.year)}
+        <DateBox
+          value={value.year}
+          onChangeText={(t) => set("year", t)}
           unit="년"
-          onPress={() => setOpen("year")}
-          accessibilityLabel={
-            value.year ? `${label} ${value.year}년. 눌러서 바꾸기` : `${label} 년 고르기`
-          }
+          placeholder={String(defaultYear)}
+          maxLength={4}
+          accessibilityLabel={`${label} 년. 네 자리로 적어 주세요`}
+          invalid={Boolean(problem)}
         />
-        <PickerBox
-          text={value.month ? String(Number(value.month)) : "--"}
-          filled={Boolean(value.month)}
+        <DateBox
+          value={value.month}
+          onChangeText={(t) => set("month", t)}
           unit="월"
-          onPress={() => setOpen("month")}
-          accessibilityLabel={
-            value.month
-              ? `${label} ${Number(value.month)}월. 눌러서 바꾸기`
-              : `${label} 월 고르기`
-          }
+          placeholder="--"
+          maxLength={2}
+          accessibilityLabel={`${label} 월`}
+          invalid={Boolean(problem)}
         />
-        <PickerBox
-          text={value.day ? String(Number(value.day)) : "--"}
-          filled={Boolean(value.day)}
+        <DateBox
+          value={value.day}
+          onChangeText={(t) => set("day", t)}
           unit="일"
-          onPress={() => setOpen("day")}
-          accessibilityLabel={
-            value.day ? `${label} ${Number(value.day)}일. 눌러서 바꾸기` : `${label} 일 고르기`
-          }
+          placeholder="--"
+          maxLength={2}
+          accessibilityLabel={`${label} 일`}
+          invalid={Boolean(problem)}
         />
       </View>
 
-      <PickerSheet
-        visible={open !== null}
-        title={open ? `${UNIT_LABEL[open]}을 고르세요` : ""}
-        items={items}
-        current={current}
-        unit={open ? UNIT_LABEL[open] : ""}
-        restIndex={restIndex}
-        onPick={pick}
-        onClose={() => setOpen(null)}
-      />
-    </>
+      {problem ? (
+        <Text className="mt-2 text-caption font-medium" style={{ color: COLORS.alert }}>
+          {problem}
+        </Text>
+      ) : null}
+    </View>
   );
 }

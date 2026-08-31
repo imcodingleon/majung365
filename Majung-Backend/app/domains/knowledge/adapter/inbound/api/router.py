@@ -7,9 +7,10 @@ Router는 검증·DTO 변환만. 비즈니스 로직은 UseCase에.
 비스트리밍 JSON — 그래프 계산(C7)은 O(V+E) 즉시, 마지막 자유서술이 있을 때만 C6 호출로 약간 지연.
 """
 
-from fastapi import APIRouter, HTTPException, Request
+from fastapi import APIRouter, Header, HTTPException, Request
 from pydantic import BaseModel, Field
 
+from app.domains.account.adapter.inbound.api.deps import current_account
 from app.domains.knowledge.application.dto import AnalyzeCommand, IntakeTask, NodeAnswer
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.shared.routes import RouteId
@@ -57,21 +58,30 @@ class TaskCardOut(BaseModel):
     verified_note: str
 
 
-def _to_command(body: AnalyzeIn) -> AnalyzeCommand:
+def _to_command(body: AnalyzeIn, user_name: str | None = None) -> AnalyzeCommand:
     answers: list[NodeAnswer] = []
     for a in body.answers:
         if a.state not in _VALID_STATES:
             raise HTTPException(status_code=400, detail="상태 값이 올바르지 않아요.")
         answers.append(NodeAnswer(node_id=a.node_id, state=NodeState(a.state)))
     narrative = body.narrative.strip() if body.narrative else None
-    return AnalyzeCommand(answers=tuple(answers), narrative=narrative or None)
+    return AnalyzeCommand(
+        answers=tuple(answers), narrative=narrative or None, user_name=user_name
+    )
 
 
 @router.post("/onboarding/analyze", response_model=TaskCardOut)
 @limiter.limit(get_settings().rate_limit_chat)
-async def analyze(body: AnalyzeIn, request: Request) -> TaskCardOut:
+async def analyze(
+    body: AnalyzeIn,
+    request: Request,
+    authorization: str | None = Header(default=None),
+) -> TaskCardOut:
     spend = request.app.state.spend
     usecase = request.app.state.analyze_usecase
+    # **토큰이 없어도 그대로 답한다.** 이름은 마스킹에 쓰는 값이라 없으면 없는 대로
+    # 가고, 그때는 정규식이 문맥으로 잡는 이름만 가려진다.
+    account = current_account(request, authorization)
 
     # 자유서술이 있을 때만 실제 LLM 호출(C6)이 일어나므로, 있을 때만 조기 차단한다.
     if body.narrative and body.narrative.strip() and not spend.check():
@@ -79,7 +89,7 @@ async def analyze(body: AnalyzeIn, request: Request) -> TaskCardOut:
             status_code=429, detail="지금 이용이 많아요. 잠시 후 다시 시도해 주세요."
         )
 
-    command = _to_command(body)
+    command = _to_command(body, account.name if account else None)
     card = await usecase.run(command)
 
     return TaskCardOut(
@@ -165,6 +175,9 @@ class IntakeTaskOut(BaseModel):
     # 이 항목으로 방문 요청을 보낼 수 있는가(§7). 통장·증명서·빚은 받을 담당자가 없다.
     can_request_visit: bool
     card: IntakeCardOut
+    # 대화를 열었을 때 뜨는 첫 질문(§6.1). **비어 올 수 있고, 그때는 화면이
+    # 기본 문구로 물러선다** — 필드가 없다고 앱이 깨지면 안 된다.
+    starter_questions: list[str] = Field(default_factory=list)
 
 
 class IntakeOut(BaseModel):
@@ -182,6 +195,7 @@ def to_task_out(t: IntakeTask) -> IntakeTaskOut:
         section_label=t.section_label,
         blocks_others=t.blocks_others,
         can_request_visit=t.can_request_visit,
+        starter_questions=list(t.starter_questions),
         card=IntakeCardOut(
             institution_id=t.card.institution_id,
             name=t.card.name,

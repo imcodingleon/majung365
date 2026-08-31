@@ -56,6 +56,7 @@ def list_centers(
     category: str | None = Query(default=None, description="법무보호공단 | 주민센터 | 고용센터"),
     sido: str | None = Query(default=None, max_length=20, description="예: 서울특별시"),
     district: str | None = Query(default=None, max_length=40, description="예: 송파구"),
+    dong: str | None = Query(default=None, max_length=40, description="예: 오금동"),
     lat: float | None = Query(default=None, ge=33.0, le=39.0, description="지금 있는 자리"),
     lng: float | None = Query(default=None, ge=124.0, le=132.0),
 ) -> list[CenterOut]:
@@ -68,14 +69,22 @@ def list_centers(
     받아서 그 동네 기관들의 한가운데를 기준으로 삼았는데, 시군구 안에서 그 한가운데가
     엉뚱한 곳을 가리켰다 — 군포역에 사는 사람에게 산본 주민센터가 먼저 나왔다.
 
+    **동까지 주면 그 이름의 주민센터가 거리와 무관하게 들어간다** (2026-08-31). 좌표를
+    못 믿기 때문이다 — 주민센터 3,348곳 중 93곳이 자기 동 경계 밖에 찍혀 있고, 안양
+    호계3동은 호계1동과 좌표가 같아 자기 동을 고른 사람에게 안 보였다. 관할이 아닌 곳을
+    찾아가면 헛걸음이라 이름이 거리보다 앞선다.
+
     좌표는 대한민국 범위 밖이면 받지 않는다. 범위를 벗어난 값은 오작동이거나 장난이고,
     그대로 거리를 재면 전국에서 가장 먼 기관이 "가까운 곳"으로 나간다.
 
     사용자의 지역과 좌표는 준식별정보다. **조회 조건을 로그에 남기지 않는다.**
     """
     origin = (lat, lng) if lat is not None and lng is not None else None
-    if sido and district:
-        items = _map_repo.by_region(sido, district, origin)
+    # **시도만 와도 이 자료로 답한다** (2026-08-31). 전에는 시군구까지 있어야 여기로
+    # 들어왔고, 시도만 오면 아래의 `centers.json`(수도권 다섯 곳)으로 빠졌다. 그래서
+    # 지역 선택 화면에서 시도만 고른 부산 사용자에게 **서울 지부가 나갔다.**
+    if sido:
+        items = _map_repo.by_region(sido, district or "", origin, dong or "")
         if category:
             narrowed = [c for c in items if c.category == category]
             # 빈 갈래(오탈자 등)면 전체로 되돌린다. 화면이 비는 것보다 낫다.

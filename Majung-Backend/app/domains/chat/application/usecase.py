@@ -3,10 +3,14 @@
 '약사 모델': 안내 텍스트는 모델이 생성하되, 제도 카드(사실)는 서버가 KB에서 매칭해 붙인다.
 모델은 제도명·신청처를 지어내지 않는다.
 
-SSE 순서 계약: triage → evidence → text(델타*) → card* → done  (오류 시 error)
-대화는 서버에 저장하지 않는다(멀티턴은 클라이언트가 history로 전달, 처리 후 폐기).
+SSE 순서 계약: triage → evidence → text(델타*) → card* → suggestions? → done  (오류 시 error)
+
+**로그인했으면 대화를 저장한다**(§6.3). 저장은 인바운드 어댑터가 맡고 이 유스케이스는
+관여하지 않는다 — 예선의 무저장 전제는 본선에서 뒤집혔다. 멀티턴 자체는 여전히
+클라이언트가 history로 전달한다.
 """
 
+import asyncio
 import logging
 from collections.abc import AsyncIterator
 from dataclasses import replace
@@ -21,8 +25,10 @@ from app.domains.chat.application.dto import (
     ErrorEvent,
     EvidenceEvent,
     RouteOut,
+    SuggestionsEvent,
     TextEvent,
     TriageEvent,
+    Turn,
 )
 from app.domains.chat.application.port import ChatLlm
 from app.domains.chat.domain.evidence import EvidenceStage, notice_for
@@ -34,6 +40,10 @@ from app.domains.chat.domain.local_branch import (
 )
 from app.domains.chat.domain.local_office import LocalOfficeAnswer, answer_for
 from app.domains.chat.domain.prompts import build_guidance_context
+from app.domains.chat.domain.suggestions import (
+    build_suggestions_context,
+    normalize_suggestions,
+)
 from app.domains.chat.domain.triage import (
     QuestionType,
     ReasonCode,
@@ -41,6 +51,7 @@ from app.domains.chat.domain.triage import (
     TriageResult,
     reason_text,
 )
+from app.domains.chat.domain.user_context import build_user_context
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.graph_engine import GraphNode, kb_ref_for_route
@@ -50,6 +61,24 @@ from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import RouteId, label_for
 
 logger = logging.getLogger("majung.chat")
+
+
+def _route_or_none(route_id: str) -> RouteId | None:
+    """항목 코드를 값으로. 모르는 코드면 없는 것으로 둔다."""
+    if not route_id:
+        return None
+    try:
+        return RouteId(route_id)
+    except ValueError:
+        return None
+
+
+# 추천 질문 한 건에 걸어 두는 상한.
+#
+# **사용자가 화면을 보고 기다리는 자리다.** 이 호출이 끝나야 `done`이 나가고,
+# 화면은 `done`을 받아야 입력 잠금을 푼다. 답변은 이미 다 그려진 뒤라 여기서
+# 늘어지면 "다 나왔는데 왜 못 보내지"가 된다. 요약(45초)과 달리 짧게 잡는다.
+_SUGGEST_TIMEOUT_SECONDS = 7
 
 _MAX_CARDS = 3
 # 카드에서 연 대화라도 항목을 무한정 늘리지 않는다.
@@ -95,7 +124,9 @@ class ChatUseCase:
 
         # 1) triage (구조화)
         try:
-            triage = await self._llm.triage(cmd.message, history)
+            triage = await self._llm.triage(
+                cmd.message, history, name=cmd.user_name
+            )
         except Exception:
             logger.warning("triage 실패 (upstream)")  # 사용자 입력 원문은 로그에 남기지 않는다
             yield ErrorEvent()
@@ -105,15 +136,18 @@ class ChatUseCase:
         # 보다가 "다음에 뭘 해야 하나요"라고 물으면, 그 문장만으로는 무슨 얘기인지
         # 알 수 없다. 화면이 이미 답을 알고 있으니 모델이 다시 맞힐 이유가 없다.
         triage = self._pin_route(triage, cmd.route_id)
+        # 라우터가 모르는 코드를 이미 버렸지만, 값으로 다루는 자리는 한 번 더 본다 —
+        # 여기서 예외가 나면 대화 전체가 끊긴다.
+        pinned_route = _route_or_none(cmd.route_id)
 
         yield TriageEvent(routes=self._to_route_out(triage))
 
         # 2) 카드 매칭 (서버, KB 밖 생성 금지)
-        cards = self._match_cards(triage)
+        cards = self._match_cards(triage, cmd.route_id)
 
         # 3) 근거 문서 검색. 카드가 제도의 요약이라면 이쪽은 본문이라,
         #    "기한이 며칠인가요" 같은 구체적인 질문에 답할 수 있는 것은 이쪽이다.
-        found = self._search_passages(cmd.message, triage, cmd.route_id)
+        found, other_found = self._search_passages(cmd.message, triage, cmd.route_id)
 
         # 3.5) 사용자가 동을 말했으면 그 주민센터를 찾는다.
         #      **있는 데이터를 없다고 말하면 안 된다** — "오금동 주민센터"를 물었는데
@@ -183,17 +217,24 @@ class ChatUseCase:
         # 코드는 문서에 답이 들어 있는지 알 수 없다 — 읽어야 아는 것이다.
         # 검색 도구는 모델이 필요할 때 부르는 것인데 코드가 미리 뺏고 있었다.
         # 이제 근거와 도구를 함께 주고, 부족하면 모델이 검색한다.
-        has_evidence = bool(cards or found)
+        has_evidence = bool(cards or found or other_found)
         context = build_guidance_context(
             triage,
             [self._as_injection(i) for lead, comps, _ in cards for i in (lead, *comps)],
             stage=EvidenceStage.CONFIRMED if has_evidence else EvidenceStage.WEB,
             passages=[self._as_passage_injection(p) for p in found],
+            pinned=pinned_route,
+            other_passages=[self._as_passage_injection(p) for p in other_found],
+            # 진단 판정. **없는 것이 정상 경로다** — 가입 전에도 챗을 열 수 있다.
+            user_context=build_user_context(cmd.intake, pinned_route),
         )
 
         # **배지는 실제로 검색했는지로 정한다.** 추측이 아니라 사실이다.
         # 첫 텍스트가 나오기 전에 한 번만 내보내므로 §6.4의 "먼저 알린다"가 지켜진다.
         evidence_sent = False
+        # **답변 본문을 여기서도 모은다.** 라우터가 저장용으로 따로 모으고 있지만,
+        # 이어서 물을 것을 정하려면 무슨 답을 했는지 이 유스케이스가 알아야 한다.
+        answer: list[str] = []
 
         try:
             async for chunk in self._llm.stream_guidance(
@@ -201,6 +242,7 @@ class ChatUseCase:
                 history=history,
                 context=context,
                 allow_web_search=True,
+                name=cmd.user_name,
             ):
                 if chunk.web_search_started and not evidence_sent:
                     evidence_sent = True
@@ -219,6 +261,7 @@ class ChatUseCase:
                             )
                         # 근거도 없고 검색도 안 했으면 배지를 붙이지 않는다.
                         # 없는 근거를 "확인한 자료"라고 말하는 것이 가장 나쁘다.
+                    answer.append(chunk.text)
                     yield TextEvent(delta=chunk.text)
         except Exception:
             logger.warning("guidance 스트리밍 실패 (upstream)")
@@ -229,7 +272,40 @@ class ChatUseCase:
         for lead, companions, route in cards:
             yield CardEvent(card=self._to_card(lead, companions, route))
 
+        # 7) 이어서 물어볼 만한 질문 (§6.1). **답변이 다 흐른 뒤라야 정해진다.**
+        questions = await self._suggest(cmd, history, "".join(answer))
+        if questions:
+            yield SuggestionsEvent(questions=questions)
+
         yield DoneEvent()
+
+    async def _suggest(
+        self, cmd: ChatCommand, history: list[Turn], answer: str
+    ) -> tuple[str, ...]:
+        """이어서 물어볼 만한 질문 셋. **못 만들면 빈 튜플이고 이벤트가 안 나간다.**
+
+        **여기서 늦어지면 사용자가 기다린다.** 화면은 `done`을 받아야 입력 잠금을
+        푸는데(`useTaskThreads`의 busy), 답변은 이미 다 그려진 뒤다. 점 세 개가
+        계속 돌고 보내기가 막힌 채로 있으면 "다 나왔는데 왜 못 보내지"가 된다.
+        그래서 상한을 짧게 걸고, 넘으면 제안 없이 끝낸다.
+
+        **실패가 답변을 무르게 하지 않는다.** 본문과 카드는 이미 나갔으므로
+        여기서 예외를 올릴 이유가 없다. 프롬프트와 원문은 로그에 남기지 않는다.
+        """
+        if not answer.strip():
+            # 답이 비었으면 이어서 물을 것도 정할 수 없다. 호출 한 번을 아낀다.
+            return ()
+        turns = [*history, Turn(role="assistant", content=answer)]
+        context = build_suggestions_context([label_for(r) for r in RouteId])
+        try:
+            raw = await asyncio.wait_for(
+                self._llm.suggest_questions(turns, context=context, name=cmd.user_name),
+                timeout=_SUGGEST_TIMEOUT_SECONDS,
+            )
+        except Exception:
+            logger.warning("추천 질문 생성 실패 — 제안 없이 끝낸다")
+            return ()
+        return normalize_suggestions(list(raw))
 
     # ── helpers ──
     def _to_route_out(self, triage: TriageResult) -> tuple[RouteOut, ...]:
@@ -369,19 +445,24 @@ class ChatUseCase:
 
     def _search_passages(
         self, message: str, triage: TriageResult, pinned: str = ""
-    ) -> list[Passage]:
+    ) -> tuple[list[Passage], list[Passage]]:
         """질문과 관련된 근거 구절. 검색어는 로그에 남기지 않는다.
 
-        **카드에서 연 대화는 그 항목 문서만 본다.** "다음에 뭘 해야 하나요"처럼
+        **카드에서 연 대화는 그 항목 문서를 먼저 본다.** "다음에 뭘 해야 하나요"처럼
         무엇에 대한 질문인지 문장만으로는 알 수 없을 때, 가중치만으로는 엉뚱한
         문서가 1순위가 된다. 실제로 R14 카드에서 연 대화에 전입신고 안내가 나갔다.
         화면이 이미 답을 알고 있으니 추측하게 두지 않는다.
 
         좁힌 결과가 비면 넓혀서 다시 찾는다 — 그 항목에 근거가 없다고 해서
-        답할 수 있는 문서까지 사라지면 안 된다.
+        답할 수 있는 문서까지 사라지면 안 된다. R13처럼 수집된 문서가 세 건뿐인
+        항목에서 자주 빈다.
+
+        **다만 넓혀서 얻은 것을 갈라서 돌려준다.** 한 덩어리로 주면 곁가지 자료가
+        본 주제의 근거인 것처럼 프롬프트에 실리고, 모델이 그쪽으로 답을 옮긴다.
+        돌려주는 것은 (그 항목 구절, 넓혀서 찾은 구절)이다.
         """
         if self._passages is None:
-            return []
+            return [], []
         if pinned:
             only = frozenset({pinned})
             narrowed = [
@@ -390,9 +471,11 @@ class ChatUseCase:
                 if pinned in p.route_ids
             ]
             if narrowed:
-                return narrowed
+                return narrowed, []
+            routes = frozenset(p.route.value for p in triage.priorities)
+            return [], [p for p, _ in self._passages.search(message, routes)]
         routes = frozenset(p.route.value for p in triage.priorities)
-        return [p for p, _ in self._passages.search(message, routes)]
+        return [p for p, _ in self._passages.search(message, routes)], []
 
     def _as_passage_injection(self, passage: Passage) -> str:
         """근거 구절을 프롬프트에 넣을 형태로. 본문이 길어 앞부분만 넣는다 —
@@ -418,8 +501,19 @@ class ChatUseCase:
         return None
 
     def _match_cards(
-        self, triage: TriageResult
+        self, triage: TriageResult, pinned: str = ""
     ) -> list[tuple[Institution, tuple[Institution, ...], RouteId]]:
+        """화면에 낼 제도 카드.
+
+        **탭에서 연 대화는 그 항목의 카드만 낸다.** `_pin_route`는 순서만 바꾸고
+        다른 항목을 지우지 않으므로, 여기서 거르지 않으면 triage가 곁들여 고른
+        항목의 카드까지 함께 나간다 — 수용·출소증명서 대화에 "긴급복지 주거지원"과
+        "주민등록증 재발급" 카드가 끼어든 것이 그 경로다.
+
+        **곁가지 이야기를 막는 것이 아니다.** 본문은 여전히 답한다(§6.4 프롬프트).
+        카드는 "이 할 일은 이렇게 하시면 됩니다"라는 확정된 안내라, 지금 보고 있는
+        할 일이 아닌 것에 붙으면 사용자가 무엇을 하라는 말인지 알 수 없다.
+        """
         # **항목을 골랐다는 것 자체가 지원 질문이라는 신호다.**
         #
         # 모델이 "나갈 데가 없는데 오늘 밤 어디서 자요"에 R1·R4를 정확히 고르고도
@@ -427,9 +521,15 @@ class ChatUseCase:
         # 비었다. 두 값이 어긋나면 **더 구체적인 쪽(고른 항목)을 믿는다.**
         if triage.question_type != QuestionType.SUPPORT and not triage.priorities:
             return []
+        wanted = triage.priorities
+        if pinned:
+            # 핀이 붙은 항목 하나만. `_pin_route`가 이미 맨 앞에 세워 두었지만
+            # 순서에 기대지 않고 값으로 찾는다 — 핀이 triage에 없던 항목이면
+            # `_pin_route`가 기본 상태로 새로 만들어 넣었고, 그것도 이 항목이다.
+            wanted = tuple(p for p in triage.priorities if p.route.value == pinned)
         picked: list[tuple[Institution, tuple[Institution, ...], RouteId]] = []
         seen: set[str] = set()
-        for p in triage.priorities:
+        for p in wanted:
             # 항목당 카드 1장. 신청할 곳이 둘이면 카드를 나누지 않고 옵션으로 묶는다 —
             # 카드 개수와 할 일 개수가 어긋나면 "몇 개 중 몇 개 완료"를 셀 수 없다.
             lead = self._lead_for(p)
@@ -466,11 +566,26 @@ class ChatUseCase:
         return self._institutions.lead_of(priority.route)
 
     def _as_injection(self, inst: Institution) -> str:
-        docs = ", ".join(inst.docs) if inst.docs else "특별한 서류 없이 문의 가능"
-        return (
-            f"- {inst.name}: {inst.summary_easy} "
-            f"(어디서: {inst.where} / 서류: {docs} / 다음 단계: {inst.next_step})"
+        """제도의 사실을 프롬프트에 넣을 형태로.
+
+        **라벨로 넣으면 모델이 그 라벨을 베껴 쓴다.** 예전에는 이 함수가
+        `(어디서: … / 서류: … / 다음 단계: …)`를 만들었고, 답변마다 같은 머리말이
+        같은 순서로 나왔다. 시스템 프롬프트에는 그런 서식 지시가 없었으므로
+        모델은 주어진 자료의 모양을 따라 한 것이다.
+
+        **값은 그대로 KB의 것이다.** 바꾼 것은 형식뿐이며 환각 방어는 그대로다.
+        """
+        parts = [f"{inst.name} — {inst.summary_easy}"]
+        if inst.where:
+            parts.append(f"신청은 {inst.where}에서 받습니다.")
+        parts.append(
+            f"챙길 것은 {', '.join(inst.docs)}입니다."
+            if inst.docs
+            else "따로 챙길 서류는 없고 가서 문의하면 됩니다."
         )
+        if inst.next_step:
+            parts.append(inst.next_step)
+        return "- " + " ".join(parts)
 
     def _to_option(self, inst: Institution) -> CardOption:
         desk = desk_of(inst)

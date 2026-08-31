@@ -83,7 +83,9 @@ export function statusLines(request: VisitRequest): string[] {
 export function statusMessage(request: VisitRequest): string {
   switch (request.status) {
     case "sent":
-      return "담당자에게 전달했어요. 확인되면 알려드릴게요.";
+      // 2026-08-31 시안. "담당자에게 전달했어요. 확인되면 알려드릴게요."에서 바꿨다 —
+      // 어디로 갔는지보다 **접수됐다는 사실과 다음에 무엇이 오는지**가 먼저다.
+      return "신청이 접수됐어요. 처리되면 알림으로 알려드릴게요.";
     case "acknowledged":
       return "담당자가 확인했어요.";
     case "confirmed": {

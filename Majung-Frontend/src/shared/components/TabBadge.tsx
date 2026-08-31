@@ -5,6 +5,7 @@
 import { Text, View } from "react-native";
 
 import { COLORS } from "@/shared/theme/colors";
+import { FONTS } from "@/shared/theme/fonts";
 
 export function TabBadge({ count }: { count: number }) {
   if (count <= 0) return null;
@@ -25,7 +26,7 @@ export function TabBadge({ count }: { count: number }) {
         justifyContent: "center",
       }}
     >
-      <Text style={{ color: COLORS.surface, fontSize: 11, fontWeight: "700" }}>{label}</Text>
+      <Text style={{ color: COLORS.surface, fontSize: 11, fontFamily: FONTS.bold }}>{label}</Text>
     </View>
   );
 }

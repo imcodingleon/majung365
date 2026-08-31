@@ -48,11 +48,21 @@ function sameDay(a: Date, year: number, month: number, day: number): boolean {
   return a.getFullYear() === year && a.getMonth() + 1 === month && a.getDate() === day;
 }
 
-/** 월 목록. 연말을 넘어가면 내년 달이 이어진다. */
+/**
+ * 월 목록. 연말을 넘어가면 내년 달이 이어진다.
+ *
+ * **고를 수 있는 날이 하나도 없는 달은 내지 않는다** (2026-08-31). 당일 방문을 막고
+ * 있으므로 말일에는 이번 달에 갈 수 있는 날이 없는데, 그런 달을 목록에 두면 골라
+ * 들어가 봐야 1일부터 말일까지 전부 흐린 줄만 나온다. 무엇이 잘못됐는지 알 수 없는
+ * 화면이라, 아예 고르지 못하게 하는 편이 낫다.
+ */
 export function monthsFrom(today: Date): readonly (PickerItem & { year: number })[] {
   const out: (PickerItem & { year: number })[] = [];
   for (let i = 0; i <= MONTH_SPAN; i += 1) {
     const at = new Date(today.getFullYear(), today.getMonth() + i, 1);
+    const emptyThisMonth =
+      i === 0 && today.getDate() >= lastDayOf(at.getFullYear(), at.getMonth() + 1);
+    if (emptyThisMonth) continue;
     out.push({ value: at.getMonth() + 1, year: at.getFullYear() });
   }
   return out;

@@ -36,6 +36,7 @@ select = ["E", "F", "I", "UP", "B"]
 [tool.ruff.lint.per-file-ignores]
 # 프롬프트/설명은 한국어 자연어 문자열이라 줄 길이 제한 예외
 "app/domains/chat/domain/prompts.py" = ["E501"]
+"app/domains/chat/domain/suggestions.py" = ["E501"]
 
 [tool.mypy]
 python_version = "3.12"

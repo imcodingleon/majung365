@@ -282,3 +282,92 @@ export function officesByDistance<T extends { sido: string; sigungu: string; don
     .sort((a, b) => a.km - b.km)
     .map((x) => x.office);
 }
+
+/**
+ * `regions.json`의 시군구 표기와 경계 데이터의 표기가 어긋나는 곳.
+ *
+ * **시군구 230개 중 둘뿐이다.** 규칙으로 풀려다가는 나머지 228개를 망가뜨리므로 표로
+ * 적어 둔다 — `SHORT_SIDO`와 같은 이유다.
+ *
+ * - **부산 "진구"**: 정식 명칭이 "부산진구"라 접두로도 안 걸린다.
+ * - **대구 "군위군"**: 2023-07-01에 경북에서 대구로 넘어왔는데 경계 데이터는 2021년
+ *   것이라 아직 경북에 있다. 시도부터 어긋난다.
+ *
+ * 이 표가 없으면 그 두 곳 주민은 동을 고르는 단계를 통째로 못 밟는다.
+ */
+const DISTRICT_ALIAS: Record<string, readonly [string, string]> = {
+  "부산|진구": ["부산", "부산진구"],
+  "대구|군위군": ["경북", "군위군"],
+};
+
+/**
+ * `${짧은 시도}|${경계 시군구}` → 그 시군구의 경계들.
+ *
+ * **첫 호출에 한 번만 만든다.** 검색 색인을 세울 때 시군구 230개를 잇달아 조회하는데,
+ * 그때마다 3,495행을 훑으면 80만 번 비교가 되어 첫 타이핑이 눌린다.
+ */
+let byDistrict: Map<string, Area[]> | null = null;
+
+function districtIndex(): Map<string, Area[]> {
+  if (byDistrict) return byDistrict;
+  const map = new Map<string, Area[]>();
+  for (const area of AREAS) {
+    const key = `${shortSido(area.s)}|${area.g}`;
+    const bucket = map.get(key);
+    if (bucket) bucket.push(area);
+    else map.set(key, [area]);
+  }
+  byDistrict = map;
+  return map;
+}
+
+/**
+ * 그 시군구의 경계들. 시도는 긴 이름·짧은 이름 어느 쪽으로 주어도 된다
+ * (`shortSido`가 짧은 이름 열일곱에 멱등이다).
+ *
+ * **정확히 맞는 것을 먼저 찾고, 없을 때만 접두로 넓힌다.** 지금 데이터에서는 접두를
+ * 단독으로 써도 어긋나는 곳이 하나도 없지만, 경계 데이터가 갱신되어 기존 자치구 이름으로
+ * 시작하는 일반구가 생기면 접두 단독 규칙은 조용히 두 지역을 섞는다.
+ *
+ * 접두로 걸리는 것은 일반구를 둔 시 열 곳이다 — "수원시"를 주면 장안·권선·팔달·영통
+ * 네 구의 동 마흔넷이 한 목록으로 나온다. **일반구를 단계로 만들지 않는 이유**는 서버
+ * 계약의 시군구가 "수원시"이고, 네 구의 동 이름이 하나도 겹치지 않기 때문이다.
+ */
+function areasOf(sido: string, district: string): readonly Area[] {
+  const [s, g] = DISTRICT_ALIAS[`${shortSido(sido)}|${district}`] ?? [sido, district];
+  const index = districtIndex();
+  const key = `${shortSido(s)}|${g}`;
+
+  const exact = index.get(key);
+  if (exact) return exact;
+
+  const found: Area[] = [];
+  for (const [k, areas] of index) {
+    if (k.startsWith(key)) found.push(...areas);
+  }
+  return found;
+}
+
+/**
+ * 그 시군구의 행정동 이름. 순서는 경계 데이터 순서다.
+ *
+ * **읍·면도 함께 나온다.** 군 지역은 목록이 "예천읍"·"용문면"으로 채워진다.
+ */
+export function dongsOf(sido: string, district: string): readonly string[] {
+  return areasOf(sido, district).map((a) => a.d);
+}
+
+/**
+ * 그 행정동의 대표 좌표 `[경도, 위도]`. 못 찾으면 null이다.
+ *
+ * **지역을 직접 고른 사람에게 거리를 돌려주는 자리다.** 시군구 한가운데로 재던 것을
+ * 동 한가운데로 좁힌다 — 산본1동과 군포시 한가운데가 이미 2.4km 벌어져 있어서,
+ * 결정 F-1이 적어 둔 "군포역 사람에게 산본 주민센터" 문제가 그대로 재현된다.
+ */
+export function dongCenter(
+  sido: string,
+  district: string,
+  dong: string,
+): [number, number] | null {
+  return centerOf(areasOf(sido, district).filter((a) => a.d === dong));
+}

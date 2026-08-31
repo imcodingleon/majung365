@@ -1,6 +1,6 @@
 // 할 일 카드 안의 근처 기관 (§5.4).
 //
-// "가까운 주민센터에 가세요"라고만 하면 사용자는 그 순간 다시 찾아야 한다.
+// "가까운 행정복지센터에 가세요"라고만 하면 사용자는 그 순간 다시 찾아야 한다.
 // **이름과 주소를 짚어주는 것이 이 구역의 일이다.**
 //
 // 값이 없으면 아무것도 그리지 않는다. 위치를 모르거나 그 항목에 해당이 없으면
@@ -20,8 +20,11 @@ type Props = {
   offices: readonly DistrictOffice[];
   institutions: readonly Institution[];
   place: LocatedPlace | null;
-  /** 신분증 재발급처럼 어느 곳에서나 되는 일인지. 그러면 "아무 곳이나" 안내를 붙인다. */
-  anyBranch?: boolean;
+  /**
+   * 목록 아래에 붙는 한 줄. 항목마다 관할 규칙이 달라 놓는 쪽이 정한다
+   * (`officeNoteFor` 참고). 없으면 아무 줄도 붙이지 않는다.
+   */
+  officeNote?: string;
 };
 
 function Row({
@@ -59,11 +62,15 @@ function Row({
 }
 
 /**
- * 그 사람이 사는 곳에서 가까운 주민센터 셋.
+ * 그 사람이 사는 곳에서 가까운 행정복지센터 셋.
  *
- * **이름을 맞춰 보던 것을 거리로 바꿨다.** 경계 데이터가 "불당동"인데 주민센터는
- * "불당1동"·"불당2동"으로 갈려 있는 식이라 이름으로는 어긋난다. 주민센터는 동을
+ * **이름을 맞춰 보던 것을 거리로 바꿨다.** 경계 데이터가 "불당동"인데 창구는
+ * "불당1동"·"불당2동"으로 갈려 있는 식이라 이름으로는 어긋난다. 창구가 동을
  * 알고 있어서 거리를 정확히 잴 수 있다.
+ *
+ * **기관 이름은 행정안전부 자료 그대로 쓴다.** 같은 시 안에서도 "○○동 주민센터"와
+ * "○○동 행정복지센터"가 섞여 있는데 그것이 실제 간판이다. 우리가 한쪽으로
+ * 고쳐 쓰면 찾아갔을 때 이름이 달라 헤맨다.
  *
  * **셋을 낸다.** 전입신고처럼 자기 동네에 가야 하는 일이 있는데, 위치가 경계에
  * 걸리면 한 곳만 보고 엉뚱한 데로 갈 수 있다. 셋이면 그중에 맞는 것이 있다.
@@ -117,7 +124,7 @@ function pickInstitutions(
   return list.slice(0, 3);
 }
 
-export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props) {
+export function NearbyPlaces({ offices, institutions, place, officeNote }: Props) {
   if (!place) return null;
 
   const picked = offices.length > 0 ? pickOffices(offices, place) : null;
@@ -150,11 +157,10 @@ export function NearbyPlaces({ offices, institutions, place, anyBranch }: Props)
           ))}
 
       {/* §5.4가 정한 것이다 — R9는 "아무 곳이나"가 부정확한 차선이 아니라 정확한 답이다.
-          이 말이 없으면 자기 동 주민센터를 찾아 멀리 가는 사람이 생긴다 */}
-      {anyBranch ? (
-        <Text className="mt-3 text-caption text-ink-sub">
-          어느 주민센터에서나 하실 수 있어요. 가까운 곳으로 가세요.
-        </Text>
+          이 말이 없으면 자기 동 행정복지센터를 찾아 멀리 가는 사람이 생긴다.
+          R12는 반대로 주소지 관할이라 다른 말이 붙는다 */}
+      {picked && officeNote ? (
+        <Text className="mt-3 text-caption text-ink-sub">{officeNote}</Text>
       ) : null}
 
       {/* **가까운 것과 맡은 곳이 다를 수 있다** (§5.4 — 없는 것을 있는 것처럼 보이게

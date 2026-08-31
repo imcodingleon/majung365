@@ -10,6 +10,7 @@ import { Pressable, Text, View } from "react-native";
 import { Icon } from "./Icon";
 
 import { COLORS } from "../theme/colors";
+import { FONTS } from "../theme/fonts";
 
 type Props = {
   label: string;
@@ -37,9 +38,12 @@ export function ChoiceButton({
   className,
 }: Props) {
   const accent = urgent ? COLORS.alert : COLORS.brand;
-  const bg = selected ? (urgent ? COLORS.alertSoft : COLORS.brandSoft) : COLORS.surface;
+  const bg = selected ? (urgent ? COLORS.alertSoft : COLORS.brandTint) : COLORS.surface;
   const line = selected ? accent : urgent ? COLORS.alertLine : COLORS.line;
-  const ink = urgent ? COLORS.alert : selected ? COLORS.brand : COLORS.inkStrong;
+  // **고른 것을 글자로 나타내지 않는다** (2026-08-31 시안). 전에는 고르면 글자가
+  // 파랗게 바뀌고 굵어졌는데, 시안은 배경·테두리·동그라미 셋으로만 나타내고 글자는
+  // 그대로 둔다. 목록을 훑을 때 글자 굵기가 들쭉날쭉하지 않아 읽기 쉽다.
+  const ink = urgent ? COLORS.alert : COLORS.inkStrong;
 
   return (
     <Pressable
@@ -58,13 +62,14 @@ export function ChoiceButton({
             borderColor: selected ? accent : COLORS.lineStrong,
           }}
         >
-          {selected ? <Icon name="check" size={15} color={COLORS.surface} /> : null}
+          {/* 동그라미와 같은 24 격자를 쓴다. 작게 그리면 원 안에서 떠 보인다 */}
+          {selected ? <Icon name="check" size={24} color={COLORS.surface} /> : null}
         </View>
       ) : null}
 
       <Text
-        className="flex-1 text-body-lg"
-        style={{ color: ink, fontWeight: selected || urgent ? "800" : "600" }}
+        className="flex-1 text-heading"
+        style={{ color: ink, fontFamily: urgent ? FONTS.extrabold : FONTS.semibold }}
       >
         {label}
       </Text>

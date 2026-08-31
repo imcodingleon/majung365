@@ -5,8 +5,11 @@
 // 전문 보기가 오른쪽에 붙는 배치가 그것이다. 그 형식을 깨면 오히려 무엇에 동의하는 것인지
 // 알아보기 어려워진다.
 //
-// 대신 항목마다 쉬운 말 한 줄을 아래에 붙여 저리터러시 원칙을 지킨다. 항목명은 형식을 맡고
-// 그 아래 한 줄이 뜻을 맡는다.
+// 항목마다 한 줄 설명을 아래에 붙인다. 항목명은 형식을 맡고 그 아래 한 줄이 뜻을 맡는다.
+//
+// **2026-08-31에 그 한 줄도 시안 문구로 바꿨다.** 전에는 "…모으고 쓰는 데 동의해요"처럼
+// 풀어 쓴 말이었고 지금은 "…수집 및 이용에 동의합니다"다. 저리터러시를 이유로 풀어 쓴
+// 결정을 뒤집은 것이며, 근거는 디자이너 시안 채택이다 (`copy-voice.md`).
 import { Pressable, Text, View } from "react-native";
 import { Icon } from "@/shared/components/Icon";
 
@@ -70,16 +73,12 @@ export function ConsentSection({
         accessibilityRole="checkbox"
         accessibilityState={{ checked: allChecked }}
         accessibilityLabel="약관 전체 동의"
-        className="flex-row items-center gap-3 px-4 py-4 active:opacity-80"
-        style={{ backgroundColor: allChecked ? COLORS.brandSoft : COLORS.surface }}
+        className="flex-row items-center gap-3 bg-white px-4 py-4 active:opacity-80"
       >
         <CheckBox checked={allChecked} large />
-        <Text
-          className="flex-1 text-body-lg font-extrabold"
-          style={{ color: allChecked ? COLORS.brand : COLORS.inkStrong }}
-        >
-          약관 전체 동의
-        </Text>
+        {/* 눌러도 바탕색과 글자색이 바뀌지 않는다 (2026-08-31 시안). 체크 상자 하나가
+            켜짐을 맡는다 — 줄 전체가 파랗게 물들면 아래 항목들과 층이 어긋나 보인다 */}
+        <Text className="flex-1 text-body-lg font-bold text-ink-strong">약관 전체 동의</Text>
       </Pressable>
 
       <View className="border-t border-line" />
@@ -102,16 +101,14 @@ export function ConsentSection({
               className="flex-1 flex-row items-center gap-3 active:opacity-70"
             >
               <CheckBox checked={state[item.id]} />
-              <Text className="flex-1 text-body text-ink-strong">
-                <Text
-                  className="font-extrabold"
-                  style={{ color: item.required ? COLORS.brand : COLORS.inkSub }}
-                >
-                  {/* §3.4-2 — 화면 표기는 "[필수]"가 아니라 "꼭 필요해요"다.
-                      법률 용어를 그대로 내면 저리터러시 사용자가 읽고 겁먹는다. */}
-                  {item.required ? "꼭 필요해요 · " : "[선택] "}
+              <Text className="flex-1 text-body font-semibold text-ink-strong">
+                <Text style={{ color: item.required ? COLORS.brand : COLORS.inkSub }}>
+                  {/* **"[필수]"로 되돌렸다** (2026-08-31 시안 채택). §3.4-2는 법률 용어를
+                      그대로 내면 저리터러시 사용자가 겁먹는다며 "꼭 필요해요 · "로 풀어
+                      두었는데, 그 결정을 뒤집는다. 뜻은 아래 한 줄이 계속 맡는다. */}
+                  {item.required ? "[필수] " : "[선택] "}
                 </Text>
-                <Text className="font-bold">{item.label}</Text>
+                <Text>{item.label}</Text>
               </Text>
             </Pressable>
 
@@ -123,12 +120,12 @@ export function ConsentSection({
             >
               {/* 문구를 "보기"로 줄였다. "전문 보기"는 좁은 화면에서 항목명을 두 줄로 밀어낸다.
                   무엇을 보는 것인지는 낭독기용 라벨이 온전히 말한다. */}
-              <Text className="text-caption font-bold text-ink-muted">보기 ›</Text>
+              <Text className="text-caption font-semibold text-ink-muted">보기 ›</Text>
             </Pressable>
           </View>
 
           {/* 항목명은 형식을 맡고 이 줄이 뜻을 맡는다 */}
-          <Text className="ml-9 mt-1 text-caption text-ink-sub">{item.plain}</Text>
+          <Text className="ml-9 mt-1 text-caption font-medium text-ink-hint">{item.plain}</Text>
 
           {item.limitNote ? (
             <Text className="ml-9 mt-2 text-caption text-ink-muted">

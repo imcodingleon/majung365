@@ -13,6 +13,20 @@ from uuid import UUID
 from app.domains.staff.domain.entity import OrgKind
 
 
+class SummaryStatus(StrEnum):
+    """담당자가 먼저 읽는 요약의 상태 (§7.4).
+
+    **요약이 없는 것과 만들지 못한 것을 구분한다.** 화면이 둘을 같게 다루면,
+    답변을 보내지 않은 요청에도 "요약을 만들지 못했습니다"가 뜬다 — 담당자에게는
+    있지도 않은 것이 빠진 것처럼 보인다.
+    """
+
+    NONE = "none"  # 동의한 답변이 없어 만들 것이 없다
+    PENDING = "pending"  # 만드는 중이다
+    READY = "ready"  # 요약이 있다
+    FAILED = "failed"  # 만들지 못했다. 담당자는 원문을 그대로 본다
+
+
 class VisitStatus(StrEnum):
     SENT = "sent"  # 담당자에게 전달했어요
     ACKNOWLEDGED = "acknowledged"  # 담당자가 확인했어요 — 여기서부터 채팅이 열린다
@@ -109,6 +123,12 @@ class VisitRequest:
     # **동의가 있을 때만 채워진다.** 없으면 빈 튜플이고, 담당자 화면에도 안 나간다.
     shared_answers: tuple[SharedAnswer, ...] = ()
     shared_answers_consented_at: datetime | None = None
+
+    # ── 담당자가 먼저 읽는 요약 (§7.4) ──
+    # **원문을 대체하지 않는다.** 요약이 없거나 만들지 못해도 담당자는 답변을
+    # 그대로 본다. 요약은 첫 번째 읽기를 덜어 주는 것이지 답변을 갈음하는 것이 아니다.
+    summary: str = ""
+    summary_status: SummaryStatus = SummaryStatus.NONE
 
     # ── 채팅 읽음 표시 (§7.3) ──
     # 참여자가 요청한 사람과 담당 기관 둘뿐이라 별도 테이블 대신 여기에 둔다.

@@ -90,6 +90,8 @@ export function toTask(item: IntakeTask): Task {
     docs: mergedDocs(item),
     desk: first ? deskOf(first) : undefined,
     contact: first ? contactOf(first) : undefined,
+    // 서버가 안 보내는 배포본이 있다. 빈 배열이면 화면이 기본 문구로 물러선다.
+    starterQuestions: item.starter_questions ?? [],
   };
 }
 

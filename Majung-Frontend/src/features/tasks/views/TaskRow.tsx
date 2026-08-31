@@ -46,9 +46,12 @@ function NumberBadge({ n, color }: { n: number; color: string }) {
 /**
  * 선행조건 표시.
  *
- * 시안에는 "긴급도 높음"으로 되어 있으나 **그 말을 쓰지 않는다.** 서버가 주는 값은
+ * 옛 시안은 "긴급도 높음"이었고 **그 말을 쓰지 않았다.** 서버가 주는 값은
  * `blocks_others`이고 "다른 항목의 선행조건"이라는 뜻이지 급한 정도가 아니다.
  * 급하지 않은데 급하다고 적으면 정말 급한 일과 구별이 사라진다.
+ *
+ * **2026-08-31 시안이 "먼저 할 일"로 바뀌어 그것을 쓴다.** 급한 정도를 말하지 않으면서
+ * 순서를 가리키므로 위 우려에 걸리지 않는다. "먼저 하면 좋아요"보다 짧아 배지에 맞는다.
  */
 function MustBadge() {
   return (
@@ -56,8 +59,8 @@ function MustBadge() {
       className="self-start rounded-full px-3 py-2"
       style={{ backgroundColor: COLORS.alertSoft }}
     >
-      <Text className="text-caption font-extrabold" style={{ color: COLORS.alert }}>
-        먼저 하면 좋아요
+      <Text className="text-caption font-bold" style={{ color: COLORS.alert }}>
+        먼저 할 일
       </Text>
     </View>
   );
@@ -97,7 +100,7 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
         <View className="flex-row items-center gap-3">
           <NumberBadge n={index + 1} color={accent} />
           <Text
-            className="flex-1 text-heading font-extrabold"
+            className="flex-1 text-title font-bold"
             style={{ color: done ? FOLDER_DONE.title : COLORS.inkStrong }}
           >
             {task.title}
@@ -112,14 +115,16 @@ export function TaskRow({ task, index, done, open, highlighted, onToggle, childr
               </Text>
             </View>
           ) : (
-            <Text className="text-2xl" style={{ color: COLORS.inkMuted }}>
-              {open ? "⌃" : "⌄"}
-            </Text>
+            // 글자로 그리던 꺾쇠를 그림으로 바꿨다 (2026-08-31 시안). 글자로 두면
+            // 기기마다 모양과 기준선이 달라 카드마다 삐뚤어 보인다
+            <View style={{ transform: [{ rotate: open ? "180deg" : "0deg" }] }}>
+              <Icon name="down" size={24} color={COLORS.inkMuted} />
+            </View>
           )}
         </View>
 
         <View className="ml-[38px] mt-1 flex-row flex-wrap items-center gap-2">
-          <Text className="text-caption text-ink-sub">{task.meta}</Text>
+          <Text className="text-body-lg font-semibold text-ink-muted">{task.meta}</Text>
           {task.must && !done && !open ? <MustBadge /> : null}
         </View>
       </Pressable>
