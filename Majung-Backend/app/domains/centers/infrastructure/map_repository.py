@@ -4,8 +4,9 @@
 자리가 없다. `tools/fill_coordinates.py`가 채우지 못한 항목은 여기서 조용히 빠지고,
 그 사실은 그 스크립트가 목록으로 보고한다.
 
-**시군구를 반드시 받는다.** 주민센터만 3,555건이라 전부 보내면 화면이 받아 들 수도,
-사용자가 훑어볼 수도 없다.
+**시도는 반드시 받는다.** 주민센터만 3,555건이라 전부 보내면 화면이 받아 들 수도,
+사용자가 훑어볼 수도 없다. 시군구는 없어도 되며, 없으면 그 시도 전체에서 고른다
+(2026-08-31). 지역 선택 화면이 시도만 고르고 넘어가는 길을 열어 두었기 때문이다.
 """
 
 import json
@@ -154,9 +155,13 @@ class JsonMapCenterRepository:
     # ── 조회 ──
 
     def by_region(
-        self, sido: str, district: str, origin: Point | None = None
+        self, sido: str, district: str = "", origin: Point | None = None
     ) -> list[Center]:
         """그 지역의 기관을 **갈래마다 가까운 순 세 곳씩**.
+
+        **시군구는 없어도 된다** (2026-08-31). 비면 그 시도 전체를 그 지역으로 본다.
+        지역 선택 화면이 시도만 고르고 넘어가는 길을 열어 두었는데, 그 경우를 여기서
+        받지 않으면 조회가 다른 자료로 빠져 **엉뚱한 시도의 기관이 나간다.**
 
         `origin`은 사용자가 지금 있는 자리다. 주면 그 점에서 거리를 잰다 (2026-08-26
         결정). 안 주면 예전처럼 그 동네 기관들의 한가운데를 기준으로 삼는데, **그
@@ -186,7 +191,13 @@ class JsonMapCenterRepository:
         in_town: list[Center] = []
         elsewhere: list[Center] = []
         for c in self._items:
-            same_place = bool(head and town) and self._sido[c.id] == head and town in c.address
+            # 시군구가 비면 시도만 맞으면 그 지역으로 친다. 주민센터가 시도 하나에
+            # 수백 건이지만 갈래마다 셋에서 잘리므로 화면에 쏟아지지는 않는다.
+            same_place = (
+                bool(head)
+                and self._sido[c.id] == head
+                and (not town or town in c.address)
+            )
             if same_place:
                 in_town.append(c)
             elif c.category != DISTRICT:

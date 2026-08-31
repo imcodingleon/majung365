@@ -56,3 +56,41 @@ def test_each_category_is_capped() -> None:
     shown = _repo().by_region("경기도", "군포시", GUNPO_STATION)
     for category in {c.category for c in shown}:
         assert len([c for c in shown if c.category == category]) <= 3
+
+
+# ── 시군구 없이 시도만 골랐을 때 (2026-08-31) ──
+#
+# 지역 선택 화면이 시도만 고르고 넘어가는 길을 열어 두었다. 그 길로 온 요청을
+# 서버가 받지 않으면 조회가 `centers.json`(수도권 다섯 곳)으로 빠져,
+# **부산 사용자에게 서울 지부가 나간다.** 출소 직후의 헛걸음이 이 서비스가
+# 가장 피하려는 결과다.
+
+
+def test_sido_only_stays_in_that_sido() -> None:
+    """시도만 골라도 그 시도의 기관이 나온다."""
+    shown = _repo().by_region("부산광역시")
+    assert shown, "시도만 줬더니 아무것도 안 나왔다"
+
+    offices = [c for c in shown if c.category == "주민센터"]
+    assert offices, "그 시도의 주민센터가 하나도 안 나왔다"
+    assert all("부산" in c.address for c in offices)
+
+
+def test_sido_only_does_not_leak_other_sido_offices() -> None:
+    """다른 시도의 주민센터가 섞이지 않는다.
+
+    공단과 정신건강복지센터는 시군구당 하나꼴이라 지역이 안 맞아도 남기지만,
+    주민센터는 전국 3,555건이라 지역 밖의 것이 나오면 그대로 헛걸음이다.
+    """
+    for sido in ("부산광역시", "전라남도", "제주특별자치도"):
+        offices = [c for c in _repo().by_region(sido) if c.category == "주민센터"]
+        assert offices, f"{sido}에서 주민센터가 안 나왔다"
+        head = sido[:2]
+        assert all(head in c.address for c in offices), f"{sido} 밖의 주민센터가 섞였다"
+
+
+def test_sido_only_is_still_capped() -> None:
+    """시군구가 없어도 갈래마다 셋에서 자른다. 주민센터가 시도 하나에 수백 건이다."""
+    shown = _repo().by_region("서울특별시")
+    for category in {c.category for c in shown}:
+        assert len([c for c in shown if c.category == category]) <= 3

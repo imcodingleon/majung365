@@ -74,8 +74,11 @@ def list_centers(
     사용자의 지역과 좌표는 준식별정보다. **조회 조건을 로그에 남기지 않는다.**
     """
     origin = (lat, lng) if lat is not None and lng is not None else None
-    if sido and district:
-        items = _map_repo.by_region(sido, district, origin)
+    # **시도만 와도 이 자료로 답한다** (2026-08-31). 전에는 시군구까지 있어야 여기로
+    # 들어왔고, 시도만 오면 아래의 `centers.json`(수도권 다섯 곳)으로 빠졌다. 그래서
+    # 지역 선택 화면에서 시도만 고른 부산 사용자에게 **서울 지부가 나갔다.**
+    if sido:
+        items = _map_repo.by_region(sido, district or "", origin)
         if category:
             narrowed = [c for c in items if c.category == category]
             # 빈 갈래(오탈자 등)면 전체로 되돌린다. 화면이 비는 것보다 낫다.
