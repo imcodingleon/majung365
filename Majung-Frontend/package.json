@@ -34,6 +34,7 @@
     "tailwindcss": "^3.4.19"
   },
   "devDependencies": {
+    "@playwright/test": "^1.62.1",
     "@types/jest": "^30.0.0",
     "@types/react": "~19.2.2",
     "eas-cli": "^21.7.0",
@@ -50,7 +51,9 @@
     "ios": "expo start --ios",
     "web": "expo start --web",
     "lint": "expo lint",
-    "test": "jest"
+    "test": "jest",
+    "e2e": "playwright test",
+    "e2e:ui": "playwright test --ui"
   },
   "private": true
 }

@@ -21,6 +21,21 @@
 npx expo start --web      # 개발 서버 (8081)
 npx expo export -p web    # 웹 정적 빌드
 npx tsc --noEmit          # 타입 체크
+npm test                  # 계산 검증 (jest, `*.test.ts`)
+npm run e2e               # 화면 검증 (Playwright, `e2e/*.spec.ts`)
+```
+
+### 검증이 두 갈래인 이유
+
+- **jest는 계산을 본다.** 알림 건수·목록 순서처럼 **틀려도 오류가 나지 않고 숫자만 조용히 어긋나는** 것이 대상이며, 그런 것은 순수 함수 자리에 모여 있다
+- **Playwright는 화면을 본다.** 값이 맞아도 화면에 안 나오거나 엉뚱한 자리에 놓이는 것을 잡는다. 확장자를 갈라 두었으므로(`.test.ts` ↔ `.spec.ts`) 서로 상대의 파일을 집어가지 않는다
+
+e2e는 **서버 응답을 가짜로 채운다** (`e2e/support/`). 언제 돌려도 같은 결과가 나와야 하고, "어제"·"8월 26일" 같은 날짜 표시는 실제 서버 데이터로 만들 수 없기 때문이다. 브라우저의 시계도 `NOW`로 못 박는다.
+
+**진짜 서버에 붙는 것은 `e2e/smoke.spec.ts` 하나뿐이다.** 가짜 응답만으로는 서버 계약이 바뀌어 어긋나는 것을 못 잡으므로 그 자리를 맡는다. 세션 토큰이 필요하고, 없으면 통째로 건너뛴다.
+
+```bash
+E2E_TOKEN=<localStorage의 majung.session 값> npx playwright test e2e/smoke.spec.ts
 ```
 
 ## 아키텍처: Frontend DDD

@@ -44,3 +44,8 @@ example
 # generated native folders
 /ios
 /android
+
+# 화면 검증(e2e) 산출물
+test-results/
+playwright-report/
+.playwright-mcp/
