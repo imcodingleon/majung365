@@ -106,9 +106,13 @@ export default function MyInfoRoute() {
 
   if (!profile) {
     // 불러오는 중이거나 실패한 상태다. 실패를 조용히 넘기지 않는다.
+    //
+    // **빈 문자열이 아니라 `null`을 넘긴다.** 빈 값과 맞대면 어떤 생일도 안 맞아서,
+    // 응답이 오기 전에 정확히 적은 사람에게 "등록한 정보와 달라요"가 나갔다. 그리고
+    // 그 거짓 실패가 삭제 카드를 펼쳐, 맞게 적은 사람에게 지우라고 권했다.
     return (
       <BirthGate
-        storedBirth=""
+        storedBirth={null}
         onPass={() => undefined}
         onClose={close}
         onEraseAll={() => void erase("account")}

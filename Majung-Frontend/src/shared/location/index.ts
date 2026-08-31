@@ -11,4 +11,4 @@ export {
   sameSido,
   type LocatedPlace,
 } from "./locate";
-export { useRegionLookup, type LookupState } from "./useRegionLookup";
+export { RegionLookupProvider, useRegionLookup, type LookupState } from "./useRegionLookup";

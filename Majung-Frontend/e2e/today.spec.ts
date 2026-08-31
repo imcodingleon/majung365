@@ -42,3 +42,39 @@ test.describe("홈", () => {
     await expect(page.getByRole("button", { name: /도움이 필요해요/ })).toBeVisible();
   });
 });
+
+// 지역을 바꾸면 홈의 "가까운 곳"도 따라간다 (2026-08-31).
+//
+// **지도에서 지역을 바꿔도 홈은 예전 지역에 머물렀다.** 지도는 자기 훅 인스턴스의 값을
+// 보고, 홈은 가입할 때 세션에 박힌 값을 보고 있었다. 새 값은 기기와 서버에만 적히므로
+// 어느 쪽도 그것을 몰랐고, 탭은 화면을 살려 두어 되돌아와도 그대로였다 — 새로고침해야
+// 맞았다. 그래서 `useRegionLookup`을 화면들이 함께 보는 값으로 올렸다.
+test.describe("홈 — 지역을 바꾼 뒤", () => {
+  test("가까운 곳을 새 지역으로 다시 부른다", async ({ page }) => {
+    const asked: string[] = [];
+    page.on("request", (req) => {
+      if (req.url().includes("/api/district-offices")) asked.push(req.url());
+    });
+
+    // **홈을 먼저 띄워 둔다.** 탭이 화면을 살려 두므로, 나중에 돌아와도 다시 마운트되지
+    // 않는다. 지도부터 열면 홈이 새로 그려지면서 어차피 새 값을 읽어 결함이 가려진다.
+    await openApp(page, "/today", { freezeClock: false });
+    await expect(page.getByRole("tab", { name: "지도" })).toBeVisible();
+
+    await page.getByRole("tab", { name: "지도" }).click();
+    await expect(page.getByText("시/도 선택")).toBeVisible();
+    await page.getByRole("button", { name: "경기", exact: true }).click();
+    await page.getByRole("button", { name: "군포시", exact: true }).click();
+    await page.getByRole("button", { name: "선택 완료" }).click();
+    await expect(page.getByText("군포시")).toBeVisible();
+
+    await page.getByRole("tab", { name: "홈" }).click();
+
+    // 행정복지센터를 안내하는 할 일(R9)을 펼치면 그 지역으로 불러온다.
+    await page.getByText("신분증", { exact: true }).first().click();
+
+    await expect
+      .poll(() => asked.some((u) => decodeURIComponent(u).includes("sido=경기")))
+      .toBe(true);
+  });
+});
