@@ -160,8 +160,16 @@ class MockChatLlm:
     """실 Claude 없이 동작하는 ChatLlm 구현(무비용 데모). 외부 호출 없음."""
 
     async def triage(
-        self, message: str, history: list[Turn], *, name: str | None = None
+        self,
+        message: str,
+        history: list[Turn],
+        *,
+        name: str | None = None,
+        route_label: str = "",
     ) -> TriageResult:
+        """**`route_label`을 쓰지 않는다.** 목업은 키워드 규칙으로만 고르며,
+        방을 참고해 짐작을 고치는 것은 모델이 할 일이다. 그 효과는 실 Claude에서만
+        확인된다 — 여기서 흉내내면 배선만 맞고 실제 판정은 안 본 채로 넘어간다."""
         await asyncio.sleep(_THINK_DELAY_SECONDS)  # 생각하는 척 → 타이핑 인디케이터 노출
         qtype, routes = _detect(message)
         priorities = tuple(RoutePriority(route=r) for r in routes)

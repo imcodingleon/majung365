@@ -37,15 +37,23 @@ class FakeLlm:
         # 마스킹에 쓸 이름이 실제로 흘러왔는지 센다.
         # **`assert_masked`가 이름은 못 잡으므로 배선 자체가 유일한 방어선이다.**
         self.last_triage_name: str | None = None
+        # 분류할 때 알려준 방. **화면이 아는 것을 모델에게 넘겼는지가 여기서 갈린다.**
+        self.last_triage_route: str | None = None
         self.last_stream_name: str | None = None
         self.last_suggest_name: str | None = None
         # 제안을 뽑을 때 넘어온 대화. 마지막이 방금 한 답변이어야 한다.
         self.last_suggest_history: list[Turn] | None = None
 
     async def triage(
-        self, message: str, history: list[Turn], *, name: str | None = None
+        self,
+        message: str,
+        history: list[Turn],
+        *,
+        name: str | None = None,
+        route_label: str = "",
     ) -> TriageResult:
         self.last_triage_name = name
+        self.last_triage_route = route_label
         if self._raise_triage:
             raise RuntimeError("upstream down")
         return self._triage

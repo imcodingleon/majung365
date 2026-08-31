@@ -24,8 +24,8 @@ from anthropic import AsyncAnthropic
 from app.domains.chat.application.dto import Turn
 from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.domain.prompts import (
-    TRIAGE_INSTRUCTION,
     build_system_prompt,
+    build_triage_instruction,
 )
 from app.domains.chat.domain.suggestions import (
     SUGGESTIONS_INSTRUCTION,
@@ -187,7 +187,12 @@ class ClaudeChatLlm:
         self._record_call = record_call or (lambda: None)
 
     async def triage(
-        self, message: str, history: list[Turn], *, name: str | None = None
+        self,
+        message: str,
+        history: list[Turn],
+        *,
+        name: str | None = None,
+        route_label: str = "",
     ) -> TriageResult:
         self._record_call()
         # 외부 SDK(TypedDict) 경계 — dict 리터럴은 런타임엔 유효하나 strict 타입 매칭만 예외
@@ -199,7 +204,7 @@ class ClaudeChatLlm:
                 "effort": "low",
                 "format": {"type": "json_schema", "schema": _TRIAGE_SCHEMA},
             },
-            "system": TRIAGE_INSTRUCTION,
+            "system": build_triage_instruction(route_label),
             "messages": _to_messages(history, message, name=name),
         }
         resp = await self._client.messages.create(**create_kwargs)

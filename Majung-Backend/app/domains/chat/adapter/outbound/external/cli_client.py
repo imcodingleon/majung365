@@ -24,8 +24,8 @@ from typing import Any
 from app.domains.chat.application.dto import Turn
 from app.domains.chat.application.port import GuidanceChunk
 from app.domains.chat.domain.prompts import (
-    TRIAGE_INSTRUCTION,
     build_system_prompt,
+    build_triage_instruction,
 )
 from app.domains.chat.domain.suggestions import SUGGESTIONS_INSTRUCTION
 from app.domains.chat.domain.triage import (
@@ -156,11 +156,16 @@ class CliChatLlm:
         self._model = model
 
     async def triage(
-        self, message: str, history: list[Turn], *, name: str | None = None
+        self,
+        message: str,
+        history: list[Turn],
+        *,
+        name: str | None = None,
+        route_label: str = "",
     ) -> TriageResult:
         masked = mask_text(message, name=name)
         prompt = (
-            f"{TRIAGE_INSTRUCTION}\n\n"
+            f"{build_triage_instruction(route_label)}\n\n"
             "아래 형식의 JSON만 출력하세요. 다른 말은 붙이지 마세요.\n"
             '{"question_type": "support" 또는 "daily", '
             '"priorities": [{"route": "R1"}, ...]}\n\n'

@@ -79,3 +79,73 @@ def test_표에서_빠진_항목은_빈_값이다(monkeypatch: pytest.MonkeyPatc
     assert questions_for(RouteId.R1) == ()
     # 나머지 항목은 그대로다 — 하나가 빠져도 다른 방이 함께 죽지 않는다.
     assert questions_for(RouteId.R9)
+
+
+# ── 검색에 걸리는가 (2026-08-31 실사용 결함) ──
+#
+# R13 방에서 "잃어버렸는데 어떡해요?"를 눌렀더니 신분증(R9) 안내가 나왔다.
+# 그 문장에는 무엇을 잃어버렸는지가 없어서 그 항목 자료에 걸리지 않았고, 대신
+# 다른 항목 문서가 본문의 유일한 근거가 됐다.
+#
+# **모든 문구가 걸려야 하는 것은 아니다.** "돈이 드나요?"처럼 짧지만 뜻이 분명한
+# 말은 길게 만들면 칩이 안 읽힌다 — 저리터러시 전제와 어긋난다. 여기서 막으려는
+# 것은 **목적어가 빠져 무엇에 대한 질문인지 문장만으로 알 수 없는 것**이다.
+
+# 검색에 안 걸려도 두기로 한 문구들. 짧고 뜻이 분명하며, 그 방에서 눌리는 순간
+# 맥락이 사람에게는 분명하다. 항목 이름을 알려받은 triage가 이 자리를 메운다.
+ALLOWED_MISSES = {
+    ("R1", "돈을 내야 하나요?"),
+    ("R2", "얼마나 받을 수 있어요?"),
+    ("R2", "무슨 서류가 필요해요?"),
+    ("R3", "어디로 가면 돼요?"),
+    ("R4", "보증금은 얼마나 필요해요?"),
+    ("R4", "무슨 서류가 필요해요?"),
+    ("R4", "얼마나 걸려요?"),
+    ("R6", "수용 사유를 말해야 하나요?"),
+    ("R7", "얼마나 빌릴 수 있어요?"),
+    ("R7", "이자는 얼마예요?"),
+    ("R8", "돈이 드나요?"),
+    ("R8", "어디로 가면 돼요?"),
+    ("R8", "비밀이 지켜지나요?"),
+    ("R9", "얼마나 걸려요?"),
+    ("R9", "돈이 드나요?"),
+    ("R11", "얼마나 걸려요?"),
+    ("R12", "언제부터 나와요?"),
+    ("R13", "돈이 드나요?"),
+    ("R14", "돈이 드나요?"),
+    ("R14", "얼마나 걸려요?"),
+}
+
+
+def test_모호한_문구가_그_항목_자료를_문다() -> None:
+    """**목록에 없는 문구는 자기 항목 자료에 걸려야 한다.**
+
+    새 문구를 넣을 때 이 검증이 걸리면 둘 중 하나를 골라야 한다 — 항목 이름을
+    넣어 또렷하게 만들거나, 짧게 두는 편이 낫다고 판단해 위 목록에 올리거나.
+    **그 판단을 하게 만드는 것이 이 검증의 목적이다.** 자동으로 통과시키지 않는다.
+    """
+    from app.domains.knowledge.infrastructure.json_repository import (
+        JsonInstitutionRepository,
+    )
+    from app.domains.knowledge.infrastructure.rag_repository import JsonRagRepository
+
+    index = JsonRagRepository(cards=JsonInstitutionRepository().all()).index()
+    def hits(route: str, question: str) -> bool:
+        found = index.search(question, frozenset({route}))
+        return any(route in p.route_ids for p, _ in found)
+
+    leaky = [
+        (route.value, q)
+        for route, qs in STARTER_QUESTIONS.items()
+        for q in qs
+        if (route.value, q) not in ALLOWED_MISSES and not hits(route.value, q)
+    ]
+    assert not leaky, f"자기 항목 자료에 걸리지 않는다: {leaky}"
+
+
+def test_두기로_한_문구도_실제로_표에_있다() -> None:
+    """**예외 목록이 유령을 품지 않게 한다.** 문구를 고쳤는데 목록에 옛 문장이
+    남으면, 새로 생긴 모호한 문구가 그 자리에 숨어 통과할 수 있다."""
+    live = {(route.value, q) for route, qs in STARTER_QUESTIONS.items() for q in qs}
+    stale = ALLOWED_MISSES - live
+    assert not stale, f"표에 없는 문구가 예외 목록에 남았다: {stale}"

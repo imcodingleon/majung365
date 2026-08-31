@@ -29,9 +29,26 @@ class ChatLlm(Protocol):
     """
 
     async def triage(
-        self, message: str, history: list[Turn], *, name: str | None = None
+        self,
+        message: str,
+        history: list[Turn],
+        *,
+        name: str | None = None,
+        route_label: str = "",
     ) -> TriageResult:
-        """상황을 6영역으로 분류하고 급한 순위를 정한다(구조화 출력)."""
+        """상황을 분류하고 급한 순위를 정한다(구조화 출력).
+
+        `route_label`은 **지금 열려 있는 대화방의 할 일 이름**이다. 항목에 매이지
+        않은 일반 대화면 빈 문자열이고, 그것이 정상 경로다.
+
+        **화면이 아는 것을 모델에게 알려주는 값이다.** 저리터러시 사용자는 짧게
+        묻는다 — "잃어버렸는데 어떡해요?"에는 무엇을 잃어버렸는지가 없다. 방을
+        모르는 모델은 그 말만 보고 다른 항목을 고르고, 그 항목이 곁가지 자료의
+        출처가 되어 답이 통째로 그쪽으로 샌다(2026-08-31 실사용 결함).
+
+        **핀과는 하는 일이 다르다.** `_pin_route`는 이미 나온 결과의 순서를 바꿀
+        뿐이라 잘못 고른 항목이 그대로 남는다. 이 값은 고르기 전에 준다.
+        """
         ...
 
     def stream_guidance(

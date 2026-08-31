@@ -90,6 +90,26 @@ TRIAGE_INSTRUCTION = f"""당신은 마중365의 상황 분류기입니다. 사�
 판단·훈계·과거 캐묻기 금지. 사용자의 실제 말에 근거해서만 분류하세요."""
 
 
+def build_triage_instruction(route_label: str = "") -> str:
+    """분류 지시문. **지금 보고 있는 할 일을 알려준다.**
+
+    저리터러시 사용자는 짧게 묻는다 — "잃어버렸는데 어떡해요?"에는 무엇을
+    잃어버렸는지가 없다. 방을 모르면 모델은 그 말만 보고 다른 항목을 고르고,
+    그 항목이 곁가지 자료의 출처가 되어 답이 통째로 그쪽으로 샌다(2026-08-31 결함).
+
+    **그래도 다른 항목을 고를 길은 막지 않는다.** R14 카드에서 열었더라도
+    "신분증은 어디서 만드나요"를 물을 수 있다. 짐작의 기준점을 줄 뿐이다.
+    """
+    if not route_label:
+        return TRIAGE_INSTRUCTION
+    return (
+        f"{TRIAGE_INSTRUCTION}\n\n"
+        f"참고: 이분은 지금 '{route_label}' 화면에서 묻고 계십니다. "
+        "짧게 물어 무엇에 대한 질문인지 문장만으로 알기 어려우면 이 항목으로 보세요. "
+        "다만 분명히 다른 것을 물으셨다면 그 항목을 고르세요 — 이것은 짐작의 기준점이지 정답이 아닙니다."
+    )
+
+
 def route_display(route: RouteId) -> str:
     return label_for(route)
 
@@ -132,17 +152,26 @@ def build_guidance_context(
         # 근거 문서 본문. 카드가 제도의 요약이라면 이쪽은 원문이라 구체적인 질문에 답한다.
         lines.append("[수집한 공식 자료 — 이 내용을 근거로 답하고, 어느 기관 자료인지 밝히세요]")
         lines.extend(passages)
-    if other_passages:
-        # 그 항목에 근거가 없어 넓혀서 찾은 것. **어디서 온 자료인지 갈라서 준다** —
-        # 섞어 놓으면 곁가지 자료가 본 주제의 근거인 것처럼 읽힌다.
-        lines.append("[다른 할 일에 관한 자료 — 물어보신 만큼만 짧게 쓰세요]")
-        lines.extend(other_passages)
     if injected_cards:
         lines.append(
             "[확인된 정보 — 먼저 이 사실을 근거로 쉬운 말로 안내하세요. "
             "여기에 답이 없는 것을 물었다면 web_search로 찾아서 답하세요]"
         )
         lines.extend(injected_cards)
+    if other_passages:
+        # 그 항목에 근거가 없어 넓혀서 찾은 것. **어디서 온 자료인지 갈라서 준다** —
+        # 섞어 놓으면 곁가지 자료가 본 주제의 근거인 것처럼 읽힌다.
+        #
+        # **주제 자료 뒤에 둔다** (2026-08-31, 실사용 결함으로 고침). 모델은 위에서부터
+        # 읽고 먼저 읽은 것으로 답을 시작한다. 예전에는 이 블록이 위에 있었는데,
+        # 그 항목에 근거가 없는 방(R13처럼 자료가 적은 항목)에서는 곁가지만 본문이고
+        # 주제는 카드 한 줄 요약뿐이라 답이 통째로 그쪽으로 갔다 — R13 방에서 물었는데
+        # 신분증(R9) 재발급 안내가 첫 문단으로 나왔다. 모델은 순서를 따랐을 뿐이다.
+        lines.append(
+            "[다른 할 일에 관한 자료 — **위의 주제에 먼저 답한 뒤**, "
+            "물어보신 만큼만 짧게 덧붙이세요. 이것으로 답을 시작하지 마세요]"
+        )
+        lines.extend(other_passages)
     if not injected_cards and not passages and not other_passages:
         lines.append(
             "[확인된 제도 정보 없음 — **먼저 web_search로 찾아보세요.** "

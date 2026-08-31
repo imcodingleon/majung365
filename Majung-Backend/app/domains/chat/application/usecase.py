@@ -123,9 +123,15 @@ class ChatUseCase:
         history = list(cmd.history)
 
         # 1) triage (구조화)
+        #
+        # **어느 방에서 묻는지 함께 알려준다** (2026-08-31 실사용 결함). 저리터러시
+        # 사용자는 짧게 묻는데, 방을 모르면 모델이 그 말만 보고 엉뚱한 항목을 고른다.
+        # R13 방의 "잃어버렸는데 어떡해요?"에 신분증(R9)이 나왔고, 아래 `_pin_route`는
+        # 순서만 바꾸므로 그 R9가 끝까지 남아 곁가지 자료의 출처가 됐다.
+        pinned_label = label_for(RouteId(cmd.route_id)) if _route_or_none(cmd.route_id) else ""
         try:
             triage = await self._llm.triage(
-                cmd.message, history, name=cmd.user_name
+                cmd.message, history, name=cmd.user_name, route_label=pinned_label
             )
         except Exception:
             logger.warning("triage 실패 (upstream)")  # 사용자 입력 원문은 로그에 남기지 않는다
