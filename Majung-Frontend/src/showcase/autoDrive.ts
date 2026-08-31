@@ -82,8 +82,19 @@ async function openFirstStaffRequest(): Promise<void> {
   card?.click();
 }
 
-/** 상담 목록 맨 위의 대화를 연다. 담당자와 나눈 이야기가 위쪽에 온다. */
+/**
+ * 상담 목록 맨 위의 대화를 연다. 담당자와 나눈 이야기가 위쪽에 온다.
+ *
+ * **구역 제목이 뜨기를 먼저 기다린다.** 목록은 두 번에 나눠 채워진다 — 방문 요청이
+ * 먼저 오고 지난 대화가 뒤에 온다. 첫 그림에 대고 누르면 그 줄이 곧 다시 그려지면서
+ * 누른 것이 사라진다. 실제로 방이 안 열린 채 목록만 찍혔다.
+ */
 async function openFirstConversation(): Promise<void> {
+  const ready = await waitFor(() =>
+    document.body.innerText.includes("담당자와 나눈 이야기") ? true : null,
+  );
+  if (!ready) return;
+  await sleep(400);
   const row = await waitFor(() => byLabelEnding("와 나눈 이야기 열기"));
   row?.click();
 }

@@ -128,9 +128,14 @@ function isSocketIo(url: string): boolean {
 /**
  * `XMLHttpRequest`를 갈아 끼운다.
  *
- * **진짜를 상속하지 않고 새로 만든다.** `readyState`·`status`·`responseText`는
- * 프로토타입의 접근자라, 상속해서 덮으려 하면 값을 넣을 자리가 없다. engine.io가
- * 쓰는 것은 아래 몇 가지뿐이라 그것만 갖춘 물건이 오히려 확실하다.
+ * **진짜를 상속한다.** 백엔드가 아닌 요청은 손대지 않고 그대로 원본에게 맡긴다 —
+ * 구글 지도 타일이 이 길로 오는데, 처음에는 진짜를 흉내 낸 물건으로 대신 받다가
+ * `addEventListener`·`response`·`getAllResponseHeaders` 같은 것이 없어서 **지도가
+ * 군데군데 비어 떴다.** 흉내 내는 범위는 백엔드로 가는 요청 하나로 좁힌다.
+ *
+ * 백엔드로 가는 요청에서는 `open`·`send`를 가로채고, engine.io가 읽는 세 값
+ * (`readyState`·`status`·`responseText`)만 인스턴스에 직접 얹어 프로토타입의
+ * 접근자를 가린다.
  */
 export function installFakeSocketIo(
   isBackend: (url: string) => boolean,
@@ -138,69 +143,50 @@ export function installFakeSocketIo(
 ): void {
   const RealXhr = window.XMLHttpRequest;
 
-  class ShowcaseXhr {
-    // engine.io가 읽고 쓰는 것들.
-    readyState = 0;
-    status = 0;
-    responseText = "";
-    responseType = "";
-    withCredentials = false;
-    timeout = 0;
-    onreadystatechange: (() => void) | null = null;
+  class ShowcaseXhr extends RealXhr {
+    private faked = false;
+    private fakeMethod = "GET";
+    private fakeUrl = "";
+    private fakeAborted = false;
 
-    private method = "GET";
-    private url = "";
-    private real: XMLHttpRequest | null = null;
-    private aborted = false;
-
-    open(method: string, url: string): void {
-      this.method = method.toUpperCase();
-      this.url = String(url);
-      this.readyState = 1;
-
-      // 백엔드가 아니면 진짜에게 넘긴다. 지도 타일이나 글꼴이 이 길로 온다.
-      if (!isBackend(this.url)) {
-        const real = new RealXhr();
-        this.real = real;
-        real.onreadystatechange = () => {
-          this.readyState = real.readyState;
-          this.status = real.status;
-          this.responseText = real.responseType === "" ? real.responseText : "";
-          this.onreadystatechange?.();
-        };
-        real.open(method, url, true);
-      }
+    open(method: string, url: string | URL, ...rest: unknown[]): void {
+      this.fakeMethod = String(method).toUpperCase();
+      this.fakeUrl = String(url);
+      this.faked = isBackend(this.fakeUrl);
+      if (this.faked) return;
+      // @ts-expect-error 원본 시그니처를 그대로 넘긴다.
+      super.open(method, url, ...rest);
     }
 
     setRequestHeader(name: string, value: string): void {
-      this.real?.setRequestHeader(name, value);
-    }
-
-    getResponseHeader(name: string): string | null {
-      return this.real ? this.real.getResponseHeader(name) : null;
+      if (this.faked) return;
+      super.setRequestHeader(name, value);
     }
 
     abort(): void {
-      this.aborted = true;
-      room.waiting = null;
-      this.real?.abort();
+      if (this.faked) {
+        this.fakeAborted = true;
+        room.waiting = null;
+        return;
+      }
+      super.abort();
     }
 
-    send(data?: string | null): void {
-      if (this.real) {
-        this.real.send(data ?? null);
+    send(data?: Document | XMLHttpRequestBodyInit | null): void {
+      if (!this.faked) {
+        super.send(data ?? null);
         return;
       }
 
       // 백엔드로 가는 XHR이다. **네트워크로 내보내지 않는다.**
-      if (!isSocketIo(this.url)) {
+      if (!isSocketIo(this.fakeUrl)) {
         this.finish(200, "{}");
         return;
       }
 
-      const hasSid = /[?&]sid=/.test(this.url);
+      const hasSid = /[?&]sid=/.test(this.fakeUrl);
 
-      if (this.method === "POST") {
+      if (this.fakeMethod === "POST") {
         for (const packet of String(data ?? "").split(RS)) {
           if (packet) handle(packet, messagesFor);
         }
@@ -223,14 +209,14 @@ export function installFakeSocketIo(
         return;
       }
       const timer = setTimeout(() => {
-        if (this.aborted) return;
+        if (this.fakeAborted) return;
         room.waiting = null;
         // 핑 하나로 연결을 살려 둔다. 빈 응답을 주면 클라이언트가 곧바로 다시 물어 온다.
         this.finish(200, "2");
       }, POLL_HOLD_MS);
       room.waiting = () => {
         clearTimeout(timer);
-        if (!this.aborted) this.finish(200, drain());
+        if (!this.fakeAborted) this.finish(200, drain());
       };
     }
 
@@ -243,11 +229,13 @@ export function installFakeSocketIo(
      */
     private finish(status: number, body: string): void {
       setTimeout(() => {
-        if (this.aborted) return;
-        this.status = status;
-        this.responseText = body;
-        this.readyState = 4;
-        this.onreadystatechange?.();
+        if (this.fakeAborted) return;
+        // 프로토타입의 접근자를 인스턴스 값으로 가린다. 진짜 XHR은 열지 않았으므로
+        // 원본 값은 계속 0과 빈 문자열이다.
+        Object.defineProperty(this, "status", { value: status, configurable: true });
+        Object.defineProperty(this, "responseText", { value: body, configurable: true });
+        Object.defineProperty(this, "readyState", { value: 4, configurable: true });
+        this.onreadystatechange?.(new Event("readystatechange"));
       }, 0);
     }
   }

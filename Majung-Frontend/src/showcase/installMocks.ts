@@ -75,6 +75,20 @@ function memoryStorage(seed: Record<string, string>): Storage {
 }
 
 function installStorage(): void {
+  // **부팅 스크립트가 이미 바꿔 두었으면 그것을 채우기만 한다** (`src/app/+html.tsx`).
+  //
+  // 이 함수는 앱이 이미 저장소를 한 번 읽은 뒤에 돈다 — 정적 배포본에서는 라우트
+  // 모듈이 루트 레이아웃보다 늦게 평가되기 때문이다. 그래서 격리 자체는 번들보다
+  // 먼저 도는 인라인 스크립트가 맡고, 여기서는 값만 마저 넣는다. 여기서 저장소를
+  // 새로 만들어 갈아 끼우면 그 사이에 앱이 적어 둔 것이 사라진다.
+  const boot = (window as unknown as { __showcaseBootStore?: Storage }).__showcaseBootStore;
+  if (boot) {
+    for (const [key, value] of Object.entries(SEEDED_STORAGE)) {
+      if (boot.getItem(key) === null) boot.setItem(key, value);
+    }
+    return;
+  }
+
   const fake = memoryStorage(SEEDED_STORAGE);
   try {
     Object.defineProperty(window, "localStorage", {
@@ -279,9 +293,14 @@ function chatStream(): Response {
 // ── 4. fetch 교체 ─────────────────────────────────────────────────────
 
 function installFetch(): void {
-  const original = window.fetch.bind(window);
+  // **부팅 스크립트가 남겨 둔 원본을 쓴다** (`src/app/+html.tsx`). 그 스크립트가
+  // `window.fetch`를 "목업이 깔릴 때까지 기다리는" 것으로 바꿔 두었기 때문에,
+  // 지금 자리의 `window.fetch`를 원본으로 삼으면 서로를 부르며 맴돈다.
+  const stashed = (window as unknown as { __showcaseRealFetch?: typeof fetch })
+    .__showcaseRealFetch;
+  const original = (stashed ?? window.fetch).bind(window);
 
-  window.fetch = async function showcaseFetch(
+  const showcaseFetch = async function showcaseFetch(
     input: RequestInfo | URL,
     init?: RequestInit,
   ): Promise<Response> {
@@ -307,6 +326,10 @@ function installFetch(): void {
     }
     return handleWrite(method, path, body);
   } as typeof window.fetch;
+
+  window.fetch = showcaseFetch;
+  // 부팅 스크립트가 붙들어 둔 요청들이 이 값을 기다리고 있다.
+  (window as unknown as { __showcaseFetch?: typeof fetch }).__showcaseFetch = showcaseFetch;
 }
 
 // ── 5. 소켓 ─────────────────────────────────────────────
