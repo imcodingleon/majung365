@@ -1,6 +1,7 @@
 // 시연 프레임의 부팅 라우트 (`/showcase/preview?screen=<화면>`).
 //
-// **여기서 하는 일은 둘뿐이다.** 목업을 켜고, 진짜 화면으로 넘긴다.
+// **여기서 하는 일은 셋이다.** 목업을 켜고, 진짜 화면으로 넘기고, 주소로는 갈 수 없는
+// 화면이면 한 겹 더 열어 준다.
 //
 // 왜 화면을 여기서 직접 그리지 않는가
 //   화면 컴포넌트를 이 라우트에서 렌더하면 하단 메뉴바가 나오지 않는다. 메뉴바는
@@ -36,28 +37,32 @@ import { useEffect } from "react";
 import { ActivityIndicator, View } from "react-native";
 import { type Href, router } from "expo-router";
 
+import { drive } from "@/showcase/autoDrive";
 import { installShowcaseMocks } from "@/showcase/installMocks";
+import { STAFF_CREDENTIALS } from "@/showcase/mocks/showcase-fixtures";
 
 /**
- * 찍을 수 있는 화면들. **껍데기(`src/showcase/shell.html`)의 목록과 짝이다.**
+ * 찍을 수 있는 화면. **껍데기(`public/showcase/index.html`)의 목록과 짝이다.**
  *
- * 여기에 없는 이름으로 들어오면 홈으로 보낸다 — 오타 하나에 빈 프레임이 뜨는 것보다
- * 무엇이든 보이는 편이 시연에서 안전하다.
+ * `to`는 어느 주소로 갈지, `params`는 함께 넘길 값이다. 한 겹 더 열어야 하는 화면은
+ * `autoDrive`가 이름을 보고 이어서 처리한다.
  */
-const SCREENS = [
-  "today",
-  "alerts",
-  "chats",
-  "map",
-  "my-info",
-  "nearby",
-  "pamphlet",
-  "signup",
-  "retake",
-] as const;
-
-/** 하단 메뉴바 안에 있는 화면들. 이동할 때 그룹 이름을 붙여야 그 칸이 잡힌다(위 ②). */
-const TAB_SCREENS = new Set<string>(["today", "alerts", "chats", "map", "my-info"]);
+const SCREENS: Record<string, { to: string; params?: Record<string, string> }> = {
+  today: { to: "/(tabs)/today" },
+  alerts: { to: "/(tabs)/alerts" },
+  chats: { to: "/(tabs)/chats" },
+  // 챗봇 대화는 주소로 열 수 있다. 홈이 `openChat`을 받아 팝업을 띄운다 (§6.1).
+  "ai-chat": { to: "/(tabs)/today", params: { openChat: "R9" } },
+  // 담당자 대화는 주소가 없다. 상담 목록으로 간 뒤 맨 위 대화를 연다.
+  "staff-chat": { to: "/(tabs)/chats" },
+  map: { to: "/(tabs)/map" },
+  "my-info": { to: "/(tabs)/my-info" },
+  signup: { to: "/signup" },
+  retake: { to: "/retake" },
+  // 담당자 화면. **`INCLUDE_ADMIN=1`로 빌드해야 있다** — 배포는 그렇게 빌드한다.
+  "admin-list": { to: "/admin" },
+  "admin-detail": { to: "/admin" },
+};
 
 /** 이 문서가 시연 프레임인가. */
 function isShowcaseFrame(): boolean {
@@ -77,20 +82,20 @@ if (isShowcaseFrame()) installShowcaseMocks();
  * **주소를 직접 읽는다.** `useLocalSearchParams`는 첫 렌더에서 비어 있을 때가 있고,
  * 그 한 번의 빈 값으로 홈에 넘어가면 뒤늦게 값이 들어와도 이미 늦다.
  */
-function targetScreen(): (typeof SCREENS)[number] {
-  const asked = new URLSearchParams(window.location.search).get("screen");
-  if (asked && SCREENS.includes(asked as (typeof SCREENS)[number])) {
-    return asked as (typeof SCREENS)[number];
-  }
-  return "today";
+function targetScreen(): string {
+  const asked = new URLSearchParams(window.location.search).get("screen") ?? "";
+  // 이름이 어긋나면 홈을 띄운다. 오타 하나에 빈 프레임이 남는 것보다 낫다.
+  return asked in SCREENS ? asked : "today";
 }
 
 export default function ShowcasePreviewRoute() {
   useEffect(() => {
     const name = targetScreen();
-    const href = TAB_SCREENS.has(name) ? `/(tabs)/${name}` : `/${name}`;
+    const { to, params } = SCREENS[name];
     // `replace`라서 프레임의 뒤로 가기에 이 자리가 남지 않는다.
-    router.replace(href as Href);
+    router.replace((params ? { pathname: to, params } : to) as Href);
+    // 화면이 뜬 뒤에 한 겹 더 연다. 못 열면 그 화면 그대로 남는다.
+    void drive(name, STAFF_CREDENTIALS);
   }, []);
 
   // 넘어가는 사이에만 보이는 화면이다. 배경을 앱과 같은 색으로 두어 깜빡임이 눈에

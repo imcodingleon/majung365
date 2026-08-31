@@ -18,7 +18,9 @@
 // 콘솔 경고와 함께 빈 성공 응답을 돌려준다. 시연 중에 누른 버튼이 실제 DB에 흔적을
 // 남기면 안 되기 때문이다.
 import { startSession } from "@/shared/utils/session";
+import type { StaffVisitResponse } from "@/shared/types/staffVisit";
 
+import { installFakeSocketIo } from "./fakeSocket";
 import {
   CENTERS,
   CHAT_HISTORY,
@@ -28,8 +30,12 @@ import {
   INSTITUTIONS,
   ME,
   RESTORE,
+  ROOM_MESSAGES,
   SEEDED_STORAGE,
   SESSION,
+  STAFF_LOGIN,
+  STAFF_ME,
+  STAFF_VISITS,
   TASKS,
   VISITS,
   type SseFrame,
@@ -48,6 +54,7 @@ let installed = false;
 
 let completed: string[] = [...RESTORE.completed];
 let visits = VISITS.map((v) => ({ ...v }));
+let staffVisits = STAFF_VISITS.map((v) => ({ ...v }));
 
 // ── 1. 가짜 저장소 ────────────────────────────────────────────────────
 
@@ -130,11 +137,9 @@ function handleGet(path: string): Response {
   if (path === "/api/institutions") return json(INSTITUTIONS);
   if (path === "/api/district-offices") return json(DISTRICT_OFFICES);
 
-  // 담당자 화면(`/admin`)도 프리뷰로 찍을 수 있게 최소한만 받아 둔다.
-  if (path === "/api/staff/me") {
-    return json({ staff_id: "showcase-staff", name: "윤서진", org: "한국법무보호복지공단 경기지부" });
-  }
-  if (path === "/api/staff/visits") return json([]);
+  // 담당자 화면 (§8).
+  if (path === "/api/staff/me") return json(STAFF_ME);
+  if (path === "/api/staff/visits") return json(staffVisits);
 
   console.warn(`[showcase] 표에 없는 GET입니다: ${path}`);
   return json({});
@@ -203,6 +208,25 @@ async function handleWrite(method: string, path: string, body: unknown): Promise
   }
   if (method === "DELETE" && path.startsWith("/api/chat/")) {
     return new Response(null, { status: 204 });
+  }
+  if (method === "POST" && path === "/api/staff/login") {
+    // **무엇을 넣어도 들어간다.** 실제 자격을 확인할 서버가 없고, 확인할 이유도 없다 —
+    // 이 프레임에서 보이는 것은 전부 가상 데이터다.
+    return json(STAFF_LOGIN);
+  }
+  if (method === "PATCH" && path.startsWith("/api/staff/visits/")) {
+    const id = decodeURIComponent(path.slice("/api/staff/visits/".length));
+    const action = (body ?? {}) as { status?: string; meeting_place?: string };
+    staffVisits = staffVisits.map((v) =>
+      v.id === id
+        ? {
+            ...v,
+            status: (action.status as StaffVisitResponse["status"]) ?? v.status,
+            meeting_place: action.meeting_place ?? v.meeting_place,
+          }
+        : v,
+    );
+    return json(staffVisits.find((v) => v.id === id) ?? {});
   }
   if (method === "POST" && path === "/api/staff/logout") {
     return new Response(null, { status: 204 });
@@ -284,45 +308,16 @@ function installFetch(): void {
   } as typeof window.fetch;
 }
 
-// ── 5. 소켓 차단 ──────────────────────────────────────────────────────
+// ── 5. 소켓 ─────────────────────────────────────────────
 //
-// `useVisitChat`이 `socket.io-client`로 붙는다. socket.io는 먼저 XHR 폴링으로 붙고
-// 그다음 웹소켓으로 올라가므로 **둘 다 막아야** 실서버로 나가지 않는다.
+// `useVisitChat`은 `socket.io-client`로 붙는다. 그냥 막으면 담당자와 나누는 대화가
+// **빈 방**으로 뜨므로, 막는 대신 가짜 서버를 둔다 (`fakeSocket.ts`).
+//
+// 어느 방의 대화를 줄까. 출소자 화면은 `VISITS`의 id로, 담당자 화면은 `sv-*`로
+// 들어온다. 표에 없는 방은 빈 배열이며 그것이 정상이다 — 아직 아무 말도 오가지 않은 방이다.
 
-function installSocketBlock(): void {
-  const OriginalXhr = window.XMLHttpRequest;
-
-  class BlockedXhr extends OriginalXhr {
-    private blocked = false;
-
-    open(method: string, url: string | URL, ...rest: unknown[]): void {
-      this.blocked = isBackend(String(url));
-      if (this.blocked) return;
-      // @ts-expect-error 원본 시그니처를 그대로 넘긴다.
-      super.open(method, url, ...rest);
-    }
-
-    send(body?: Document | XMLHttpRequestBodyInit | null): void {
-      // 막힌 요청은 보내지 않고 조용히 둔다. socket.io는 연결이 안 된 것으로 다룬다.
-      if (this.blocked) return;
-      super.send(body);
-    }
-  }
-
-  window.XMLHttpRequest = BlockedXhr as unknown as typeof XMLHttpRequest;
-
-  const OriginalSocket = window.WebSocket;
-  class BlockedSocket extends EventTarget {
-    readyState = 3; // CLOSED
-    close(): void {}
-    send(): void {}
-  }
-  window.WebSocket = new Proxy(OriginalSocket, {
-    construct(target, args: [string | URL, (string | string[])?]) {
-      if (isBackend(String(args[0]))) return new BlockedSocket() as unknown as WebSocket;
-      return Reflect.construct(target, args) as WebSocket;
-    },
-  });
+function installSocket(): void {
+  installFakeSocketIo(isBackend, (visitId) => ROOM_MESSAGES[visitId] ?? []);
 }
 
 // ── 6. 애니메이션 정지 ────────────────────────────────────────────────
@@ -372,7 +367,7 @@ export function installShowcaseMocks(): void {
 
   installStorage();
   installFetch();
-  installSocketBlock();
+  installSocket();
   installReducedMotion();
 
   // **화면들이 세션을 메모리에서 읽는다.** 이것이 없으면 전부 `/signup`으로 튕긴다.

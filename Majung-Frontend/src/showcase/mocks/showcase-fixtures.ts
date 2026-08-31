@@ -1,7 +1,7 @@
 // 시연 촬영용 가짜 데이터 한 벌.
 //
 // **여기 있는 값은 화면을 찍기 위한 것이며 실제 사용자와 아무 관계가 없다.**
-// 이 파일은 `src/app/showcase/preview/[screen].tsx`를 통해서만 실행되고, 그 경로에서만
+// 이 파일은 `src/app/showcase/preview/index.tsx`를 통해서만 실행되고, 그 경로에서만
 // 로드된다. 일반 라우트는 이 파일을 부르지 않는다.
 //
 // 무엇을 가상으로 두고 무엇을 실제로 두는가
@@ -23,8 +23,12 @@ import type {
   StoredChatTurn,
 } from "@/shared/types/api";
 import type { IntakeCard, IntakeCardOption, IntakeTask } from "@/shared/types/intake";
+import type { StaffLoginResponse, StaffMeResponse } from "@/shared/types/staff";
+import type { StaffVisitResponse } from "@/shared/types/staffVisit";
 import type { VisitResponse } from "@/shared/types/visitRequest";
 import type { ChatRoomSummary } from "@/shared/utils/api";
+
+import type { SocketMessage } from "../fakeSocket";
 
 // ── 기준 시각 ─────────────────────────────────────────────────────────
 //
@@ -62,13 +66,22 @@ export const USER = {
   releaseDate: day(-DAYS_SINCE_RELEASE),
 } as const;
 
-/** 가상의 사는 곳. 안양 호계1동은 기관이 고루 있어 목록이 자연스럽게 찬다. */
+/**
+ * 가상의 사는 곳. 안양 호계1동은 기관이 고루 있어 목록이 자연스럽게 찬다.
+ *
+ * **시군구를 붙여 쓴다.** 앱이 좌표에서 알아내는 표기가 이 모양이고(`placeAt`),
+ * 화면은 `districtLabel`로 띄어 쓴 이름을 만들어 낸다. 띄어 쓴 값을 넣었더니 지역
+ * 조회가 그것을 못 알아봐서, 지도 머리글이 엉뚱한 시군구를 가리켰다.
+ *
+ * **좌표도 이 동에 맞춘다.** 앱은 좌표를 다시 동으로 계산하는데, 좌표와 동 이름이
+ * 서로 다른 곳을 가리키면 머리글과 목록이 어긋난다.
+ */
 export const PLACE = {
   sido: "경기도",
-  district: "안양시 동안구",
+  district: "안양시동안구",
   dong: "호계1동",
-  lat: 37.3803,
-  lng: 126.9541,
+  lat: 37.3719,
+  lng: 126.9483,
 } as const;
 
 // ── 할 일 (GET /api/tasks · POST /api/signup) ────────────────────────
@@ -1101,3 +1114,264 @@ export const SESSION = {
     lng: PLACE.lng,
   },
 } as const;
+
+// ── 담당자 화면 (§8) ─────────────────────────────────────────────────
+//
+// **계정 값은 전부 가상이다.** 실제 담당자 계정을 여기 적지 않는다 — 목업이 로그인
+// 요청을 가로채므로 어떤 값을 넣어도 통과한다. 진짜 자격을 적을 이유가 없고,
+// 적으면 그것이 번들에 그대로 실린다.
+
+export const STAFF_CREDENTIALS = { id: "staff01", password: "demo1234" } as const;
+
+export const STAFF_LOGIN: StaffLoginResponse = {
+  staff_id: "showcase-staff",
+  display_name: "윤서진",
+  org_kind: "koreha",
+  branch: "경기지부",
+  session_token: "showcase-staff-token",
+};
+
+export const STAFF_ME: StaffMeResponse = {
+  staff_id: "showcase-staff",
+  login_id: STAFF_CREDENTIALS.id,
+  display_name: STAFF_LOGIN.display_name,
+  org_kind: STAFF_LOGIN.org_kind,
+  branch: STAFF_LOGIN.branch,
+  branch_filter_on: true,
+};
+
+/**
+ * AI 요약 (§7.4).
+ *
+ * **조각으로 저장된다** (2026-08-31 결정). 문단 하나로 두었더니 담당자가 창구에서
+ * 훑지 못하고 결국 답변 원문을 읽었다. `parseSummary`가 이 JSON을 읽어 화면에 편다.
+ */
+function summaryOf(headline: string, points: [string, string][], prepare: string[]): string {
+  return JSON.stringify({
+    headline,
+    points: points.map(([label, text]) => ({ label, text })),
+    prepare,
+  });
+}
+
+/**
+ * 담당자에게 온 방문 요청.
+ *
+ * **`sent`가 맨 앞에 온다.** 아직 손대지 않은 요청을 목록이 위로 올리므로(`isNew`),
+ * 시연 화면에서 "오늘 처리할 것"이 먼저 보인다.
+ */
+export const STAFF_VISITS: StaffVisitResponse[] = [
+  {
+    id: "sv-1",
+    route_id: "R9",
+    status: "sent",
+    user_name: "정하윤",
+    preferred_at_1: at(2, 10, 0),
+    preferred_at_2: null,
+    prepared_docs: ["수용증명서"],
+    note: "사진은 아직 못 찍었습니다. 창구 근처에서 찍어도 될까요?",
+    meeting_place: "",
+    confirmed_for: null,
+    created_at: at(0, 8, 50),
+    shared_answers: [
+      {
+        route_id: "R9",
+        section: "신분·행정",
+        question: "신분증이 지금 있으신가요?",
+        answer: "잃어버렸어요",
+      },
+      {
+        route_id: "R11",
+        section: "주거",
+        question: "주민등록 주소가 지금 살아 있나요?",
+        answer: "말소된 것 같아요",
+      },
+      {
+        route_id: "R2",
+        section: "생계·긴급비용",
+        question: "당장 쓸 돈이 있으신가요?",
+        answer: "거의 없어요",
+      },
+    ],
+    summary: summaryOf(
+      "신분증을 다시 만들러 오십니다. 주민등록이 말소되어 있어 재등록을 함께 봐야 합니다.",
+      [
+        ["지금 사정", "신분증을 잃어버리셨고, 통장과 일자리가 여기서 막혀 있습니다."],
+        ["함께 볼 것", "주민등록이 말소된 것으로 답하셨습니다. 재등록을 같은 창구에서 처리하면 두 번 오시지 않습니다."],
+        ["급한 정도", "당장 쓸 돈이 거의 없다고 하셨습니다. 긴급지원 창구를 함께 안내해 주세요."],
+      ],
+      ["사진 1장 (3.5cm x 4.5cm)", "수용증명서"],
+    ),
+    summary_status: "ready",
+    last_message: "",
+    last_message_at: null,
+  },
+  {
+    id: "sv-2",
+    route_id: "R2",
+    status: "confirmed",
+    user_name: "정하윤",
+    preferred_at_1: at(2, 10, 0),
+    preferred_at_2: null,
+    prepared_docs: ["신분증", "출소확인서", "통장 사본"],
+    note: "긴급지원 상담 먼저 받고 싶습니다.",
+    meeting_place: "경기지부 2층 상담실",
+    confirmed_for: at(2, 10, 0),
+    created_at: at(-3, 9, 40),
+    shared_answers: [
+      {
+        route_id: "R2",
+        section: "생계·긴급비용",
+        question: "당장 쓸 돈이 있으신가요?",
+        answer: "거의 없어요",
+      },
+      {
+        route_id: "R1",
+        section: "주거",
+        question: "지금 지낼 곳이 있으신가요?",
+        answer: "아직 못 정했어요",
+      },
+    ],
+    summary: summaryOf(
+      "당장 쓸 생활비가 없어 긴급지원을 받으러 오십니다.",
+      [
+        ["지금 사정", "쓸 돈이 거의 없다고 하셨고, 지낼 곳도 아직 못 정하셨습니다."],
+        ["함께 볼 것", "생활관 빈자리를 같은 자리에서 확인해 주시면 다시 오시지 않아도 됩니다."],
+      ],
+      ["신분증", "통장 사본"],
+    ),
+    summary_status: "ready",
+    last_message: "네, 통장 사본은 창구에서 복사해 드릴 수 있어요.",
+    last_message_at: at(0, 9, 12),
+  },
+  {
+    id: "sv-3",
+    route_id: "R6",
+    status: "acknowledged",
+    user_name: "임도현",
+    preferred_at_1: at(4, 14, 0),
+    preferred_at_2: null,
+    prepared_docs: ["신분증"],
+    note: "",
+    meeting_place: "",
+    confirmed_for: null,
+    created_at: at(-1, 16, 10),
+    shared_answers: [
+      {
+        route_id: "R6",
+        section: "취업·직업",
+        question: "일을 구하고 계신가요?",
+        answer: "구하는 중이에요",
+      },
+    ],
+    summary: summaryOf(
+      "일자리를 구하러 오십니다. 상담부터 받기를 바라십니다.",
+      [["지금 사정", "일을 구하는 중이라고 답하셨습니다. 훈련 과정 일정을 함께 보시면 좋겠습니다."]],
+      ["신분증"],
+    ),
+    summary_status: "ready",
+    last_message: "이력서는 안 쓰셔도 됩니다. 오셔서 같이 쓰면 돼요.",
+    last_message_at: at(-1, 11, 8),
+  },
+  {
+    id: "sv-4",
+    route_id: "R1",
+    status: "reschedule_proposed",
+    user_name: "서지훈",
+    preferred_at_1: at(1, 9, 0),
+    preferred_at_2: null,
+    prepared_docs: ["신분증", "출소확인서"],
+    note: "생활관 빈자리가 있는지 먼저 알고 싶습니다.",
+    meeting_place: "",
+    confirmed_for: null,
+    created_at: at(-2, 13, 30),
+    shared_answers: [],
+    summary: "",
+    summary_status: "none",
+    last_message: "",
+    last_message_at: null,
+  },
+  {
+    id: "sv-5",
+    route_id: "R12",
+    status: "sent",
+    user_name: "오세라",
+    preferred_at_1: at(6, 15, 0),
+    preferred_at_2: null,
+    prepared_docs: ["신분증", "통장 사본"],
+    note: "",
+    meeting_place: "",
+    confirmed_for: null,
+    created_at: at(0, 7, 20),
+    shared_answers: [
+      {
+        route_id: "R12",
+        section: "생계·긴급비용",
+        question: "지금 받고 계신 지원이 있으신가요?",
+        answer: "없어요",
+      },
+    ],
+    summary: summaryOf(
+      "생계급여를 신청하러 오십니다. 받고 계신 지원이 없습니다.",
+      [["지금 사정", "받는 지원이 없다고 답하셨습니다. 조사 기간 동안 쓸 돈을 함께 살펴 주세요."]],
+      ["신분증", "통장 사본"],
+    ),
+    summary_status: "ready",
+    last_message: "",
+    last_message_at: null,
+  },
+  {
+    id: "sv-6",
+    route_id: "R8",
+    status: "completed",
+    user_name: "정하윤",
+    preferred_at_1: at(-6, 14, 0),
+    preferred_at_2: null,
+    prepared_docs: [],
+    note: "",
+    meeting_place: "허그상담소",
+    confirmed_for: at(-6, 14, 0),
+    created_at: at(-9, 17, 25),
+    shared_answers: [],
+    summary: "",
+    summary_status: "none",
+    last_message: "다음 주 같은 시간에 뵐게요.",
+    last_message_at: at(-6, 15, 40),
+  },
+];
+
+// ── 담당자와 나눈 대화 (소켓) ────────────────────────────────────────
+//
+// **`sv-*`가 아니라 출소자 쪽 요청 id로 찾는다.** 사용자 화면에서 방을 여는 것은
+// `VISITS`의 id이기 때문이다. 담당자 화면에서 열면 `sv-*`로 들어온다.
+
+function turnsOf(visitId: string, lines: ["staff" | "user", string, number][]): SocketMessage[] {
+  return lines.map(([senderRole, body, minutesAgo], i) => ({
+    id: `${visitId}-m${i + 1}`,
+    visitId,
+    body,
+    senderRole,
+    createdAt: new Date(NOW.getTime() - minutesAgo * 60_000).toISOString(),
+  }));
+}
+
+const ROOM_LINES: ["staff" | "user", string, number][] = [
+  ["staff", "안녕하세요, 경기지부 윤서진입니다. 요청 확인했습니다.", 190],
+  ["user", "안녕하세요. 모레 오전에 가면 될까요?", 178],
+  ["staff", "네, 모레 오전 10시로 잡아 두었습니다. 2층 상담실로 오시면 됩니다.", 172],
+  ["user", "통장 사본을 못 챙겼는데 괜찮을까요?", 96],
+  ["staff", "네, 통장 사본은 창구에서 복사해 드릴 수 있어요. 신분증만 챙겨 오세요.", 88],
+  ["user", "감사합니다. 그럼 모레 뵙겠습니다.", 40],
+  ["staff", "혹시 시간이 어려워지면 이 방으로 말씀해 주세요.", 12],
+];
+
+/**
+ * 방마다 남아 있는 대화.
+ *
+ * **한 방만 채운다.** 시연에서 여는 것은 목록 맨 위의 방 하나이고, 나머지를 채우면
+ * 같은 대화가 여러 벌 있는 것처럼 보인다. 없는 방은 빈 배열로 답한다.
+ */
+export const ROOM_MESSAGES: Record<string, SocketMessage[]> = {
+  "v-2026-0831-a": turnsOf("v-2026-0831-a", ROOM_LINES),
+  "sv-2": turnsOf("sv-2", ROOM_LINES),
+};
