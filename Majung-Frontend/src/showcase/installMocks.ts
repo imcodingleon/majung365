@@ -1,14 +1,15 @@
 // 시연 프레임 안에서만 도는 목업 설치기.
 //
 // **이 함수는 `/showcase/preview/*` 프레임에서만 불린다.** 일반 라우트는 이 파일을
-// 부르지 않으며, 부르는 자리(`src/app/showcase/preview/[screen].tsx`)가 경로를 먼저 본다.
+// 부르지 않으며, 부르는 자리(`src/app/showcase/preview/index.tsx`)가 경로를 먼저 본다.
 //
 // 무엇을 갈아 끼우는가
 //   1. `window.fetch` — 백엔드로 가는 요청을 전부 가로챈다
-//   2. `window.WebSocket`과 `XMLHttpRequest` — socket.io가 실서버에 붙는 것을 막는다
+//   2. `XMLHttpRequest`와 `WebSocket` — socket.io를 가짜 서버로 받는다 (`fakeSocket.ts`)
 //   3. `window.localStorage` — **프레임 안에서만 쓰는 가짜 저장소로 바꾼다**
 //   4. `startSession()` — 가짜 세션을 넣는다. 없으면 화면이 전부 가입으로 튕긴다
-//   5. 애니메이션 정지 — 캡처할 때 중간 상태가 찍히지 않게 한다
+//   5. `navigator.geolocation` — 보는 사람의 실제 위치를 읽지 않는다
+//   6. 애니메이션 정지 — 캡처할 때 중간 상태가 찍히지 않게 한다
 //
 // **왜 저장소까지 바꾸는가.** iframe은 앱과 같은 오리진이다. 진짜 `localStorage`를 그대로
 // 쓰면 시연용 가짜 위치와 가짜 토큰이 사용자의 실제 앱에 남는다. 시연 한 번에 남의 앱
@@ -320,7 +321,57 @@ function installSocket(): void {
   installFakeSocketIo(isBackend, (visitId) => ROOM_MESSAGES[visitId] ?? []);
 }
 
-// ── 6. 애니메이션 정지 ────────────────────────────────────────────────
+// ── 6. 위치 차단 ──────────────────────────────────────────────────────
+//
+// **시연 프레임이 보는 사람의 실제 위치를 읽으면 안 된다.** 두 가지 이유가 겹친다.
+//   - 캡처가 찍는 기계마다 달라진다. 실제로 배포본에서 지도 머리글이 픽스처의
+//     안양이 아니라 그 기계가 있는 지역으로 떴다
+//   - PPT를 만드는 사람의 위치가 시연 이미지에 박힐 이유가 없다
+//
+// 막으면 `useRegionLookup`이 "거부됨"으로 보고 기기에 남은 곳(우리가 심은 값)으로
+// 물러선다. 그 길은 위치를 거부한 사용자를 위해 이미 있는 길이다 (§5.4).
+
+function installNoGeolocation(): void {
+  const denied = { code: 1, message: "showcase: 위치를 쓰지 않습니다.", PERMISSION_DENIED: 1 };
+
+  try {
+    Object.defineProperty(navigator, "geolocation", {
+      configurable: true,
+      value: {
+        getCurrentPosition: (_ok: unknown, fail?: (e: unknown) => void) => fail?.(denied),
+        watchPosition: (_ok: unknown, fail?: (e: unknown) => void) => {
+          fail?.(denied);
+          return 0;
+        },
+        clearWatch: () => {},
+      },
+    });
+  } catch {
+    // 못 바꿔도 아래 권한 조회가 막아 준다.
+  }
+
+  try {
+    const originalQuery = navigator.permissions?.query?.bind(navigator.permissions);
+    if (originalQuery) {
+      navigator.permissions.query = ((desc: { name: string }) => {
+        if (desc?.name === "geolocation") {
+          return Promise.resolve({
+            state: "denied",
+            onchange: null,
+            addEventListener: () => {},
+            removeEventListener: () => {},
+            dispatchEvent: () => false,
+          } as unknown as PermissionStatus);
+        }
+        return originalQuery(desc as PermissionDescriptor);
+      }) as typeof navigator.permissions.query;
+    }
+  } catch {
+    // 이 브라우저가 권한 조회를 안 주면 위의 차단만으로 충분하다.
+  }
+}
+
+// ── 7. 애니메이션 정지 ────────────────────────────────────────────────
 
 function installReducedMotion(): void {
   const style = document.createElement("style");
@@ -368,6 +419,7 @@ export function installShowcaseMocks(): void {
   installStorage();
   installFetch();
   installSocket();
+  installNoGeolocation();
   installReducedMotion();
 
   // **화면들이 세션을 메모리에서 읽는다.** 이것이 없으면 전부 `/signup`으로 튕긴다.
