@@ -1,0 +1,380 @@
+// 시연 프레임 안에서만 도는 목업 설치기.
+//
+// **이 함수는 `/showcase/preview/*` 프레임에서만 불린다.** 일반 라우트는 이 파일을
+// 부르지 않으며, 부르는 자리(`src/app/showcase/preview/[screen].tsx`)가 경로를 먼저 본다.
+//
+// 무엇을 갈아 끼우는가
+//   1. `window.fetch` — 백엔드로 가는 요청을 전부 가로챈다
+//   2. `window.WebSocket`과 `XMLHttpRequest` — socket.io가 실서버에 붙는 것을 막는다
+//   3. `window.localStorage` — **프레임 안에서만 쓰는 가짜 저장소로 바꾼다**
+//   4. `startSession()` — 가짜 세션을 넣는다. 없으면 화면이 전부 가입으로 튕긴다
+//   5. 애니메이션 정지 — 캡처할 때 중간 상태가 찍히지 않게 한다
+//
+// **왜 저장소까지 바꾸는가.** iframe은 앱과 같은 오리진이다. 진짜 `localStorage`를 그대로
+// 쓰면 시연용 가짜 위치와 가짜 토큰이 사용자의 실제 앱에 남는다. 시연 한 번에 남의 앱
+// 상태가 바뀌는 것은 받아들일 수 없다. 프레임 안에서만 사는 메모리 저장소로 바꾼다.
+//
+// **어떤 경우에도 실서버로 나가지 않는다.** 표에 없는 주소도 네트워크로 내보내지 않고
+// 콘솔 경고와 함께 빈 성공 응답을 돌려준다. 시연 중에 누른 버튼이 실제 DB에 흔적을
+// 남기면 안 되기 때문이다.
+import { startSession } from "@/shared/utils/session";
+
+import {
+  CENTERS,
+  CHAT_HISTORY,
+  CHAT_ROOMS,
+  CHAT_STREAM,
+  DISTRICT_OFFICES,
+  INSTITUTIONS,
+  ME,
+  RESTORE,
+  SEEDED_STORAGE,
+  SESSION,
+  TASKS,
+  VISITS,
+  type SseFrame,
+} from "./mocks/showcase-fixtures";
+
+/** 백엔드 주소. `api.ts`와 같은 규칙으로 읽는다. */
+const API_BASE = process.env.EXPO_PUBLIC_API_URL ?? "http://localhost:8000";
+
+/** 두 번 설치하지 않는다. 라우트가 다시 마운트되어도 한 번만 돈다. */
+let installed = false;
+
+// ── 프레임 안에서만 바뀌는 상태 ──────────────────────────────────────
+//
+// 완료 체크와 방문 요청 보내기를 실제로 눌러 볼 수 있어야 시연이 된다. 서버에 보내는
+// 대신 이 값들을 고치고 그대로 돌려준다.
+
+let completed: string[] = [...RESTORE.completed];
+let visits = VISITS.map((v) => ({ ...v }));
+
+// ── 1. 가짜 저장소 ────────────────────────────────────────────────────
+
+/** `Storage` 인터페이스를 그대로 흉내 낸 메모리 저장소. */
+function memoryStorage(seed: Record<string, string>): Storage {
+  const map = new Map<string, string>(Object.entries(seed));
+  return {
+    get length() {
+      return map.size;
+    },
+    key: (i: number) => [...map.keys()][i] ?? null,
+    getItem: (k: string) => map.get(k) ?? null,
+    setItem: (k: string, v: string) => void map.set(k, String(v)),
+    removeItem: (k: string) => void map.delete(k),
+    clear: () => map.clear(),
+  } as Storage;
+}
+
+function installStorage(): void {
+  const fake = memoryStorage(SEEDED_STORAGE);
+  try {
+    Object.defineProperty(window, "localStorage", {
+      value: fake,
+      configurable: true,
+      writable: false,
+    });
+    return;
+  } catch {
+    // 브라우저가 교체를 막으면 프로토타입 쪽에서 막는다. 이것도 이 프레임에만 걸린다.
+  }
+  try {
+    Storage.prototype.getItem = function getItem(k: string) {
+      return fake.getItem(k);
+    };
+    Storage.prototype.setItem = function setItem(k: string, v: string) {
+      fake.setItem(k, v);
+    };
+    Storage.prototype.removeItem = function removeItem(k: string) {
+      fake.removeItem(k);
+    };
+  } catch {
+    // 여기까지 막히면 저장소는 손대지 못한다. 화면은 그래도 뜬다 —
+    // 세션은 `startSession()`이 메모리로 넣기 때문이다.
+    console.warn("[showcase] 저장소를 격리하지 못했습니다.");
+  }
+}
+
+// ── 2. 응답 만들기 ────────────────────────────────────────────────────
+
+function json(body: unknown, status = 200): Response {
+  return new Response(JSON.stringify(body), {
+    status,
+    headers: { "Content-Type": "application/json" },
+  });
+}
+
+/** 이 주소가 백엔드로 가는 것인가. 지도 타일·글꼴 같은 바깥 주소는 그대로 통과시킨다. */
+function isBackend(url: string): boolean {
+  try {
+    const target = new URL(url, window.location.href);
+    if (target.origin === new URL(API_BASE, window.location.href).origin) return true;
+    // 상대경로로 부른 경우. 개발 서버에서 프록시를 쓰면 이 모양이 된다.
+    return target.origin === window.location.origin && target.pathname.startsWith("/api/");
+  } catch {
+    return false;
+  }
+}
+
+/** `GET` 응답 표. 경로만 보고 고른다. */
+function handleGet(path: string): Response {
+  if (path === "/api/tasks") return json({ ...RESTORE, completed });
+  if (path === "/api/me") return json(ME);
+  if (path === "/api/visits") return json(visits);
+  if (path === "/api/chat-rooms") return json(CHAT_ROOMS);
+  if (path.startsWith("/api/chat/")) {
+    const routeId = decodeURIComponent(path.slice("/api/chat/".length));
+    return json(CHAT_HISTORY[routeId] ?? []);
+  }
+  if (path === "/api/centers") return json(CENTERS);
+  if (path === "/api/institutions") return json(INSTITUTIONS);
+  if (path === "/api/district-offices") return json(DISTRICT_OFFICES);
+
+  // 담당자 화면(`/admin`)도 프리뷰로 찍을 수 있게 최소한만 받아 둔다.
+  if (path === "/api/staff/me") {
+    return json({ staff_id: "showcase-staff", name: "윤서진", org: "한국법무보호복지공단 경기지부" });
+  }
+  if (path === "/api/staff/visits") return json([]);
+
+  console.warn(`[showcase] 표에 없는 GET입니다: ${path}`);
+  return json({});
+}
+
+/**
+ * 쓰기 요청. **네트워크로 내보내지 않고 성공한 척한다.**
+ *
+ * 완료 체크나 방문 요청처럼 화면이 결과를 다시 그리는 것들은 프레임 안의 상태를
+ * 실제로 고쳐서 돌려준다. 그래야 시연 중에 눌러 볼 수 있다.
+ */
+async function handleWrite(method: string, path: string, body: unknown): Promise<Response> {
+  if (method === "PUT" && path === "/api/tasks/completed") {
+    const next = (body as { completed?: string[] } | null)?.completed;
+    if (Array.isArray(next)) completed = [...next];
+    return json({ ...RESTORE, completed });
+  }
+  if (method === "PUT" && path === "/api/tasks") {
+    // 상황을 다시 알아보면 끝낸 표시가 지워진다 (§3.7).
+    completed = [];
+    return json({ ...RESTORE, completed });
+  }
+  if (method === "POST" && path === "/api/signup") {
+    return json({ user_id: "showcase-user", session_token: "showcase-demo-token", tasks: TASKS });
+  }
+  if (method === "POST" && path === "/api/intake/analyze") {
+    return json({ tasks: TASKS });
+  }
+  if (method === "PATCH" && path === "/api/me") {
+    return json({ ...ME, ...(body as object) });
+  }
+  if (method === "DELETE" && path === "/api/me") {
+    return new Response(null, { status: 204 });
+  }
+  if (method === "POST" && path === "/api/visits") {
+    const req = (body ?? {}) as { route_id?: string; preferred_at_1?: string; note?: string };
+    const created = {
+      id: `v-showcase-${Date.now()}`,
+      route_id: req.route_id ?? "R2",
+      status: "sent" as const,
+      preferred_at_1: req.preferred_at_1 ?? new Date().toISOString(),
+      preferred_at_2: null,
+      prepared_docs: [],
+      note: req.note ?? "",
+      staff_name: "",
+      meeting_place: "",
+      confirmed_for: null,
+      confirmed_at: null,
+      created_at: new Date().toISOString(),
+      proposed_at: null,
+      cancel_reason: "",
+      chat_available: false,
+      unread: 0,
+      last_message: "",
+      last_message_at: null,
+    };
+    visits = [created, ...visits];
+    return json(created);
+  }
+  if (method === "POST" && path.startsWith("/api/visits/") && path.endsWith("/cancel")) {
+    const id = decodeURIComponent(path.slice("/api/visits/".length, -"/cancel".length));
+    visits = visits.map((v) =>
+      v.id === id ? { ...v, status: "cancelled" as const, cancel_reason: "본인이 취소했어요." } : v,
+    );
+    return json(visits.find((v) => v.id === id) ?? {});
+  }
+  if (method === "DELETE" && path.startsWith("/api/chat/")) {
+    return new Response(null, { status: 204 });
+  }
+  if (method === "POST" && path === "/api/staff/logout") {
+    return new Response(null, { status: 204 });
+  }
+
+  console.warn(`[showcase] 표에 없는 ${method}입니다: ${path} — 보내지 않고 성공으로 돌려줍니다.`);
+  return json({});
+}
+
+// ── 3. 상담 스트림 ────────────────────────────────────────────────────
+
+/** SSE 프레임 한 개를 전송 형식(`event:` + `data:` + 빈 줄)으로 만든다. */
+function encodeFrame({ event, data }: SseFrame): string {
+  return `event: ${event}\ndata: ${JSON.stringify(data)}\n\n`;
+}
+
+/**
+ * 대본을 한 프레임씩 흘려보내는 스트림.
+ *
+ * **한 번에 다 보내지 않는다.** `streamChat`이 `res.body.getReader()`로 읽고 있어서,
+ * 간격을 두면 글자가 실제로 흐르는 장면을 캡처할 수 있다.
+ */
+function chatStream(): Response {
+  const encoder = new TextEncoder();
+  let index = 0;
+  const stream = new ReadableStream<Uint8Array>({
+    pull(controller) {
+      if (index >= CHAT_STREAM.length) {
+        controller.close();
+        return;
+      }
+      const frame = CHAT_STREAM[index++];
+      return new Promise<void>((resolve) => {
+        // 글자 델타는 빠르게, 카드나 근거처럼 무게가 있는 프레임은 조금 쉬어 간다.
+        const wait = frame.event === "text" ? 45 : 220;
+        setTimeout(() => {
+          controller.enqueue(encoder.encode(encodeFrame(frame)));
+          resolve();
+        }, wait);
+      });
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { "Content-Type": "text/event-stream" },
+  });
+}
+
+// ── 4. fetch 교체 ─────────────────────────────────────────────────────
+
+function installFetch(): void {
+  const original = window.fetch.bind(window);
+
+  window.fetch = async function showcaseFetch(
+    input: RequestInfo | URL,
+    init?: RequestInit,
+  ): Promise<Response> {
+    const url =
+      typeof input === "string" ? input : input instanceof URL ? input.href : input.url;
+
+    if (!isBackend(url)) return original(input as RequestInfo, init);
+
+    const method = (
+      init?.method ?? (input instanceof Request ? input.method : "GET")
+    ).toUpperCase();
+    const path = new URL(url, window.location.href).pathname;
+
+    if (method === "POST" && path === "/api/chat") return chatStream();
+    if (method === "GET" || method === "HEAD") return handleGet(path);
+
+    let body: unknown = null;
+    try {
+      const raw = init?.body ?? (input instanceof Request ? await input.text() : null);
+      if (typeof raw === "string" && raw) body = JSON.parse(raw);
+    } catch {
+      // 본문이 JSON이 아니면 그냥 없는 것으로 다룬다.
+    }
+    return handleWrite(method, path, body);
+  } as typeof window.fetch;
+}
+
+// ── 5. 소켓 차단 ──────────────────────────────────────────────────────
+//
+// `useVisitChat`이 `socket.io-client`로 붙는다. socket.io는 먼저 XHR 폴링으로 붙고
+// 그다음 웹소켓으로 올라가므로 **둘 다 막아야** 실서버로 나가지 않는다.
+
+function installSocketBlock(): void {
+  const OriginalXhr = window.XMLHttpRequest;
+
+  class BlockedXhr extends OriginalXhr {
+    private blocked = false;
+
+    open(method: string, url: string | URL, ...rest: unknown[]): void {
+      this.blocked = isBackend(String(url));
+      if (this.blocked) return;
+      // @ts-expect-error 원본 시그니처를 그대로 넘긴다.
+      super.open(method, url, ...rest);
+    }
+
+    send(body?: Document | XMLHttpRequestBodyInit | null): void {
+      // 막힌 요청은 보내지 않고 조용히 둔다. socket.io는 연결이 안 된 것으로 다룬다.
+      if (this.blocked) return;
+      super.send(body);
+    }
+  }
+
+  window.XMLHttpRequest = BlockedXhr as unknown as typeof XMLHttpRequest;
+
+  const OriginalSocket = window.WebSocket;
+  class BlockedSocket extends EventTarget {
+    readyState = 3; // CLOSED
+    close(): void {}
+    send(): void {}
+  }
+  window.WebSocket = new Proxy(OriginalSocket, {
+    construct(target, args: [string | URL, (string | string[])?]) {
+      if (isBackend(String(args[0]))) return new BlockedSocket() as unknown as WebSocket;
+      return Reflect.construct(target, args) as WebSocket;
+    },
+  });
+}
+
+// ── 6. 애니메이션 정지 ────────────────────────────────────────────────
+
+function installReducedMotion(): void {
+  const style = document.createElement("style");
+  style.textContent = `*, *::before, *::after {
+    animation-duration: .001ms !important;
+    animation-delay: 0ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: .001ms !important;
+    transition-delay: 0ms !important;
+    scroll-behavior: auto !important;
+  }`;
+  document.head.appendChild(style);
+
+  // CSS만으로는 JS가 직접 값을 바꾸는 애니메이션이 남는다. 라이브러리들이 이 질의를
+  // 보고 스스로 멈추는 경우가 있어 함께 참으로 돌려준다.
+  const originalMatchMedia = window.matchMedia.bind(window);
+  window.matchMedia = function patched(query: string): MediaQueryList {
+    const result = originalMatchMedia(query);
+    if (!query.includes("prefers-reduced-motion")) return result;
+    return new Proxy(result, {
+      get(target, prop, receiver) {
+        if (prop === "matches") return !query.includes("no-preference");
+        const value = Reflect.get(target, prop, receiver) as unknown;
+        return typeof value === "function" ? value.bind(target) : value;
+      },
+    });
+  };
+}
+
+// ── 설치 ──────────────────────────────────────────────────────────────
+
+/**
+ * 목업을 켠다. **경로를 확인한 쪽에서 부른다** — 이 함수는 자기가 어디서 불렸는지
+ * 판단하지 않는다.
+ */
+export function installShowcaseMocks(): void {
+  if (installed || typeof window === "undefined") return;
+  installed = true;
+
+  // **시연 중임을 전역에 남긴다.** 지금 이 앱에는 애널리틱스도 오류 수집기도 없다.
+  // 나중에 붙일 때 이 값을 보고 초기화를 건너뛰면, 시연 프레임에서 찍힌 화면 이동과
+  // 가짜 데이터가 실제 지표에 섞이지 않는다.
+  (window as unknown as { __MAJUNG_SHOWCASE__?: boolean }).__MAJUNG_SHOWCASE__ = true;
+
+  installStorage();
+  installFetch();
+  installSocketBlock();
+  installReducedMotion();
+
+  // **화면들이 세션을 메모리에서 읽는다.** 이것이 없으면 전부 `/signup`으로 튕긴다.
+  startSession({ ...SESSION, tasks: [...SESSION.tasks], completed: [...SESSION.completed] });
+}

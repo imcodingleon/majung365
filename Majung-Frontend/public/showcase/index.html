@@ -1,0 +1,512 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex,nofollow" />
+    <title>마중365 시연 화면</title>
+    <!--
+      데모 촬영용 쇼케이스.
+
+      **이 파일은 앱 번들 밖에 있다.** expo-router의 루트 레이아웃이 모든 화면을
+      440px 프레임으로 묶기 때문에, 그 안에서는 여러 화면을 나란히 늘어놓을 수 없다.
+      의존성 없는 정적 페이지로 두면 공통 레이아웃·글꼴 로딩·세션 검사를 통째로
+      비켜 간다.
+
+      **애널리틱스나 오류 수집기가 여기서 켜지지 않는다.** 앱 번들을 불러오지 않기
+      때문이며, 나중에 그런 것이 앱에 붙어도 이 페이지는 무관하다.
+
+      각 프레임은 iframe이다. 같은 페이지에 컴포넌트를 직접 마운트하면 전역 상태와
+      라우터가 아홉 벌 겹쳐 서로를 밀어낸다.
+
+      **누구나 열 수 있다** (2026-08-31 사용자 결정). 처음에는 `?k=`로 키를 대조하는
+      서버 함수 뒤에 두었으나, 해커톤 시연용이고 여기 뜨는 것이 전부 가상 데이터라
+      번거로움에 비해 지키는 것이 없다는 판단으로 걷어냈다. 색인만 막는다 —
+      위의 `noindex`와 `public/robots.txt`가 그 역할이다.
+    -->
+    <style>
+      :root {
+        --gap: 28px;
+        --bg: #f4f5f7;
+        --fg: #1c1d21;
+        --sub: #6b6f76;
+        --line: #dfe2e7;
+        --panel: #ffffff;
+        --shadow: 0 6px 20px rgba(16, 20, 28, 0.13);
+      }
+
+      /* 어두운 배경. 밝은 앱 화면이 도드라져서 PPT 표지 쪽에 쓰기 좋다. */
+      body.dark {
+        --bg: #16181d;
+        --fg: #f2f3f5;
+        --sub: #9aa0a8;
+        --line: #2c3038;
+        --panel: #1f2229;
+        --shadow: 0 6px 24px rgba(0, 0, 0, 0.5);
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      /* 캡처 중에 애니메이션 중간 상태가 찍히지 않게 한다. 프레임 안쪽은
+         `installMocks.ts`가 따로 멈춘다. */
+      *,
+      *::before,
+      *::after {
+        animation-duration: 0.001ms !important;
+        transition-duration: 0.001ms !important;
+        scroll-behavior: auto !important;
+      }
+
+      html,
+      body {
+        margin: 0;
+        padding: 0;
+      }
+
+      body {
+        background: var(--bg);
+        color: var(--fg);
+        font-family: "Pretendard", -apple-system, BlinkMacSystemFont, "Segoe UI",
+          "Malgun Gothic", sans-serif;
+        -webkit-font-smoothing: antialiased;
+      }
+
+      /* ── 컨트롤 바 ─────────────────────────────────────────────── */
+
+      #chrome {
+        position: sticky;
+        top: 0;
+        left: 0;
+        z-index: 10;
+        /* 가로 배치에서 판이 창보다 넓어진다. 이것을 두지 않으면 컨트롤 바의 흰 배경이
+           창 너비에서 끊겨, 오른쪽으로 스크롤한 자리에서 바가 잘려 보인다. */
+        width: max-content;
+        min-width: 100%;
+        display: flex;
+        flex-wrap: wrap;
+        align-items: center;
+        gap: 18px;
+        padding: 12px 20px;
+        background: var(--panel);
+        border-bottom: 1px solid var(--line);
+      }
+
+      #chrome .brand {
+        font-weight: 700;
+        font-size: 15px;
+        letter-spacing: -0.2px;
+      }
+
+      #chrome .group {
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        font-size: 13px;
+        color: var(--sub);
+      }
+
+      #chrome button {
+        font: inherit;
+        font-size: 13px;
+        padding: 5px 11px;
+        border-radius: 7px;
+        border: 1px solid var(--line);
+        background: transparent;
+        color: var(--fg);
+        cursor: pointer;
+      }
+
+      #chrome button[aria-pressed="true"] {
+        background: #208aef;
+        border-color: #208aef;
+        color: #fff;
+      }
+
+      #chrome input[type="range"] {
+        width: 150px;
+        accent-color: #208aef;
+      }
+
+      #chrome .value {
+        min-width: 44px;
+        font-variant-numeric: tabular-nums;
+        color: var(--fg);
+      }
+
+      /* ── 프레임 격자 ───────────────────────────────────────────── */
+
+      #board {
+        display: flex;
+        gap: var(--gap);
+        padding: var(--gap);
+        align-items: flex-start;
+      }
+
+      /* 가로 스크롤 — 전체 폭을 한 번에 잡는 캡처용. 컨테이너 폭을 자바스크립트가
+         정확히 계산해 넣으므로 스크린샷 도구가 잘린 자리 없이 담는다. */
+      #board.row {
+        flex-direction: row;
+        flex-wrap: nowrap;
+        overflow-x: auto;
+      }
+
+      #board.stack {
+        flex-direction: column;
+        align-items: center;
+      }
+
+      #board.grid {
+        display: grid;
+        justify-content: center;
+      }
+
+      figure {
+        margin: 0;
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+        flex: 0 0 auto;
+      }
+
+      figcaption {
+        font-size: 13px;
+        font-weight: 600;
+        color: var(--sub);
+        letter-spacing: -0.1px;
+        min-height: 17px;
+      }
+
+      body.no-labels figcaption {
+        display: none;
+      }
+
+      .frame {
+        position: relative;
+        overflow: hidden;
+        border-radius: 14px;
+        background: #fff;
+        border: 1px solid var(--line);
+        box-shadow: var(--shadow);
+      }
+
+      .frame iframe {
+        display: block;
+        border: 0;
+        transform-origin: top left;
+      }
+
+      /* 프레임 우측 하단 워터마크. 시연 데이터임을 이미지 자체가 말하게 한다.
+         **하단 메뉴바 위에 겹친다.** 그래서 옅게 둔다 — 진하게 하면 "내 정보" 칸을
+         가려서, 메뉴바 다섯 칸을 보여주려고 만든 이미지에서 한 칸이 지워진다. */
+      .watermark {
+        position: absolute;
+        right: 4px;
+        bottom: 4px;
+        padding: 1px 5px;
+        border-radius: 4px;
+        background: rgba(16, 20, 28, 0.32);
+        color: #fff;
+        font-size: 9px;
+        letter-spacing: 0.2px;
+        pointer-events: none;
+      }
+
+      body.hide-chrome #chrome,
+      body.hide-chrome .watermark {
+        display: none;
+      }
+
+      /* 아직 안 불러온 프레임 자리. 배경과 같은 색이라 캡처에 끼어도 튀지 않는다. */
+      .placeholder {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        color: var(--sub);
+        font-size: 13px;
+      }
+    </style>
+  </head>
+  <body>
+    <div id="chrome">
+      <span class="brand">마중365 시연 화면</span>
+
+      <span class="group">
+        배치
+        <button data-layout="row" aria-pressed="true">가로</button>
+        <button data-layout="stack" aria-pressed="false">세로</button>
+        <button data-layout="grid" aria-pressed="false">격자</button>
+      </span>
+
+      <span class="group">
+        배율
+        <input id="scale" type="range" min="20" max="100" step="5" value="50" />
+        <span class="value" id="scale-value">50%</span>
+      </span>
+
+      <span class="group">
+        폭
+        <button data-viewport="mobile" aria-pressed="true">모바일 390</button>
+        <button data-viewport="desktop" aria-pressed="false">데스크탑 1440</button>
+      </span>
+
+      <span class="group">
+        <button id="toggle-labels" aria-pressed="true">라벨</button>
+        <button id="toggle-theme" aria-pressed="false">어두운 배경</button>
+      </span>
+    </div>
+
+    <div id="board" class="row"></div>
+
+    <script>
+      // ── 찍을 화면 목록 ───────────────────────────────────────────
+      //
+      // **이 배열만 고치면 화면이 늘어난다.** `path`는 앱의 라우트 이름이고,
+      // `src/app/showcase/preview/index.tsx`의 `SCREENS`와 짝이다. 한쪽만
+      // 고치면 그 프레임이 홈으로 넘어가므로 둘을 함께 고친다.
+      const SCREENS = [
+        { path: "today", label: "홈 · 오늘의 할 일" },
+        { path: "alerts", label: "알림" },
+        { path: "chats", label: "상담" },
+        { path: "map", label: "지도" },
+        { path: "my-info", label: "내 정보" },
+        { path: "nearby", label: "가까운 곳" },
+        { path: "pamphlet", label: "안내 팜플렛" },
+        { path: "signup", label: "가입" },
+        { path: "retake", label: "상황 다시 알아보기" },
+      ];
+
+      /** 뷰포트. 모바일이 기본이다 — 앱이 모바일 전용이라 1440으로 띄우면 양옆이 빈다. */
+      const VIEWPORTS = {
+        mobile: { w: 390, h: 844 },
+        desktop: { w: 1440, h: 900 },
+      };
+
+      /** 프레임이 이보다 많아지면 화면에 들어온 것만 불러온다. */
+      const LAZY_THRESHOLD = 10;
+
+      const params = new URLSearchParams(location.search);
+      const hideChrome = params.get("hideChrome") === "1";
+
+      const board = document.getElementById("board");
+      const chromeBar = document.getElementById("chrome");
+      const body = document.body;
+
+      const state = {
+        layout: "row",
+        viewport: "mobile",
+        scale: 0.5,
+        labels: true,
+      };
+
+      if (hideChrome) body.classList.add("hide-chrome");
+
+      // ── 프레임 만들기 ────────────────────────────────────────────
+
+      // 프레임 주소에는 키를 싣지 않는다. 프리뷰 라우트는 게이트 뒤에 있지 않고,
+      // 어차피 그 안에 뜨는 것은 전부 가상 데이터다. 키를 더 많은 자리에 흘릴 이유가 없다.
+      //
+      // 화면 이름을 경로가 아니라 쿼리로 넘긴다. 이 프로젝트의 expo-router가
+      // `[screen]` 동적 라우트를 리터럴 경로로 등록해 버려서 `/showcase/preview/alerts`가
+      // 아무 라우트에도 걸리지 않았다 (`src/app/showcase/preview/index.tsx` 주석 참고).
+      function frameUrl(path) {
+        return "/showcase/preview?screen=" + encodeURIComponent(path);
+      }
+
+      /** 프레임 하나. iframe은 아직 비워 두고 `src`는 나중에 채운다. */
+      function buildFrame(screen) {
+        const figure = document.createElement("figure");
+
+        const caption = document.createElement("figcaption");
+        caption.textContent = screen.label;
+
+        const frame = document.createElement("div");
+        frame.className = "frame";
+
+        const iframe = document.createElement("iframe");
+        iframe.title = screen.label;
+        iframe.loading = "lazy";
+        iframe.dataset.src = frameUrl(screen.path);
+
+        const mark = document.createElement("span");
+        mark.className = "watermark";
+        mark.textContent = "Demo data";
+
+        frame.append(iframe, mark);
+        figure.append(caption, frame);
+        figure.dataset.path = screen.path;
+        return figure;
+      }
+
+      const figures = SCREENS.map(buildFrame);
+      board.append(...figures);
+
+      // ── 배치 계산 ────────────────────────────────────────────────
+      //
+      // 축소는 `transform: scale()`로 한다. 그런데 transform은 자리를 줄이지 않아서
+      // 그대로 두면 프레임 사이가 원본 크기만큼 벌어진다. **감싼 칸의 크기를 직접
+      // 계산해 넣어야** 여백이 화면 전체에서 똑같아진다.
+
+      function apply() {
+        const { w, h } = VIEWPORTS[state.viewport];
+        const sw = Math.round(w * state.scale);
+        const sh = Math.round(h * state.scale);
+        const gap = parseInt(getComputedStyle(document.documentElement).getPropertyValue("--gap"), 10);
+
+        board.className = state.layout;
+        body.classList.toggle("no-labels", !state.labels);
+
+        for (const figure of figures) {
+          const frame = figure.querySelector(".frame");
+          const iframe = figure.querySelector("iframe");
+          frame.style.width = sw + "px";
+          frame.style.height = sh + "px";
+          iframe.style.width = w + "px";
+          iframe.style.height = h + "px";
+          iframe.style.transform = "scale(" + state.scale + ")";
+          figure.style.width = sw + "px";
+        }
+
+        if (state.layout === "grid") {
+          board.style.gridTemplateColumns = "repeat(auto-fill, " + sw + "px)";
+          board.style.width = "";
+          board.style.minWidth = "";
+        } else if (state.layout === "row") {
+          // **한 장에 전부 담기게 폭을 못박는다.** 스크린샷 도구가 스크롤 영역을
+          // 이어 붙일 때 잘린 자리가 생기지 않는다.
+          const total = figures.length * sw + (figures.length - 1) * gap + gap * 2;
+          board.style.width = total + "px";
+          board.style.minWidth = total + "px";
+          board.style.gridTemplateColumns = "";
+          // 컨트롤 바도 같은 폭으로 늘린다. `min-width: 100%`는 창 너비를 가리켜서,
+          // 오른쪽으로 스크롤하면 바의 배경이 끊긴 자리가 캡처에 그대로 들어간다.
+          chromeBar.style.minWidth = total + "px";
+        } else {
+          board.style.width = "";
+          board.style.minWidth = "";
+          board.style.gridTemplateColumns = "";
+        }
+
+        if (state.layout !== "row") chromeBar.style.minWidth = "";
+      }
+
+      // ── 지연 로딩 ────────────────────────────────────────────────
+
+      /**
+       * 한 번에 몇 개까지 부를까.
+       *
+       * **아홉을 동시에 부르면 전부 로딩 화면에서 멈춘다.** 프레임마다 앱 번들과
+       * Pretendard 다섯 굵기(7.7MB)를 받는데, 그것이 아홉 벌 한꺼번에 몰리면 서버도
+       * 브라우저도 밀린다. 실제로 아홉 칸이 전부 "하시던 것을 불러오고 있어요…"에서
+       * 멈춘 채로 캡처됐다.
+       *
+       * 앞의 것이 끝나면 다음을 부른다. 두 번째부터는 글꼴이 캐시에 있어 훨씬 빠르다.
+       */
+      const CONCURRENCY = 2;
+
+      /** 아직 안 부른 프레임들. 앞에서부터 꺼낸다. */
+      const queue = [];
+      let running = 0;
+
+      function pump() {
+        while (running < CONCURRENCY && queue.length > 0) {
+          const iframe = queue.shift();
+          if (iframe.src) continue;
+          running += 1;
+          let finished = false;
+          const done = () => {
+            if (finished) return;
+            finished = true;
+            running -= 1;
+            pump();
+          };
+          // `load`가 안 오는 경우에 대비해 상한을 둔다. 한 칸이 막혀도 나머지는 뜬다.
+          const guard = setTimeout(done, 15000);
+          iframe.addEventListener(
+            "load",
+            () => {
+              clearTimeout(guard);
+              // **문서가 뜬 뒤에도 할 일이 남아 있다.** 프리뷰 라우트가 라우터로 진짜
+              // 화면으로 넘기고, 그 화면이 목업 응답을 받아 그린다. 곧바로 다음 칸을
+              // 부르면 무거운 구간이 겹친다.
+              setTimeout(done, 900);
+            },
+            { once: true },
+          );
+          iframe.src = iframe.dataset.src;
+        }
+      }
+
+      function loadNow(iframe) {
+        if (iframe.src || queue.includes(iframe)) return;
+        queue.push(iframe);
+        pump();
+      }
+
+      if (figures.length > LAZY_THRESHOLD && "IntersectionObserver" in window) {
+        const observer = new IntersectionObserver(
+          (entries) => {
+            for (const entry of entries) {
+              if (!entry.isIntersecting) continue;
+              loadNow(entry.target.querySelector("iframe"));
+              observer.unobserve(entry.target);
+            }
+          },
+          // 캡처 직전에 비는 칸이 없도록 넉넉히 앞당겨 부른다.
+          { rootMargin: "1600px" },
+        );
+        figures.forEach((f) => observer.observe(f));
+      } else {
+        figures.forEach((f) => loadNow(f.querySelector("iframe")));
+      }
+
+      // ── 컨트롤 ───────────────────────────────────────────────────
+
+      function setPressed(selector, matcher) {
+        document.querySelectorAll(selector).forEach((btn) => {
+          btn.setAttribute("aria-pressed", String(matcher(btn)));
+        });
+      }
+
+      document.querySelectorAll("[data-layout]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.layout = btn.dataset.layout;
+          setPressed("[data-layout]", (b) => b.dataset.layout === state.layout);
+          apply();
+        });
+      });
+
+      document.querySelectorAll("[data-viewport]").forEach((btn) => {
+        btn.addEventListener("click", () => {
+          state.viewport = btn.dataset.viewport;
+          setPressed("[data-viewport]", (b) => b.dataset.viewport === state.viewport);
+          apply();
+        });
+      });
+
+      const scaleInput = document.getElementById("scale");
+      const scaleValue = document.getElementById("scale-value");
+      scaleInput.addEventListener("input", () => {
+        state.scale = Number(scaleInput.value) / 100;
+        scaleValue.textContent = scaleInput.value + "%";
+        apply();
+      });
+
+      const labelsButton = document.getElementById("toggle-labels");
+      labelsButton.addEventListener("click", () => {
+        state.labels = !state.labels;
+        labelsButton.setAttribute("aria-pressed", String(state.labels));
+        apply();
+      });
+
+      const themeButton = document.getElementById("toggle-theme");
+      themeButton.addEventListener("click", () => {
+        const dark = body.classList.toggle("dark");
+        themeButton.setAttribute("aria-pressed", String(dark));
+      });
+
+      apply();
+    </script>
+  </body>
+</html>

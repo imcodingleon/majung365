@@ -4,5 +4,14 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "cleanUrls": true,
-  "rewrites": [{ "source": "/qr", "destination": "/api/qr" }]
+  "rewrites": [{ "source": "/qr", "destination": "/api/qr" }],
+  "headers": [
+    {
+      "source": "/showcase/(.*)",
+      "headers": [
+        { "key": "Content-Security-Policy", "value": "frame-ancestors 'self'" },
+        { "key": "X-Robots-Tag", "value": "noindex, nofollow" }
+      ]
+    }
+  ]
 }
