@@ -363,16 +363,23 @@ export async function getInstitutions(
  * **좌표를 주면 그 자리에서 가까운 순으로 온다** (2026-08-26 결정 F-1). 안 주면 서버가
  * 그 동네 기관들의 한가운데를 기준으로 삼는데, 시군구 안에서 그 한가운데가 엉뚱한 곳을
  * 가리킬 수 있다 — 지역을 직접 고른 사용자가 그 길로 온다.
+ *
+ * **동까지 주면 그 이름의 주민센터가 반드시 들어온다** (2026-08-31). 좌표만으로는
+ * 빠지는 일이 있다 — 기관 데이터의 좌표가 자기 동 밖에 찍힌 곳이 93곳이고, 안양
+ * 호계3동은 호계1동과 좌표가 같아서 호계3동을 고른 사람에게 자기 동 센터가 안 보였다.
  */
 export async function getCenters(place?: {
   sido: string;
   district: string;
+  dong?: string;
   lat?: number;
   lng?: number;
 }): Promise<Center[]> {
   let qs = "";
   if (place) {
     const params = new URLSearchParams({ sido: place.sido, district: place.district });
+    // 관할 주민센터를 짚어 달라는 뜻이다. 서버가 이름을 못 맞추면 조용히 거리로 돈다.
+    if (place.dong) params.set("dong", place.dong);
     // 좌표는 짝으로만 보낸다. 하나만 보내면 서버가 그냥 무시해 조용히 옛 방식으로 돈다.
     if (typeof place.lat === "number" && typeof place.lng === "number") {
       params.set("lat", String(place.lat));
@@ -539,6 +546,9 @@ function dispatchFrame(frame: string, handlers: ChatStreamHandlers): void {
       break;
     case "card":
       handlers.onCard?.(parsed as CardData);
+      break;
+    case "suggestions":
+      handlers.onSuggestions?.((parsed as { questions: string[] }).questions);
       break;
     case "error":
       handlers.onError?.((parsed as { message: string }).message);

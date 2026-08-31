@@ -50,3 +50,18 @@ class ChatLlm(Protocol):
         코드가 미리 판정하면 문서에 답이 있는지 모르는 채로 정하게 된다.
         """
         ...
+
+    async def suggest_questions(
+        self, history: list[Turn], *, context: str = "", name: str | None = None
+    ) -> tuple[str, ...]:
+        """이어서 물어볼 만한 질문을 뽑는다(구조화 출력) — §6.1.
+
+        **`history`의 마지막이 방금 한 답변이다.** 그 답을 봐야 이어서 물을 것이
+        정해지므로 `message`를 따로 받지 않는다. 답변 본문도 마스킹 대상이라
+        구현이 `history` 전체를 마스킹 경로로 지나 보낸다.
+
+        **거르는 일은 여기서 하지 않는다.** 개수와 모양 판정은
+        `domain/suggestions.normalize_suggestions`가 맡는다 — 구현이 셋이라
+        어댑터에 두면 세 벌이 되고, 유스케이스 테스트가 그 규칙을 못 잡는다.
+        """
+        ...

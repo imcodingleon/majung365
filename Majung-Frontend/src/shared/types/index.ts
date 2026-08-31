@@ -1,6 +1,7 @@
 export type {
   AnalyzeRequest,
   CardData,
+  CardOption,
   Center,
   ChatRequest,
   ChatRole,

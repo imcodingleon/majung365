@@ -140,7 +140,17 @@ export function useRegionLookup() {
    */
   const place = useMemo<LocatedPlace | null>(() => {
     if (picked !== null) {
-      return { sido: picked.sido, district: picked.district ?? "", dong: "" };
+      return {
+        sido: picked.sido,
+        district: picked.district ?? "",
+        dong: picked.dong ?? "",
+        // **동까지 골랐으면 그 동의 대표 좌표가 실려 온다** (2026-08-31). 그전에는
+        // 직접 고른 사람에게 좌표가 없어 지도가 거리를 재지 못했다. 좌표는 짝으로만
+        // 다루므로 하나만 있으면 없는 것으로 친다.
+        ...(typeof picked.lat === "number" && typeof picked.lng === "number"
+          ? { lat: picked.lat, lng: picked.lng }
+          : {}),
+      };
     }
     if (state.status === "resolved") return state.place;
     // **지난번에 알아낸 곳을 쓴다.** 저장하지 않았을 때는 새로고침할 때마다 위치를

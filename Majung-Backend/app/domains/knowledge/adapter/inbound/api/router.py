@@ -175,6 +175,9 @@ class IntakeTaskOut(BaseModel):
     # 이 항목으로 방문 요청을 보낼 수 있는가(§7). 통장·증명서·빚은 받을 담당자가 없다.
     can_request_visit: bool
     card: IntakeCardOut
+    # 대화를 열었을 때 뜨는 첫 질문(§6.1). **비어 올 수 있고, 그때는 화면이
+    # 기본 문구로 물러선다** — 필드가 없다고 앱이 깨지면 안 된다.
+    starter_questions: list[str] = Field(default_factory=list)
 
 
 class IntakeOut(BaseModel):
@@ -192,6 +195,7 @@ def to_task_out(t: IntakeTask) -> IntakeTaskOut:
         section_label=t.section_label,
         blocks_others=t.blocks_others,
         can_request_visit=t.can_request_visit,
+        starter_questions=list(t.starter_questions),
         card=IntakeCardOut(
             institution_id=t.card.institution_id,
             name=t.card.name,

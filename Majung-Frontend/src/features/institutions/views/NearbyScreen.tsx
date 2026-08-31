@@ -207,7 +207,7 @@ export function NearbyScreen({
             </Pressable>
 
             <Pressable
-              onPress={() => onPick({ sido: "", district: null })}
+              onPress={() => onPick({ sido: "", district: null, dong: null })}
               accessibilityRole="button"
               accessibilityLabel="지역을 직접 고를게요"
               className="mt-3 items-center rounded-2xl border-[1.5px] border-line bg-white py-4 active:opacity-90"

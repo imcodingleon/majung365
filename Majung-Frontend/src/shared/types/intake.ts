@@ -85,6 +85,14 @@ export interface IntakeTask {
    */
   can_request_visit: boolean;
   card: IntakeCard;
+  /**
+   * 대화를 열었을 때 입력창 위에 뜨는 첫 질문 (§6.1).
+   *
+   * **선택 필드다.** 서버가 아직 안 보내는 배포본이 있고, 표에 없는 항목도 있다.
+   * 없으면 화면이 기본 문구로 물러선다 — 필드가 빠졌다고 칩 자리가 통째로
+   * 비면 안 된다.
+   */
+  starter_questions?: string[];
 }
 
 export interface IntakeAnalyzeResponse {

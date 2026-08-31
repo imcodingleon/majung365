@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { Pressable, Text, View } from "react-native";
 
+import { Icon, type IconName } from "@/shared/components/Icon";
 import { COLORS } from "@/shared/theme/colors";
 import { FONTS } from "@/shared/theme/fonts";
 
@@ -32,16 +33,46 @@ type Props = {
 
 type Tone = "info" | "done" | "warn";
 
-const TONE_STYLE: Record<Tone, { bg: string; line: string; ink: string }> = {
-  info: { bg: COLORS.noteInfo, line: COLORS.noteInfoLine, ink: COLORS.noteInfoInk },
-  done: { bg: COLORS.doneBg, line: COLORS.doneLine, ink: COLORS.doneInk },
-  warn: { bg: COLORS.noteWarn, line: COLORS.noteWarnLine, ink: COLORS.noteWarnInk },
+/**
+ * `head`는 첫 줄과 아이콘에 쓰는 강조색이다. **`ink`보다 진하다** (2026-08-31 시안).
+ * 첫 줄이 지금 상태이고 뒤따르는 줄은 부연이라, 같은 색으로 두면 층이 갈리지 않는다.
+ */
+const TONE_STYLE: Record<Tone, { bg: string; line: string; ink: string; head: string }> = {
+  info: { bg: COLORS.noteInfo, line: COLORS.noteInfoLine, ink: COLORS.noteInfoInk, head: COLORS.brand },
+  done: { bg: COLORS.doneBg, line: COLORS.doneLine, ink: COLORS.doneInk, head: COLORS.doneInk },
+  warn: {
+    bg: COLORS.noteWarn,
+    line: COLORS.noteWarnLine,
+    ink: COLORS.noteWarnInk,
+    head: COLORS.noteWarnInk,
+  },
 };
 
 function toneOf(request: VisitRequest): Tone {
   if (request.status === "confirmed" || request.status === "completed") return "done";
   if (request.status === "reschedule_proposed" || request.status === "cancelled") return "warn";
   return "info";
+}
+
+/**
+ * 상태를 그림으로도 알린다. 글을 빨리 읽지 못해도 무슨 일인지 보인다.
+ *
+ * 알림 목록(`features/alerts`)이 쓰는 그림과 같은 계열로 맞춘다 — 같은 일을 두 화면이
+ * 다른 그림으로 알리면 같은 일인지 알 수 없다.
+ */
+function iconOf(request: VisitRequest): IconName {
+  switch (request.status) {
+    case "confirmed":
+    case "completed":
+      return "checkCircle";
+    case "reschedule_proposed":
+      return "undo";
+    case "cancelled":
+      return "close";
+    default:
+      // 보냈고 아직 답을 기다리는 중이다.
+      return "clock";
+  }
 }
 
 function SmallButton({
@@ -79,6 +110,31 @@ function SmallButton({
   );
 }
 
+/**
+ * 요청을 물리는 버튼 (2026-08-31 시안).
+ *
+ * **눈에 덜 띄게 둔다.** 물리는 것이 이 화면의 목적이 아니고, 크게 두면 기다리는
+ * 동안 눌러 보게 된다. 다만 찾을 수는 있어야 한다.
+ */
+function CancelButton({ label, onPress }: { label: string; onPress: () => void }) {
+  return (
+    <Pressable
+      onPress={onPress}
+      accessibilityRole="button"
+      accessibilityLabel="이 방문 요청 취소하기"
+      className="rounded-lg border-[1.5px] px-5 py-1 active:opacity-80"
+      style={{ backgroundColor: COLORS.alertSoft, borderColor: COLORS.alertLine }}
+    >
+      <Text
+        className="text-caption"
+        style={{ color: COLORS.alert, fontFamily: FONTS.semibold }}
+      >
+        {label}
+      </Text>
+    </Pressable>
+  );
+}
+
 export function RequestStatusStrip({
   request,
   onOpenStaffChat,
@@ -104,6 +160,12 @@ export function RequestStatusStrip({
       />
     ) : null;
 
+  // **오른쪽 자리는 하나다.** 할 수 있는 일이 있으면 그것이 먼저 오고, 없을 때만
+  // 취소가 그 자리에 온다 (2026-08-31 시안). 한 번 더 묻는 상태에서는 확인 문구가
+  // 아래로 펼쳐져야 하므로 오른쪽에 두지 않는다.
+  const cancellable = Boolean(onCancel) && canCancel(request.status);
+  const cancelInline = cancellable && !cancelNeedsConfirm(request.status) && action === null;
+
   return (
     <View
       className="mb-4 rounded-xl border px-4 py-4"
@@ -112,18 +174,23 @@ export function RequestStatusStrip({
       {/* **문구는 왼쪽, 할 수 있는 일은 오른쪽에 나란히 둔다.** 위아래로 쌓으면 카드가
           길어지고, 짧은 문구 아래에 버튼 하나만 덩그러니 남아 빈 칸처럼 보인다.
           문구가 길어지면 왼쪽 칸 안에서 접힌다 — 버튼을 밀어내지 않는다 */}
-      <View className="flex-row items-center gap-3">
+      <View className="flex-row items-start gap-1">
+        {/* 글자 첫 줄에 맞춰 내린다. 위에 붙이면 상자 모서리에 닿아 보인다 */}
+        <View className="shrink-0 pt-1">
+          <Icon name={iconOf(request)} size={18} color={tone.head} />
+        </View>
+
         {/* 첫 줄이 지금 상태이고 뒤따르는 줄은 부연이다. 무게를 달리해 눈으로 갈리게 한다. */}
-        <View className="flex-1 gap-1">
+        <View className="ml-1 flex-1">
           {statusLines(request).map((line, i) => (
             <Text
               key={line}
               className="leading-[24px]"
               style={{
-                color: tone.ink,
+                color: i === 0 ? tone.head : tone.ink,
                 // 확정 문구는 실제로 찾아가야 할 정보를 담고 있으므로 더 크고 굵게 낸다.
-                fontSize: confirmed ? 16 : 14.5,
-                fontFamily: i === 0 ? (confirmed ? FONTS.extrabold : FONTS.bold) : FONTS.semibold,
+                fontSize: confirmed ? 16 : i === 0 ? 14.5 : 14,
+                fontFamily: i === 0 ? (confirmed ? FONTS.extrabold : FONTS.bold) : FONTS.regular,
                 opacity: i === 0 ? 1 : 0.85,
               }}
             >
@@ -132,12 +199,18 @@ export function RequestStatusStrip({
           ))}
         </View>
 
-        {action ? <View className="shrink-0">{action}</View> : null}
+        {action ? (
+          <View className="shrink-0">{action}</View>
+        ) : cancelInline && onCancel ? (
+          <View className="shrink-0 pt-2">
+            <CancelButton label="취소" onPress={() => void onCancel()} />
+          </View>
+        ) : null}
       </View>
 
       {/* **눈에 덜 띄게 둔다.** 물리는 것이 이 화면의 목적이 아니고, 크게 두면
           기다리는 동안 눌러 보게 된다. 다만 찾을 수는 있어야 한다 */}
-      {onCancel && canCancel(request.status) ? (
+      {onCancel && cancellable && !cancelInline ? (
         confirming ? (
           <View className="mt-3">
             <Text className="mb-2 text-caption" style={{ color: tone.ink }}>

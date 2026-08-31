@@ -31,7 +31,21 @@ export function eraseTitle(scope: EraseScope): string {
   return scope === "crime" ? "어떤 일로 계셨는지 지울까요?" : "모든 정보를 지울까요?";
 }
 
-/** 지우면 무엇이 사라지는지 미리 알린다. 되돌릴 수 없는 일이다. */
+/**
+ * 목록 앞에 오는 한 문장. 무슨 일이 벌어지는지 먼저 말한다 (2026-08-31 시안).
+ *
+ * 죄목 철회에는 없다 — 그쪽은 목록 첫 줄이 이미 그 일을 하고 있다.
+ */
+export function eraseLead(scope: EraseScope): string {
+  return scope === "crime" ? "" : "모든 정보를 지우면 지금까지 저장된 정보가 모두 삭제돼요.";
+}
+
+/**
+ * 지우면 무엇이 사라지는지 미리 알린다.
+ *
+ * **계정 삭제 쪽은 이름만 늘어놓는다** (2026-08-31 시안). 전에는 "…이 모두 지워져요"처럼
+ * 줄마다 서술어를 달았는데, 같은 말이 세 번 되풀이되어 정작 무엇이 지워지는지가 묻혔다.
+ */
 export function eraseDetail(scope: EraseScope): readonly string[] {
   if (scope === "crime") {
     return [
@@ -41,16 +55,20 @@ export function eraseDetail(scope: EraseScope): readonly string[] {
       "나중에 다시 알려주실 수 있어요.",
     ];
   }
-  return [
-    "이름, 생일, 출소한 날이 모두 지워져요.",
-    "지금까지 나눈 대화도 함께 지워져요.",
-    "할 일 목록도 사라져요.",
-    "지우면 되돌릴 수 없어요.",
-  ];
+  return ["이름, 생년월일, 출소일", "지금까지 나눈 대화", "할 일 목록"];
+}
+
+/**
+ * 목록 뒤에 오는 마지막 경고. **되돌릴 수 없다는 말이 목록에 묻히지 않게 떼어 둔다.**
+ *
+ * 죄목 철회는 되돌릴 수 있으므로(다시 알려줄 수 있다) 여기에 아무것도 없다.
+ */
+export function eraseWarning(scope: EraseScope): string {
+  return scope === "crime" ? "" : "삭제한 정보는 다시 복구할 수 없어요.";
 }
 
 export function eraseConfirmLabel(scope: EraseScope): string {
-  return scope === "crime" ? "이것만 지울게요" : "모두 지울게요";
+  return scope === "crime" ? "이것만 지울게요" : "모든 정보 삭제";
 }
 
 /** 날짜를 사람이 읽는 형태로. 저장값은 YYYY-MM-DD다. */

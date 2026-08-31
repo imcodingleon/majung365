@@ -27,6 +27,10 @@ from app.domains.chat.domain.prompts import (
     TRIAGE_INSTRUCTION,
     build_system_prompt,
 )
+from app.domains.chat.domain.suggestions import (
+    SUGGESTIONS_INSTRUCTION,
+    SUGGESTIONS_SCHEMA,
+)
 from app.domains.chat.domain.triage import (
     QuestionType,
     RoutePriority,
@@ -201,6 +205,47 @@ class ClaudeChatLlm:
         resp = await self._client.messages.create(**create_kwargs)
         text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
         return self._parse_triage(text)
+
+    async def suggest_questions(
+        self, history: list[Turn], *, context: str = "", name: str | None = None
+    ) -> tuple[str, ...]:
+        """이어서 물어볼 만한 질문 (§6.1).
+
+        **`_to_messages`를 지나므로 대화 전체가 마스킹된다.** 방금 한 답변까지
+        포함해 다시 모델로 나가는 경로라, 이 함수가 마스킹을 건너뛰면 §9.3이
+        답변 생성 경로에서만 지켜지는 셈이 된다.
+
+        **지시문에 전화번호를 예시로 쓰지 않는다.** `assert_masked`가 마지막
+        user 메시지(지시문)에도 걸려, 15xx·16xx 형태가 섞이면 그 자리에서 막힌다.
+        """
+        self._record_call()
+        instruction = (
+            f"{SUGGESTIONS_INSTRUCTION}\n\n{context}" if context else SUGGESTIONS_INSTRUCTION
+        )
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            # 짧은 목록 하나다. 길게 잡을 이유가 없고, 사용자가 화면을 보고 기다린다.
+            "max_tokens": 512,
+            "thinking": {"type": "disabled"},
+            "output_config": {
+                "effort": "low",
+                "format": {"type": "json_schema", "schema": SUGGESTIONS_SCHEMA},
+            },
+            "messages": _to_messages(history, instruction, name=name),
+        }
+        resp = await self._client.messages.create(**create_kwargs)
+        text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
+        return self._parse_suggestions(text)
+
+    def _parse_suggestions(self, text: str) -> tuple[str, ...]:
+        """**파싱 실패는 제안 없음이다.** 답변은 이미 나갔으므로 여기서 예외를
+        올려 스트림을 끊을 이유가 없다."""
+        try:
+            data = json.loads(text)
+            return tuple(str(q) for q in data.get("questions", []))
+        except Exception:
+            logger.warning("추천 질문 파싱 실패 — 제안 없이 넘어간다")
+            return ()
 
     def _parse_triage(self, text: str) -> TriageResult:
         try:

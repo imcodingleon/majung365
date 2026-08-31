@@ -2,6 +2,8 @@
 
 from dataclasses import dataclass
 
+from app.domains.knowledge.domain.state import IntakeState
+
 
 @dataclass(frozen=True)
 class Turn:
@@ -30,6 +32,15 @@ class ChatCommand:
     #
     # 로그인하지 않고도 챗을 열 수 있어 `None`이 정상 경로다.
     user_name: str | None = None
+    # 초기 진단 판정과 진행 상황. **판정만 담고 답변 원문은 담지 않는다** —
+    # `IntakeState`가 애초에 그렇게 설계되어 있다(knowledge/domain/state.py).
+    #
+    # 이것이 없으면 이미 통장을 만든 사람에게도 통장을 만들라는 답이 나간다.
+    # 프롬프트에 실을 때 무엇까지 담고 무엇을 빼는지는 chat/domain/user_context.py가
+    # 정하며, 거기서 `purpose`와 항목 전체의 보유 상태 표를 빼기로 했다.
+    #
+    # 저장이 꺼져 있거나 가입 전이면 `None`이고, 그것이 정상 경로다.
+    intake: IntakeState | None = None
 
 
 @dataclass(frozen=True)
@@ -118,6 +129,18 @@ class CardEvent:
 
 
 @dataclass(frozen=True)
+class SuggestionsEvent:
+    """이어서 물어볼 만한 질문 셋 (§6.1). **`done` 바로 앞에 나간다** —
+    답변 본문이 다 흐른 뒤라야 그 답을 보고 이어서 물을 것이 정해진다.
+
+    **못 만들었으면 이 이벤트 자체가 나가지 않는다.** 빈 목록을 보내면 화면이
+    "아직 안 왔다"와 "없다"를 가리지 못한다.
+    """
+
+    questions: tuple[str, ...]
+
+
+@dataclass(frozen=True)
 class DoneEvent:
     pass
 
@@ -128,5 +151,11 @@ class ErrorEvent:
 
 
 ChatEvent = (
-    TriageEvent | EvidenceEvent | TextEvent | CardEvent | DoneEvent | ErrorEvent
+    TriageEvent
+    | EvidenceEvent
+    | TextEvent
+    | CardEvent
+    | SuggestionsEvent
+    | DoneEvent
+    | ErrorEvent
 )

@@ -1,0 +1,15 @@
+[project]
+name = "majung-rag-crawler"
+version = "0.1.0"
+description = "마중365 RAG 근거 페이지 수집기 — 자바스크립트로 렌더링되는 공공기관 페이지 전용"
+requires-python = ">=3.12"
+dependencies = [
+    "playwright>=1.49",
+]
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

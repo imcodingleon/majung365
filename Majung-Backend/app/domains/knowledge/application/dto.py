@@ -100,3 +100,8 @@ class IntakeTask:
     # 어느 카드에도 안 나오거나 받을 수 없는 항목에 버튼이 뜬다.
     can_request_visit: bool
     card: IntakeCard
+    # 대화를 열었을 때 입력창 위에 뜨는 첫 질문(§6.1). **비어 있는 것이 정상 경로다** —
+    # 표에 아직 없는 항목이면 화면이 기본 문구로 물러선다.
+    #
+    # 제도가 아니라 항목에 매단 이유는 `shared/starter_questions.py`에 적어 두었다.
+    starter_questions: tuple[str, ...] = ()

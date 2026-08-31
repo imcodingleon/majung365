@@ -189,6 +189,26 @@ class MockChatLlm:
         if buf:
             yield GuidanceChunk(text=buf)
 
+    async def suggest_questions(
+        self, history: list[Turn], *, context: str = "", name: str | None = None
+    ) -> tuple[str, ...]:
+        """이어서 물어볼 만한 질문 (§6.1) — 목업.
+
+        **내용을 지어내지 않는다.** 대화를 읽고 그럴싸한 질문을 만들면, 배선을
+        확인하는 자리에서 제안 품질까지 확인한 것으로 오해한다. 어느 대화에서나
+        말이 되는 고정 셋을 돌려주고, 실제 문장은 Claude가 만든다.
+
+        **셋을 그대로 돌려준다.** 거르는 일은 유스케이스가 맡으므로 여기서
+        개수를 맞출 이유가 없다 — 목업이 계약을 대신 지키면 그 계약이 실제로
+        지켜지는지 알 수 없다.
+        """
+        await asyncio.sleep(_THINK_DELAY_SECONDS)
+        return (
+            "어디로 가면 돼요?",
+            "무슨 서류가 필요해요?",
+            "돈이 드나요?",
+        )
+
     async def summarize_visit(self, *, text: str, name: str | None = None) -> str:
         """담당자가 먼저 읽는 요약 (§7.4) — 목업.
 

@@ -1,4 +1,4 @@
-// 상담 탭 — 나눈 이야기 목록 (§6·§7.3).
+// 상담 탭 — 채팅 내역 (§6·§7.3).
 //
 // 담당자와 나눈 대화와 마중365에게 물어본 대화가 한 목록에 섞인다. 사용자에게는 둘 다
 // "이야기한 곳"이라 나누어 보일 이유가 없고, 다만 **누구와 이야기했는지는 한눈에
@@ -8,8 +8,10 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/shared/components/AppHeader";
 import { Icon } from "@/shared/components/Icon";
-import { TabBadge } from "@/shared/components/TabBadge";
+import { ScreenTitle } from "@/shared/components/ScreenTitle";
 import { COLORS } from "@/shared/theme/colors";
+import { FONTS } from "@/shared/theme/fonts";
+import { listWhenLabel } from "@/shared/utils/time";
 
 import { groupByPeer, type Conversation } from "../domain/conversation";
 
@@ -18,17 +20,46 @@ function EmptyNote() {
     <View className="flex-1 items-center justify-center px-8">
       <Icon name="chat" size={40} color={COLORS.brandMuted} />
       <Text className="mt-4 text-center text-body-lg font-bold text-ink-sub">
-        아직 나눈 이야기가 없어요
+        채팅 내역이 없습니다.
       </Text>
       <Text className="mt-2 text-center text-body text-ink-muted">
-        할 일에서 담당자에게 알리거나{"\n"}마중365에게 물어보시면 여기에 쌓여요
+        궁금한 점이나 필요한 도움이 있다면{"\n"}편하게 질문해 주세요.
       </Text>
+    </View>
+  );
+}
+
+/**
+ * 안 읽은 개수 (2026-08-31 시안).
+ *
+ * **하단 메뉴바의 `TabBadge`를 쓰지 못한다.** 그쪽은 아이콘 위에 겹쳐 얹는 것이라
+ * `position: absolute`이고 색도 빨강이다. 여기는 줄 안에서 자리를 차지해야 하고
+ * 시안이 브랜드 파랑으로 정했다.
+ */
+function UnreadBadge({ count }: { count: number }) {
+  if (count <= 0) return null;
+  const label = count > 99 ? "99+" : String(count);
+  return (
+    <View
+      style={{
+        minWidth: 22,
+        height: 22,
+        // 두 자리까지는 원이고 "99+"에서만 좌우로 늘어난다. 시안이 정한 모양이다.
+        paddingHorizontal: 6,
+        borderRadius: 11,
+        backgroundColor: COLORS.brand,
+        alignItems: "center",
+        justifyContent: "center",
+      }}
+    >
+      <Text style={{ color: COLORS.surface, fontSize: 14, fontFamily: FONTS.medium }}>{label}</Text>
     </View>
   );
 }
 
 function Row({ item, onOpen }: { item: Conversation; onOpen: (c: Conversation) => void }) {
   const staff = item.kind === "staff";
+  const when = listWhenLabel(item.at);
   return (
     <Pressable
       onPress={() => onOpen(item)}
@@ -49,7 +80,7 @@ function Row({ item, onOpen }: { item: Conversation; onOpen: (c: Conversation) =
       </View>
 
       <View className="min-w-0 flex-1">
-        <Text className="text-body-lg font-bold text-ink-strong">{item.title}</Text>
+        <Text className="text-heading font-bold text-ink-strong">{item.title}</Text>
         {item.preview ? (
           <Text numberOfLines={1} className="mt-1 text-body text-ink-sub">
             {item.preview}
@@ -61,9 +92,10 @@ function Row({ item, onOpen }: { item: Conversation; onOpen: (c: Conversation) =
         )}
       </View>
 
-      {/* 안 읽은 것이 없으면 아무것도 그리지 않는다 */}
-      <View>
-        <TabBadge count={item.unread} />
+      {/* 시각이 위, 안 읽은 개수가 아래다. 둘 다 없을 수 있으므로 자리를 미리 잡지 않는다 */}
+      <View className="items-end justify-center gap-3">
+        {when ? <Text className="text-ink-faint" style={{ fontSize: 14, fontFamily: FONTS.medium }}>{when}</Text> : null}
+        <UnreadBadge count={item.unread} />
       </View>
     </Pressable>
   );
@@ -79,16 +111,17 @@ export function ChatListScreen({
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top"]}>
       <AppHeader />
-      <View className="border-b border-line bg-white px-5 pb-4">
-        <Text className="text-heading font-extrabold text-ink-strong">나눈 이야기</Text>
-      </View>
+      <ScreenTitle label="채팅 내역" />
 
       {conversations.length === 0 ? (
         <EmptyNote />
       ) : (
         <ScrollView className="flex-1">
           {/* **누구와 나눈 이야기인지로 묶는다.** 아이콘만으로는 한 목록에 섞여 있어,
-              지금 보는 줄이 담당자인지 마중365인지 제목을 읽어야 알 수 있었다 */}
+              지금 보는 줄이 담당자인지 마중365인지 제목을 읽어야 알 수 있었다.
+              **시안에는 이 묶음 머리가 없다.** 다만 시안의 두 줄이 모두 마중365와 나눈
+              것이라 묶음이 하나뿐인 모형이고, 묶는 것 자체는 2026-08-26 결정 H-3이다.
+              시안 한 장으로 그 결정을 뒤집지 않고 그대로 둔다 */}
           {groupByPeer(conversations).map((group) => (
             <View key={group.title}>
               <View className="bg-page px-5 py-2">

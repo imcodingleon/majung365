@@ -11,6 +11,7 @@ import { Linking, Pressable, ScrollView, Text, TextInput, View } from "react-nat
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Icon } from "@/shared/components/Icon";
+import { districtLabel } from "@/shared/location";
 import { FONTS } from "@/shared/theme/fonts";
 import { Logo } from "@/shared/components/Logo";
 import { RegionPicker } from "@/features/institutions/views/RegionPicker";
@@ -310,6 +311,9 @@ export function MapScreen() {
             pick(region);
             setChanging(false);
           }}
+          // **처음 뜬 화면에는 돌아갈 자리가 없다.** 위치를 못 잡아 여기로 온 사람에게
+          // "이전"을 보여주면 눌러도 아무 데도 가지 못한다.
+          onCancel={place ? () => setChanging(false) : undefined}
           banner
         />
       </SafeAreaView>
@@ -333,7 +337,14 @@ export function MapScreen() {
         <CenterMap centers={shown} />
         <ListHeading
           error={error}
-          region={place.district ? `${place.sido} ${place.district}` : place.sido}
+          region={
+            // **시·도는 뺀다.** 방금 스스로 고른 값이라 헷갈릴 일이 없고, 440px에서
+            // "경기 군포시 산본1동"은 "지역 변경" 버튼과 한 줄에 못 들어간다.
+            // `districtLabel`을 거치는 것은 자동 감지가 "수원시장안구"를 주기 때문이다.
+            place.district
+              ? `${districtLabel(place.district)}${place.dong ? ` ${place.dong}` : ""}`
+              : place.sido
+          }
           onChangeRegion={() => setChanging(true)}
         />
         <CenterList loading={loading} shown={shown} origin={origin} />

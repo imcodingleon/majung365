@@ -9,6 +9,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import { Pressable, Text, View } from "react-native";
 import { Redirect, useLocalSearchParams } from "expo-router";
 
+import { chipsFor } from "@/features/chat/domain/chips";
 import { useTaskThreads } from "@/features/chat/hooks/useTaskThreads";
 import { ChatPopup } from "@/features/chat/views/ChatPopup";
 import { HelpScreen } from "@/features/help";
@@ -179,6 +180,13 @@ export default function TodayRoute() {
           taskTitle={chatTask.title}
           messages={chat.messages}
           busy={chat.busy}
+          // 대화 전에는 그 할 일의 첫 질문, 오간 뒤에는 AI가 제안한 다음 질문이다.
+          // **판단은 도메인이 하고 화면은 받은 것만 그린다** (§6.1).
+          chips={chipsFor({
+            hasMessages: chat.messages.length > 0,
+            starterQuestions: chatTask.starterQuestions,
+            suggestions: chat.suggestions,
+          })}
           onSend={chat.send}
           onClose={chat.close}
           onClear={chat.clear}

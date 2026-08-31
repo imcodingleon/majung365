@@ -13,6 +13,29 @@ export interface RouteOut {
   reason: string;
 }
 
+/**
+ * 한 할 일을 신청할 수 있는 경로 하나 (§4.1).
+ *
+ * 할 일은 하나인데 신청할 곳이 둘인 경우가 있다(R2: 공단 긴급지원 · 정부 긴급복지).
+ * 카드를 둘로 나누지 않고 경로를 나열한다 — 어느 쪽이 되는지는 소득·수급 이력에
+ * 따라 갈려서 사용자가 판단할 수 없고, 상담에서 정해질 일이다.
+ */
+export interface CardOption {
+  /** 기관명. 경로가 둘 이상이면 화면이 각 경로 앞에 붙인다. */
+  org: string;
+  where: string;
+  next_step: string;
+  docs: string[];
+  /** 갈 곳과 거기서 할 말. **전화번호보다 먼저 나간다** (§6.4). */
+  desk_place: string;
+  desk_say: string;
+  /** 연락처. **기관명 없이 번호만 내지 않는다** — 어디에 거는지 알 수 없다. */
+  contact_org: string;
+  contact_phone: string;
+  /** 상담 가능 시간이 확인된 곳만 채운다. 132처럼 점심에 끊기는 번호가 있다. */
+  contact_hours: string;
+}
+
 /** 제도 안내 카드 (CAP-3, 지식베이스 매칭). KB 항목만 인용 — 환각 없음. */
 export interface CardData {
   institution_id: string;
@@ -40,6 +63,22 @@ export interface CardData {
    * 확인한 것은 이 제도 안내이지 그 답변이 질문에 맞다는 판정이 아니다.
    */
   verified_note: string;
+  /**
+   * 신청 경로. 항상 최소 하나이며, **창구 안내와 연락처가 여기에 실려 온다.**
+   *
+   * 서버는 오래전부터 보내고 있었는데 이 미러에 자리가 없어 화면까지 오지 못했다.
+   * §6.4 ③단계("연락처는 단계와 무관하게 항상 붙는다")가 그동안 지켜지지 않은
+   * 이유가 이것이다.
+   */
+  options?: CardOption[];
+  /** 결과 카드 확장 (§4.1). **없으면 화면이 그 자리를 만들지 않는다.** */
+  benefit_summary?: string;
+  eligibility?: string[];
+  steps?: string[];
+  /** "먼저 확인할 것" — 상담에서 다뤄질 항목을 미리 알려 준다 (§4.1). */
+  cautions?: string[];
+  /** 근거가 된 공식 페이지들. `source_url` 하나로는 근거가 여럿인 제도를 못 담는다. */
+  source_urls?: string[];
 }
 
 /**
@@ -186,6 +225,11 @@ export interface StoredChatTurn {
   content: string;
   /** 보낸 시각(ISO). */
   at: string;
+  /**
+   * 그 답변에 딸려 온 다음 질문 제안 (§6.1). 답변 턴에만 있고, AI가 못 만든
+   * 답변에는 없다. **없는 것이 정상 경로다.**
+   */
+  suggestions?: string[];
 }
 
 export interface ChatStreamHandlers {
@@ -197,6 +241,14 @@ export interface ChatStreamHandlers {
   onText?: (delta: string) => void;
   /** 제도 카드 도착 */
   onCard?: (card: CardData) => void;
+  /**
+   * AI가 제안한 다음 질문 셋 도착.
+   *
+   * **답변 본문이 다 흐른 뒤, `done` 직전에 온다** (§6.1). 그 답을 보고 이어서
+   * 물을 것이 정해지기 때문이다. 못 만들었으면 이 프레임 자체가 오지 않는다 —
+   * 빈 배열이 오면 "빈 칸"과 "없음"을 가릴 수 없다.
+   */
+  onSuggestions?: (questions: string[]) => void;
   /** 서버가 보낸 사용자용 오류 문구 */
   onError?: (message: string) => void;
   /** 스트림 정상 종료 */

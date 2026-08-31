@@ -153,6 +153,28 @@ describe("toAlerts — 안 읽은 메시지", () => {
     ]);
     expect(list[0].kind).toBe("confirmed");
   });
+
+  it("말이 온 때를 소식이 온 때로 쓴다", () => {
+    // **요청을 보낸 때를 쓰면 안 된다.** 사흘 전에 보낸 요청에 방금 답이 와도
+    // 알림이 사흘 전 날짜 묶음으로 들어가 목록 아래에 묻혔다.
+    const list = toAlerts([
+      req({
+        status: "acknowledged",
+        unread: 1,
+        createdAt: "2026-08-26T09:00:00+09:00",
+        lastMessageAt: "2026-08-29T18:30:00+09:00",
+      }),
+    ]);
+    expect(list[0].at).toBe("2026-08-29T18:30:00+09:00");
+  });
+
+  it("말이 언제 왔는지 모르면 요청을 보낸 때로 둔다", () => {
+    // 서버가 옛 판이면 이 값이 없다. 날짜를 지어내지 않고 아는 값으로 물러선다.
+    const list = toAlerts([
+      req({ status: "acknowledged", unread: 1, createdAt: "2026-08-26T09:00:00+09:00" }),
+    ]);
+    expect(list[0].at).toBe("2026-08-26T09:00:00+09:00");
+  });
 });
 
 describe("countUnseen — 두 종류의 안 읽음", () => {
@@ -301,5 +323,16 @@ describe("timeLabel", () => {
 
   it("읽을 수 없으면 빈 말로 둔다", () => {
     expect(timeLabel("방금")).toBe("");
+  });
+});
+
+describe("toAlerts — 조사", () => {
+  it("제안된 시간의 받침을 보고 조사를 고른다", () => {
+    // "은"으로 박아 두었더니 화면에 "오전 9시은 어떠신지"가 나왔다. 같은 문구를
+    // 만드는 `statusMessage`는 이미 `josa`를 쓰고 있었다.
+    const list = toAlerts([
+      req({ status: "reschedule_proposed", proposedTime: "9월 4일 금요일 오전 9시" }),
+    ]);
+    expect(list[0].body).toBe("9월 4일 금요일 오전 9시는 어떠신지 물어보셨어요.");
   });
 });

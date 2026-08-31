@@ -32,7 +32,11 @@ export type IconName =
   | "home"
   | "person"
   | "search"
-  | "star";
+  | "star"
+  | "clock"
+  | "lock"
+  | "info"
+  | "next";
 
 type Props = {
   name: IconName;
@@ -296,10 +300,73 @@ function Star({ color, filled }: { color: string; filled?: boolean }) {
   );
 }
 
+/**
+ * 시계. 보낸 요청이 아직 처리되기를 기다리는 중임을 알린다 (2026-08-31 시안).
+ *
+ * 격자가 14×14다 — `VIEWBOX`가 따로 잡아 준다.
+ */
+function Clock({ color }: { color: string }) {
+  return (
+    <Path
+      d="M7 3.66667V7H10.3333M7 13C3.68629 13 1 10.3137 1 7C1 3.68629 3.68629 1 7 1C10.3137 1 13 3.68629 13 7C13 10.3137 10.3137 13 7 13Z"
+      stroke={color}
+      fill="none"
+      {...line}
+    />
+  );
+}
+
+/**
+ * 자물쇠. 여기 적은 것은 밖으로 나가지 않는다는 표시다 (2026-08-31 시안).
+ *
+ * **시안의 원본은 세 조각으로 나뉘어 있어 그대로 옮기지 못했다.** 고리·몸통·열쇠구멍이
+ * 각기 다른 격자의 파일로 떨어져 나온다. 시안이 쓴 것과 같은 아이콘 묶음(tabler)의
+ * 표준 자물쇠를 24 격자로 그린다.
+ */
+function Lock({ color }: { color: string }) {
+  return (
+    <>
+      <Path
+        d="M5 13a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v6a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2z"
+        stroke={color}
+        fill="none"
+        {...line}
+      />
+      <Path d="M8 11V7a4 4 0 1 1 8 0v4" stroke={color} fill="none" {...line} />
+      <Path d="M12 16v1" stroke={color} fill="none" {...line} />
+    </>
+  );
+}
+
+/**
+ * 알림표 (ⓘ). 읽어 두면 좋은 안내 상자 앞에 선다.
+ *
+ * 격자가 20×20이다 — `VIEWBOX`가 따로 잡아 준다.
+ */
+function Info({ color }: { color: string }) {
+  return (
+    <Path
+      d="M10 9V14M10 19C5.02944 19 1 14.9706 1 10C1 5.02944 5.02944 1 10 1C14.9706 1 19 5.02944 19 10C19 14.9706 14.9706 19 10 19ZM10.0498 6V6.1L9.9502 6.1002V6H10.0498Z"
+      stroke={color}
+      fill="none"
+      {...line}
+    />
+  );
+}
+
+/** 오른쪽 꺾쇠. 눌러서 다른 화면으로 간다는 표시다. */
+function Next({ color }: { color: string }) {
+  return <Path d="M9 6l6 6-6 6" stroke={color} fill="none" {...line} />;
+}
+
 const SHAPES: Record<
   IconName,
   (p: { color: string; filled?: boolean }) => React.ReactElement
 > = {
+  clock: Clock,
+  lock: Lock,
+  info: Info,
+  next: Next,
   check: Check,
   close: Close,
   phone: Phone,
@@ -333,6 +400,8 @@ const VIEWBOX: Partial<Record<IconName, string>> = {
   chat: "0 0 22 22",
   bell: "0 0 22 22",
   checkCircle: "0 0 22 22",
+  clock: "0 0 14 14",
+  info: "0 0 20 20",
 };
 
 export function Icon({ name, size = 24, color, filled }: Props) {

@@ -32,6 +32,9 @@ export function useNearbyCenters() {
   // 고른 경우에는 없다 — 그때는 서버가 동네 한가운데로 가늠한다.
   const lat = place?.lat;
   const lng = place?.lng;
+  // **고른 동의 주민센터를 빠뜨리지 않게 이름도 함께 보낸다** (2026-08-31). 좌표만으로는
+  // 자기 동 센터가 갈래별 세 곳에서 밀려 잘리는 일이 있었다.
+  const dong = place?.dong;
 
   useEffect(() => {
     // **지역이 정해지기 전에는 부르지 않는다.** 지역 없이 부르면 전국 목록이 오는데,
@@ -51,7 +54,7 @@ export function useNearbyCenters() {
     void (async () => {
       try {
         // 갈래를 고르지 않고 그 지역 전부를 받는다. 거르는 일은 화면의 칩이 한다.
-        const all = await getCenters({ sido, district: district ?? "", lat, lng });
+        const all = await getCenters({ sido, district: district ?? "", dong, lat, lng });
         if (alive) setCenters(all);
       } catch {
         if (alive) setError("기관을 불러오지 못했어요. 잠시 후 다시 시도해 주세요.");
@@ -62,7 +65,7 @@ export function useNearbyCenters() {
     return () => {
       alive = false;
     };
-  }, [sido, district, lat, lng]);
+  }, [sido, district, dong, lat, lng]);
 
   return { centers, loading, error, place, pick: lookup.pick };
 }

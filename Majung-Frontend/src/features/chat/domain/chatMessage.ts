@@ -2,6 +2,8 @@
 // 근거의 확실성이 다른데 같은 어조로 말하면 사용자는 인터넷에서 주워온 말을 제도 안내로 믿는다.
 // 그래서 어디서 가져온 답인지를 말풍선이 직접 드러낸다.
 
+import type { CardData } from "@/shared/types";
+
 /** 근거 단계. ③ 연결(연락처)은 단계가 아니라 모든 답변에 붙는 것이라 여기에 없다. */
 export type EvidenceStage = "rag" | "web";
 
@@ -33,19 +35,36 @@ export type MessageDesk = {
   say: string;
 };
 
+/**
+ * 말풍선 아래에 붙는 시각(ISO). 2026-08-31 시안이 이것을 넣기로 했다.
+ *
+ * **없을 수 있다.** 서버가 옛 판이면 지난 대화에 시각이 담겨 오지 않는다. 그때는
+ * 시각 줄을 그리지 않는다 — 화면이 시각을 지어내면 그것이 곧 틀린 정보가 된다.
+ */
+type Timed = { at?: string };
+
 export type ChatMessage =
-  | { id: string; role: "user"; text: string }
-  | {
+  | ({ id: string; role: "user"; text: string } & Timed)
+  | ({
       id: string;
       role: "assistant";
       text: string;
       evidence?: Evidence;
       desk?: MessageDesk;
       contact?: MessageContact;
+      /**
+       * 이 답변의 근거가 된 제도 카드 (§4.1).
+       *
+       * **말풍선을 따로 만들지 않는다.** 예전에는 카드마다 별도 말풍선을 세우고
+       * `요약 / 어디서: … / 다음 단계`를 이어붙였는데, 값이 KB에서 그대로 온 고정
+       * 서식이라 대화 가운데에 안내문이 끼어든 것처럼 읽혔다. 답변에 붙여 두고
+       * 자세한 것은 접는다.
+       */
+      cards?: CardData[];
       /** 스트리밍이 끝나지 않은 상태. */
       streaming?: boolean;
-    }
-  | {
+    } & Timed)
+  | ({
       id: string;
       role: "search-notice";
       /**
@@ -53,7 +72,7 @@ export type ChatMessage =
        * 확실성이 낮다는 신호가 정보보다 앞서야 하고, 이 문장이 로딩 안내도 겸한다.
        */
       text: string;
-    };
+    } & Timed);
 
 /** 검색 전에 반드시 먼저 나가는 문장. 나중에 덧붙이면 이미 사실로 받아들인 뒤다. */
 export const SEARCH_NOTICE =

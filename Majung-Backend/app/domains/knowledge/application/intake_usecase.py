@@ -35,6 +35,7 @@ from app.domains.shared.routes import (
     section_label_for,
     tab_label_for,
 )
+from app.domains.shared.starter_questions import questions_for
 from app.domains.staff.domain.entity import org_for
 
 logger = logging.getLogger("majung.intake")
@@ -167,6 +168,7 @@ class IntakeUseCase:
                 # 받을 담당자가 있는 항목인지는 기관 매핑이 정본이다(§7).
                 can_request_visit=org_for(v.route_id) is not None,
                 card=self._card_for(v),
+                starter_questions=questions_for(v.route_id),
             )
             for v in verdicts
             if v.route_id not in completed

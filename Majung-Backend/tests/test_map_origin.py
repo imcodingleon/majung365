@@ -94,3 +94,77 @@ def test_sido_only_is_still_capped() -> None:
     shown = _repo().by_region("서울특별시")
     for category in {c.category for c in shown}:
         assert len([c for c in shown if c.category == category]) <= 3
+
+
+# ── 고른 동의 주민센터 (2026-08-31) ──
+#
+# **안양 호계3동에서 실제로 빠졌다.** 사용자가 호계3동을 골랐는데 호계3동
+# 행정복지센터가 목록에 없고 호계2동이 가장 가까운 곳으로 나왔다.
+#
+# 원인은 좌표다. `district_offices.json`의 호계3동 좌표가 호계1동과 똑같은 값이라
+# (주소는 경수대로 504와 538로 다른데 지오코딩이 같은 점을 줬다), 자기 동 경계
+# 중심에서 1.22km로 4위가 되어 갈래마다 셋에서 잘렸다.
+#
+# **좌표를 고쳐서 끝낼 문제가 아니다.** 전수 검사에서 3,348곳 중 93곳이 자기 동
+# 경계 밖에 찍혀 있었고, 그중에는 임시청사(칠곡군 왜관읍)나 민통선 밖 청사(파주시
+# 장단면)처럼 **정당하게 밖에 있는 것**이 섞여 있어 자동으로 가릴 수 없다. 게다가
+# 경계 데이터가 2021년이라 그 뒤 분동된 207곳은 판정조차 못 한다.
+#
+# 반면 **이름으로 짚으면 3,495개 중 3,356개(96.0%)가 맞는다.** 못 맞추는 4%는
+# 부천시 행정동 개편처럼 두 자료의 시점이 다른 경우이고, 그때는 예전처럼 거리로
+# 물러서면 되므로 퇴행이 없다.
+
+# 호계3동 경계 한가운데. 화면이 동을 고르면 이 좌표를 보낸다.
+HOGYE3_CENTER = (37.36745, 126.95825)
+
+
+def test_picked_dong_office_is_included() -> None:
+    """**고른 동의 주민센터는 거리와 무관하게 들어간다.**
+
+    관할이 아닌 곳을 찾아가면 헛걸음이다. 좌표가 어디에 찍혀 있든 사용자가 고른
+    동의 이름을 가진 주민센터가 있으면 그것을 보여줘야 한다.
+    """
+    shown = _repo().by_region("경기도", "안양시", HOGYE3_CENTER, dong="호계3동")
+    offices = [c for c in shown if c.category == "주민센터"]
+    assert any("호계3동" in c.name for c in offices), _names(shown)
+
+
+def test_picked_dong_office_comes_first() -> None:
+    """관할 주민센터가 주민센터 갈래의 맨 앞에 온다."""
+    shown = _repo().by_region("경기도", "안양시", HOGYE3_CENTER, dong="호계3동")
+    offices = [c for c in shown if c.category == "주민센터"]
+    assert offices, "주민센터가 하나도 안 나왔다"
+    assert "호계3동" in offices[0].name, _names(offices)
+
+
+def test_unknown_dong_falls_back_to_distance() -> None:
+    """**이름이 안 맞으면 예전처럼 거리로만 세운다.**
+
+    두 자료의 시점이 달라 4%가 이 길로 온다. 그때 화면이 비거나 순서가 흐트러지면
+    고치기 전보다 나빠진다.
+    """
+    from app.domains.centers.domain.distance import distance_km
+
+    shown = _repo().by_region("경기도", "안양시", HOGYE3_CENTER, dong="없는동")
+    offices = [c for c in shown if c.category == "주민센터"]
+    assert offices, "이름이 안 맞았다고 주민센터가 통째로 사라졌다"
+
+    measured = [distance_km(HOGYE3_CENTER, c.lat, c.lng) for c in offices]
+    assert measured == sorted(measured)
+
+
+def test_dong_does_not_break_the_cap() -> None:
+    """동을 짚어 넣어도 갈래마다 셋을 넘지 않는다."""
+    shown = _repo().by_region("경기도", "안양시", HOGYE3_CENTER, dong="호계3동")
+    for category in {c.category for c in shown}:
+        assert len([c for c in shown if c.category == category]) <= 3
+
+
+def test_dong_does_not_pull_in_other_districts() -> None:
+    """**같은 이름의 동이 전국에 여럿이다.** 다른 시군구의 같은 이름을 끌어오면 안 된다.
+
+    "중앙동"은 전국 서른두 곳이다.
+    """
+    shown = _repo().by_region("경기도", "군포시", None, dong="중앙동")
+    offices = [c for c in shown if c.category == "주민센터"]
+    assert all("군포" in c.address for c in offices), _names(offices)

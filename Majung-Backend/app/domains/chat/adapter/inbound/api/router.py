@@ -5,6 +5,7 @@ Router는 검증·DTO 변환·SSE 직렬화만. 비즈니스 로직은 UseCase�
 """
 
 import json
+import logging
 from collections.abc import AsyncIterator
 from typing import Annotated
 
@@ -20,13 +21,17 @@ from app.domains.chat.application.dto import (
     DoneEvent,
     ErrorEvent,
     EvidenceEvent,
+    SuggestionsEvent,
     TextEvent,
     TriageEvent,
     Turn,
 )
+from app.domains.knowledge.domain.state import IntakeState, IntakeStateRepository
 from app.domains.shared.routes import RouteId
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
+
+logger = logging.getLogger("majung.chat")
 
 router = APIRouter(prefix="/api", tags=["chat"])
 
@@ -80,7 +85,31 @@ def _extract_gate_token(body: ChatIn) -> str | None:
     return body.token
 
 
-def _to_command(body: ChatIn, user_name: str | None = None) -> ChatCommand:
+def _intake_of(request: Request, account: Account | None) -> IntakeState | None:
+    """그 사람의 진단 판정. **없어도 대화는 그대로 진행된다.**
+
+    저장소가 아직 안 붙었거나(Supabase 미설정) 저장이 꺼져 있던 때 가입한 사람은
+    판정이 없다. `state.py`가 "실패해도 예외를 밖으로 던지지 않는다"를 원칙으로
+    두었으므로 여기서도 삼키고 `None`으로 둔다 — 판정을 못 읽었다고 답변이
+    막히면 안 된다.
+    """
+    states: IntakeStateRepository | None = getattr(
+        request.app.state, "intake_state_repo", None
+    )
+    if states is None or account is None:
+        return None
+    try:
+        return states.by_user(account.id)
+    except Exception:
+        logger.warning("진단 판정 조회 실패 — 판정 없이 답한다")
+        return None
+
+
+def _to_command(
+    body: ChatIn,
+    user_name: str | None = None,
+    intake: IntakeState | None = None,
+) -> ChatCommand:
     turns = [
         Turn(role=t.role, content=t.content[:_MAX_TURN_LEN])
         for t in body.history[-_MAX_HISTORY:]
@@ -96,6 +125,7 @@ def _to_command(body: ChatIn, user_name: str | None = None) -> ChatCommand:
         history=tuple(turns),
         route_id=route_id,
         user_name=user_name,
+        intake=intake,
     )
 
 
@@ -125,7 +155,11 @@ async def chat(
         )
 
     # **이름은 지우려고 싣는다.** 로그인하지 않았으면 없는 채로 간다.
-    command = _to_command(body, account.name if account else None)
+    command = _to_command(
+        body,
+        account.name if account else None,
+        _intake_of(request, account),
+    )
     if not command.message:  # 공백/개행만 입력 → strip 후 빈 문자열 방지
         raise HTTPException(status_code=400, detail="메시지를 입력해 주세요.")
 
@@ -136,6 +170,8 @@ async def chat(
             messages.append(account.id, command.route_id, "user", command.message)
 
         answer: list[str] = []
+        # 이 답변에 딸린 다음 질문 제안. **못 만들면 빈 채로 남고 그대로 저장된다.**
+        suggestions: tuple[str, ...] = ()
         async for ev in usecase.run(command):
             if isinstance(ev, TextEvent):
                 answer.append(ev.delta)
@@ -194,6 +230,17 @@ async def chat(
                         ensure_ascii=False,
                     ),
                 }
+            elif isinstance(ev, SuggestionsEvent):
+                # **답변과 같은 행에 저장한다**(§6.3). 다시 열었을 때 이어서 물을
+                # 것도 함께 있어야 저장하기로 한 뜻이 산다. 저장은 done에서 한 번에
+                # 하므로 여기서는 담아만 둔다.
+                suggestions = ev.questions
+                yield {
+                    "event": "suggestions",
+                    "data": json.dumps(
+                        {"questions": list(ev.questions)}, ensure_ascii=False
+                    ),
+                }
             elif isinstance(ev, ErrorEvent):
                 yield {
                     "event": "error",
@@ -202,7 +249,11 @@ async def chat(
             elif isinstance(ev, DoneEvent):
                 if account and messages and answer:
                     messages.append(
-                        account.id, command.route_id, "assistant", "".join(answer)
+                        account.id,
+                        command.route_id,
+                        "assistant",
+                        "".join(answer),
+                        suggestions=suggestions,
                     )
                 yield {"event": "done", "data": "{}"}
 
@@ -216,6 +267,9 @@ class StoredMessageOut(BaseModel):
     role: str
     content: str
     at: str
+    # 그 답변에 딸렸던 다음 질문 제안 (§6.1). 답변 턴에만 있고, 못 만든 답변에는
+    # 없다. **비어 오는 것이 정상 경로다.**
+    suggestions: list[str] = Field(default_factory=list)
 
 
 class ChatRoomOut(BaseModel):
@@ -261,7 +315,12 @@ def read_room(
     if messages is None:
         return []
     return [
-        StoredMessageOut(role=m.role, content=m.content, at=m.at.isoformat())
+        StoredMessageOut(
+            role=m.role,
+            content=m.content,
+            at=m.at.isoformat(),
+            suggestions=list(m.suggestions),
+        )
         for m in messages.history(account.id, route_id)
     ]
 

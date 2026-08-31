@@ -7,6 +7,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 
 import { AppHeader } from "@/shared/components/AppHeader";
 import { Icon, type IconName } from "@/shared/components/Icon";
+import { ScreenTitle } from "@/shared/components/ScreenTitle";
 import { COLORS } from "@/shared/theme/colors";
 
 import {
@@ -36,11 +37,9 @@ function EmptyNote() {
   return (
     <View className="flex-1 items-center justify-center px-8">
       <Icon name="bell" size={40} color={COLORS.brandMuted} />
-      <Text className="mt-4 text-center text-body-lg font-bold text-ink-sub">
-        아직 온 소식이 없어요
-      </Text>
+      <Text className="mt-4 text-center text-body-lg font-bold text-ink-sub">알림이 없습니다.</Text>
       <Text className="mt-2 text-center text-body text-ink-muted">
-        담당자가 답하면{"\n"}여기로 알려드릴게요
+        새로운 소식이 생기면{"\n"}이곳에서 확인할 수 있어요.
       </Text>
     </View>
   );
@@ -59,9 +58,7 @@ export function AlertListScreen({
   return (
     <SafeAreaView className="flex-1 bg-page" edges={["top"]}>
       <AppHeader />
-      <View className="border-b border-line bg-white px-5 pb-4">
-        <Text className="text-heading font-extrabold text-ink-strong">알림</Text>
-      </View>
+      <ScreenTitle label="알림" />
 
       {alerts.length === 0 ? (
         <EmptyNote />

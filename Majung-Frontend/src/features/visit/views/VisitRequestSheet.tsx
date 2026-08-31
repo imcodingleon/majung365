@@ -13,7 +13,6 @@ import { FONTS } from "@/shared/theme/fonts";
 import type { IntakeAnswers } from "@/features/intake/domain/questionTypes";
 import { SECTIONS, type SectionId } from "@/features/intake/domain/sections";
 
-import { sharedItems } from "../domain/request";
 import {
   answeredSections,
   buildSharedAnswers,
@@ -25,6 +24,7 @@ import { VisitTimeField } from "@/shared/components/VisitTimeField";
 import { isComplete, toIso, type VisitTime } from "@/shared/utils/visitTime";
 import { FramedModal } from "@/shared/components/FramedModal";
 import { Icon } from "@/shared/components/Icon";
+import { InfoPanel } from "@/shared/components/InfoPanel";
 
 type Props = {
   visible: boolean;
@@ -34,7 +34,13 @@ type Props = {
   purpose: string;
   /** 이 할 일의 준비물 목록. 담당자가 미리 알면 헛걸음을 막는다. */
   docs: readonly string[];
-  /** 기한이 있는 제도를 상담하는 자리인지. 그때만 출소날짜를 함께 보낸다 (§7.4). */
+  /**
+   * 기한이 있는 제도를 상담하는 자리인지. 그때만 출소날짜를 함께 보낸다 (§7.4).
+   *
+   * **지금 화면은 이 값을 쓰지 않는다.** 전송 항목 목록("담당자에게 이만큼만 알려줘요")이
+   * 이 값으로 "출소한 날짜" 줄을 넣을지 정했는데, 2026-08-31 시안이 그 목록을 안심
+   * 문장으로 바꿨다. 무엇을 보낼지는 서버가 정하므로 계약은 그대로 둔다.
+   */
   hasDeadline?: boolean;
   /** 시간 후보를 만들 기준 날짜. 넘기지 않으면 오늘로 잡는다. */
   today?: Date;
@@ -57,8 +63,62 @@ type Props = {
   error?: string | null;
 };
 
-function SectionTitle({ children }: { children: React.ReactNode }) {
-  return <Text className="mb-3 mt-6 text-body-lg font-extrabold text-ink-strong">{children}</Text>;
+/** 구역 제목. 뒤에 "(선택)"이 붙는 자리가 있어 자식으로 받는다 (2026-08-31 시안). */
+function SectionTitle({ children, optional }: { children: React.ReactNode; optional?: boolean }) {
+  return (
+    <View className="mb-3 mt-6 flex-row items-center gap-1">
+      <Text
+        className="font-semibold text-ink-strong"
+        style={{ fontSize: 16, lineHeight: 27 }}
+      >
+        {children}
+      </Text>
+      {/* 안 적어도 된다는 것을 제목에서 알린다. 아래 보조 문구까지 읽어야 알 수 있으면
+          적어야 하는 줄 알고 멈추는 사람이 생긴다 */}
+      {optional ? (
+        <Text
+          className="text-ink-muted"
+          style={{ fontSize: 14, lineHeight: 21, fontFamily: FONTS.medium }}
+        >
+          (선택)
+        </Text>
+      ) : null}
+    </View>
+  );
+}
+
+/** 제목 아래 한 줄 안내. */
+function SectionHint({ children }: { children: React.ReactNode }) {
+  return (
+    <Text
+      className="mb-3 text-ink-muted"
+      style={{ fontSize: 14, lineHeight: 21, fontFamily: FONTS.medium }}
+    >
+      {children}
+    </Text>
+  );
+}
+
+/**
+ * 고칠 수 없는 값을 보여주는 자리 (이름·방문 목적).
+ *
+ * **테두리를 두르지 않는다** (시안). 테두리가 있으면 입력칸으로 보여서 눌러 고치려
+ * 하게 된다. 회색 바탕만으로 "여기는 이미 정해진 값"이 읽힌다.
+ */
+function ValueBox({ children }: { children: React.ReactNode }) {
+  return (
+    <View
+      className="justify-center rounded-xl px-4"
+      style={{ backgroundColor: COLORS.line, height: 62 }}
+    >
+      <Text
+        className="text-ink-strong"
+        style={{ fontSize: 20, fontFamily: FONTS.medium }}
+      >
+        {children}
+      </Text>
+    </View>
+  );
 }
 
 export function VisitRequestSheet({
@@ -82,8 +142,13 @@ export function VisitRequestSheet({
 
   // 답한 것이 있는 분야만 고를 수 있다. 답이 없는 분야를 내놓으면 고를 것이 없는 칸이 생긴다.
   const available = useMemo(() => (answers ? answeredSections(answers) : []), [answers]);
-  /** 함께 보낼지. **꺼진 채로 시작한다** — 켜는 것은 사용자가 하는 결정이다. */
-  const [shareOn, setShareOn] = useState(false);
+  /**
+   * 함께 보낼 분야.
+   *
+   * **이 목록이 곧 동의다** (2026-08-31 시안). 전에는 "함께 보낼까요?" 스위치를 따로
+   * 두었는데, 켜 놓고 분야를 하나도 안 고르면 아무것도 안 가면서 켜진 것처럼 보였다.
+   * 하나도 안 고르면 답변도 동의 기록도 서버로 가지 않는다 (§7.4-1).
+   */
   const [picked, setPicked] = useState<SectionId[]>([]);
 
   // 방문 목적과 같은 기관에서 처리하는 분야만 처음에 켠다 (§7.4-1).
@@ -100,14 +165,14 @@ export function VisitRequestSheet({
   }, [routeId, available]);
 
   const shared = useMemo(
-    () => (answers && shareOn ? buildSharedAnswers(answers, picked) : []),
-    [answers, shareOn, picked],
+    () => (answers && picked.length > 0 ? buildSharedAnswers(answers, picked) : []),
+    [answers, picked],
   );
   // 한 번에 보낼 수 있는 줄 수가 정해져 있다. 넘치면 뒤쪽 분야의 답이 빠지는데,
   // 말없이 빠지면 사용자는 켠 것이 다 간 줄로 안다. 몇 줄이 빠지는지 그대로 알린다.
   const dropped = useMemo(
-    () => (answers && shareOn ? droppedSharedAnswers(answers, picked) : 0),
-    [answers, shareOn, picked],
+    () => (answers && picked.length > 0 ? droppedSharedAnswers(answers, picked) : 0),
+    [answers, picked],
   );
 
   const canSend = isComplete(first);
@@ -136,8 +201,9 @@ export function VisitRequestSheet({
       onRequestClose={onClose}
     >
       <SafeAreaView className="flex-1 bg-page" edges={["top", "bottom"]}>
-        <View className="flex-row items-center justify-between border-b border-line bg-white px-5 py-4">
-          <Text className="text-heading font-extrabold text-ink-strong">방문 예약하기</Text>
+        {/* **나가는 길이 왼쪽이다** (시안). 오른쪽 위는 엄지가 닿기 먼 자리라, 거기에
+            두면 저리터러시 사용자가 긴 폼 안에 갇힌 느낌을 받는다 */}
+        <View className="h-16 flex-row items-center justify-between border-b border-line bg-white px-5">
           <Pressable
             onPress={onClose}
             accessibilityRole="button"
@@ -146,6 +212,13 @@ export function VisitRequestSheet({
           >
             <Icon name="close" size={22} color={COLORS.inkMuted} />
           </Pressable>
+          <Text
+            className="text-ink-strong"
+            style={{ fontSize: 20, lineHeight: 28, fontFamily: FONTS.bold }}
+            accessibilityRole="header"
+          >
+            방문 예약하기
+          </Text>
         </View>
 
         <ScrollView
@@ -153,35 +226,27 @@ export function VisitRequestSheet({
           contentContainerClassName="px-5 pb-10 pt-5"
           keyboardShouldPersistTaps="handled"
         >
-          <Text className="text-body text-ink-sub">
-            미리 알려두면 가셨을 때 설명하지 않아도 돼요.{"\n"}
-            바로 도와드릴 수 있어요.
-          </Text>
+          <InfoPanel icon="info">
+            {"정확한 안내를 위해 몇 가지만 여쭤볼게요.\n알려주신 내용은 상담을 위해서만 사용돼요."}
+          </InfoPanel>
 
-          <SectionTitle>가시는 분</SectionTitle>
-          <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-4">
-            <Text className="text-body-lg text-ink-strong">{userName}</Text>
-          </View>
+          <SectionTitle>상담자 성함</SectionTitle>
+          <ValueBox>{userName}</ValueBox>
 
-          <SectionTitle>무슨 일로 가시나요</SectionTitle>
-          <View className="rounded-xl border-[1.5px] border-line bg-line px-4 py-4">
-            <Text className="text-body-lg text-ink-strong">{purpose}</Text>
-          </View>
+          <SectionTitle>방문 목적</SectionTitle>
+          <ValueBox>{purpose}</ValueBox>
 
           {/* **한 때만 고른다.** 1·2지망을 받던 것을 걷어냈다 — 안 되는 때를 미리
               대비하는 것은 담당자와 이야기하면 되는 일이고(§7.3), 고를 것이 두 벌이면
               그만큼 보내기까지 오래 걸린다 */}
-          <SectionTitle>언제 가실 수 있나요</SectionTitle>
-          <Text className="mb-3 text-caption text-ink-muted">가시고 싶은 때를 고르세요.</Text>
+          <SectionTitle>방문 가능한 날짜와 시간</SectionTitle>
+          <SectionHint>가능한 시간을 선택해 주세요.</SectionHint>
           <VisitTimeField value={first} onChange={setFirst} label="가고 싶은 때" today={base} />
 
           {docs.length > 0 ? (
             <>
-              <SectionTitle>챙겨 가실 것</SectionTitle>
-              <Text className="mb-3 text-caption text-ink-muted">
-                가지고 계신 것에 표시해 주세요.{"\n"}
-                없어도 괜찮아요. 담당자가 미리 알면 헛걸음을 막을 수 있어요.
-              </Text>
+              <SectionTitle>준비하실 자료</SectionTitle>
+              <SectionHint>가지고 계신 것에 표시해 주세요. 없어도 괜찮아요.</SectionHint>
               {docs.map((doc) => {
                 const checked = readyDocs.includes(doc);
                 return (
@@ -191,40 +256,47 @@ export function VisitRequestSheet({
                     accessibilityRole="checkbox"
                     accessibilityState={{ checked }}
                     accessibilityLabel={doc}
-                    className="mb-2 flex-row items-center gap-3 rounded-xl border-[1.5px] px-4 py-4 active:opacity-80"
+                    className="mb-2 flex-row items-center gap-3 rounded-2xl border-[1.5px] p-4 active:opacity-80"
                     style={{
-                      backgroundColor: checked ? COLORS.brandSoft : COLORS.surface,
+                      // 고른 것은 `tint`다. `soft`는 진해서 글자를 밀어낸다 (시안).
+                      backgroundColor: checked ? COLORS.brandTint : COLORS.surface,
                       borderColor: checked ? COLORS.brand : COLORS.line,
                     }}
                   >
+                    {/* **네모를 유지한다.** 시안은 동그라미로 그렸지만 이 자리는 여러 개를
+                        고를 수 있는 곳이고, 동그라미는 하나만 고르라는 표시로 읽힌다 */}
                     <View
                       className="size-6 items-center justify-center rounded-md border-2"
                       style={{
                         backgroundColor: checked ? COLORS.brand : COLORS.surface,
-                        borderColor: checked ? COLORS.brand : COLORS.brandMuted,
+                        borderColor: checked ? COLORS.brand : COLORS.lineStrong,
                       }}
                     >
                       {checked ? <Icon name="check" size={14} color={COLORS.surface} /> : null}
                     </View>
-                    <Text className="flex-1 text-body-lg text-ink-strong">{doc}</Text>
+                    <Text
+                      className="flex-1 font-semibold text-ink-strong"
+                      style={{ fontSize: 18, lineHeight: 28 }}
+                    >
+                      {doc}
+                    </Text>
                   </Pressable>
                 );
               })}
             </>
           ) : null}
 
-          <SectionTitle>하고 싶은 말</SectionTitle>
-          <Text className="mb-3 text-caption text-ink-muted">
-            안 적으셔도 괜찮아요.
-          </Text>
+          <SectionTitle optional>추가로 알려주실 내용</SectionTitle>
+          <SectionHint>담당자가 미리 확인하고 더 빠르게 안내해 드릴 수 있어요.</SectionHint>
           <TextInput
             value={note}
             onChangeText={setNote}
             multiline
-            placeholder="미리 알려두고 싶은 것이 있으면 적어 주세요"
+            placeholder="알려주고 싶은 내용을 자유롭게 적어 주세요."
             placeholderTextColor={COLORS.inkMuted}
-            accessibilityLabel="하고 싶은 말"
-            className="min-h-24 rounded-xl border-[1.5px] border-line bg-white px-4 py-4 text-body-lg text-ink-strong"
+            accessibilityLabel="추가로 알려주실 내용"
+            className="rounded-2xl border-[1.5px] border-line bg-white p-4"
+            style={{ minHeight: 96, fontSize: 16, lineHeight: 27, color: COLORS.inkStrong }}
             textAlignVertical="top"
           />
 
@@ -232,93 +304,81 @@ export function VisitRequestSheet({
               **창구에서 자기 사정을 입으로 말하지 않아도 되게 하는 것**이 목적이다.
               담당자 편의가 아니라 §7.6의 "창구 노출 부담을 서비스가 흡수한다"가 근거다. */}
           {available.length > 0 ? (
-            <View className="mt-6">
-              <Pressable
-                onPress={() => setShareOn((v) => !v)}
-                accessibilityRole="checkbox"
-                accessibilityState={{ checked: shareOn }}
-                accessibilityLabel="상황 알아보기에서 답한 내용도 함께 보내기"
-                className="flex-row items-start gap-3 rounded-2xl border-[1.5px] px-4 py-4 active:opacity-80"
-                style={{
-                  backgroundColor: shareOn ? COLORS.brandSoft : COLORS.surface,
-                  borderColor: shareOn ? COLORS.brand : COLORS.line,
-                }}
-              >
-                <View
-                  className="mt-0.5 size-6 items-center justify-center rounded-md border-2"
-                  style={{
-                    backgroundColor: shareOn ? COLORS.brand : COLORS.surface,
-                    borderColor: shareOn ? COLORS.brand : COLORS.brandMuted,
-                  }}
-                >
-                  {shareOn ? (
-                    <Icon name="check" size={16} color={COLORS.surface} />
-                  ) : null}
-                </View>
-                <View className="flex-1">
+            <View>
+              {/* **켜고 끄는 스위치를 따로 두지 않는다** (2026-08-31 시안). 전에는
+                  "함께 보낼까요?" 체크를 켜야 분야 목록이 나왔는데, 두 번 눌러야 하는
+                  데다 켜 놓고 분야를 안 고르면 아무것도 안 가는 상태가 만들어졌다.
+                  **분야를 고르는 행위가 곧 함께 보내겠다는 뜻이다** — 하나도 안 고르면
+                  답변도 동의 기록도 서버로 가지 않는다 (§7.4-1). */}
+              <View className="mb-3 mt-6 items-center gap-1">
+                <View className="flex-row items-center gap-1">
                   <Text
-                    className="text-body-lg font-extrabold"
-                    style={{ color: shareOn ? COLORS.brand : COLORS.inkStrong }}
+                    className="font-semibold text-ink-strong"
+                    style={{ fontSize: 16, lineHeight: 27 }}
                   >
-                    상황 알아보기에서 답하신 내용도 함께 보낼까요?
+                    앞서 답하신 내용도 함께 보내드릴까요?
                   </Text>
-                  <Text className="mt-1 text-caption leading-[21px] text-ink-sub">
-                    담당자가 미리 보면 창구에서 다시 설명하지 않으셔도 돼요.
+                  <Text
+                    className="text-ink-muted"
+                    style={{ fontSize: 14, lineHeight: 21, fontFamily: FONTS.medium }}
+                  >
+                    (선택)
                   </Text>
                 </View>
-              </Pressable>
+                {/* 여럿을 고를 수 있다는 것을 배지로 알린다. 네모 표시만으로는 하나만
+                    고르는 자리로 읽는 사람이 있다 */}
+                <View
+                  className="items-center justify-center rounded-lg px-2 py-1.5"
+                  style={{ backgroundColor: COLORS.brandBadge }}
+                >
+                  <Text
+                    style={{ fontSize: 16, lineHeight: 21, fontFamily: FONTS.medium, color: COLORS.brand }}
+                  >
+                    복수 선택 가능
+                  </Text>
+                </View>
+              </View>
+              <SectionHint>해당되는 항목을 선택해 주세요.</SectionHint>
 
-              {shareOn ? (
-                <View className="mt-3">
-                  <Text className="mb-2 text-caption text-ink-sub">
-                    보낼 것만 골라 주세요. 안 고른 것은 가지 않아요.
-                  </Text>
-                  {SECTIONS.filter((sec) => available.includes(sec.id)).map((sec) => {
-                    const on = picked.includes(sec.id);
-                    return (
-                      <Pressable
-                        key={sec.id}
-                        onPress={() =>
-                          setPicked((prev) =>
-                            prev.includes(sec.id)
-                              ? prev.filter((x) => x !== sec.id)
-                              : [...prev, sec.id],
-                          )
-                        }
-                        accessibilityRole="checkbox"
-                        accessibilityState={{ checked: on }}
-                        accessibilityLabel={`${sec.label} 답변 함께 보내기`}
-                        className="mb-2 flex-row items-center gap-3 rounded-xl border-[1.5px] px-4 py-3 active:opacity-80"
-                        style={{
-                          backgroundColor: on ? COLORS.brandSoft : COLORS.surface,
-                          borderColor: on ? COLORS.brand : COLORS.line,
-                        }}
-                      >
-                        <View
-                          className="size-5 items-center justify-center rounded border-2"
-                          style={{
-                            backgroundColor: on ? COLORS.brand : COLORS.surface,
-                            borderColor: on ? COLORS.brand : COLORS.brandMuted,
-                          }}
-                        >
-                          {on ? (
-                            <Icon name="check" size={12} color={COLORS.surface} />
-                          ) : null}
-                        </View>
-                        <Text
-                          className="flex-1 text-body"
-                          style={{
-                            color: on ? COLORS.brand : COLORS.inkStrong,
-                            fontFamily: on ? FONTS.extrabold : FONTS.semibold,
-                          }}
-                        >
-                          {sec.label}
-                        </Text>
-                      </Pressable>
-                    );
-                  })}
-                </View>
-              ) : null}
+              {SECTIONS.filter((sec) => available.includes(sec.id)).map((sec) => {
+                const on = picked.includes(sec.id);
+                return (
+                  <Pressable
+                    key={sec.id}
+                    onPress={() =>
+                      setPicked((prev) =>
+                        prev.includes(sec.id)
+                          ? prev.filter((x) => x !== sec.id)
+                          : [...prev, sec.id],
+                      )
+                    }
+                    accessibilityRole="checkbox"
+                    accessibilityState={{ checked: on }}
+                    accessibilityLabel={`${sec.label} 답변 함께 보내기`}
+                    className="mb-2 flex-row items-center gap-3 rounded-2xl border-[1.5px] p-4 active:opacity-80"
+                    style={{
+                      backgroundColor: on ? COLORS.brandTint : COLORS.surface,
+                      borderColor: on ? COLORS.brand : COLORS.line,
+                    }}
+                  >
+                    <View
+                      className="size-6 items-center justify-center rounded-md border-2"
+                      style={{
+                        backgroundColor: on ? COLORS.brand : COLORS.surface,
+                        borderColor: on ? COLORS.brand : COLORS.lineStrong,
+                      }}
+                    >
+                      {on ? <Icon name="check" size={14} color={COLORS.surface} /> : null}
+                    </View>
+                    <Text
+                      className="flex-1 font-semibold text-ink-strong"
+                      style={{ fontSize: 18, lineHeight: 28 }}
+                    >
+                      {sec.label}
+                    </Text>
+                  </Pressable>
+                );
+              })}
             </View>
           ) : null}
 
@@ -330,26 +390,23 @@ export function VisitRequestSheet({
             </NoteBox>
           ) : null}
 
-          {/* 무엇이 담당자에게 가는지 전송 직전에 보여준다 (§7.4). */}
-          <View className="mt-6 rounded-xl border border-note-info-line bg-note-info px-4 py-4">
-            <Text className="mb-2 text-body font-extrabold text-note-info-ink">
-              담당자에게 이만큼만 알려줘요
-            </Text>
-            {sharedItems(
-              note.trim().length > 0,
-              Boolean(hasDeadline),
-              docs.length > 0,
-              // 고른 분야만 이름으로 낸다. 켜고 끈 것이 이 목록에 바로 비쳐야
-              // "이만큼만 알려줘요"가 사실이 된다
-              shared.length > 0 ? [...new Set(shared.map((a) => a.section))] : [],
-            ).map((item) => (
-              <Text key={item} className="text-caption text-note-info-ink">
-                · {item}
-              </Text>
-            ))}
-            <Text className="mt-2 text-caption text-note-info-ink">
-              어떤 일로 계셨는지는 알려주지 않아요.
-            </Text>
+          {/* **보내기 전에 이것이 무엇인지 못 박는다** (시안). 예약이 잡힌 줄 알고
+              그날 찾아갔다가 담당자가 모르는 일이 실제 위험이다 */}
+          <Text
+            className="mt-4 text-center text-ink-muted"
+            style={{ fontSize: 15, lineHeight: 21, fontFamily: FONTS.medium }}
+          >
+            예약을 확정하는 것이 아니며, 담당자가 확인 후 연락드립니다.
+          </Text>
+
+          {/* 적은 것이 밖으로 나가지 않는다는 안심 (2026-08-31 시안).
+              **전에는 "담당자에게 이만큼만 알려줘요" 목록이 이 자리에 있었다.** §7.4의
+              최소 노출 고지였는데, 시안이 안심 문장으로 바꿨고 사용자가 그쪽을 택했다.
+              무엇이 가는지는 문장 안에 이름으로 남는다 */}
+          <View className="mt-6">
+            <InfoPanel title="안심하고 알려주세요" icon="lock">
+              {"이름, 방문 시간, 준비하실 자료, 상담 내용 등\n어떤 정보도 다른 곳에 사용되거나 공유되지 않아요."}
+            </InfoPanel>
           </View>
 
           {/* **실패를 단추 위에 둔다.** 아래에 두면 화면 밖으로 밀려 못 보고 다시 누른다 */}
@@ -365,10 +422,16 @@ export function VisitRequestSheet({
             accessibilityRole="button"
             accessibilityState={{ disabled: !canSend || sending, busy: sending }}
             accessibilityLabel="알림 보내기"
-            className="mt-5 items-center rounded-2xl py-4 active:opacity-90"
-            style={{ backgroundColor: canSend && !sending ? COLORS.brand : COLORS.brandMuted }}
+            className="mt-5 items-center justify-center rounded-2xl active:opacity-90"
+            style={{
+              height: 59,
+              backgroundColor: canSend && !sending ? COLORS.brand : COLORS.brandMuted,
+            }}
           >
-            <Text className="text-body-lg font-extrabold text-white">
+            <Text
+              className="text-white"
+              style={{ fontSize: 20, lineHeight: 27, fontFamily: FONTS.bold }}
+            >
               {sending ? "보내는 중이에요" : "알림 보내기"}
             </Text>
           </Pressable>

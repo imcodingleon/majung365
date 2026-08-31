@@ -27,6 +27,7 @@ from app.domains.chat.domain.prompts import (
     TRIAGE_INSTRUCTION,
     build_system_prompt,
 )
+from app.domains.chat.domain.suggestions import SUGGESTIONS_INSTRUCTION
 from app.domains.chat.domain.triage import (
     QuestionType,
     RoutePriority,
@@ -214,6 +215,32 @@ class CliChatLlm:
                 await asyncio.sleep(_WORD_DELAY_SECONDS)
         if buf:
             yield GuidanceChunk(text=buf)
+
+    async def suggest_questions(
+        self, history: list[Turn], *, context: str = "", name: str | None = None
+    ) -> tuple[str, ...]:
+        """이어서 물어볼 만한 질문 (§6.1). **`_history_block`이 마스킹을 건다.**"""
+        parts = [SUGGESTIONS_INSTRUCTION]
+        if context:
+            parts.append(context)
+        parts.append(
+            "아래 형식의 JSON만 출력하세요. 다른 말은 붙이지 마세요.\n"
+            '{"questions": ["...?", "...?", "...?"]}'
+        )
+        past = _history_block(history, name)
+        if past:
+            parts.append(f"[지난 대화]\n{past}")
+        try:
+            raw = await _run_claude("\n\n".join(parts), model=self._model)
+            data = _extract_json(raw)
+            questions = data.get("questions", [])
+            if not isinstance(questions, list):
+                return ()
+            return tuple(str(q) for q in questions)
+        except Exception:
+            # 답변은 이미 나갔다. 제안이 없다고 대화가 끊기면 안 된다.
+            logger.warning("추천 질문 파싱 실패 — 제안 없이 넘어간다")
+            return ()
 
     async def summarize_visit(self, *, text: str, name: str | None = None) -> str:
         """담당자가 먼저 읽는 요약 (§7.4). 실 API 경로와 같은 프롬프트를 쓴다."""

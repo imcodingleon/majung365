@@ -55,6 +55,12 @@ export type Task = {
   docs?: readonly string[];
   contact?: RouteContact;
   desk?: DeskGuide;
+  /**
+   * 이 할 일의 대화를 열었을 때 뜨는 첫 질문 (§6.1).
+   *
+   * **비는 것이 정상 경로다.** 서버가 안 보내면 화면이 기본 문구로 물러선다.
+   */
+  starterQuestions: readonly string[];
   /** 담당자에게 방문을 미리 알릴 수 있는 항목이면 그 방문 이름. */
   visitLabel?: string;
 };
