@@ -4,7 +4,7 @@
 //
 // **이미지는 주고받지 않는다.** 신분증이나 서류 사진이 오가면 위험만 커진다. 텍스트만이다.
 import { useState } from "react";
-import { KeyboardAvoidingView, Platform, Pressable, ScrollView, Text, TextInput, View } from "react-native";
+import { KeyboardAvoidingView, Pressable, ScrollView, Text, TextInput, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import { Icon } from "@/shared/components/Icon";
@@ -29,7 +29,7 @@ type Props = {
    * 쪽에서 쓰면 **자기가 보낸 말이 왼쪽에, 담당자 말이 오른쪽에 붙어 뒤집힌다.**
    */
   myRole: "staff" | "user";
-  /** 제목 위 작은 글씨. 담당자는 "방문 조율", 사용자는 "담당자와 이야기하기"다. */
+  /** 제목 위 작은 글씨. 담당자는 "방문 조율", 사용자는 "담당자와 채팅하기"다. */
   eyebrow?: string;
   /** 닫기 버튼이 어디로 돌아가는지 알려주는 문구. */
   closeHint?: string;
@@ -91,10 +91,12 @@ export function StaffChatScreen({
         </View>
       ) : null}
 
-      <KeyboardAvoidingView
-        className="flex-1"
-        behavior={Platform.OS === "ios" ? "padding" : undefined}
-      >
+      {/* **안드로이드에서도 `padding`을 준다.**
+          예전에는 안드로이드가 키보드가 뜰 때 창을 줄여 줘서 아무것도 안 해도
+          입력칸이 밀려 올라왔다. 그래서 여기에 `undefined`가 들어 있었다.
+          Expo SDK 53부터 edge-to-edge가 고정되면서 창이 더는 줄지 않는다.
+          그대로 두면 **키보드가 입력칸과 방금 온 말을 덮어 버린다.** */}
+      <KeyboardAvoidingView className="flex-1" behavior="padding">
         <ScrollView className="flex-1" contentContainerClassName="px-4 py-4">
           {messages.length === 0 ? (
             <Text className="mt-10 text-center text-body text-ink-muted">

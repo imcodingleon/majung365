@@ -7,7 +7,6 @@ import { useEffect, useRef, useState } from "react";
 import {
   Animated,
   KeyboardAvoidingView,
-  Platform,
   Pressable,
   ScrollView,
   Text,
@@ -378,10 +377,11 @@ export function ChatPopup({
           </View>
         ) : null}
 
-        <KeyboardAvoidingView
-          className="flex-1"
-          behavior={Platform.OS === "ios" ? "padding" : undefined}
-        >
+        {/* **안드로이드에서도 `padding`을 준다.** 예전에는 안드로이드가 키보드가
+            뜰 때 창을 줄여 줘서 아무것도 안 해도 입력칸이 밀려 올라왔다. Expo SDK
+            53부터 edge-to-edge가 고정되면서 창이 더는 줄지 않고, 그대로 두면
+            **키보드가 입력칸과 방금 온 말을 덮는다.** */}
+        <KeyboardAvoidingView className="flex-1" behavior="padding">
           {/* 시안의 바탕색. 흰 말풍선이 바탕과 갈리려면 바탕이 흰색이면 안 된다 */}
           <ScrollView
             ref={scrollRef}

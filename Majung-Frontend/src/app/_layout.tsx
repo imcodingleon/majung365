@@ -2,6 +2,7 @@ import "../global.css";
 
 import { ActivityIndicator, Text, View } from "react-native";
 import { useFonts } from "expo-font";
+import { NavigationBar } from "expo-navigation-bar";
 import { Stack } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { SafeAreaProvider } from "react-native-safe-area-context";
@@ -82,6 +83,15 @@ export default function RootLayout() {
         </AppFrame>
       </RegionLookupProvider>
       <StatusBar style="dark" />
+      {/* **안드로이드 시스템 버튼을 감춘다.**
+          Expo SDK 53부터 안드로이드가 edge-to-edge로 고정되어 앱이 시스템 막대
+          아래까지 그린다. 그래서 홈·뒤로 버튼이 하단 메뉴바 위에 그대로 겹쳐,
+          메뉴 글씨가 가려 보였다.
+          감추면 화면 끝까지 메뉴바가 온다. 가장자리에서 위로 쓸면 버튼이 잠깐
+          나타났다가 다시 숨는다 — 안드로이드가 알아서 하는 동작이라 우리가
+          따로 붙일 것이 없다.
+          **iOS와 웹에서는 아무 일도 하지 않는다.** */}
+      <NavigationBar hidden />
     </SafeAreaProvider>
   );
 }
