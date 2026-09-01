@@ -45,7 +45,10 @@ export default () => {
         package: IS_ADMIN
           ? "com.superbuilders.majung365.admin"
           : "com.superbuilders.majung365",
-        versionCode: 1,
+        // **두 앱이 따로 센다.** 패키지가 다르므로 Play도 각각 따로 본다.
+        // 출소자 앱은 2026-08-26에 1로 한 번 올라갔고, Play는 같은 versionCode를
+        // 두 번 받지 않으므로 올릴 때마다 여기를 올린다.
+        versionCode: IS_ADMIN ? 1 : 2,
         // 담당자 쪽은 배경 그림을 빼고 색만 달리한다. 배경 그림이 있으면
         // backgroundColor가 무시되어 두 앱의 아이콘이 같아진다.
         adaptiveIcon: IS_ADMIN

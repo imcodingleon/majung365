@@ -118,6 +118,13 @@ describe("담당자 앱 (APP_VARIANT=admin)", () => {
 });
 
 describe("두 앱이 한 기기에 공존한다", () => {
+  it("versionCode를 따로 센다", () => {
+    // Play는 같은 versionCode를 두 번 받지 않는다. 패키지가 다르므로 각각 따로
+    // 세며, 한쪽을 올릴 때 다른 쪽이 딸려 올라가면 안 된다.
+    expect(loadExpoConfig().android.versionCode).toBe(2);
+    expect(loadExpoConfig("admin").android.versionCode).toBe(1);
+  });
+
   it("패키지와 번들 ID가 서로 다르다", () => {
     expect(loadExpoConfig().android.package).not.toBe(
       loadExpoConfig("admin").android.package,
