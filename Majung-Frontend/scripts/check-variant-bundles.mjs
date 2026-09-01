@@ -10,8 +10,17 @@ import { join } from "node:path";
 // 함께 실리므로, 그 계층에 있는 말은 골라도 아무것도 가리지 못한다. 아래 넷은
 // 2026-08-26에 확인했고 각각 한 파일에만 있다.
 
-/** 담당자 화면에만 있는 말. 둘 다 `src/admin/views/AdminLoginScreen.tsx`에 있다. */
-const ADMIN_MARKS = ["들어가기", "확인하는 중이에요"];
+/**
+ * 담당자 화면에만 있는 것.
+ *
+ * **화면 문구 하나에만 기대지 않는다.** 처음에는 `들어가기`도 넣었는데, 나중에
+ * 시연용 코드(`src/showcase/autoDrive.ts`)가 같은 말을 쓰면서 출소자 번들에서도
+ * 잡혔다. 담당자 화면이 실리지 않았는데도 검사가 실패한 것이다.
+ *
+ * 그래서 **ASCII 식별자를 함께 본다.** 문구는 사람이 베껴 쓰지만 모듈 이름은
+ * 그렇지 않고, 번들이 한글을 이스케이프하는 문제에서도 자유롭다.
+ */
+const ADMIN_MARKS = ["확인하는 중이에요", "AdminLoginScreen", "useAdminSession"];
 
 /** 출소자 라우트에만 있는 말. `src/app/signup.tsx`와 `src/app/(tabs)/alerts.tsx`에 있다. */
 const USER_MARKS = ["적어 주신 내용을 다시 확인해 주세요.", "알림 목록으로 돌아가기"];
