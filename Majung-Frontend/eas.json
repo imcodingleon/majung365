@@ -17,6 +17,7 @@
     "production": {},
     "admin-preview": {
       "distribution": "internal",
+      "environment": "production",
       "env": {
         "APP_VARIANT": "admin"
       },
@@ -25,6 +26,7 @@
       }
     },
     "admin-production": {
+      "environment": "production",
       "env": {
         "APP_VARIANT": "admin"
       }

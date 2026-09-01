@@ -16,12 +16,13 @@ const USER_PROJECT_ID = "bb610f96-e51d-4f6e-a106-e113ea8a7cb3";
  * **`eas init`은 동적 설정 파일에 값을 써 넣지 못해 손으로 적는다.** 발급 전에는
  * `null`이고, 그동안 담당자 변형은 EAS 빌드를 돌릴 수 없다. 로컬 실행은 된다.
  */
-const ADMIN_PROJECT_ID: string | null = null;
+const ADMIN_PROJECT_ID: string | null = "2bef8d43-a4f6-4cf5-9ea0-1e5daa1b739a";
 
 // **판정을 팩토리 안에서 한다.** 모듈을 읽는 시점에 하면 환경변수를 바꿔도 결과가
 // 그대로여서, 테스트가 두 변형을 한 번에 확인하지 못한다.
 export default () => {
   const IS_ADMIN = process.env.APP_VARIANT === "admin";
+  const projectId = IS_ADMIN ? ADMIN_PROJECT_ID : USER_PROJECT_ID;
 
   return {
     expo: {
@@ -85,7 +86,9 @@ export default () => {
       },
       extra: {
         router: {},
-        eas: { projectId: IS_ADMIN ? ADMIN_PROJECT_ID : USER_PROJECT_ID },
+        // **값이 없으면 키 자체를 뺀다.** `null`을 두면 Expo가 `{}`로 바꿔 넘기고,
+        // `eas init`이 그것을 기존 프로젝트 ID로 읽어 GraphQL 단계에서 죽는다.
+        eas: projectId ? { projectId } : {},
       },
       owner: "imcodingleons-team",
     },

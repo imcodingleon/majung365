@@ -101,6 +101,12 @@ describe("담당자 앱 (APP_VARIANT=admin)", () => {
     expect(loadExpoConfig("admin").experiments.typedRoutes).toBe(false);
   });
 
+  it("EAS 프로젝트가 출소자와 다르다", () => {
+    const admin = loadExpoConfig("admin").extra.eas.projectId;
+    expect(typeof admin).toBe("string");
+    expect(admin).not.toBe("bb610f96-e51d-4f6e-a106-e113ea8a7cb3");
+  });
+
   it("아이콘이 출소자 것과 다르다", () => {
     expect(loadExpoConfig("admin").icon).toBe("./assets/images/icon-admin.png");
     expect(loadExpoConfig().icon).toBe("./assets/images/icon.png");
