@@ -15,9 +15,13 @@ const config = getDefaultConfig(__dirname);
 // 켜는 법: `INCLUDE_ADMIN=1 npx expo start --web` — 개발과 시연에서만 쓴다.
 // **기본값이 제외인 것이 중요하다.** 켜야 들어가면 잊어도 안전한 쪽으로 남는다.
 //
-// 이것은 임시 조치다. §8은 담당자 앱을 별도 빌드로 확정했고 `src/admin/`은 그 전제로
-// 나눠 둔 폴더다. 별도 빌드가 생기면 이 blockList는 지운다.
-const INCLUDE_ADMIN = process.env.INCLUDE_ADMIN === "1";
+// 담당자 앱을 따로 빌드할 때(`APP_VARIANT=admin`)는 막지 않는다. 그 변형은 라우트
+// 루트가 `src/app-admin/`이라 출소자 화면이 애초에 열거되지 않고, 자기 구현인
+// `@/admin`은 실려야 한다.
+//
+// **이 blockList은 지우지 않는다.** 출소자 빌드에서는 앞으로도 계속 막아야 한다.
+const INCLUDE_ADMIN =
+  process.env.INCLUDE_ADMIN === "1" || process.env.APP_VARIANT === "admin";
 
 if (!INCLUDE_ADMIN) {
   // 라우트와 구현을 함께 막는다. 라우트만 막으면 `@/admin`을 부르는 다른 곳이 생겼을 때
