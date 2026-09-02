@@ -172,6 +172,9 @@ def create_app() -> FastAPI:
     _assert_gate_safe(gate, settings)
 
     graph_nodes = JsonGraphRepository().nodes()
+    # **한 번만 읽어 둘이 나눠 쓴다.** 초기 진단과 채팅이 각자 읽으면 검수 상태가
+    # 갈리고, 부팅 경고도 두 번 찍힌다.
+    legal_constraints = JsonLegalConstraintRepository().all()
     app.state.chat_usecase = ChatUseCase(
         llm=llm,
         institutions=institutions,
@@ -182,6 +185,8 @@ def create_app() -> FastAPI:
         # **공단 지부를 붙여 준다.** 없으면 "군포역 근처 공단 어디야"에 홈페이지를
         # 찾아보라는 답이 나간다 — 서버에 경기지부 주소와 번호가 있는데도 그랬다.
         support_institutions=JsonSupportInstitutionRepository(),
+        # 수용 사유별 제약. 초기 진단과 같은 표를 본다 — 두 벌로 두면 한쪽만 고친다.
+        constraints=legal_constraints,
     )
     # llm은 StateExtractorLlm(C6)도 구조적으로 만족한다(extract_node_state 메서드 보유)
     app.state.intake_usecase = IntakeUseCase(
@@ -190,7 +195,7 @@ def create_app() -> FastAPI:
         blocking_routes=routes_blocking_others(graph_nodes),
         graph_nodes=graph_nodes,
         # 검수되지 않은 항목은 로더가 버린다 — 여기 오는 것은 이미 걸러진 것뿐이다.
-        constraints=JsonLegalConstraintRepository().all(),
+        constraints=legal_constraints,
         # llm은 TaskOrderLlm도 구조적으로 만족한다(order_tasks 메서드 보유).
         # 목업은 빈 답을 주므로 로컬에서는 정해 둔 순서가 그대로 나온다.
         order_llm=llm,

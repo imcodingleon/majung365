@@ -3,6 +3,7 @@
 from dataclasses import dataclass
 
 from app.domains.knowledge.domain.state import IntakeState
+from app.domains.shared.profile import MaskedProfile
 
 
 @dataclass(frozen=True)
@@ -41,6 +42,13 @@ class ChatCommand:
     #
     # 저장이 꺼져 있거나 가입 전이면 `None`이고, 그것이 정상 경로다.
     intake: IntakeState | None = None
+    # 마스킹을 마친 프로필 — 연령대·출소 후 경과 일수·수용 사유 대분류 (기획서 §9.4).
+    #
+    # **원본 Profile이 아니라 MaskedProfile이다.** 타입이 다르므로 이름과 생년월일이
+    # 여기까지 흘러올 수 없다. 어댑터에서 만들어 즉시 마스킹한다.
+    #
+    # 수용 사유를 밝히지 않았거나 동의를 철회했으면 `None`이고, 그것이 정상 경로다.
+    profile: MaskedProfile | None = None
 
 
 @dataclass(frozen=True)

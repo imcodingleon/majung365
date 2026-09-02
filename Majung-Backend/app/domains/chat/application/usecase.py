@@ -51,14 +51,19 @@ from app.domains.chat.domain.triage import (
     TriageResult,
     reason_text,
 )
-from app.domains.chat.domain.user_context import build_user_context
+from app.domains.chat.domain.user_context import (
+    build_profile_block,
+    build_user_context,
+)
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.graph_engine import GraphNode, kb_ref_for_route
+from app.domains.knowledge.domain.legal import LegalConstraint, constraints_for
 from app.domains.knowledge.domain.repository import InstitutionRepository
 from app.domains.knowledge.domain.retrieval import Passage, PassageIndex
 from app.domains.knowledge.domain.sources import verified_note
 from app.domains.shared.routes import RouteId, label_for
+from app.infrastructure.security.masking import MaskingError, assert_masked
 
 logger = logging.getLogger("majung.chat")
 
@@ -103,6 +108,7 @@ class ChatUseCase:
         graph_nodes: dict[str, GraphNode] | None = None,
         district_offices: object | None = None,
         support_institutions: object | None = None,
+        constraints: tuple[LegalConstraint, ...] = (),
     ) -> None:
         self._llm = llm
         self._institutions = institutions
@@ -118,6 +124,47 @@ class ChatUseCase:
         # 공단 지부·교육원·허그센터. **제도 KB(`institutions`)와 다른 저장소다** —
         # 저쪽은 "무슨 제도가 있나"이고 이쪽은 "어디로 가면 되나"다.
         self._support = support_institutions
+        # 수용 사유별 법령 제약(§9.4). **검수된 문장만 온다** — 로더가 미검수 항목을
+        # 버린다. 이것을 주지 않고 수용 사유만 알리면 모델이 제약을 상상해서 말한다.
+        self._constraints = constraints
+
+    def _profile_block(self, cmd: ChatCommand) -> str:
+        """프로필 블록을 만들고 **여기서만 마스킹 검사를 건다.**
+
+        안내 컨텍스트 전체에 `assert_masked`를 걸면 안 된다 — 서버가 KB에서 붙이는
+        기관 유선번호에 걸려 `MaskingError`가 나고, fail-closed라 정상 안내가 통째로
+        막힌다(`masking.py` 머리말이 그 구분을 적어 두었다).
+
+        이 블록은 열거값과 상수로만 조립하므로 통과가 당연한데, 그게 요점이다.
+        **새 코드 경로가 마스킹을 건너뛴 경우**를 잡는 그물이다. 실패하면 블록을
+        빼고 답한다 — 프로필 없이 답하는 것이 이미 정상 경로라 대화를 끊을 이유가 없다.
+        """
+        block = build_profile_block(cmd.profile)
+        if not block:
+            return ""
+        try:
+            assert_masked(block)
+        except MaskingError:
+            logger.warning("프로필 블록이 마스킹 검사를 통과하지 못해 빼고 답한다")
+            return ""
+        return block
+
+    def _constraint_lines(
+        self, cmd: ChatCommand, pinned: RouteId | None
+    ) -> list[str]:
+        """지금 보고 있는 항목에 걸리는 제약의 요약.
+
+        **지금 보고 있는 항목만 낸다.** 항목 열넷의 제약을 다 실으면 그 자체가
+        취약성 목록이 되고, 모델이 묻지도 않은 제약을 꺼낸다.
+        """
+        if pinned is None or cmd.profile is None:
+            return []
+        return [
+            f"- {c.headline}: {c.body}"
+            for c in constraints_for(
+                self._constraints, cmd.profile.crime_category, pinned.value
+            )
+        ]
 
     async def run(self, cmd: ChatCommand) -> AsyncIterator[ChatEvent]:
         history = list(cmd.history)
@@ -231,8 +278,11 @@ class ChatUseCase:
             passages=[self._as_passage_injection(p) for p in found],
             pinned=pinned_route,
             other_passages=[self._as_passage_injection(p) for p in other_found],
-            # 진단 판정. **없는 것이 정상 경로다** — 가입 전에도 챗을 열 수 있다.
-            user_context=build_user_context(cmd.intake, pinned_route),
+            # 진단 판정과 프로필. **없는 것이 정상 경로다** — 가입 전에도 챗을 열 수 있다.
+            user_context=build_user_context(
+                cmd.intake, pinned_route, self._profile_block(cmd)
+            ),
+            constraint_lines=self._constraint_lines(cmd, pinned_route),
         )
 
         # **배지는 실제로 검색했는지로 정한다.** 추측이 아니라 사실이다.

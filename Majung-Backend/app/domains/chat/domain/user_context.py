@@ -17,12 +17,22 @@
   없다"가 되고, 그것은 출소 사실보다 구체적인 취약성 목록이다. **지금 보고 있는
   항목 하나의 상태와 나머지 항목의 이름까지가 상한이다.**
 
-`IntakeState`는 애초에 답변 원문을 담지 않도록 설계되어 있고(`knowledge/domain/
-state.py` 머리말), 죄목은 그 구조에 아예 들어오지 않는다.
+`IntakeState`는 애초에 답변 원문을 담지 않도록 설계되어 있다(`knowledge/domain/
+state.py` 머리말).
+
+**수용 사유는 2026-09-02에 들어왔다.** 기획서 §9.4가 정한 예외이며, 무엇을 안내할지
+고르는 데만 쓴다. 그 전제는 **식별정보 마스킹이 확실하게 동작하는 것**이다 — 이름과
+생년월일과 날짜를 지우고 나면 대분류만으로는 개인을 특정할 수 없다. 위험한 것은
+수용 사유 자체가 아니라 수용 사유와 신원의 결합이다.
+
+프로필 블록을 따로 만드는 이유는 검증 때문이다. 안내 컨텍스트 전체에 `assert_masked`를
+걸면 서버가 붙인 기관 유선번호에 걸려 정상 안내가 통째로 막힌다. **프로필 블록만**
+검사한다.
 """
 
 from app.domains.knowledge.domain.graph_engine import NodeState
 from app.domains.knowledge.domain.state import IntakeState
+from app.domains.shared.profile import MaskedProfile, profile_line
 from app.domains.shared.routes import RouteId, label_for, order_of
 
 # 보유 상태를 사람 말로. **조사를 붙이지 않는 형태로 적는다** — 항목 이름이
@@ -41,7 +51,33 @@ def _ordered_labels(routes: list[RouteId]) -> str:
     return ", ".join(label_for(r) for r in sorted(routes, key=order_of))
 
 
-def build_user_context(state: IntakeState | None, pinned: RouteId | None) -> str:
+def build_profile_block(profile: MaskedProfile | None) -> str:
+    """모델에게 이분이 어떤 분인지 알리는 블록. **없으면 빈 문자열이다.**
+
+    **답변에 수용 사유를 언급하지 말라고 못 박는다.** 카드에 수용 사유를 내기로 한
+    2026-09-02 결정은 *서버가 조립한 검수된 문장*에 대한 것이고, 모델이 즉석에서
+    쓰는 문장은 검수를 거치지 않아 없는 제약을 지어낼 수 있다. 모델은 사유를 알고
+    **무엇을 말할지 고르되** 왜 그런지는 말하지 않는다.
+
+    에두른 말까지 막는 이유는 그것도 노출이기 때문이다. "그 일 때문에"는 옆에서
+    보는 사람에게 수용 사유가 있다는 사실을 그대로 알린다.
+    """
+    line = profile_line(profile)
+    if not line:
+        return ""
+    return (
+        f"[이분에 대해 알아 둘 것] {line}\n"
+        "이 정보는 무엇을 안내할지 고르는 데만 씁니다. "
+        "**답변 문장에 수용 사유를 언급하지 마세요.** "
+        "'그 일 때문에'·'예전 사건이 있어서' 같은 에두른 말도 쓰지 않습니다."
+    )
+
+
+def build_user_context(
+    state: IntakeState | None,
+    pinned: RouteId | None,
+    profile_block: str = "",
+) -> str:
     """진단 판정을 프롬프트에 붙일 블록으로. 판정이 없으면 빈 문자열이다.
 
     가입하지 않고도 채팅을 열 수 있고(§2.4 이전 경로), 저장이 꺼져 있던 때
@@ -49,9 +85,12 @@ def build_user_context(state: IntakeState | None, pinned: RouteId | None) -> str
     빼고, 모델은 지금까지와 같은 조건에서 답한다.
     """
     if state is None or not state.verdicts:
-        return ""
+        # 판정이 없어도 프로필은 있을 수 있다 — 가입은 했는데 저장이 꺼져 있던 경우다.
+        return profile_block
 
     lines: list[str] = []
+    if profile_block:
+        lines.append(profile_block)
 
     if pinned is not None:
         here = next((v for v in state.verdicts if v.route_id == pinned), None)

@@ -122,6 +122,7 @@ def build_guidance_context(
     pinned: RouteId | None = None,
     other_passages: list[str] | None = None,
     user_context: str = "",
+    constraint_lines: list[str] | None = None,
 ) -> str:
     """가이던스 생성 호출에 붙일 컨텍스트(확인된 정보 + triage 요약).
 
@@ -148,6 +149,20 @@ def build_guidance_context(
     if user_context:
         # 진단 판정. **판정만 오고 답변 원문은 오지 않는다**(user_context.py).
         lines.append(user_context)
+    if constraint_lines:
+        # 수용 사유에 따라 달라지는 사실. **사람이 검수한 문장만 온다**(§9.4).
+        #
+        # 이 블록을 주지 않고 수용 사유만 알리면 모델이 법률 제약을 **상상해서**
+        # 말한다. 그것이 이 기능의 가장 큰 실패 모드다 — 없는 제약을 사실처럼
+        # 말하면 사용자가 지레 포기한다.
+        lines.append(
+            "[수용 사유에 따라 달라지는 것 — 사실관계가 확인된 문장입니다]"
+        )
+        lines.extend(constraint_lines)
+        lines.append(
+            "**여기 없는 법률 제약을 지어내지 마세요.** 조문 번호나 처벌 이야기를 "
+            "먼저 꺼내지 말고, 무엇을 하면 되는지로 답하세요."
+        )
     if passages:
         # 근거 문서 본문. 카드가 제도의 요약이라면 이쪽은 원문이라 구체적인 질문에 답한다.
         lines.append("[수집한 공식 자료 — 이 내용을 근거로 답하고, 어느 기관 자료인지 밝히세요]")

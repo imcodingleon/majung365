@@ -27,6 +27,8 @@ from app.domains.chat.application.dto import (
     Turn,
 )
 from app.domains.knowledge.domain.state import IntakeState, IntakeStateRepository
+from app.domains.shared.clock import today_kst
+from app.domains.shared.profile import MaskedProfile, Profile, mask_profile
 from app.domains.shared.routes import RouteId
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
@@ -105,10 +107,41 @@ def _intake_of(request: Request, account: Account | None) -> IntakeState | None:
         return None
 
 
+def _profile_of(request: Request, account: Account | None) -> MaskedProfile | None:
+    """그 사람의 마스킹된 프로필 (기획서 §9.4). **없어도 대화는 그대로 진행된다.**
+
+    수용 사유 동의는 선택이고(§3.3-⑥) 철회하면 그 행만 지워지므로, 없는 것이 정상
+    경로다. `_intake_of`와 같이 실패를 삼킨다 — 조회를 못 했다고 답변이 막히면 안 된다.
+
+    **원본 `Profile`은 이 함수 밖으로 나가지 않는다.** 여기서 만들어 즉시
+    `MaskedProfile`이 되므로 이름과 생년월일이 유스케이스로 흘러갈 길이 없다.
+    """
+    if account is None:
+        return None
+    category: str | None = None
+    crimes = getattr(request.app.state, "crime_repo", None)
+    if crimes is not None:
+        try:
+            row = crimes.by_user(account.id)
+            category = row.category if row else None
+        except Exception:
+            logger.warning("수용 사유 조회 실패 — 그 정보 없이 답한다")
+    return mask_profile(
+        Profile(
+            name=account.name,
+            birth_date=account.birth_date,
+            release_date=account.release_date,
+            crime_category=category,
+        ),
+        today_kst(),
+    )
+
+
 def _to_command(
     body: ChatIn,
     user_name: str | None = None,
     intake: IntakeState | None = None,
+    profile: MaskedProfile | None = None,
 ) -> ChatCommand:
     turns = [
         Turn(role=t.role, content=t.content[:_MAX_TURN_LEN])
@@ -126,6 +159,7 @@ def _to_command(
         route_id=route_id,
         user_name=user_name,
         intake=intake,
+        profile=profile,
     )
 
 
@@ -159,6 +193,7 @@ async def chat(
         body,
         account.name if account else None,
         _intake_of(request, account),
+        _profile_of(request, account),
     )
     if not command.message:  # 공백/개행만 입력 → strip 후 빈 문자열 방지
         raise HTTPException(status_code=400, detail="메시지를 입력해 주세요.")
