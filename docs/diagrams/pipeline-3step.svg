@@ -1,0 +1,98 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 480" width="1280" height="480"
+     role="img" font-family="'IBM Plex Sans KR','Malgun Gothic','맑은 고딕',sans-serif">
+  <title>마중365 법령 기반 개인화 3단계</title>
+  <desc>출소자 설문조사, 국가법령정보 조회, 개인화된 할 일 배치 세 단계로 이어지는 흐름.</desc>
+
+  <defs>
+    <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5"
+            markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M 0 0 L 10 5 L 0 10 z" fill="#7C838C"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1280" height="480" fill="#FFFFFF"/>
+
+  <!-- ── STEP 1 · 출소자 설문조사 ── -->
+  <rect x="20" y="40" width="360" height="300" rx="4" fill="#E4EDF3" stroke="#2E5B7A" stroke-width="2"/>
+  <text x="52" y="82" font-size="15" font-weight="700" fill="#2E5B7A" letter-spacing="1">STEP 1</text>
+
+  <g transform="translate(200,130)" stroke="#2E5B7A" stroke-width="3" fill="none"
+     stroke-linecap="round" stroke-linejoin="round">
+    <circle cx="-26" cy="-10" r="13"/>
+    <path d="M-48 24 a22 22 0 0 1 44 0"/>
+    <rect x="8" y="-26" width="42" height="52" rx="4"/>
+    <path d="M18 -12 h22 M18 0 h22 M18 12 h13"/>
+  </g>
+
+  <text x="200" y="212" text-anchor="middle" font-size="27" font-weight="700" fill="#1C1F26"
+        font-family="'Gowun Batang','Batang','Nanum Myeongjo',serif">출소자 설문조사</text>
+  <text x="200" y="252" text-anchor="middle" font-size="17" fill="#4A5058">27문항 · 6분야 초기 진단</text>
+  <text x="200" y="282" text-anchor="middle" font-size="17" fill="#4A5058">수용 사유 대분류 (선택)</text>
+  <text x="200" y="316" text-anchor="middle" font-size="15" fill="#2E5B7A" font-weight="500">지금 무엇이 없고 무엇이 막혀 있는가</text>
+
+  <line x1="392" y1="190" x2="440" y2="190" stroke="#7C838C" stroke-width="2.5" marker-end="url(#ah)"/>
+
+  <!-- ── STEP 2 · 국가법령정보 조회 ── -->
+  <rect x="452" y="40" width="360" height="300" rx="4" fill="#F6E9E6" stroke="#B33A2B" stroke-width="2"/>
+  <text x="484" y="82" font-size="15" font-weight="700" fill="#B33A2B" letter-spacing="1">STEP 2</text>
+
+  <g transform="translate(632,128)" stroke="#B33A2B" stroke-width="3" fill="none"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M0 -22 v50"/>
+    <path d="M-32 -14 h64"/>
+    <circle cx="0" cy="-22" r="4"/>
+    <path d="M-32 -14 l-13 28 h26 z"/>
+    <path d="M32 -14 l-13 28 h26 z"/>
+    <path d="M-18 28 h36"/>
+  </g>
+
+  <text x="632" y="212" text-anchor="middle" font-size="27" font-weight="700" fill="#1C1F26"
+        font-family="'Gowun Batang','Batang','Nanum Myeongjo',serif">국가법령정보 조회</text>
+  <text x="632" y="252" text-anchor="middle" font-size="17" fill="#4A5058">법제처 MCP · OPEN API</text>
+  <text x="632" y="282" text-anchor="middle" font-size="17" fill="#4A5058">해당 조문과 제한 기간을 확인</text>
+  <text x="632" y="316" text-anchor="middle" font-size="15" fill="#B33A2B" font-weight="500">통념이 아니라 조문이 판단한다</text>
+
+  <line x1="824" y1="190" x2="872" y2="190" stroke="#7C838C" stroke-width="2.5" marker-end="url(#ah)"/>
+
+  <!-- ── STEP 3 · 개인화된 할 일 배치 ── -->
+  <rect x="884" y="40" width="376" height="300" rx="4" fill="#FFFFFF" stroke="#1C1F26" stroke-width="2.5"/>
+  <text x="916" y="82" font-size="15" font-weight="700" fill="#1C1F26" letter-spacing="1">STEP 3</text>
+
+  <g transform="translate(1072,128)" stroke="#1C1F26" stroke-width="3" fill="none"
+     stroke-linecap="round" stroke-linejoin="round">
+    <path d="M-42 -18 h44 M-42 0 h58 M-42 18 h30"/>
+    <path d="M30 -30 l4 11 11 4 -11 4 -4 11 -4 -11 -11 -4 11 -4 z" fill="#B33A2B" stroke="#B33A2B" stroke-width="2"/>
+  </g>
+
+  <text x="1072" y="212" text-anchor="middle" font-size="27" font-weight="700" fill="#1C1F26"
+        font-family="'Gowun Batang','Batang','Nanum Myeongjo',serif">개인화된 할 일 배치</text>
+  <text x="1072" y="252" text-anchor="middle" font-size="17" fill="#4A5058">모델이 순서를 정한다</text>
+  <text x="1072" y="282" text-anchor="middle" font-size="17" fill="#4A5058">카드마다 맞는 안내가 붙는다</text>
+  <text x="1072" y="316" text-anchor="middle" font-size="15" fill="#B33A2B" font-weight="500">같은 답변이라도 사람마다 다르다</text>
+
+  <!-- ── 하단 보증 세 줄 ── -->
+  <line x1="20" y1="388" x2="1260" y2="388" stroke="#D8D5CE" stroke-width="1"/>
+
+  <g transform="translate(20,420)">
+    <g stroke="#2E5B7A" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <rect x="4" y="8" width="16" height="12" rx="2"/>
+      <path d="M8 8 V4.5 a4 4 0 0 1 8 0 V8"/>
+    </g>
+    <text x="32" y="21" font-size="15" fill="#4A5058">이름·생년월일·주소는 모델에게 가지 않습니다</text>
+  </g>
+
+  <g transform="translate(462,420)">
+    <g stroke="#B33A2B" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="12" cy="14" r="10"/>
+      <path d="M7.5 14 l3.2 3.6 L17 10"/>
+    </g>
+    <text x="32" y="21" font-size="15" fill="#4A5058">법률 문장은 사람이 검수한 것만 나갑니다</text>
+  </g>
+
+  <g transform="translate(884,420)">
+    <g stroke="#1C1F26" stroke-width="2.2" fill="none" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M12 4 l10 4 v8 c0 6 -5 9.5 -10 11 -5 -1.5 -10 -5 -10 -11 V8 z"/>
+    </g>
+    <text x="32" y="21" font-size="15" fill="#4A5058">모델이 정한 순서는 서버가 다시 검사합니다</text>
+  </g>
+</svg>

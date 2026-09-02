@@ -1,0 +1,37 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 440" width="1280" height="440"
+     role="img" font-family="'IBM Plex Sans KR','Malgun Gothic','맑은 고딕',sans-serif">
+  <title>같은 답변, 달라지는 안내</title>
+  <desc>진단 답변이 같아도 수용 사유가 다르면 카드에 붙는 안내가 달라진다.</desc>
+
+  <rect x="0" y="0" width="1280" height="440" fill="#FFFFFF"/>
+
+  <!-- 공통 입력 -->
+  <rect x="20" y="150" width="230" height="140" rx="4" fill="#FFFFFF" stroke="#1C1F26" stroke-width="2.5"/>
+  <text x="135" y="200" text-anchor="middle" font-size="19" font-weight="700" fill="#1C1F26"
+        font-family="'Gowun Batang','Batang','Nanum Myeongjo',serif">같은 진단 답변</text>
+  <text x="135" y="232" text-anchor="middle" font-size="15" fill="#7C838C">잘 곳 있음 · 통장 없음</text>
+  <text x="135" y="258" text-anchor="middle" font-size="15" fill="#7C838C">일자리 찾는 중</text>
+
+  <path d="M262 220 H300" fill="none" stroke="#7C838C" stroke-width="2"/>
+  <path d="M300 220 V78 H336" fill="none" stroke="#7C838C" stroke-width="2"/>
+  <path d="M300 220 H336" fill="none" stroke="#7C838C" stroke-width="2"/>
+  <path d="M300 220 V362 H336" fill="none" stroke="#7C838C" stroke-width="2"/>
+
+  <!-- 갈래 1 · 재산·경제범죄 -->
+  <rect x="336" y="34" width="924" height="88" rx="4" fill="#F6E9E6" stroke="#B33A2B" stroke-width="1.8"/>
+  <text x="364" y="66" font-size="16" font-weight="700" fill="#B33A2B">재산·경제범죄</text>
+  <text x="364" y="94" font-size="16" fill="#1C1F26">통장 카드 — 새 계좌가 한도제한계좌로 열릴 수 있습니다. 급여 계좌라고 말하고 근로계약서를 내면 풀립니다.</text>
+  <text x="364" y="114" font-size="13.5" fill="#7C838C">전기통신금융사기법 제13조의2 · 법으로 막히지는 않는다는 사실도 함께 알립니다</text>
+
+  <!-- 갈래 2 · 성범죄 -->
+  <rect x="336" y="176" width="924" height="88" rx="4" fill="#F6E9E6" stroke="#B33A2B" stroke-width="1.8"/>
+  <text x="364" y="208" font-size="16" font-weight="700" fill="#B33A2B">성범죄</text>
+  <text x="364" y="236" font-size="16" fill="#1C1F26">주민등록 카드 — 주소가 바뀌면 20일 안에 관할 경찰서에 따로 알려야 합니다. 전입신고만으로는 안 됩니다.</text>
+  <text x="364" y="256" font-size="13.5" fill="#7C838C">성폭력처벌법 제43조제3항 · 놓치면 법 위반이 되는 항목입니다</text>
+
+  <!-- 갈래 3 · 밝히지 않음 -->
+  <rect x="336" y="318" width="924" height="88" rx="4" fill="#F7F6F3" stroke="#D8D5CE" stroke-width="1.8"/>
+  <text x="364" y="350" font-size="16" font-weight="700" fill="#7C838C">밝히지 않음</text>
+  <text x="364" y="378" font-size="16" fill="#1C1F26">일자리 카드 — 형이 끝난 날부터 5년 동안은 경비원으로 일할 수 없습니다. 그 밖의 일자리는 막히지 않습니다.</text>
+  <text x="364" y="398" font-size="13.5" fill="#7C838C">경비업법 제10조 · 수용 사유를 언급하지 않는 문구로 나갑니다</text>
+</svg>
