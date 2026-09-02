@@ -83,6 +83,28 @@ export function useServerTasks(
   /** 가입에서 받은 목록으로 시작했으면 첫 호출을 건너뛴다. 같은 답으로 두 번 계산하지 않는다. */
   const skipFirst = useRef(Boolean(initial?.length));
 
+  /**
+   * 다시 진단하면 순서가 새로 정해진다 (2026-09-02 결정 B-2).
+   *
+   * **그때는 merge가 아니라 갈아끼워야 한다.** merge는 처음 본 순서를 지키는데,
+   * 그것은 마친 항목이 사라지지 않게 하려고 만든 규칙이다. 사용자가 상황이 바뀌었다고
+   * 다시 답했는데 옛 순서가 남아 있으면 새 순서가 조용히 버려진다.
+   *
+   * 화면이 언마운트되지 않으면 useState 초기값이 다시 적용되지 않으므로, 목록이
+   * 실제로 달라졌을 때만 여기서 세운다. 항목 코드를 이어 붙인 것으로 비교한다 —
+   * 순서가 바뀌어도 내용만 바뀌어도 값이 달라진다.
+   */
+  const initialKey = initial ? initial.map((t) => t.id).join(",") : "";
+  const lastInitialKey = useRef(initialKey);
+
+  useEffect(() => {
+    if (!initialKey || initialKey === lastInitialKey.current) return;
+    lastInitialKey.current = initialKey;
+    setState({ all: initial ?? [], loading: false, error: null });
+    // 방금 받은 목록이라 다시 물어볼 이유가 없다.
+    skipFirst.current = true;
+  }, [initialKey, initial]);
+
   useEffect(() => {
     if (skipFirst.current) {
       skipFirst.current = false;
