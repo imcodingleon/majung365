@@ -1,0 +1,15 @@
+[project]
+name = "majung-legal-constraints"
+version = "0.1.0"
+description = "마중365 수용 사유별 법령 제약 수집기 — 법제처 국가법령정보에서 조문을 가져와 검수용 초안을 만든다"
+requires-python = ">=3.12"
+# **의존성이 없다.** 단순 HTTP와 XML이라 표준 라이브러리로 충분하고,
+# 백엔드 의존성 트리에 아무것도 더하지 않는다.
+dependencies = []
+
+[tool.ruff]
+line-length = 100
+target-version = "py312"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]

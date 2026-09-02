@@ -41,6 +41,9 @@ ser-lab/
 .agents/
 _workspace/
 tools/rag-crawler/output/
+# **미검수 법률 초안을 레포에 두지 않는다.** rag-crawler와 반대로 가는 이유는,
+# 검수를 거치지 않은 조문 원문이 레포에 있으면 언젠가 누가 그것을 읽는 코드를 쓰기 때문이다.
+tools/legal-constraints/output/
 questions-review.md
 r2.txt
 /*.png

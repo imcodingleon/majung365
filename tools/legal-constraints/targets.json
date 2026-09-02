@@ -1,0 +1,109 @@
+{
+  "_meta": {
+    "purpose": "무엇을 조회할지 사람이 적는다. 수집기는 여기 적힌 것만 가져온다.",
+    "expect": "가설을 먼저 적고 조문으로 검증한다. 조문을 읽고 나서 문장을 쓰면 통념이 그대로 문장이 된다.",
+    "article_format": "조번호는 사람이 읽는 형태로 적는다. 수집기가 법제처 6자리 형식으로 바꾼다 — 제13조의2 → 001302"
+  },
+  "targets": [
+    {
+      "id": "all-R6-security-guard",
+      "route_id": "R6",
+      "categories": ["violent", "sexual", "property", "drug", "other"],
+      "question": "형을 마친 사람의 경비원 취업이 법으로 제한되는가",
+      "law": "경비업법",
+      "article": "제10조",
+      "expect": "applies",
+      "hint": "수용 사유와 무관하게 금고 이상 실형에 붙는다면 applies_without_category를 켜야 한다. 경비는 출소자가 가장 많이 찾는 직종이다."
+    },
+    {
+      "id": "property-R10-limited-account",
+      "route_id": "R10",
+      "categories": ["property"],
+      "question": "재산·경제범죄 이력자의 계좌 개설이 법으로 제한되는가",
+      "law": "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법",
+      "article": "제13조의2",
+      "expect": "applies_to_subset",
+      "hint": "일반 사기죄 유죄만으로는 금지되지 않는다는 것이 우리 가설이다. 조문이 이를 뒤집으면 검수에서 잡는다. 한도제한계좌는 조문이 아니라 금융회사 운영이므로 body에 '법으로 금지'라고 쓸 수 없다."
+    },
+    {
+      "id": "property-R14-nondischargeable",
+      "route_id": "R14",
+      "categories": ["property"],
+      "question": "파산 면책을 받아도 남는 빚이 있는가",
+      "law": "채무자 회생 및 파산에 관한 법률",
+      "article": "제566조",
+      "expect": "applies_to_subset",
+      "hint": "각 호 중 고의의 불법행위 손해배상이 이 경우다. 조세·벌금·양육비도 비면책이지만 수용 사유와 무관하므로 적지 않는다."
+    },
+    {
+      "id": "sexual-R6-child-institutions",
+      "route_id": "R6",
+      "categories": ["sexual"],
+      "question": "성범죄 이력자의 아동·청소년 관련 기관 취업이 제한되는가",
+      "law": "아동·청소년의 성보호에 관한 법률",
+      "article": "제56조",
+      "expect": "applies",
+      "hint": "제한 기간은 판결이 정하므로 서버가 알 수 없다. 값을 모델링하지 말고 판결문을 확인하도록 안내한다."
+    },
+    {
+      "id": "sexual-R6-child-welfare",
+      "route_id": "R6",
+      "categories": ["sexual"],
+      "question": "아동학대관련범죄로 취업이 제한되는 기관의 범위는 어디까지인가",
+      "law": "아동복지법",
+      "article": "제29조의3",
+      "expect": "applies_to_subset",
+      "hint": "아동학대관련범죄일 때만이다. 대상 기관에 의료기관·장애인복지시설·공동주택 경비까지 들어가는지 확인한다."
+    },
+    {
+      "id": "sexual-R11-address-report",
+      "route_id": "R11",
+      "categories": ["sexual"],
+      "question": "신상정보 등록대상자가 주소를 옮길 때 따로 해야 하는 일이 있는가",
+      "law": "성폭력범죄의 처벌 등에 관한 특례법",
+      "article": "제43조",
+      "expect": "applies_to_subset",
+      "hint": "전입신고와 별개 절차이며 놓치면 법 위반이다. 기한이 며칠인지, 어디에 내는지를 정확히 확인한다."
+    },
+    {
+      "id": "drug-R8-treatment-support",
+      "route_id": "R8",
+      "categories": ["drug"],
+      "question": "마약류 중독 치료 비용을 누가 부담하는가",
+      "law": "마약류 관리에 관한 법률",
+      "article": "제40조",
+      "expect": "applies",
+      "hint": "제약이 아니라 혜택이므로 effect가 clear다. 기간과 비용 부담 주체를 확인한다."
+    },
+    {
+      "id": "violent-R6-passenger-transport",
+      "route_id": "R6",
+      "categories": ["violent", "sexual"],
+      "question": "택시·버스 운전자격이 범죄 이력으로 제한되는가",
+      "law": "여객자동차 운수사업법",
+      "article": "제24조",
+      "expect": "applies_to_subset",
+      "hint": "출소자가 많이 찾는 직종이다. 구역 여객자동차운송사업(택시)과 그 밖의 경우가 기간이 다르므로 갈라 적는다."
+    },
+    {
+      "id": "drug-R6-driver-license",
+      "route_id": "R6",
+      "categories": ["drug"],
+      "question": "마약류 중독이 운전면허 결격사유인가",
+      "law": "도로교통법",
+      "article": "제82조",
+      "expect": "applies_to_subset",
+      "hint": "'중독자'라는 상태에 붙는 것이지 처벌 이력에 붙는 것이 아니다. 치료를 마쳤으면 해당하지 않는다는 점이 문장에 드러나야 한다."
+    },
+    {
+      "id": "nonsexual-R6-not-restricted",
+      "route_id": "R6",
+      "categories": ["violent", "property", "drug", "other"],
+      "question": "성범죄·아동학대 외의 수용 사유에도 법정 취업제한이 붙는가",
+      "law": "아동·청소년의 성보호에 관한 법률",
+      "article": "제56조",
+      "expect": "does_not_apply",
+      "hint": "**이 항목이 통념을 교정하는 자리다.** 제약만 수집하면 앱이 낙인을 옮긴다. 조문의 적용 대상을 인용하면서 '그 밖의 사유는 해당하지 않는다'를 말한다."
+    }
+  ]
+}
