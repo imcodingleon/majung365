@@ -263,3 +263,13 @@ class MockChatLlm:
             elif any(k in sentence for k in _HAVE_KEYWORDS):
                 result[node_id] = NodeState.O
         return result
+
+    async def order_tasks(self, payload: str) -> tuple[str, ...]:
+        """**목업은 순서를 흉내내지 않는다.**
+
+        빈 튜플을 주면 부르는 쪽이 정해 둔 순서로 물러난다. 그럴듯한 순서를
+        지어내면 로컬에서 본 화면과 배포본이 달라지고, 그 차이는 실 Claude를
+        붙이기 전까지 드러나지 않는다 — `triage`가 같은 판단을 적어 두었다.
+        """
+        return ()
+

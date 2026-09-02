@@ -1,5 +1,6 @@
 // 오늘의 할 일 도메인 — 기획서 §4·§5.
 // 할 일 하나는 지원 항목(R번호) 하나에 대응하며, 지원 항목 이름이 곧 인덱스 탭 제목이 된다.
+import type { RouteNotice } from "@/shared/types/intake";
 import type { RouteId } from "@/shared/types/route";
 
 export type { RouteId };
@@ -48,6 +49,13 @@ export type Task = {
   must: boolean;
   /** 카드에 펼쳐 보여줄 안내. 한 줄에 한 가지만 담는다 (§3.9-⑦). */
   info: string[];
+  /**
+   * 수용 사유에 따라 달라지는 안내 (§9.4).
+   *
+   * **info에 섞지 않는다.** info의 각 줄에는 체크 표시가 붙는데, 주의 문구가
+   * 체크를 달면 "이미 끝낸 일"로 읽힌다.
+   */
+  notices: readonly RouteNotice[];
   /**
    * 챙겨 가야 할 것 (§4.1의 KB `docs`). 안내 문장과 성격이 다르다.
    * 방문 알림의 준비물 체크가 이 목록을 쓴다 (§7.2). 없는 항목도 있다.

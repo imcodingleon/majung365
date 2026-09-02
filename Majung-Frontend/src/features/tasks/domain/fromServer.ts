@@ -92,6 +92,9 @@ export function toTask(item: IntakeTask): Task {
     contact: first ? contactOf(first) : undefined,
     // 서버가 안 보내는 배포본이 있다. 빈 배열이면 화면이 기본 문구로 물러선다.
     starterQuestions: item.starter_questions ?? [],
+    // **info에 섞지 않는다.** info의 각 줄에는 ✓가 붙어서, 주의 문구가 체크를
+    // 달면 이미 끝낸 일로 읽힌다. 화면이 따로 그린다.
+    notices: item.notices ?? [],
   };
 }
 

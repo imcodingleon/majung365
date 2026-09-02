@@ -38,6 +38,11 @@ from app.domains.chat.domain.triage import (
     UserRegion,
 )
 from app.domains.knowledge.domain.graph_engine import NodeState
+from app.domains.knowledge.domain.ordering import (
+    ORDER_INSTRUCTION,
+    ORDER_SCHEMA,
+    parse_order,
+)
 from app.domains.shared.routes import RouteId
 from app.domains.visit.domain.summary import (
     SUMMARY_INSTRUCTION,
@@ -54,6 +59,9 @@ logger = logging.getLogger("majung.claude")
 # 오래 기다릴 이유가 없고, **늘어지면 상태가 pending에 머문 채 남는다.**
 # 채팅 스트리밍에는 걸지 않는다 — 긴 안내는 원래 오래 흐른다.
 _SUMMARY_TIMEOUT_SECONDS = 45
+# 가입 응답 안에서 기다리는 시간이다. **넘기면 기다리지 않는다** —
+# 27문항을 막 답한 사람을 순서 하나 때문에 더 붙잡아 두지 않는다.
+_ORDER_TIMEOUT_SECONDS = 4
 
 _NARRATIVE_EXTRACT_SCHEMA = {
     "type": "object",
@@ -342,6 +350,43 @@ class ClaudeChatLlm:
         resp = await self._client.messages.create(**create_kwargs)
         text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
         return self._parse_narrative(text, valid_ids=set(nodes))
+
+    async def order_tasks(self, payload: str) -> tuple[str, ...]:
+        """할 일 순서를 정한다 (2026-09-02 결정).
+
+        **`_to_messages`를 지나지 않으므로 마스킹 검사를 여기서 직접 건다.**
+        payload는 서버가 열거값과 상수로만 조립한 것이라 통과가 당연한데, 그게
+        요점이다 — `masking.py`가 적어 둔 대로 "새 코드 경로가 마스킹을 건너뛴
+        경우"를 잡는 그물이다.
+
+        **어떤 이유로 실패하든 빈 튜플이다.** 가입 응답 안에서 부르므로 여기서
+        예외가 올라가면 가입 자체가 막힌다.
+        """
+        assert_masked(payload)
+        self._record_call()
+        create_kwargs: dict[str, Any] = {
+            "model": self._model,
+            # 코드 목록 열넷이 전부라 넉넉하다. 길게 잡으면 모델이 설명을 붙인다.
+            "max_tokens": 512,
+            "thinking": {"type": "disabled"},
+            "output_config": {
+                "effort": "low",
+                "format": {"type": "json_schema", "schema": ORDER_SCHEMA},
+            },
+            "system": ORDER_INSTRUCTION,
+            "messages": [{"role": "user", "content": payload}],
+        }
+        try:
+            resp = await asyncio.wait_for(
+                self._client.messages.create(**create_kwargs),
+                timeout=_ORDER_TIMEOUT_SECONDS,
+            )
+        except Exception:  # TimeoutError 포함 — 어느 쪽이든 하는 일이 같다
+            # 사용자 입력 원문은 로그에 남기지 않는다. 무엇이 실패했는지만 남긴다.
+            logger.warning("할 일 순서 결정 실패 — 정해 둔 순서로 낸다")
+            return ()
+        text = next((b.text for b in resp.content if getattr(b, "type", None) == "text"), "")
+        return parse_order(text)
 
     async def summarize_visit(self, *, text: str, name: str | None = None) -> str:
         """담당자가 먼저 읽는 요약을 만든다 (§7.4).

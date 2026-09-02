@@ -9,6 +9,7 @@
 - 좌표는 받지 않는다. 요청 본문에 그 자리가 없다(§9.5)
 """
 
+import logging
 from datetime import date
 from typing import Annotated
 
@@ -29,8 +30,11 @@ from app.domains.account.domain.entity import (
 from app.domains.account.domain.tokens import utcnow
 from app.domains.knowledge.adapter.inbound.api.router import IntakeTaskOut, to_task_out
 from app.domains.shared.clock import today_kst
+from app.domains.shared.profile import Profile, mask_profile, profile_line
 from app.infrastructure.config.settings import get_settings
 from app.infrastructure.security.rate_limit import limiter
+
+logger = logging.getLogger(__name__)
 
 router = APIRouter(prefix="/api", tags=["account"])
 
@@ -147,7 +151,7 @@ def _crime_consented(body: SignupIn) -> bool:
 
 @router.post("/signup", response_model=SignupOut)
 @limiter.limit(get_settings().rate_limit_chat)
-def signup(body: SignupIn, request: Request) -> SignupOut:
+async def signup(body: SignupIn, request: Request) -> SignupOut:
     """가입하고 첫 할 일 목록을 받는다.
 
     가입만 하고 아무 일도 일어나지 않으면 무엇을 위해 27문항을 답했는지 알 수 없다.
@@ -161,7 +165,7 @@ def signup(body: SignupIn, request: Request) -> SignupOut:
             status_code=503, detail="지금은 가입을 받을 수 없어요. 잠시 후 다시 시도해 주세요."
         )
 
-    result = usecase.run(_to_command(body, today_kst()))
+    result = await usecase.run(_to_command(body, today_kst()))
     return SignupOut(
         user_id=str(result.account.id),
         session_token=result.session_token,
@@ -280,6 +284,26 @@ class CompletedIn(BaseModel):
     completed: list[str] = Field(default_factory=list, max_length=20)
 
 
+def _crime_category_of(request: Request, account: Account) -> str | None:
+    """그 사람의 수용 사유 대분류. **없는 것이 정상 경로다.**
+
+    동의는 선택이고(§3.3-⑥) 철회하면 그 행만 지워진다. 조회가 실패해도 None으로
+    물러선다 — 안내가 얕아질 뿐이고, 할 일 목록이 통째로 막히는 것보다 낫다.
+
+    **값을 응답에 그대로 싣지 않는다.** 이 값은 어떤 안내를 붙일지 고르는 데만
+    쓰이고, 화면에 나가는 것은 서버가 조립한 문장이다(§7.4 · GET /api/me 참고).
+    """
+    crimes = getattr(request.app.state, "crime_repo", None)
+    if crimes is None:
+        return None
+    try:
+        row = crimes.by_user(account.id)
+    except Exception:
+        logger.warning("수용 사유 조회 실패 — 그 안내 없이 할 일을 낸다")
+        return None
+    return row.category if row else None
+
+
 @router.get("/tasks", response_model=TasksOut)
 def read_tasks(request: Request, account: CurrentAccount) -> TasksOut:
     """세션 토큰만으로 할 일을 되살린다 (§5.2).
@@ -304,7 +328,9 @@ def read_tasks(request: Request, account: CurrentAccount) -> TasksOut:
         raise HTTPException(status_code=404, detail="이어서 볼 내용을 찾지 못했어요.")
 
     intake = request.app.state.intake_usecase
-    tasks = intake.from_verdicts(state.verdicts)
+    tasks = intake.from_verdicts(
+        state.verdicts, crime_category=_crime_category_of(request, account)
+    )
     return TasksOut(
         name=account.name,
         tasks=[to_task_out(t) for t in tasks],
@@ -319,7 +345,7 @@ class RetakeIn(BaseModel):
 
 
 @router.put("/tasks", response_model=TasksOut)
-def retake_intake(
+async def retake_intake(
     body: RetakeIn,
     request: Request,
     account: CurrentAccount,
@@ -357,7 +383,26 @@ def retake_intake(
         answers[key] = value
 
     intake = request.app.state.intake_usecase
-    states.save(account.id, intake.judge_only(answers))
+    # **상황이 바뀌었으니 순서도 다시 정한다.** 여기와 가입, 두 곳에서만 정하고
+    # 복원·완료 처리에서는 저장된 순서를 그대로 읽는다 — 매번 다시 정하면
+    # 같은 사람이 접속할 때마다 순서가 흔들린다.
+    category = _crime_category_of(request, account)
+    verdicts = await intake.ordered_verdicts(
+        intake.judge_only(answers),
+        profile_line=profile_line(
+            mask_profile(
+                Profile(
+                    name=account.name,
+                    birth_date=account.birth_date,
+                    release_date=account.release_date,
+                    crime_category=category,
+                ),
+                today_kst(),
+            )
+        ),
+        crime_category=category,
+    )
+    states.save(account.id, verdicts)
     return read_tasks(request, account)
 
 

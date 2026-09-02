@@ -49,6 +49,9 @@ from app.domains.knowledge.infrastructure.intake_state_repository import (
     SupabaseIntakeStateRepository,
 )
 from app.domains.knowledge.infrastructure.json_repository import JsonInstitutionRepository
+from app.domains.knowledge.infrastructure.legal_constraints_repository import (
+    JsonLegalConstraintRepository,
+)
 from app.domains.knowledge.infrastructure.rag_repository import JsonRagRepository
 from app.domains.shared.routes import ROUTE_ORDER, RouteId
 from app.domains.staff.adapter.inbound.api.router import router as staff_router
@@ -186,6 +189,11 @@ def create_app() -> FastAPI:
         rules=JsonIntakeRuleRepository().all(),
         blocking_routes=routes_blocking_others(graph_nodes),
         graph_nodes=graph_nodes,
+        # 검수되지 않은 항목은 로더가 버린다 — 여기 오는 것은 이미 걸러진 것뿐이다.
+        constraints=JsonLegalConstraintRepository().all(),
+        # llm은 TaskOrderLlm도 구조적으로 만족한다(order_tasks 메서드 보유).
+        # 목업은 빈 답을 주므로 로컬에서는 정해 둔 순서가 그대로 나온다.
+        order_llm=llm,
     )
     # 목록 순서에서 빠진 항목을 부팅 때 알린다 (2026-08-26 결정 H-1).
     # **빠져도 화면에서 사라지지는 않는다** — 맨 뒤로 밀릴 뿐이라 눈에 잘 안 띈다.

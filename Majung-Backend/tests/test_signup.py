@@ -106,53 +106,53 @@ def _command(**kw: object) -> SignupCommand:
     return SignupCommand(**{**base, **kw})  # type: ignore[arg-type]
 
 
-def test_signup_returns_tasks_right_away() -> None:
+async def test_signup_returns_tasks_right_away() -> None:
     """가입만 하고 아무 일도 일어나지 않으면 무엇을 위해 27문항을 답했는지 알 수 없다."""
     usecase, _, _ = _usecase()
-    result = usecase.run(_command())
+    result = await usecase.run(_command())
     assert result.tasks
     assert {t.route_id for t in result.tasks} == {"R9", "R8"}
 
 
-def test_session_token_is_issued() -> None:
+async def test_session_token_is_issued() -> None:
     usecase, _, _ = _usecase()
-    assert usecase.run(_command()).session_token
+    assert (await usecase.run(_command())).session_token
 
 
-def test_crime_is_stored_when_given() -> None:
+async def test_crime_is_stored_when_given() -> None:
     usecase, _, crimes = _usecase()
-    result = usecase.run(_command(crime_category="재산·경제범죄"))
+    result = await usecase.run(_command(crime_category="재산·경제범죄"))
     assert crimes.stored[result.account.id] == "재산·경제범죄"
 
 
-def test_crime_is_not_stored_without_it() -> None:
+async def test_crime_is_not_stored_without_it() -> None:
     """죄목은 선택이다. 없으면 개인화가 얕아지지만 서비스가 막히지는 않는다."""
     usecase, _, crimes = _usecase()
-    usecase.run(_command())
+    await usecase.run(_command())
     assert crimes.stored == {}
 
 
-def test_crime_failure_does_not_break_signup() -> None:
+async def test_crime_failure_does_not_break_signup() -> None:
     """죄목 저장이 실패해도 가입은 살린다 — 27문항을 다시 답하게 하는 것보다
     개인화가 얕은 채로 시작하는 편이 낫다."""
     usecase, accounts, _ = _usecase(FakeCrimes(fail=True))
-    result = usecase.run(_command(crime_category="재산·경제범죄"))
+    result = await usecase.run(_command(crime_category="재산·경제범죄"))
     assert result.session_token and result.tasks
     assert accounts.saved
 
 
-def test_consents_are_recorded() -> None:
+async def test_consents_are_recorded() -> None:
     usecase, accounts, _ = _usecase()
-    usecase.run(_command(consents=(Consent("privacy", True, utcnow()),
+    await usecase.run(_command(consents=(Consent("privacy", True, utcnow()),
                                    Consent("crime_category", False, utcnow()))))
     assert {c.kind for c in accounts.consents} == {"privacy", "crime_category"}
 
 
-def test_plain_values_reach_the_repository() -> None:
+async def test_plain_values_reach_the_repository() -> None:
     """도메인은 평문을 다룬다. 암호화는 저장 직전(infrastructure)에 걸린다 —
     도메인이 암호문을 들고 다니면 판정 로직이 복호화 여부를 신경 써야 한다."""
     usecase, accounts, _ = _usecase()
-    usecase.run(_command())
+    await usecase.run(_command())
     assert accounts.saved[0].name == "김판수"
 
 

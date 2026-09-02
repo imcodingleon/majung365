@@ -287,3 +287,13 @@ class CliChatLlm:
         except Exception:
             logger.warning("서술 상태 판정 실패 — 버튼 답변만 사용")
             return {}
+
+    async def order_tasks(self, payload: str) -> tuple[str, ...]:
+        """**CLI 경로는 순서를 정하지 않는다.**
+
+        빈 튜플을 주면 부르는 쪽이 정해 둔 순서로 물러난다. 이 클라이언트는 응답
+        품질을 눈으로 보려고 두는 검증용이라, 가입 흐름 안에서 도는 순서 결정까지
+        여기로 끌어오면 확인하려던 것과 다른 것을 보게 된다.
+        """
+        return ()
+

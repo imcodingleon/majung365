@@ -21,6 +21,8 @@ from app.domains.account.domain.repository import (
 from app.domains.knowledge.application.dto import IntakeTask
 from app.domains.knowledge.application.intake_usecase import IntakeUseCase
 from app.domains.knowledge.domain.state import IntakeStateRepository
+from app.domains.shared.clock import today_kst
+from app.domains.shared.profile import Profile, mask_profile, profile_line
 
 logger = logging.getLogger("majung.account")
 
@@ -63,7 +65,7 @@ class SignupUseCase:
         # **없어도 가입은 된다.** 저장이 꺼진 로컬·데모에서는 None으로 온다.
         self._states = states
 
-    def run(self, cmd: SignupCommand) -> SignupResult:
+    async def run(self, cmd: SignupCommand) -> SignupResult:
         account = self._accounts.create(
             name=cmd.name,
             birth_date=cmd.birth_date,
@@ -86,8 +88,30 @@ class SignupUseCase:
         # 세션이 끊겼을 때 같은 할 일 목록을 다시 만들 수 있어야 한다. 그 둘을
         # 함께 만족시키는 것이 판정이다.
         verdicts = self._intake.judge_only(cmd.answers)
+
+        # **순서는 여기서 한 번만 정한다** (2026-09-02 결정). 판정 목록의 순서가
+        # 곧 화면의 순서이고, 그대로 저장되므로 복원할 때 다시 정하지 않는다 —
+        # 같은 사람이 몇 번을 들어와도 같은 순서를 본다.
+        verdicts = await self._intake.ordered_verdicts(
+            verdicts,
+            profile_line=profile_line(
+                mask_profile(
+                    Profile(
+                        name=account.name,
+                        birth_date=account.birth_date,
+                        release_date=account.release_date,
+                        crime_category=cmd.crime_category,
+                    ),
+                    today_kst(),
+                )
+            ),
+            crime_category=cmd.crime_category,
+        )
+
         if self._states is not None:
             self._states.save(account.id, verdicts)
 
-        tasks = self._intake.from_verdicts(verdicts)
+        # 죄목 저장이 실패했더라도 이번 응답에는 안내를 붙인다 — 사용자는 동의했고,
+        # 저장 실패는 다음 접속에서 안내가 사라지는 것으로 이미 드러난다.
+        tasks = self._intake.from_verdicts(verdicts, crime_category=cmd.crime_category)
         return SignupResult(account=account, session_token=token, tasks=tasks)

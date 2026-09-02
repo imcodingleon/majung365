@@ -165,6 +165,23 @@ class IntakeCardOut(BaseModel):
     options: list[IntakeCardOptionOut]
 
 
+class NoticeSourceOut(BaseModel):
+    label: str
+    url: str
+
+
+class RouteNoticeOut(BaseModel):
+    """수용 사유에 따라 달라지는 안내(§9.4). 화면은 카드 설명 아래·창구 안내 위에 낸다."""
+
+    tone: str
+    headline: str
+    body: str
+    myth: str = ""
+    what_to_do: str = ""
+    sources: list[NoticeSourceOut] = Field(default_factory=list)
+    verified_note: str = ""
+
+
 class IntakeTaskOut(BaseModel):
     route_id: str
     route_label: str
@@ -178,6 +195,9 @@ class IntakeTaskOut(BaseModel):
     # 대화를 열었을 때 뜨는 첫 질문(§6.1). **비어 올 수 있고, 그때는 화면이
     # 기본 문구로 물러선다** — 필드가 없다고 앱이 깨지면 안 된다.
     starter_questions: list[str] = Field(default_factory=list)
+    # 수용 사유 안내. **비어 오는 것이 정상이고, 서버가 아직 안 보내는 배포본도 있다** —
+    # 기본값이 없으면 옛 서버에 붙은 앱이 응답을 못 읽는다.
+    notices: list[RouteNoticeOut] = Field(default_factory=list)
 
 
 class IntakeOut(BaseModel):
@@ -196,6 +216,18 @@ def to_task_out(t: IntakeTask) -> IntakeTaskOut:
         blocks_others=t.blocks_others,
         can_request_visit=t.can_request_visit,
         starter_questions=list(t.starter_questions),
+        notices=[
+            RouteNoticeOut(
+                tone=n.tone,
+                headline=n.headline,
+                body=n.body,
+                myth=n.myth,
+                what_to_do=n.what_to_do,
+                sources=[NoticeSourceOut(label=s.label, url=s.url) for s in n.sources],
+                verified_note=n.verified_note,
+            )
+            for n in t.notices
+        ],
         card=IntakeCardOut(
             institution_id=t.card.institution_id,
             name=t.card.name,

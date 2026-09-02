@@ -13,15 +13,32 @@
 import logging
 from dataclasses import replace
 
-from app.domains.knowledge.application.dto import IntakeCard, IntakeCardOption, IntakeTask
+from app.domains.knowledge.application.dto import (
+    IntakeCard,
+    IntakeCardOption,
+    IntakeTask,
+    NoticeSource,
+    RouteNotice,
+)
+from app.domains.knowledge.application.port import TaskOrderLlm
 from app.domains.knowledge.domain.contacts import contact_of, desk_of
 from app.domains.knowledge.domain.entity import Institution
 from app.domains.knowledge.domain.graph_engine import (
     GraphNode,
     NodeState,
     kb_ref_for_route,
+    route_precedence,
 )
 from app.domains.knowledge.domain.intake import IntakeRule, IntakeVerdict, judge
+from app.domains.knowledge.domain.legal import LegalConstraint, constraints_for
+from app.domains.knowledge.domain.ordering import (
+    OrderItem,
+    build_order_input,
+    checkable_precedence,
+    fallback_order,
+    reorder,
+    validate_order,
+)
 from app.domains.knowledge.domain.purpose import (
     docs_with_purpose,
     expense_purpose,
@@ -48,13 +65,24 @@ class IntakeUseCase:
         rules: tuple[IntakeRule, ...],
         blocking_routes: frozenset[str] = frozenset(),
         graph_nodes: dict[str, GraphNode] | None = None,
+        constraints: tuple[LegalConstraint, ...] = (),
+        order_llm: TaskOrderLlm | None = None,
     ) -> None:
         self._institutions = institutions
         self._rules = rules
         self._blocking_routes = blocking_routes
+        # 수용 사유별 법령 제약(§9.4). 비어 있으면 안내가 붙지 않을 뿐 나머지는 그대로다 —
+        # 검수 전이거나 데이터가 없는 배포본에서도 할 일 목록은 나가야 한다.
+        self._constraints = constraints
+        # 순서를 정하는 모델. **없으면 정해 둔 순서로 간다** — 로컬·테스트에서
+        # 모델 없이 도는 것이 정상 경로다.
+        self._order_llm = order_llm
         # 상태별로 대표가 갈리는 항목은 그래프가 정한다(기획서 §4.1).
         # 없으면 항목의 기본 대표를 쓴다 — 갈림이 없는 항목이 대부분이다.
         self._nodes = graph_nodes or {}
+        # 순서 검사에 쓸 선행조건 쌍. 부팅 때 한 번 뽑아 둔다 —
+        # 요청마다 그래프를 다시 훑을 값이 아니다.
+        self._precedence = checkable_precedence(route_precedence(self._nodes))
         self._validate_overrides()
         self._validate_graph_refs()
 
@@ -147,10 +175,73 @@ class IntakeUseCase:
     ) -> tuple[IntakeTask, ...]:
         return self.from_verdicts(self.judge_only(answers), completed)
 
+    async def ordered_verdicts(
+        self,
+        verdicts: tuple[IntakeVerdict, ...],
+        *,
+        profile_line: str = "",
+        crime_category: str | None = None,
+    ) -> tuple[IntakeVerdict, ...]:
+        """할 일 순서를 정한다 (2026-09-02 결정).
+
+        **판정 목록의 순서가 곧 화면의 순서다.** 이 결과를 그대로 저장하면 복원할
+        때 다시 정할 필요가 없고, 같은 사람은 몇 번을 다시 들어와도 같은 순서를
+        본다 — 결정성을 모델이 아니라 저장에서 얻는다.
+
+        그래서 **여기를 부르는 곳은 가입과 재진단 둘뿐이다.** 복원이나 완료 처리에서
+        부르면 순서가 매번 흔들리고, `SSOT.md` §4.2가 걱정한 그대로가 된다.
+
+        모델이 없거나 답이 어긋나면 정해 둔 순서로 간다.
+        """
+        if self._order_llm is None or not verdicts:
+            return tuple(reorder(verdicts, fallback_order(verdicts)))
+
+        items = tuple(
+            OrderItem(
+                route_id=v.route_id.value,
+                label=label_for(v.route_id),
+                state=v.state,
+                has_deadline=self._has_deadline(v.route_id),
+                deadline_text=self._deadline_text(v.route_id),
+                notice_lines=tuple(
+                    c.headline
+                    for c in constraints_for(
+                        self._constraints, crime_category, v.route_id.value
+                    )
+                ),
+            )
+            for v in verdicts
+        )
+        payload = build_order_input(
+            items, profile_line=profile_line, precedence=self._precedence
+        )
+        proposed = await self._order_llm.order_tasks(payload)
+        checked = validate_order(proposed, verdicts, self._precedence)
+        if checked is None:
+            # 무엇이 어긋났는지는 남기지 않는다 — 어떤 항목이 배정됐는지가 곧
+            # 그 사람의 상황이다(0008 마이그레이션).
+            logger.info("순서 검사를 통과하지 못해 정해 둔 순서로 낸다")
+            return tuple(reorder(verdicts, fallback_order(verdicts)))
+        return tuple(reorder(verdicts, checked))
+
+    def _has_deadline(self, route: RouteId) -> bool:
+        return any(
+            n.deadline is not None
+            for n in self._nodes.values()
+            if route.value in n.route_ids
+        )
+
+    def _deadline_text(self, route: RouteId) -> str:
+        for n in self._nodes.values():
+            if route.value in n.route_ids and n.deadline is not None:
+                return n.deadline.text
+        return ""
+
     def from_verdicts(
         self,
         verdicts: tuple[IntakeVerdict, ...],
         completed: frozenset[RouteId] = frozenset(),
+        crime_category: str | None = None,
     ) -> tuple[IntakeTask, ...]:
         """판정으로 할 일 카드를 만든다.
 
@@ -169,9 +260,36 @@ class IntakeUseCase:
                 can_request_visit=org_for(v.route_id) is not None,
                 card=self._card_for(v),
                 starter_questions=questions_for(v.route_id),
+                notices=self._notices_for(v.route_id, crime_category),
             )
             for v in verdicts
             if v.route_id not in completed
+        )
+
+    def _notices_for(
+        self, route: RouteId, category: str | None
+    ) -> tuple[RouteNotice, ...]:
+        """그 항목에 붙는 수용 사유 안내.
+
+        **여기가 동의 게이트다.** 죄목 저장소가 None을 주면 대부분 아무것도 만들지
+        않고 화면에서 통째로 사라진다. 철회하면 다음 요청부터 즉시 그렇게 된다.
+
+        수용 사유와 무관하게 형을 살았다는 사실 자체에 붙는 제약만 그 경우에도
+        남는다(`applies_without_category`) — 경비업법 결격사유가 그 자리다.
+        """
+        return tuple(
+            RouteNotice(
+                tone=c.effect,
+                headline=c.headline,
+                body=c.body,
+                myth=c.myth,
+                what_to_do=c.what_to_do,
+                sources=tuple(
+                    NoticeSource(label=s.label, url=s.url) for s in c.sources if s.url
+                ),
+                verified_note=verified_note(c.verified_at.isoformat()),
+            )
+            for c in constraints_for(self._constraints, category, route.value)
         )
 
     def _to_option(

@@ -107,7 +107,7 @@ def _select_path(
     if route_id is not None:
         # 항목을 적지 않은 경로는 노드의 모든 항목에 해당한다 — 겸하지 않는
         # 노드에 일일이 적게 하면 데이터만 늘고 틀릴 자리가 생긴다.
-        owned = [p for p in candidates if not p.route_ids or route_id in p.route_ids]
+        owned = tuple(p for p in candidates if not p.route_ids or route_id in p.route_ids)
         if owned:
             candidates = owned
     if not candidates:
@@ -223,6 +223,36 @@ def routes_blocking_others(nodes: dict[str, GraphNode]) -> frozenset[str]:
     return frozenset(
         route for nid in required for route in nodes[nid].route_ids if nid in nodes
     )
+
+
+def route_precedence(nodes: dict[str, GraphNode]) -> frozenset[tuple[str, str]]:
+    """(먼저 해야 하는 항목, 나중 항목) 쌍. **사용자 상태와 무관한 그래프 구조의 사실이다.**
+
+    `routes_blocking_others`가 "이 항목이 다른 것을 연다"까지만 말하는 데 비해,
+    여기는 **어느 항목이 어느 항목보다 앞서야 하는지**를 낸다. 순서를 LLM이 정하게
+    되면서(2026-09-02 결정) 그 답이 말이 되는지 검사할 근거가 필요해졌다.
+
+    **경로의 항목으로 가른다.** "잘 곳"(shelter)이 R1과 R4를 겸하는데 가르지 않으면
+    R4 경로의 선행조건(신분증)이 R1에도 붙어 없는 제약이 생긴다 — `_select_path`가
+    이미 같은 이유로 route_id를 본다.
+
+    노드는 있는데 선행조건이 가리키는 노드가 없는 데이터는 건너뛴다. 그래프가 덜
+    채워졌다고 순서 검증이 통째로 죽으면 안 된다.
+    """
+    pairs: set[tuple[str, str]] = set()
+    for node in nodes.values():
+        for path in node.obtain:
+            # 항목을 적지 않은 경로는 노드의 모든 항목에 해당한다(_select_path와 같은 규칙).
+            targets = path.route_ids or node.route_ids
+            for req in path.requires:
+                source = nodes.get(req.node)
+                if source is None:
+                    continue
+                for before in source.route_ids:
+                    for after in targets:
+                        if before != after:
+                            pairs.add((before, after))
+    return frozenset(pairs)
 
 
 def kb_ref_for_route(

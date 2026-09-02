@@ -5,8 +5,9 @@
 import { Text, View } from "react-native";
 
 import { Button } from "@/shared/components/Button";
-import { NoteBox, NoteLine } from "@/shared/components/NoteBox";
+import { NoteBox, type NoteTone, NoteLine } from "@/shared/components/NoteBox";
 import { COLORS } from "@/shared/theme/colors";
+import type { RouteNotice } from "@/shared/types/intake";
 import { joinKorean, josa } from "@/shared/utils/korean";
 
 import type { Task } from "../domain/task";
@@ -41,6 +42,17 @@ type Props = {
    * 부르면 열 몇 번의 요청이 동시에 나간다. 열린 카드 하나만 라우트가 채운다.
    */
   nearby?: React.ReactNode;
+};
+
+// 제약의 성격을 상자 색으로 옮긴다.
+//
+// NoteBox의 색이 곧 뜻이라 그 규칙을 그대로 따른다 — 법으로 막힌 것은 되돌릴 수
+// 없으니 alert, 걸릴 수 있는 것은 주의라 warn, 해당하지 않는다는 것은 확인된
+// 안내라 info다. **넷째 색을 만들지 않는다.**
+const NOTICE_TONES: Record<RouteNotice["tone"], NoteTone> = {
+  blocked: "alert",
+  caution: "warn",
+  clear: "info",
 };
 
 export function TaskCard({
@@ -87,6 +99,38 @@ export function TaskCard({
           </View>
         ))}
       </View>
+
+      {/* 수용 사유에 따라 달라지는 안내 (§9.4 · 2026-09-02 결정).
+
+          **창구 안내보다 위다.** 아래가 "○○에 가서 이렇게 말하면 돼요"인데, 그
+          말을 읽기 전에 무엇을 준비해야 하는지 알아야 창구에서 헛걸음하지 않는다.
+
+          문장을 화면이 조립하지 않는다 — 서버가 실어 온 검수된 문장을 받은 대로
+          낸다. 여기서 이어 붙이면 검수를 거치지 않은 법률 안내가 생긴다. */}
+      {task.notices.map((n) => (
+        <NoteBox key={n.headline} tone={NOTICE_TONES[n.tone]} title={n.headline} className="mb-4">
+          {/* NoteBox에 조각을 직접 넘기지 않는다 — 안드로이드가 터진다(아래 주석 참고) */}
+          <NoteLine tone={NOTICE_TONES[n.tone]}>{n.body}</NoteLine>
+          {n.myth ? (
+            <NoteLine tone={NOTICE_TONES[n.tone]} className="mt-2">
+              {n.myth}
+            </NoteLine>
+          ) : null}
+          {n.what_to_do ? (
+            <NoteLine tone={NOTICE_TONES[n.tone]} className="mt-2">
+              {n.what_to_do}
+            </NoteLine>
+          ) : null}
+          {n.sources.length > 0 ? (
+            <Text className="mt-2 text-caption text-ink-sub">
+              {n.sources.map((s) => s.label).join(" · ")}
+            </Text>
+          ) : null}
+          {n.verified_note ? (
+            <Text className="mt-1 text-caption text-ink-sub">{n.verified_note}</Text>
+          ) : null}
+        </NoteBox>
+      ))}
 
       {/* 갈 곳이 하나로 정해지는 항목은 전화번호보다 창구 안내가 먼저 온다 (§6.4). */}
       {task.desk ? (

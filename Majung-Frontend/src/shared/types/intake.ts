@@ -68,6 +68,32 @@ export interface IntakeCard {
   verified_note: string;
 }
 
+export interface NoticeSource {
+  /** 화면에 나갈 한 줄. 예: "경비업법 제10조제1항제3호" */
+  label: string;
+  url: string;
+}
+
+/**
+ * 수용 사유에 따라 달라지는 안내 (기획서 §9.4 · 2026-09-02 결정).
+ *
+ * **문장은 서버가 만든다.** 사람이 검수한 법령 근거를 그대로 실어 오므로 화면은
+ * 조립하지 않고 받은 대로 낸다. 화면이 문장을 이어 붙이면 검수를 거치지 않은
+ * 법률 안내가 생긴다.
+ */
+export interface RouteNotice {
+  /** "blocked" 법으로 막힘 · "caution" 제약이 걸릴 수 있음 · "clear" 해당하지 않음 */
+  tone: "blocked" | "caution" | "clear";
+  headline: string;
+  body: string;
+  /** 흔한 오해를 바로잡는 말. 없을 수 있다. */
+  myth: string;
+  what_to_do: string;
+  sources: NoticeSource[];
+  /** "이 안내는 마중365가 ○월 ○일에 확인했어요." 없으면 그 줄을 그리지 않는다. */
+  verified_note: string;
+}
+
 export interface IntakeTask {
   route_id: RouteId;
   route_label: string;
@@ -93,6 +119,14 @@ export interface IntakeTask {
    * 비면 안 된다.
    */
   starter_questions?: string[];
+  /**
+   * 수용 사유에 따라 달라지는 안내 (§9.4).
+   *
+   * **선택 필드이고 비어 오는 것이 정상이다.** 수용 사유를 밝히지 않았거나 그
+   * 항목에 걸리는 제약이 없는 경우가 대부분이며, 서버가 아직 안 보내는 배포본도
+   * 있다. 없으면 화면이 이 구역을 아예 그리지 않는다.
+   */
+  notices?: RouteNotice[];
 }
 
 export interface IntakeAnalyzeResponse {

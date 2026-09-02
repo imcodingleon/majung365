@@ -13,6 +13,10 @@ from dataclasses import dataclass
 from datetime import date, datetime
 from uuid import UUID
 
+from app.domains.shared.crime import CRIME_CATEGORIES
+
+__all__ = ["CRIME_CATEGORIES"]  # 재수출임을 밝힌다 — ruff가 미사용으로 지우지 않게
+
 
 @dataclass(frozen=True)
 class Place:
@@ -84,16 +88,9 @@ CONSENT_KINDS = frozenset({
     "share",               # 제3자 제공 (선택)
 })
 
-# 죄목 대분류. **"말하고 싶지 않아요"(undisclosed)는 여기 없다.**
-# 말하지 않겠다고 한 것을 "말하지 않음"이라는 값으로 저장하면 그것도 하나의
-# 기록이 된다(§9.1 데이터 최소화). 프론트는 그 경우 필드 자체를 빼고 보낸다.
-CRIME_CATEGORIES = frozenset({
-    "violent",   # 폭력·강력범죄
-    "sexual",    # 성범죄
-    "property",  # 재산·경제범죄
-    "drug",      # 마약·중독범죄
-    "other",     # 기타범죄
-})
+# 값 목록은 `shared/crime.py`가 정본이다 — `knowledge`가 안내를 고르는 데 같은
+# 값을 보는데, 여기 두면 그 도메인이 account를 import하게 된다.
+# 이 이름으로 import하던 곳(router·테스트)이 그대로 돌게 다시 내보낸다.
 
 
 @dataclass(frozen=True)

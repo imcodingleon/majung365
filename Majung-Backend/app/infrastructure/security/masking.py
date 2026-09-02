@@ -24,10 +24,14 @@
 """
 
 import re
-from dataclasses import dataclass
-from datetime import date
 
 from app.domains.shared.hotlines import PUBLIC_HOTLINE_NUMBERS
+from app.domains.shared.profile import (  # noqa: F401 — 재수출
+    MaskedProfile,
+    Profile,
+    age_band,
+    mask_profile,
+)
 
 # 공공 상담·안내 번호. 사용자가 "129에 전화했는데요"라고 쓸 수 있고, 그건 개인정보가
 # 아니라 맥락이다. 지우면 모델이 무슨 일이 있었는지 모른다.
@@ -149,52 +153,9 @@ class MaskingError(Exception):
     """마스킹이 제 역할을 못 했다. 이 예외가 나면 전송하지 않는다."""
 
 
-@dataclass(frozen=True)
-class Profile:
-    """사용자 신원 정보. **이 객체는 외부 API로 나가지 않는다.**
-
-    외부 호출에 넘길 때는 반드시 mask_profile()로 MaskedProfile을 만든다.
-    """
-
-    name: str | None = None
-    birth_date: date | None = None
-    release_date: date | None = None
-    # 죄목 대분류. 개인화의 핵심 입력이라 그대로 보낸다 — 다만 위 셋이 지워진다는 전제에서만.
-    crime_category: str | None = None
-
-
-@dataclass(frozen=True)
-class MaskedProfile:
-    """외부 API로 나가도 되는 형태. 원본 날짜와 이름은 들어 있지 않다."""
-
-    age_band: str | None = None  # "50대"
-    days_since_release: int | None = None
-    crime_category: str | None = None
-
-
-def age_band(birth: date, today: date) -> str:
-    """생일을 연령대로. 제도 판정에는 "50대"면 충분하고 생년월일은 식별정보다."""
-    years = today.year - birth.year - ((today.month, today.day) < (birth.month, birth.day))
-    if years < 20:
-        return "10대 이하"
-    if years >= 70:
-        return "70대 이상"
-    return f"{years // 10 * 10}대"
-
-
-def mask_profile(profile: Profile, today: date) -> MaskedProfile:
-    """신원 정보를 외부로 보낼 수 있는 형태로 바꾼다.
-
-    이름은 어떤 형태로도 담지 않는다 — 이니셜이나 성만 남겨도 다른 단서와 합치면
-    사람이 좁혀진다. 화면의 인사말은 클라이언트가 붙인다.
-    """
-    return MaskedProfile(
-        age_band=age_band(profile.birth_date, today) if profile.birth_date else None,
-        days_since_release=(
-            (today - profile.release_date).days if profile.release_date else None
-        ),
-        crime_category=profile.crime_category,
-    )
+# Profile·MaskedProfile은 `app/domains/shared/profile.py`가 정본이다.
+# Domain(knowledge·chat)이 이 타입을 쓰는데 여기 두면 안쪽이 바깥쪽을
+# import하게 된다. 이 이름으로 가져다 쓰던 곳이 그대로 돌게 다시 내보낸다.
 
 
 def _mask_numbers(text: str) -> str:
