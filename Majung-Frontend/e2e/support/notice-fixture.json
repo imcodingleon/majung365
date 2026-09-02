@@ -1,0 +1,1057 @@
+{
+  "property": {
+    "name": "홍길동",
+    "tasks": [
+      {
+        "route_id": "R6",
+        "route_label": "취업·허그일자리",
+        "tab_label": "일자리",
+        "section_id": "S4",
+        "section_label": "취업·직업",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "employment-koreha-job",
+          "name": "법무보호복지공단 취업 지원",
+          "summary_easy": "공단에서 직업훈련과 취업 알선을 지원해요. 상담부터 받아볼 수 있어요.",
+          "docs": [
+            "신분 확인 서류"
+          ],
+          "deadline": null,
+          "source_url": "https://www.koreha.or.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.koreha.or.kr/sub/02_01_4.do",
+            "https://www.koreha.or.kr/sub/02_01_3.do"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "법무보호복지공단 취업 지원",
+              "where": "한국법무보호복지공단 관할 지부",
+              "next_step": "공단 지부에 '취업 지원·직업훈련 상담'을 문의하세요.",
+              "docs": [
+                "신분 확인 서류"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "어떤 일을 소개해 주나요?",
+          "직업훈련도 받을 수 있어요?",
+          "수용 사유를 말해야 하나요?",
+          "상담부터 받을 수 있어요?"
+        ],
+        "notices": [
+          {
+            "tone": "caution",
+            "headline": "경비 일자리 제한",
+            "body": "금고 이상의 실형을 사시고 나온 경우, 형이 끝난 날부터 5년 동안은 경비원으로 일할 수 없습니다. 수용 사유와 관계없이 적용됩니다.",
+            "myth": "다른 일자리까지 막히는 것은 아니에요.",
+            "what_to_do": "5년이 지나지 않았다면 경비 외의 일자리를 먼저 알아봐 주세요. 공단 취업지원 담당자에게 형이 끝난 날짜를 말씀하시면 가능한 직종을 함께 찾아 줍니다.",
+            "sources": [
+              {
+                "label": "경비업법 제10조제1항제3호",
+                "url": "https://www.law.go.kr/법령/경비업법/제10조",
+                "quote": "금고 이상의 실형의 선고를 받고 그 집행이 종료되거나 집행이 면제된 날부터 5년이 지나지 아니한 자"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          },
+          {
+            "tone": "clear",
+            "headline": "취업제한 해당 여부",
+            "body": "법으로 정해진 취업제한은 성범죄와 아동학대 관련 범죄에 붙습니다. 그 밖의 수용 사유는 여기에 해당하지 않습니다.",
+            "myth": "전과가 있으면 어디에도 못 들어간다는 말은 사실이 아니에요.",
+            "what_to_do": "",
+            "sources": [
+              {
+                "label": "아동·청소년의 성보호에 관한 법률 제56조",
+                "url": "https://www.law.go.kr/법령/아동·청소년의성보호에관한법률/제56조",
+                "quote": "아동·청소년대상 성범죄 또는 성인대상 성범죄로 형 또는 치료감호를 선고받아 확정된 자"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          }
+        ]
+      },
+      {
+        "route_id": "R10",
+        "route_label": "통장",
+        "tab_label": "통장",
+        "section_id": "S3",
+        "section_label": "신분·행정",
+        "blocks_others": false,
+        "can_request_visit": false,
+        "card": {
+          "institution_id": "identity-bank-account",
+          "name": "은행 계좌 다시 만들기",
+          "summary_easy": "지원금을 받으려면 통장이 필요해요. 신분증을 준비해서 은행에서 계좌를 새로 만들면 돼요.",
+          "docs": [
+            "신분증(주민등록증 또는 임시 신분 확인 서류)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.gov.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/82205",
+            "https://www.shinhangroup.com/kr/archive/insight/extend/detail/32891",
+            "https://www.fsc.go.kr/no010101/71982?curPage=435"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "은행 계좌 다시 만들기",
+              "where": "가까운 은행 지점",
+              "next_step": "먼저 신분증을 준비하고, 은행 지점에 방문해 계좌 개설을 신청하세요.",
+              "docs": [
+                "신분증(주민등록증 또는 임시 신분 확인 서류)"
+              ],
+              "desk_place": "가까운 은행 창구",
+              "desk_say": "통장 만들러 왔어요",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            },
+            {
+              "org": "압류를 막아주는 통장(생계비계좌)",
+              "where": "가까운 은행·우체국·새마을금고 등 금융기관",
+              "next_step": "가까운 은행 창구에 가서 '생계비계좌 만들러 왔어요'라고 말하세요.",
+              "docs": [
+                "신분 확인 서류"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            },
+            {
+              "org": "기초생활수급자 압류방지 통장(행복지킴이)",
+              "where": "은행·우체국·신협·새마을금고 등 금융기관",
+              "next_step": "수급자 증명서를 받아서 가까운 금융기관 창구에 가서 '행복지킴이 통장 만들러 왔어요'라고 말하세요.",
+              "docs": [
+                "신분 확인 서류",
+                "수급자 증명서"
+              ],
+              "desk_place": "가까운 금융기관 창구",
+              "desk_say": "행복지킴이 통장 만들러 왔어요",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "어느 은행으로 가요?",
+          "은행에 무엇을 가져가요?",
+          "통장이 막혔는데 어떡해요?",
+          "압류가 걸려 있어도 되나요?"
+        ],
+        "notices": [
+          {
+            "tone": "caution",
+            "headline": "한도제한계좌 안내",
+            "body": "수용 사유가 재산·경제범죄인 경우, 새로 만드는 계좌가 한도제한계좌로 열릴 수 있습니다. 하루에 옮길 수 있는 금액이 제한되는 계좌입니다.",
+            "myth": "재산·경제범죄로 형을 사셨다는 것만으로 계좌 개설이 법으로 막히지는 않아요. 법이 정한 제한은 보이스피싱에 계좌나 카드를 빌려준 경우에 걸립니다.",
+            "what_to_do": "은행 창구에서 급여나 지원금을 받을 계좌라고 말씀해 주세요. 근로계약서나 지원 결정 통지서를 함께 내시면 한도가 풀립니다.",
+            "sources": [
+              {
+                "label": "전기통신금융사기 피해 방지 및 피해금 환급에 관한 특별법 제13조의2",
+                "url": "https://www.law.go.kr/법령/전기통신금융사기피해방지및피해금환급에관한특별법/제13조의2",
+                "quote": "접근매체를 양도·대여하거나 질권을 설정한 자로서 벌금형을 선고받은 날부터 3년이 경과하지 아니하거나 징역형을 선고받은 후 5년이 경과하지 아니한 사람"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          }
+        ]
+      },
+      {
+        "route_id": "R11",
+        "route_label": "주민등록 주소",
+        "tab_label": "주민등록",
+        "section_id": "S1",
+        "section_label": "주거",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "identity-address-registration",
+          "name": "전입신고(주소지 등록)",
+          "summary_easy": "지금 지내는 곳을 주소지로 등록하는 절차예요. 신분증 재발급이나 다른 지원 신청에도 필요해요.",
+          "docs": [
+            "수용증명서 또는 신분 확인 서류(있는 대로)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.gov.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016",
+            "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=666&ccfNo=4&cciNo=1&cnpClsNo=1"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "전입신고(주소지 등록)",
+              "where": "가까운 행정복지센터",
+              "next_step": "지내실 곳이 정해지면 행정복지센터에 가서 '전입신고 하러 왔다'고 말하세요.",
+              "docs": [
+                "수용증명서 또는 신분 확인 서류(있는 대로)"
+              ],
+              "desk_place": "가까운 행정복지센터",
+              "desk_say": "전입신고 하러 왔어요",
+              "contact_org": "정부민원안내콜센터",
+              "contact_phone": "국번없이 110",
+              "contact_hours": ""
+            },
+            {
+              "org": "주민등록 재등록",
+              "where": "가까운 행정복지센터",
+              "next_step": "내일 오전, 사는 곳 행정복지센터에 가서 '주민등록 재등록하러 왔다'고 말하세요.",
+              "docs": [
+                "본인 신분 확인 서류(있는 대로)",
+                "출소 사실을 확인할 수 있는 서류"
+              ],
+              "desk_place": "가까운 행정복지센터",
+              "desk_say": "주민등록 재등록하러 왔어요",
+              "contact_org": "정부민원안내콜센터",
+              "contact_phone": "국번없이 110",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "지낼 곳이 없어도 되나요?",
+          "무슨 서류가 필요해요?",
+          "전입신고는 어디서 해요?",
+          "얼마나 걸려요?"
+        ],
+        "notices": []
+      },
+      {
+        "route_id": "R14",
+        "route_label": "개인회생·파산",
+        "tab_label": "빚 문제",
+        "section_id": "S6",
+        "section_label": "기타·권리구제",
+        "blocks_others": false,
+        "can_request_visit": false,
+        "card": {
+          "institution_id": "debt-credit-recovery",
+          "name": "채무조정(신용회복위원회)",
+          "summary_easy": "빚이 감당이 안 되면 신용회복위원회에서 채무조정 상담을 받을 수 있어요.",
+          "docs": [
+            "신분 확인 서류",
+            "빚 내역을 알 수 있는 자료(있는 대로)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.ccrs.or.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "채무조정(신용회복위원회)",
+              "where": "신용회복위원회 (전화 1600-5500)",
+              "next_step": "1600-5500(신용회복위원회)에 전화해 '채무조정 상담'을 받아보세요.",
+              "docs": [
+                "신분 확인 서류",
+                "빚 내역을 알 수 있는 자료(있는 대로)"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "신용회복위원회",
+              "contact_phone": "1600-5500",
+              "contact_hours": ""
+            },
+            {
+              "org": "무료 법률 지원(법률구조공단)",
+              "where": "대한법률구조공단 (전화 132)",
+              "next_step": "132(법률구조공단)로 전화해 '무료 법률 상담'을 요청하세요.",
+              "docs": [
+                "관련 서류(있는 대로)"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "대한법률구조공단",
+              "contact_phone": "국번 없이 132",
+              "contact_hours": "평일 09:00~11:50, 13:00~17:50"
+            }
+          ]
+        },
+        "starter_questions": [
+          "빚 문제는 어디에 물어봐요?",
+          "돈이 드나요?",
+          "얼마나 걸려요?",
+          "신청이 안 됐는데 어떡해요?"
+        ],
+        "notices": [
+          {
+            "tone": "caution",
+            "headline": "파산해도 남는 빚",
+            "body": "일부러 저지른 잘못으로 남에게 입힌 손해를 갚아야 하는 빚은 파산 절차를 마쳐도 없어지지 않습니다. 피해자에게 갚아야 할 돈이 여기에 해당합니다.",
+            "myth": "다른 빚까지 그대로 남는 것은 아니에요. 카드값이나 대출금은 면책 대상입니다.",
+            "what_to_do": "신청하기 전에 대한법률구조공단(132)에 어느 빚이 면책되는지 먼저 물어봐 주세요.",
+            "sources": [
+              {
+                "label": "채무자 회생 및 파산에 관한 법률 제566조제3호",
+                "url": "https://www.law.go.kr/법령/채무자회생및파산에관한법률/제566조",
+                "quote": "채무자가 고의로 가한 불법행위로 인한 손해배상"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          }
+        ]
+      },
+      {
+        "route_id": "R8",
+        "route_label": "심리상담",
+        "tab_label": "마음상담",
+        "section_id": "S5",
+        "section_label": "건강·심리",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "health-mental-support",
+          "name": "마음 상담(정신건강복지센터)",
+          "summary_easy": "많이 힘들고 불안하면 혼자 견디지 않아도 돼요. 지역 정신건강복지센터에서 무료로 마음 상담을 받을 수 있어요.",
+          "docs": [],
+          "deadline": null,
+          "source_url": "https://www.mohw.go.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.mohw.go.kr/menu.es?mid=a10706040100",
+            "https://www.mohw.go.kr/menu.es?mid=a10706040300"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "마음 상담(정신건강복지센터)",
+              "where": "지역 정신건강복지센터 (전화 1577-0199)",
+              "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해 보세요.",
+              "docs": [],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "정신건강 위기상담전화",
+              "contact_phone": "1577-0199",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "돈이 드나요?",
+          "어디로 가면 돼요?",
+          "마음 상담은 어떻게 해요?",
+          "비밀이 지켜지나요?"
+        ],
+        "notices": []
+      }
+    ],
+    "completed": []
+  },
+  "sexual": {
+    "name": "홍길동",
+    "tasks": [
+      {
+        "route_id": "R6",
+        "route_label": "취업·허그일자리",
+        "tab_label": "일자리",
+        "section_id": "S4",
+        "section_label": "취업·직업",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "employment-koreha-job",
+          "name": "법무보호복지공단 취업 지원",
+          "summary_easy": "공단에서 직업훈련과 취업 알선을 지원해요. 상담부터 받아볼 수 있어요.",
+          "docs": [
+            "신분 확인 서류"
+          ],
+          "deadline": null,
+          "source_url": "https://www.koreha.or.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.koreha.or.kr/sub/02_01_4.do",
+            "https://www.koreha.or.kr/sub/02_01_3.do"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "법무보호복지공단 취업 지원",
+              "where": "한국법무보호복지공단 관할 지부",
+              "next_step": "공단 지부에 '취업 지원·직업훈련 상담'을 문의하세요.",
+              "docs": [
+                "신분 확인 서류"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "어떤 일을 소개해 주나요?",
+          "직업훈련도 받을 수 있어요?",
+          "수용 사유를 말해야 하나요?",
+          "상담부터 받을 수 있어요?"
+        ],
+        "notices": [
+          {
+            "tone": "blocked",
+            "headline": "아동·청소년 관련 기관 취업 제한",
+            "body": "수용 사유가 성범죄인 경우, 법원이 정한 기간 동안 아동·청소년 관련 기관에서 일하거나 그런 기관을 운영할 수 없습니다. 기간은 최대 10년이며 판결에서 정해집니다. 어린이집·학교·학원뿐 아니라 의료기관과 장애인복지시설도 포함될 수 있습니다.",
+            "myth": "모든 일자리가 막히는 것은 아니에요. 제한 대상은 법에 적힌 기관들입니다.",
+            "what_to_do": "판결문에 적힌 취업제한 기간을 확인해 주세요. 공단 취업지원 담당자에게 그 기간을 말씀하시면 제한에 걸리지 않는 일자리를 함께 찾아 줍니다.",
+            "sources": [
+              {
+                "label": "아동·청소년의 성보호에 관한 법률 제56조",
+                "url": "https://www.law.go.kr/법령/아동·청소년의성보호에관한법률/제56조",
+                "quote": "취업을 제한하는 기간은 10년을 초과하지 못한다"
+              },
+              {
+                "label": "아동복지법 제29조의3",
+                "url": "https://www.law.go.kr/법령/아동복지법/제29조의3",
+                "quote": "아동학대관련범죄로 형 또는 치료감호를 선고받은 경우 취업제한명령을 함께 선고하여야 하며, 그 기간은 10년을 초과하지 못한다"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          },
+          {
+            "tone": "caution",
+            "headline": "경비 일자리 제한",
+            "body": "금고 이상의 실형을 사시고 나온 경우, 형이 끝난 날부터 5년 동안은 경비원으로 일할 수 없습니다. 수용 사유와 관계없이 적용됩니다.",
+            "myth": "다른 일자리까지 막히는 것은 아니에요.",
+            "what_to_do": "5년이 지나지 않았다면 경비 외의 일자리를 먼저 알아봐 주세요. 공단 취업지원 담당자에게 형이 끝난 날짜를 말씀하시면 가능한 직종을 함께 찾아 줍니다.",
+            "sources": [
+              {
+                "label": "경비업법 제10조제1항제3호",
+                "url": "https://www.law.go.kr/법령/경비업법/제10조",
+                "quote": "금고 이상의 실형의 선고를 받고 그 집행이 종료되거나 집행이 면제된 날부터 5년이 지나지 아니한 자"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          }
+        ]
+      },
+      {
+        "route_id": "R10",
+        "route_label": "통장",
+        "tab_label": "통장",
+        "section_id": "S3",
+        "section_label": "신분·행정",
+        "blocks_others": false,
+        "can_request_visit": false,
+        "card": {
+          "institution_id": "identity-bank-account",
+          "name": "은행 계좌 다시 만들기",
+          "summary_easy": "지원금을 받으려면 통장이 필요해요. 신분증을 준비해서 은행에서 계좌를 새로 만들면 돼요.",
+          "docs": [
+            "신분증(주민등록증 또는 임시 신분 확인 서류)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.gov.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/82205",
+            "https://www.shinhangroup.com/kr/archive/insight/extend/detail/32891",
+            "https://www.fsc.go.kr/no010101/71982?curPage=435"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "은행 계좌 다시 만들기",
+              "where": "가까운 은행 지점",
+              "next_step": "먼저 신분증을 준비하고, 은행 지점에 방문해 계좌 개설을 신청하세요.",
+              "docs": [
+                "신분증(주민등록증 또는 임시 신분 확인 서류)"
+              ],
+              "desk_place": "가까운 은행 창구",
+              "desk_say": "통장 만들러 왔어요",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            },
+            {
+              "org": "압류를 막아주는 통장(생계비계좌)",
+              "where": "가까운 은행·우체국·새마을금고 등 금융기관",
+              "next_step": "가까운 은행 창구에 가서 '생계비계좌 만들러 왔어요'라고 말하세요.",
+              "docs": [
+                "신분 확인 서류"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            },
+            {
+              "org": "기초생활수급자 압류방지 통장(행복지킴이)",
+              "where": "은행·우체국·신협·새마을금고 등 금융기관",
+              "next_step": "수급자 증명서를 받아서 가까운 금융기관 창구에 가서 '행복지킴이 통장 만들러 왔어요'라고 말하세요.",
+              "docs": [
+                "신분 확인 서류",
+                "수급자 증명서"
+              ],
+              "desk_place": "가까운 금융기관 창구",
+              "desk_say": "행복지킴이 통장 만들러 왔어요",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "어느 은행으로 가요?",
+          "은행에 무엇을 가져가요?",
+          "통장이 막혔는데 어떡해요?",
+          "압류가 걸려 있어도 되나요?"
+        ],
+        "notices": []
+      },
+      {
+        "route_id": "R11",
+        "route_label": "주민등록 주소",
+        "tab_label": "주민등록",
+        "section_id": "S1",
+        "section_label": "주거",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "identity-address-registration",
+          "name": "전입신고(주소지 등록)",
+          "summary_easy": "지금 지내는 곳을 주소지로 등록하는 절차예요. 신분증 재발급이나 다른 지원 신청에도 필요해요.",
+          "docs": [
+            "수용증명서 또는 신분 확인 서류(있는 대로)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.gov.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016",
+            "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=666&ccfNo=4&cciNo=1&cnpClsNo=1"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "전입신고(주소지 등록)",
+              "where": "가까운 행정복지센터",
+              "next_step": "지내실 곳이 정해지면 행정복지센터에 가서 '전입신고 하러 왔다'고 말하세요.",
+              "docs": [
+                "수용증명서 또는 신분 확인 서류(있는 대로)"
+              ],
+              "desk_place": "가까운 행정복지센터",
+              "desk_say": "전입신고 하러 왔어요",
+              "contact_org": "정부민원안내콜센터",
+              "contact_phone": "국번없이 110",
+              "contact_hours": ""
+            },
+            {
+              "org": "주민등록 재등록",
+              "where": "가까운 행정복지센터",
+              "next_step": "내일 오전, 사는 곳 행정복지센터에 가서 '주민등록 재등록하러 왔다'고 말하세요.",
+              "docs": [
+                "본인 신분 확인 서류(있는 대로)",
+                "출소 사실을 확인할 수 있는 서류"
+              ],
+              "desk_place": "가까운 행정복지센터",
+              "desk_say": "주민등록 재등록하러 왔어요",
+              "contact_org": "정부민원안내콜센터",
+              "contact_phone": "국번없이 110",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "지낼 곳이 없어도 되나요?",
+          "무슨 서류가 필요해요?",
+          "전입신고는 어디서 해요?",
+          "얼마나 걸려요?"
+        ],
+        "notices": [
+          {
+            "tone": "caution",
+            "headline": "경찰서 신고 의무",
+            "body": "신상정보 등록대상자는 주소나 실제 사는 곳이 바뀌면 20일 안에 관할 경찰서에 따로 알려야 합니다. 주민센터에 낸 전입신고와는 별개의 절차이며, 전입신고만 하면 알린 것이 되지 않습니다.",
+            "myth": "",
+            "what_to_do": "이사를 마치신 날부터 20일 안에 관할 경찰서에 들러 바뀐 주소를 알려 주세요.",
+            "sources": [
+              {
+                "label": "성폭력범죄의 처벌 등에 관한 특례법 제43조제3항",
+                "url": "https://www.law.go.kr/법령/성폭력범죄의처벌등에관한특례법/제43조",
+                "quote": "제출한 기본신상정보가 변경된 경우에는 그 사유와 변경내용을 20일 이내에 관할경찰관서의 장에게 제출하여야 한다"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          }
+        ]
+      },
+      {
+        "route_id": "R14",
+        "route_label": "개인회생·파산",
+        "tab_label": "빚 문제",
+        "section_id": "S6",
+        "section_label": "기타·권리구제",
+        "blocks_others": false,
+        "can_request_visit": false,
+        "card": {
+          "institution_id": "debt-credit-recovery",
+          "name": "채무조정(신용회복위원회)",
+          "summary_easy": "빚이 감당이 안 되면 신용회복위원회에서 채무조정 상담을 받을 수 있어요.",
+          "docs": [
+            "신분 확인 서류",
+            "빚 내역을 알 수 있는 자료(있는 대로)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.ccrs.or.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "채무조정(신용회복위원회)",
+              "where": "신용회복위원회 (전화 1600-5500)",
+              "next_step": "1600-5500(신용회복위원회)에 전화해 '채무조정 상담'을 받아보세요.",
+              "docs": [
+                "신분 확인 서류",
+                "빚 내역을 알 수 있는 자료(있는 대로)"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "신용회복위원회",
+              "contact_phone": "1600-5500",
+              "contact_hours": ""
+            },
+            {
+              "org": "무료 법률 지원(법률구조공단)",
+              "where": "대한법률구조공단 (전화 132)",
+              "next_step": "132(법률구조공단)로 전화해 '무료 법률 상담'을 요청하세요.",
+              "docs": [
+                "관련 서류(있는 대로)"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "대한법률구조공단",
+              "contact_phone": "국번 없이 132",
+              "contact_hours": "평일 09:00~11:50, 13:00~17:50"
+            }
+          ]
+        },
+        "starter_questions": [
+          "빚 문제는 어디에 물어봐요?",
+          "돈이 드나요?",
+          "얼마나 걸려요?",
+          "신청이 안 됐는데 어떡해요?"
+        ],
+        "notices": []
+      },
+      {
+        "route_id": "R8",
+        "route_label": "심리상담",
+        "tab_label": "마음상담",
+        "section_id": "S5",
+        "section_label": "건강·심리",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "health-mental-support",
+          "name": "마음 상담(정신건강복지센터)",
+          "summary_easy": "많이 힘들고 불안하면 혼자 견디지 않아도 돼요. 지역 정신건강복지센터에서 무료로 마음 상담을 받을 수 있어요.",
+          "docs": [],
+          "deadline": null,
+          "source_url": "https://www.mohw.go.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.mohw.go.kr/menu.es?mid=a10706040100",
+            "https://www.mohw.go.kr/menu.es?mid=a10706040300"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "마음 상담(정신건강복지센터)",
+              "where": "지역 정신건강복지센터 (전화 1577-0199)",
+              "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해 보세요.",
+              "docs": [],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "정신건강 위기상담전화",
+              "contact_phone": "1577-0199",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "돈이 드나요?",
+          "어디로 가면 돼요?",
+          "마음 상담은 어떻게 해요?",
+          "비밀이 지켜지나요?"
+        ],
+        "notices": []
+      }
+    ],
+    "completed": []
+  },
+  "undisclosed": {
+    "name": "홍길동",
+    "tasks": [
+      {
+        "route_id": "R6",
+        "route_label": "취업·허그일자리",
+        "tab_label": "일자리",
+        "section_id": "S4",
+        "section_label": "취업·직업",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "employment-koreha-job",
+          "name": "법무보호복지공단 취업 지원",
+          "summary_easy": "공단에서 직업훈련과 취업 알선을 지원해요. 상담부터 받아볼 수 있어요.",
+          "docs": [
+            "신분 확인 서류"
+          ],
+          "deadline": null,
+          "source_url": "https://www.koreha.or.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.koreha.or.kr/sub/02_01_4.do",
+            "https://www.koreha.or.kr/sub/02_01_3.do"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "법무보호복지공단 취업 지원",
+              "where": "한국법무보호복지공단 관할 지부",
+              "next_step": "공단 지부에 '취업 지원·직업훈련 상담'을 문의하세요.",
+              "docs": [
+                "신분 확인 서류"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "어떤 일을 소개해 주나요?",
+          "직업훈련도 받을 수 있어요?",
+          "수용 사유를 말해야 하나요?",
+          "상담부터 받을 수 있어요?"
+        ],
+        "notices": [
+          {
+            "tone": "caution",
+            "headline": "경비 일자리 제한",
+            "body": "금고 이상의 실형을 사시고 나온 경우, 형이 끝난 날부터 5년 동안은 경비원으로 일할 수 없습니다. 수용 사유와 관계없이 적용됩니다.",
+            "myth": "다른 일자리까지 막히는 것은 아니에요.",
+            "what_to_do": "5년이 지나지 않았다면 경비 외의 일자리를 먼저 알아봐 주세요. 공단 취업지원 담당자에게 형이 끝난 날짜를 말씀하시면 가능한 직종을 함께 찾아 줍니다.",
+            "sources": [
+              {
+                "label": "경비업법 제10조제1항제3호",
+                "url": "https://www.law.go.kr/법령/경비업법/제10조",
+                "quote": "금고 이상의 실형의 선고를 받고 그 집행이 종료되거나 집행이 면제된 날부터 5년이 지나지 아니한 자"
+              }
+            ],
+            "verified_note": "이 안내는 마중365가 2026년 9월 2일에 확인했어요."
+          }
+        ]
+      },
+      {
+        "route_id": "R10",
+        "route_label": "통장",
+        "tab_label": "통장",
+        "section_id": "S3",
+        "section_label": "신분·행정",
+        "blocks_others": false,
+        "can_request_visit": false,
+        "card": {
+          "institution_id": "identity-bank-account",
+          "name": "은행 계좌 다시 만들기",
+          "summary_easy": "지원금을 받으려면 통장이 필요해요. 신분증을 준비해서 은행에서 계좌를 새로 만들면 돼요.",
+          "docs": [
+            "신분증(주민등록증 또는 임시 신분 확인 서류)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.gov.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.fsc.go.kr/no010101/82205",
+            "https://www.shinhangroup.com/kr/archive/insight/extend/detail/32891",
+            "https://www.fsc.go.kr/no010101/71982?curPage=435"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "은행 계좌 다시 만들기",
+              "where": "가까운 은행 지점",
+              "next_step": "먼저 신분증을 준비하고, 은행 지점에 방문해 계좌 개설을 신청하세요.",
+              "docs": [
+                "신분증(주민등록증 또는 임시 신분 확인 서류)"
+              ],
+              "desk_place": "가까운 은행 창구",
+              "desk_say": "통장 만들러 왔어요",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            },
+            {
+              "org": "압류를 막아주는 통장(생계비계좌)",
+              "where": "가까운 은행·우체국·새마을금고 등 금융기관",
+              "next_step": "가까운 은행 창구에 가서 '생계비계좌 만들러 왔어요'라고 말하세요.",
+              "docs": [
+                "신분 확인 서류"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            },
+            {
+              "org": "기초생활수급자 압류방지 통장(행복지킴이)",
+              "where": "은행·우체국·신협·새마을금고 등 금융기관",
+              "next_step": "수급자 증명서를 받아서 가까운 금융기관 창구에 가서 '행복지킴이 통장 만들러 왔어요'라고 말하세요.",
+              "docs": [
+                "신분 확인 서류",
+                "수급자 증명서"
+              ],
+              "desk_place": "가까운 금융기관 창구",
+              "desk_say": "행복지킴이 통장 만들러 왔어요",
+              "contact_org": "한국법무보호복지공단",
+              "contact_phone": "1670-7004",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "어느 은행으로 가요?",
+          "은행에 무엇을 가져가요?",
+          "통장이 막혔는데 어떡해요?",
+          "압류가 걸려 있어도 되나요?"
+        ],
+        "notices": []
+      },
+      {
+        "route_id": "R11",
+        "route_label": "주민등록 주소",
+        "tab_label": "주민등록",
+        "section_id": "S1",
+        "section_label": "주거",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "identity-address-registration",
+          "name": "전입신고(주소지 등록)",
+          "summary_easy": "지금 지내는 곳을 주소지로 등록하는 절차예요. 신분증 재발급이나 다른 지원 신청에도 필요해요.",
+          "docs": [
+            "수용증명서 또는 신분 확인 서류(있는 대로)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.gov.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.gov.kr/mw/AA020InfoCappView.do?CappBizCD=13100000016",
+            "https://www.easylaw.go.kr/CSP/CnpClsMain.laf?csmSeq=666&ccfNo=4&cciNo=1&cnpClsNo=1"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "전입신고(주소지 등록)",
+              "where": "가까운 행정복지센터",
+              "next_step": "지내실 곳이 정해지면 행정복지센터에 가서 '전입신고 하러 왔다'고 말하세요.",
+              "docs": [
+                "수용증명서 또는 신분 확인 서류(있는 대로)"
+              ],
+              "desk_place": "가까운 행정복지센터",
+              "desk_say": "전입신고 하러 왔어요",
+              "contact_org": "정부민원안내콜센터",
+              "contact_phone": "국번없이 110",
+              "contact_hours": ""
+            },
+            {
+              "org": "주민등록 재등록",
+              "where": "가까운 행정복지센터",
+              "next_step": "내일 오전, 사는 곳 행정복지센터에 가서 '주민등록 재등록하러 왔다'고 말하세요.",
+              "docs": [
+                "본인 신분 확인 서류(있는 대로)",
+                "출소 사실을 확인할 수 있는 서류"
+              ],
+              "desk_place": "가까운 행정복지센터",
+              "desk_say": "주민등록 재등록하러 왔어요",
+              "contact_org": "정부민원안내콜센터",
+              "contact_phone": "국번없이 110",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "지낼 곳이 없어도 되나요?",
+          "무슨 서류가 필요해요?",
+          "전입신고는 어디서 해요?",
+          "얼마나 걸려요?"
+        ],
+        "notices": []
+      },
+      {
+        "route_id": "R14",
+        "route_label": "개인회생·파산",
+        "tab_label": "빚 문제",
+        "section_id": "S6",
+        "section_label": "기타·권리구제",
+        "blocks_others": false,
+        "can_request_visit": false,
+        "card": {
+          "institution_id": "debt-credit-recovery",
+          "name": "채무조정(신용회복위원회)",
+          "summary_easy": "빚이 감당이 안 되면 신용회복위원회에서 채무조정 상담을 받을 수 있어요.",
+          "docs": [
+            "신분 확인 서류",
+            "빚 내역을 알 수 있는 자료(있는 대로)"
+          ],
+          "deadline": null,
+          "source_url": "https://www.ccrs.or.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.ccrs.or.kr/cms/com/index.do?MENU_ID=490"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "채무조정(신용회복위원회)",
+              "where": "신용회복위원회 (전화 1600-5500)",
+              "next_step": "1600-5500(신용회복위원회)에 전화해 '채무조정 상담'을 받아보세요.",
+              "docs": [
+                "신분 확인 서류",
+                "빚 내역을 알 수 있는 자료(있는 대로)"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "신용회복위원회",
+              "contact_phone": "1600-5500",
+              "contact_hours": ""
+            },
+            {
+              "org": "무료 법률 지원(법률구조공단)",
+              "where": "대한법률구조공단 (전화 132)",
+              "next_step": "132(법률구조공단)로 전화해 '무료 법률 상담'을 요청하세요.",
+              "docs": [
+                "관련 서류(있는 대로)"
+              ],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "대한법률구조공단",
+              "contact_phone": "국번 없이 132",
+              "contact_hours": "평일 09:00~11:50, 13:00~17:50"
+            }
+          ]
+        },
+        "starter_questions": [
+          "빚 문제는 어디에 물어봐요?",
+          "돈이 드나요?",
+          "얼마나 걸려요?",
+          "신청이 안 됐는데 어떡해요?"
+        ],
+        "notices": []
+      },
+      {
+        "route_id": "R8",
+        "route_label": "심리상담",
+        "tab_label": "마음상담",
+        "section_id": "S5",
+        "section_label": "건강·심리",
+        "blocks_others": false,
+        "can_request_visit": true,
+        "card": {
+          "institution_id": "health-mental-support",
+          "name": "마음 상담(정신건강복지센터)",
+          "summary_easy": "많이 힘들고 불안하면 혼자 견디지 않아도 돼요. 지역 정신건강복지센터에서 무료로 마음 상담을 받을 수 있어요.",
+          "docs": [],
+          "deadline": null,
+          "source_url": "https://www.mohw.go.kr",
+          "benefit_summary": "",
+          "eligibility": [],
+          "steps": [],
+          "cautions": [],
+          "source_urls": [
+            "https://www.mohw.go.kr/menu.es?mid=a10706040100",
+            "https://www.mohw.go.kr/menu.es?mid=a10706040300"
+          ],
+          "verified_note": "이 안내는 마중365가 2026년 8월 22일에 확인했어요.",
+          "options": [
+            {
+              "org": "마음 상담(정신건강복지센터)",
+              "where": "지역 정신건강복지센터 (전화 1577-0199)",
+              "next_step": "지금 많이 힘들면 1577-0199(정신건강상담)로 전화해 보세요.",
+              "docs": [],
+              "desk_place": "",
+              "desk_say": "",
+              "contact_org": "정신건강 위기상담전화",
+              "contact_phone": "1577-0199",
+              "contact_hours": ""
+            }
+          ]
+        },
+        "starter_questions": [
+          "돈이 드나요?",
+          "어디로 가면 돼요?",
+          "마음 상담은 어떻게 해요?",
+          "비밀이 지켜지나요?"
+        ],
+        "notices": []
+      }
+    ],
+    "completed": []
+  }
+}
