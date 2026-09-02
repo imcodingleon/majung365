@@ -11,7 +11,13 @@
     {
       "id": "all-R6-security-guard",
       "route_id": "R6",
-      "categories": ["violent", "sexual", "property", "drug", "other"],
+      "categories": [
+        "violent",
+        "sexual",
+        "property",
+        "drug",
+        "other"
+      ],
       "applies_without_category": true,
       "effect": "caution",
       "severity": "high",
@@ -30,14 +36,16 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "죄목을 가리지 않는다. 경비는 출소자가 가장 많이 찾는 직종이라 수용 사유를 밝히지 않은 사용자에게도 나가야 해서 applies_without_category를 켰다. 그래서 문구가 수용 사유를 언급하지 않는다.",
       "expires_on": "2027-03-02"
     },
     {
       "id": "property-R10-limited-account",
       "route_id": "R10",
-      "categories": ["property"],
+      "categories": [
+        "property"
+      ],
       "effect": "caution",
       "severity": "high",
       "headline": "한도제한계좌 안내",
@@ -55,14 +63,16 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "법이 정한 제한대상자는 접근매체 양도·대여자와 보이스피싱 목적 범죄자이며 재산·경제범죄 전체가 아니다. 그래서 relevance가 applies_to_subset이고 body에 '법으로 금지'라고 쓰지 않았다. 실무의 어려움은 금융회사의 금융거래목적 확인과 한도제한계좌 운영에서 온다.",
       "expires_on": "2027-03-02"
     },
     {
       "id": "property-R14-nondischargeable",
       "route_id": "R14",
-      "categories": ["property"],
+      "categories": [
+        "property"
+      ],
       "effect": "caution",
       "severity": "high",
       "headline": "파산해도 남는 빚",
@@ -80,14 +90,16 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "제566조 각 호 중 제3호가 이 경우다. 조세·벌금·양육비도 비면책이지만 수용 사유와 무관해 여기 적지 않는다. 화면에 '사기'라는 말을 쓰지 않고 '일부러 저지른 잘못'으로 풀었다.",
       "expires_on": "2027-03-02"
     },
     {
       "id": "sexual-R6-child-institutions",
       "route_id": "R6",
-      "categories": ["sexual"],
+      "categories": [
+        "sexual"
+      ],
       "effect": "blocked",
       "severity": "high",
       "headline": "아동·청소년 관련 기관 취업 제한",
@@ -113,14 +125,16 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "제한 기간은 판결이 정하므로 서버가 알 수 없다. 그래서 값을 모델링하지 않고 what_to_do에서 판결문을 확인하도록 안내한다. 아동복지법은 아동학대관련범죄일 때만이라 relevance가 subset이다.",
       "expires_on": "2027-03-02"
     },
     {
       "id": "sexual-R11-address-report",
       "route_id": "R11",
-      "categories": ["sexual"],
+      "categories": [
+        "sexual"
+      ],
       "effect": "caution",
       "severity": "high",
       "headline": "경찰서 신고 의무",
@@ -138,14 +152,16 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "신상정보 등록대상자에게만 해당하며 성범죄 전체가 아니다. 다만 놓치면 법 위반이 되므로 해당 여부를 스스로 확인하도록 문구를 강하게 잡았다. myth는 비웠다 — 여기서 완화할 말이 없다.",
       "expires_on": "2027-03-02"
     },
     {
       "id": "drug-R8-treatment-support",
       "route_id": "R8",
-      "categories": ["drug"],
+      "categories": [
+        "drug"
+      ],
       "effect": "clear",
       "severity": "normal",
       "headline": "치료보호 제도",
@@ -163,14 +179,19 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "제약이 아니라 혜택이라 effect가 clear다. 판별검사는 1개월, 치료보호는 12개월 이내다.",
       "expires_on": "2027-03-02"
     },
     {
       "id": "nonsexual-R6-not-restricted",
       "route_id": "R6",
-      "categories": ["violent", "property", "drug", "other"],
+      "categories": [
+        "violent",
+        "property",
+        "drug",
+        "other"
+      ],
       "effect": "clear",
       "severity": "info",
       "headline": "취업제한 해당 여부",
@@ -188,7 +209,7 @@
         }
       ],
       "verified_at": "2026-09-02",
-      "reviewed_by": "",
+      "reviewed_by": "imcodingleon",
       "review_note": "제약만 담으면 앱이 낙인을 옮긴다. 이 항목이 '해당하지 않는다'를 말하는 자리다. 다만 경비업법 제한은 별도로 걸리므로 all-R6-security-guard가 함께 나간다.",
       "expires_on": "2027-03-02"
     }

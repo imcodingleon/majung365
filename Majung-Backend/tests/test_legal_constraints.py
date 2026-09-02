@@ -63,6 +63,33 @@ def test_every_entry_has_a_legal_basis() -> None:
         assert row["legal_basis"], row["id"]
 
 
+def test_every_entry_is_reviewed() -> None:
+    """**검수를 마친 것만 레포에 남는다** (2026-09-02 검수 완료).
+
+    로더가 미검수 항목을 버리므로 빠뜨려도 화면에는 안 나가지만, 그 상태로 커밋되면
+    아무도 모르는 채 그 항목이 영영 죽어 있다. 여기서 커밋 전에 알린다.
+    """
+    unreviewed = [c["id"] for c in _RAW if not str(c.get("reviewed_by", "")).strip()]
+
+    assert unreviewed == [], f"검수자가 비었다: {unreviewed}"
+
+
+def test_every_source_carries_a_quote() -> None:
+    """**조문 원문이 화면에 함께 나간다.**
+
+    쉬운 말로 푼 문장만 있으면 사용자가 우리 해석을 그대로 믿어야 한다. 원문이
+    함께 있으면 창구에서 그 문장을 짚어 보일 수도 있다.
+    """
+    empty = [
+        f"{c['id']} / {s['article']}"
+        for c in _RAW
+        for s in c["legal_basis"]
+        if not str(s.get("quote", "")).strip()
+    ]
+
+    assert empty == [], f"인용문이 비었다: {empty}"
+
+
 def test_sources_point_at_public_law_sites() -> None:
     """근거 링크는 공공 도메인이어야 한다. 블로그나 로펌 글로 링크하지 않는다."""
     for row in _RAW:

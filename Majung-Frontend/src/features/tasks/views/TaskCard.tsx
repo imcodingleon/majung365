@@ -55,6 +55,13 @@ const NOTICE_TONES: Record<RouteNotice["tone"], NoteTone> = {
   clear: "info",
 };
 
+// 조문 인용 앞에 세우는 선. 상자 색과 같은 계열이라 인용이 상자에서 떠 보이지 않는다.
+const QUOTE_LINES: Record<RouteNotice["tone"], string> = {
+  blocked: COLORS.alertLine,
+  caution: COLORS.noteWarnLine,
+  clear: COLORS.noteInfoLine,
+};
+
 export function TaskCard({
   task,
   pendingMust,
@@ -121,11 +128,22 @@ export function TaskCard({
               {n.what_to_do}
             </NoteLine>
           ) : null}
-          {n.sources.length > 0 ? (
-            <Text className="mt-2 text-caption text-ink-sub">
-              {n.sources.map((s) => s.label).join(" · ")}
-            </Text>
-          ) : null}
+          {n.sources.map((s) => (
+            <View key={s.label} className="mt-3">
+              {/* **쉬운 말 다음에 조문 원문이 온다.** 풀어 쓴 문장만 있으면 우리 해석을
+                  그대로 믿어야 하는데, 원문이 함께 있으면 창구에서 짚어 보일 수도 있다.
+                  글자색은 같고 세로선으로만 인용임을 알린다 — 한글은 기울임이 어색하다 */}
+              {s.quote ? (
+                <View
+                  className="mb-1 pl-3"
+                  style={{ borderLeftWidth: 2, borderLeftColor: QUOTE_LINES[n.tone] }}
+                >
+                  <Text className="text-caption text-ink-sub">{s.quote}</Text>
+                </View>
+              ) : null}
+              <Text className="text-caption text-ink-sub">{s.label}</Text>
+            </View>
+          ))}
           {n.verified_note ? (
             <Text className="mt-1 text-caption text-ink-sub">{n.verified_note}</Text>
           ) : null}

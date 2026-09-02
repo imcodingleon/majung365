@@ -168,6 +168,8 @@ class IntakeCardOut(BaseModel):
 class NoticeSourceOut(BaseModel):
     label: str
     url: str
+    # 조문 원문 한 구절. 비어 올 수 있고 그때는 화면이 그 줄을 그리지 않는다.
+    quote: str = ""
 
 
 class RouteNoticeOut(BaseModel):
@@ -223,7 +225,10 @@ def to_task_out(t: IntakeTask) -> IntakeTaskOut:
                 body=n.body,
                 myth=n.myth,
                 what_to_do=n.what_to_do,
-                sources=[NoticeSourceOut(label=s.label, url=s.url) for s in n.sources],
+                sources=[
+                    NoticeSourceOut(label=s.label, url=s.url, quote=s.quote)
+                    for s in n.sources
+                ],
                 verified_note=n.verified_note,
             )
             for n in t.notices

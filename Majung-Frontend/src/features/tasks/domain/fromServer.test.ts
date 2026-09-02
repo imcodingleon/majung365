@@ -41,7 +41,13 @@ function notice(over: Partial<RouteNotice> = {}): RouteNotice {
     body: "새 계좌가 한도제한계좌로 열릴 수 있습니다.",
     myth: "법으로 막히지는 않아요.",
     what_to_do: "급여 계좌라고 말씀해 주세요.",
-    sources: [{ label: "전기통신금융사기법 제13조의2", url: "https://www.law.go.kr/x" }],
+    sources: [
+      {
+        label: "전기통신금융사기법 제13조의2",
+        url: "https://www.law.go.kr/x",
+        quote: "접근매체를 양도·대여하거나 질권을 설정한 자로서",
+      },
+    ],
     verified_note: "이 안내는 마중365가 9월 2일에 확인했어요.",
     ...over,
   };
@@ -69,6 +75,14 @@ describe("toTask — 수용 사유 안내 (§9.4)", () => {
     const given = notice({ tone: "blocked", myth: "" });
 
     expect(toTask(task({ notices: [given] })).notices[0]).toEqual(given);
+  });
+
+  it("조문 원문을 함께 나른다", () => {
+    // **쉬운 말 다음에 원문이 온다.** 풀어 쓴 문장만 있으면 사용자가 우리 해석을
+    // 그대로 믿어야 하는데, 원문이 있으면 창구에서 그 문장을 짚어 보일 수도 있다.
+    const result = toTask(task({ notices: [notice()] }));
+
+    expect(result.notices[0].sources[0].quote).toContain("접근매체");
   });
 
   it("여러 건이 와도 순서를 지킨다", () => {

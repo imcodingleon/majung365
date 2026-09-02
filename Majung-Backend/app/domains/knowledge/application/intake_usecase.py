@@ -285,7 +285,9 @@ class IntakeUseCase:
                 myth=c.myth,
                 what_to_do=c.what_to_do,
                 sources=tuple(
-                    NoticeSource(label=s.label, url=s.url) for s in c.sources if s.url
+                    NoticeSource(label=s.label, url=s.url, quote=s.quote)
+                    for s in c.sources
+                    if s.url
                 ),
                 verified_note=verified_note(c.verified_at.isoformat()),
             )
