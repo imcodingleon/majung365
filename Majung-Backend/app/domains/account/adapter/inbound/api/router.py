@@ -97,7 +97,7 @@ class SignupOut(BaseModel):
 
 def _to_command(body: SignupIn, today: date) -> SignupCommand:
     if body.birth_date >= today:
-        raise HTTPException(status_code=400, detail="생일을 다시 확인해 주세요.")
+        raise HTTPException(status_code=400, detail="생년월일을 다시 확인해 주세요.")
     if body.release_date > today:
         raise HTTPException(status_code=400, detail="출소날짜를 다시 확인해 주세요.")
     if (today - body.release_date).days > _MAX_RELEASE_AGO_DAYS:

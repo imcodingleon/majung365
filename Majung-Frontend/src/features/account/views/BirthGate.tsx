@@ -107,7 +107,7 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
             keyboardType="number-pad"
             placeholder="1980"
             placeholderTextColor={COLORS.inkMuted}
-            accessibilityLabel="생일 년"
+            accessibilityLabel="생년월일 년"
           />
           <Text className="text-body-lg text-ink-sub">년</Text>
           <TextInput
@@ -120,7 +120,7 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
             keyboardType="number-pad"
             placeholder="3"
             placeholderTextColor={COLORS.inkMuted}
-            accessibilityLabel="생일 월"
+            accessibilityLabel="생년월일 월"
           />
           <Text className="text-body-lg text-ink-sub">월</Text>
           <TextInput
@@ -133,7 +133,7 @@ export function BirthGate({ storedBirth, onPass, onClose, onEraseAll, error }: P
             keyboardType="number-pad"
             placeholder="15"
             placeholderTextColor={COLORS.inkMuted}
-            accessibilityLabel="생일 일"
+            accessibilityLabel="생년월일 일"
           />
           <Text className="text-body-lg text-ink-sub">일</Text>
         </View>

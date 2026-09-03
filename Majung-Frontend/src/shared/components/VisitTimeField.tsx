@@ -21,13 +21,6 @@ export type Unit = "month" | "day" | "hour";
 
 const UNIT_LABEL: Record<Unit, string> = { month: "월", day: "일", hour: "시" };
 
-/** 출소자가 갈 때를 고를 때. 담당자 화면은 만나는 쪽이라 말이 다르다. */
-const GOING_TITLE: Record<Unit, string> = {
-  month: "몇 월에 가시나요",
-  day: "며칠에 가시나요",
-  hour: "몇 시에 가시나요",
-};
-
 type Props = {
   value: VisitTime;
   onChange: (next: VisitTime) => void;
@@ -35,14 +28,13 @@ type Props = {
   label: string;
   /** 오늘. 지난 날짜를 고르지 못하게 하는 기준이다. */
   today: Date;
-  /**
-   * 고르는 팝업의 제목. **누가 고르느냐에 따라 말이 다르다** — 출소자는 가는 쪽이고
-   * 담당자는 만나는 쪽이다. 안 주면 출소자 쪽 말을 쓴다.
-   */
-  titles?: Record<Unit, string>;
 };
 
-export function VisitTimeField({ value, onChange, label, today, titles = GOING_TITLE }: Props) {
+// **고르는 팝업의 제목을 없앴다** (2026-09-03). 출소자에게는 "몇 월에 가시나요",
+// 담당자에게는 "몇 월에 만나시나요"를 띄우느라 `titles`를 받아 왔는데, 그 한 줄이
+// 목록 위에서 자리만 차지하고 골라야 할 숫자를 아래로 밀었다. 어느 쪽이 고르든
+// 목록에 "9월"·"10월"이 서 있으니 무엇을 고르는 자리인지는 그것으로 읽힌다.
+export function VisitTimeField({ value, onChange, label, today }: Props) {
   const [open, setOpen] = useState<Unit | null>(null);
 
   const months = useMemo(() => monthsFrom(today), [today]);
@@ -94,6 +86,9 @@ export function VisitTimeField({ value, onChange, label, today, titles = GOING_T
           text={value.day ? String(value.day) : "--"}
           filled={Boolean(value.day)}
           unit="일"
+          // `disabled`와 손 가드를 함께 둔다. 웹에서는 `disabled`가 눌림을 못 막는
+          // 경우가 있어, 시트가 열리는 길을 두 겹으로 잠근다.
+          disabled={!dayReady}
           onPress={() => dayReady && setOpen("day")}
           accessibilityLabel={
             !dayReady
@@ -107,6 +102,7 @@ export function VisitTimeField({ value, onChange, label, today, titles = GOING_T
           text={value.hour ? String(value.hour) : "--"}
           filled={Boolean(value.hour)}
           unit="시"
+          disabled={!hourReady}
           onPress={() => hourReady && setOpen("hour")}
           accessibilityLabel={
             !hourReady
@@ -120,7 +116,6 @@ export function VisitTimeField({ value, onChange, label, today, titles = GOING_T
 
       <PickerSheet
         visible={open !== null}
-        title={open ? titles[open] : ""}
         items={items}
         current={current}
         unit={open ? UNIT_LABEL[open] : ""}

@@ -7,9 +7,9 @@ import { BIRTH } from "./support/fixtures";
 /** 생일 세 칸을 채운다. */
 async function fillBirth(page: Page, iso: string) {
   const [year, month, day] = iso.split("-");
-  await page.getByRole("textbox", { name: "생일 년" }).fill(year);
-  await page.getByRole("textbox", { name: "생일 월" }).fill(String(Number(month)));
-  await page.getByRole("textbox", { name: "생일 일" }).fill(String(Number(day)));
+  await page.getByRole("textbox", { name: "생년월일 년" }).fill(year);
+  await page.getByRole("textbox", { name: "생년월일 월" }).fill(String(Number(month)));
+  await page.getByRole("textbox", { name: "생년월일 일" }).fill(String(Number(day)));
 }
 
 test.describe("내 정보 — 들어가기 전 확인", () => {

@@ -82,7 +82,7 @@ export function MyInfoScreen({
 
         <View className="rounded-2xl bg-white px-4">
           <Row label="이름" value={profile.name} />
-          <Row label="생일" value={formatDate(profile.birth)} />
+          <Row label="생년월일" value={formatDate(profile.birth)} />
           <Row label="출소한 날" value={formatDate(profile.releaseDate)} />
           {/* **바꾸기를 오른쪽 끝에 붙인다** (2026-08-31 시안). 아래에 두면 이 행만
               세 줄로 길어져, 위의 세 줄과 같은 표로 읽히지 않는다 */}

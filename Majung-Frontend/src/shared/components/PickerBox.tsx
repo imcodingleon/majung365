@@ -33,22 +33,32 @@ export function PickerBox({
   text,
   unit,
   filled,
+  disabled,
   onPress,
   accessibilityLabel,
 }: {
   text: string;
   unit: string;
   filled: boolean;
+  /**
+   * 아직 열 수 없는 칸. 월을 고르기 전의 일 칸이 그렇다.
+   *
+   * **못 누르는 칸은 못 누르게 보여야 한다.** 눌러도 아무 일이 없는데 겉모습이 같으면
+   * 사용자는 앱이 멈춘 줄 안다. 목록 안의 못 고르는 줄과 같은 흐림을 쓴다.
+   */
+  disabled?: boolean;
   onPress: () => void;
   accessibilityLabel: string;
 }) {
   return (
     <Pressable
       onPress={onPress}
+      disabled={disabled}
       accessibilityRole="button"
       accessibilityLabel={accessibilityLabel}
+      accessibilityState={{ disabled }}
       className="flex-1 flex-row items-center justify-center gap-1 rounded-xl border-[1.5px] bg-white px-2 py-4 active:opacity-80"
-      style={{ borderColor: filled ? COLORS.brand : COLORS.line }}
+      style={{ borderColor: filled ? COLORS.brand : COLORS.line, opacity: disabled ? 0.35 : 1 }}
     >
       <Text
         className="text-body-lg"
@@ -68,7 +78,6 @@ export function PickerBox({
 
 export function PickerSheet({
   visible,
-  title,
   items,
   current,
   unit,
@@ -77,8 +86,6 @@ export function PickerSheet({
   onClose,
 }: {
   visible: boolean;
-  /** "월을 고르세요"처럼 무엇을 고르는지 밝힌다. */
-  title: string;
   items: readonly PickerItem[];
   /** 지금 골라져 있는 값. 없으면 null. */
   current: number | null;
@@ -142,8 +149,10 @@ export function PickerSheet({
             ],
           }}
         >
-          <View className="mb-4 flex-row items-center">
-            <Text className="flex-1 text-heading font-extrabold text-ink-strong">{title}</Text>
+          {/* **제목을 걷어냈다** (2026-09-03). "몇 월에 가시나요" 같은 문장이 목록 위에
+              한 줄 더 서면, 정작 골라야 할 숫자가 아래로 밀린다. 무엇을 고르는 중인지는
+              목록에 선 "9월"·"10월"이 이미 말하고 있다. */}
+          <View className="mb-4 flex-row items-center justify-end">
             <Pressable
               onPress={onClose}
               accessibilityRole="button"

@@ -174,11 +174,14 @@ export function SignupScreen({
           accessibilityLabel="이름"
         />
 
-        <FieldLabel>생일</FieldLabel>
+        {/* **"생일"에서 "생년월일"로 옮겼다** (2026-09-03). 같은 값을 두고 이 화면은
+            "생일", 본인 확인 게이트와 동의 문구는 "생년월일"이라 이름이 두 벌이었다.
+            받는 것이 축하할 날이 아니라 신원을 가르는 날짜이므로 "생년월일"로 맞춘다. */}
+        <FieldLabel>생년월일</FieldLabel>
         <DateField
           value={form.birth}
           onChange={form.setBirth}
-          label="생일"
+          label="생년월일"
           minYear={BIRTH_MIN_YEAR}
           maxYear={thisYear}
           defaultYear={BIRTH_DEFAULT_YEAR}

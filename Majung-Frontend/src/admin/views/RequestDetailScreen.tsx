@@ -366,11 +366,6 @@ export function RequestDetailScreen({
                     onChange={setWhen}
                     label="만날 때"
                     today={today}
-                    titles={{
-                      month: "몇 월에 만나시나요",
-                      day: "며칠에 만나시나요",
-                      hour: "몇 시에 만나시나요",
-                    }}
                   />
                   <Text className="mb-4 mt-2 text-caption text-ink-muted">
                     {isComplete(when)
